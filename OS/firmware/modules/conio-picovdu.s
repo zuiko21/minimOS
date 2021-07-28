@@ -4,7 +4,7 @@
 ; also for any other computer with picoVDU connected via IOSCREEN option
 ; new version based on Durango-X code
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210727-2157
+; last modified 20210728-1548
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -98,7 +98,6 @@ IOBeep	= $BFF0				; canonical buzzer address (d0)
 cio_cmd:
 	CMP #32					; printable anyway?
 	BCS cio_prn				; go for it, flag known to be clear
-;		AND #31				; if arrived here, it MUST be below 32!
 		ASL					; two times
 		TAX					; use as index
 		CLC					; will simplify most returns as DR_OK becomes just RTS
@@ -106,23 +105,75 @@ cio_cmd:
 cio_gl:
 	_STZX fw_cbin			; clear flag!
 cio_prn:
+; ***********************************
+; *** output character (now in A) *** screen addresses are 01111yyy ysssxxxx
+; ***********************************
+; glyph pointer setting is always 24b, 43t
+			ASL				; times eight scanlines (2+5 x3)
+			ROL cio_src+1	; M=???????7, A=6543210·
+			ASL
+			ROL cio_src+1	; M=??????76, A=543210··
+			ASL
+			ROL cio_src+1	; M=?????765, A=43210···
+			CLC
+			ADC fw_fnt		; add font base (2+4+4)
+			STA cio_src
+			LDA cio_src+1	; A=?????765 (3)
+			AND #7			; A=·····765 (2+4)
+			ADC fw_fnt+1
+;			DEC				; or add >font -1 if no glyphs for control characters
+			STA cio_src+1	; pointer to glyph is ready (3)
+; screen pointer setting is 12b,16t direct and 16b,21t IOSCREEN (NMOS adds 5/6 or 7/8 for IOSCREEN)
+			LDY fw_ciop		; get current address (4+4)
+			LDA fw_ciop+1
+			STA cio_pt+1	; set pointer, good to keep MSB for increments (3)
+#ifdef	IOSCREEN
+			ORA fw_flags	; keep inverse mode (4)
+			STA IO8lh		; set MSB (4)
+#else
+			_STZA cio_pt	; LSB always in Y, ZP pointer LSB always 0 (3/5)
+#endif
+			LDX #8			; number of scanlines (2)
+#ifdef	NMOS
+			STX fw_ctmp		; set counter (4)
+			LDX #0			; prepare for alternative instruction (2)
+#endif
+cph_loop:
+; main printing loop takes 18b,247t direct and 22b,271t IOSCREEN
+; make that 20b,287t and 24b,311t IOSCREEN for NMOS
+#ifdef	NMOS
+				LDA (cio_src, X)	; glyph pattern (6)
+#else
+				LDA (cio_src)		; CMOS is faster (5)
+#endif
+#ifdef	IOSCREEN
+				STY IO8ll			; select address low... (4)
+				STA IO8wr			; ...and write data into screen (4)
+#else
+				STA (cio_pt), Y		; put it on screen (5)
+#endif
+				INC cio_src			; advance to next glyph byte (5)
+				BNE cph_nw			; (usually 3, rarely 7) non-8-byte-aligned fonts need this
+					INC cio_src+1
+cph_nw:
+				TYA					; advance to next screen raster (2+2)
+				CLC
+				ADC #16				; 16 bytes/raster, this will NEVER wrap (2)
+				TAY					; offset ready (2)
+; check some counter, no longer can rely on sign, note very different approach for NMOS
+#ifdef	NMOS
+				DEC fw_ctmp			; next scan (6)
+#else
+				DEX					; next scan (2)
+#endif
+				BNE cph_loop		; until 8 times completed (3)
+; end of loop (8 times) 31·8-1/34·8-1, 36·8-1/39·8-1 NMOS
+			BEQ cur_r				; advance to next position! (always 3)
+
+
+
 
 /*
-; ***********************************
-; *** output character (now in A) ***
-; ***********************************
-;		AND #$7F			; in order to strip extended ASCII
-		CMP #FORMFEED		; reset device?
-		BNE cn_nff			; no, just print it
-; * clear screen, not much to be inited *
-			LDY #<pvdu		; initial address
-			LDX #>pvdu		; valid MSB for IOSCREEN, black-on-white mode (%01111xxx) instead of inverse for Pacman (%00001xxx)
-			STY cio_pt		; set ZP pointer
-			STX cio_pt+1
-			STY fw_ciop		; worth resetting global pointer (cursor) here (conio.h?)
-			STX fw_ciop+1
-;			LDY #0			; no need to reset index
-			TYA				; clear accumulator
 cls_p:
 #ifdef	IOSCREEN
 				STX IO8lh	; set page on I/O device
