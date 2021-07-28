@@ -1,6 +1,6 @@
 ; minimOS 0.6rc14 MACRO definitions
 ; (c) 2012-2021 Carlos J. Santisteban
-; last modified 20210704-2340
+; last modified 20210728-1437
 
 ; **************************
 ; *** standard addresses ***
@@ -132,7 +132,7 @@ PICO_VDU	=	160		; *** PLACEHOLDER ***
 #ifdef	NMOS
 #ifdef		LOWRAM
 ; the slower, compact version, needs no memory... but not 65816-savvy!
-; this is needed for NMOS nanomon, otherwise the CONIO call will destroy A & X reg storage!
+; this is needed for NMOS nanomon, otherwise the CONIO call will destroy A & X reg storage! *** DESTROYS A, must revise!!!
 #define		_JMPX(a)	LDA a+1, X: PHA: LDA a, X: PHA: PHP: RTI
 #else
 ; in case of a NMOS-binary is executed on a 65816 machine, use this faster version
