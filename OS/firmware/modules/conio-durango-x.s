@@ -102,81 +102,81 @@ cio_prn:
 ; ***********************************
 ; *** output character (now in A) ***
 ; ***********************************
-			ASL				; times eight scanlines
-			ROL cio_src+1	; M=???????7, A=6543210·
-			ASL
-			ROL cio_src+1	; M=??????76, A=543210··
-			ASL
-			ROL cio_src+1	; M=?????765, A=43210···
-			CLC
-			ADC fw_fnt		; add font base
-			STA cio_src
-			LDA cio_src+1	; A=?????765
-			AND #7			; A=·····765
-			ADC fw_fnt+1
-;			DEC				; or add >font -1 if no glyphs for control characters
-			STA cio_src+1	; pointer to glyph is ready
-			LDA fw_ciop		; get current address
-			LDX fw_ciop+1
-			STA cio_pt		; set pointer
-			STX cio_pt+1
-			LDY #0			; reset screen offset (common)
+	ASL						; times eight scanlines
+	ROL cio_src+1			; M=???????7, A=6543210·
+	ASL
+	ROL cio_src+1			; M=??????76, A=543210··
+	ASL
+	ROL cio_src+1			; M=?????765, A=43210···
+	CLC
+	ADC fw_fnt				; add font base
+	STA cio_src
+	LDA cio_src+1			; A=?????765
+	AND #7					; A=·····765
+	ADC fw_fnt+1
+;	DEC						; or add >font -1 if no glyphs for control characters
+	STA cio_src+1			; pointer to glyph is ready
+	LDA fw_ciop				; get current address
+	LDX fw_ciop+1
+	STA cio_pt				; set pointer
+	STX cio_pt+1
+	LDY #0					; reset screen offset (common)
 ; *** now check for mode and jump to specific code ***
-			LDX fw_hires	; check mode, code is different, will only check d7 in case other flags get used
-			BPL cpc_do		; skip to colour mode, hires is smaller
+	LDX fw_hires			; check mode, code is different, will only check d7 in case other flags get used
+	BPL cpc_do				; skip to colour mode, hires is smaller
 ; hires version (17b for CMOS, usually 231t, plus jump to cursor-right)
 cph_loop:
-				_LDAX(cio_src)		; glyph pattern (5)
-				STA (cio_pt), Y		; put it on screen, note variable pointer (5)
-				INC cio_src			; advance to next glyph byte (5)
-				BNE cph_nw_nw		; (usually 3, rarely 7)
-					INC cio_src+1
+		_LDAX(cio_src)		; glyph pattern (5)
+		STA (cio_pt), Y		; put it on screen, note variable pointer (5)
+		INC cio_src			; advance to next glyph byte (5)
+		BNE cph_nw_nw		; (usually 3, rarely 7)
+			INC cio_src+1
 cph_nw:
-				TYA					; advance to next screen raster (2+2)
-				CLC
-				ADC #16				; 16 bytes/raster (2)
-				TAY					; offset ready (2)
-				BPL cph_loop		; offset always below 128 (8x16, 3t)
-			BMI cur_r				; advance to next position!
+		TYA					; advance to next screen raster (2+2)
+		CLC
+		ADC #32				; 32 bytes/raster EEEEEEEEK (2)
+		TAY					; offset ready (2)
+		BPL cph_loop		; offset always below 128 (8x16, 3t)
+	BMI cur_r				; advance to next position!
 ; colour version, 59b, typically 1895t (56/1823 if in ZP, 4% faster)
 cpc_do:
-				_LDAX(cio_src)		; glyph pattern (5)
-				STA fw_tmp			; consider impact of putting this on ZP *** (4*)
-				LDX #4				; each glyph byte takes 4 screen bytes! (2)
-				INC cio_src			; advance to next glyph byte (5+usually 3)
-				BNE cpc_loop
-					INC cio_src+1
-cpc_loop:							; (all loop is done 4x52, 207t)
-					ASL fw_tmp		; extract leftmost bit from temporary glyph (6*)
-					BCC cpc_pl
-						LDA fw_ink	; bit ON means INK (in this case, 2+4+3=9)
-						BCS cpc_rot
+		_LDAX(cio_src)		; glyph pattern (5)
+		STA fw_tmp			; consider impact of putting this on ZP *** (4*)
+		LDX #4				; each glyph byte takes 4 screen bytes! (2)
+		INC cio_src			; advance to next glyph byte (5+usually 3)
+		BNE cpc_loop
+			INC cio_src+1
+cpc_loop:					; (all loop is done 4x52, 207t)
+			ASL fw_tmp		; extract leftmost bit from temporary glyph (6*)
+			BCC cpc_pl
+				LDA fw_ink	; bit ON means INK (in this case, 2+4+3=9)
+				BCS cpc_rot
 cpc_pl:
-						LDA fw_ppr	; bit OFF means PAPER (otherwise, 3+4=7; average 8)
+				LDA fw_ppr	; bit OFF means PAPER (otherwise, 3+4=7; average 8)
 cpc_rot:
-					ASL
-					ASL
-					ASL
-					ASL				; colour code is now upper nibble (2+2+2+2)
-					ASL fw_tmp		; extract next bit from temporary glyph (6*)
-					BCC cpc_pr		; ditto for rightmost nibble (average 8)
-						ORA fw_ink	; bit ON means INK
-						BCS cpc_msk
+			ASL
+			ASL
+			ASL
+			ASL				; colour code is now upper nibble (2+2+2+2)
+			ASL fw_tmp		; extract next bit from temporary glyph (6*)
+			BCC cpc_pr		; ditto for rightmost nibble (average 8)
+				ORA fw_ink	; bit ON means INK
+				BCS cpc_msk
 cpc_pr:
-						ORA fw_ppr	; bit OFF means PAPER
+			ORA fw_ppr		; bit OFF means PAPER
 cpc_msk:
-					EOR fw_mask		; in case inverse mode is set (4)
-					STA (cio_pt), Y	; put it on screen (5)
-					INY				; next screen byte for this glyph byte (2)
-					DEX				; glyph byte done? (2+3)
-					BNE cpc_loop
-				TYA					; advance to next screen raster, but take into account the 4-byte offset (2+2+2)
-				CLC
-				ADC #28
-				TAY					; offset ready (2)
-				BNE cpc_do			; offset will get zeroed for colour (8x32) (3, like all code is done 8x)
+			EOR fw_mask		; in case inverse mode is set (4)
+			STA (cio_pt), Y	; put it on screen (5)
+			INY				; next screen byte for this glyph byte (2)
+			DEX				; glyph byte done? (2+3)
+			BNE cpc_loop
+		TYA					; advance to next screen raster, but take into account the 4-byte offset (2+2+2)
+		CLC
+		ADC #60
+		TAY					; offset ready (2)
+		BNE cpc_do			; offset will get zeroed for colour (8x32) (3, like all code is done 8x)
 ; advance screen pointer before exit, just go to cursor-right routine!
-;			JMP cur_r		; no need for jump if cursor-right is just here!
+;	JMP cur_r				; no need for jump if cursor-right is just here!
 
 ; **********************
 ; *** cursor advance *** placed here for convenience of printing routine
