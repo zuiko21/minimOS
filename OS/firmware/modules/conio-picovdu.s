@@ -4,7 +4,7 @@
 ; also for any other computer with picoVDU connected via IOSCREEN option
 ; new version based on Durango-X code
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210728-1640
+; last modified 20210728-2318
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -54,6 +54,8 @@
 ; in Durango-proto and the standalone IOx-picoVDU, enable IOSCREEN option for IO-based access
 ; in case of direct mapping (Durango-L?) comment line below
 #define	IOSCREEN	_IOSCREEN
+; IOSCREEN interface cannot read the VRAM... thus, no scrolling is available!
+; will just wrap around the screen, preferabily clearing the two upper rows (1 page)
 
 ; *** zeropage variables ***
 ; cio_src.w (pointer to glyph definitions)
@@ -123,13 +125,14 @@ cio_prn:
 	ADC fw_fnt+1
 ;	DEC						; or add >font -1 if no glyphs for control characters
 	STA cio_src+1			; pointer to glyph is ready (3)
-; screen pointer setting is 12b,16t direct and 16b,21t IOSCREEN (NMOS adds 5/6 or 7/8 for IOSCREEN)
+; screen pointer setting is 12b,16t direct and 18b,23t IOSCREEN (NMOS adds 5/6 or 7/8 for IOSCREEN)
 	LDY fw_ciop				; get current address (4+4)
 	LDA fw_ciop+1
 	STA cio_pt+1			; set pointer, good to keep MSB for increments (3)
 #ifdef	IOSCREEN
+	AND #%00000111			; only 2K, do not touch flags EEEEEEEEEEEEK
 	ORA fw_flags			; keep inverse mode (4)
-	STA IO8lh				; set MSB (4)
+	STA IO8lh				; set MSB and flags (4)
 #else
 	_STZA cio_pt			; LSB always in Y, ZP pointer LSB always 0 (3/5)
 #endif
@@ -255,9 +258,26 @@ cn_hmok:
 ; must check for possible scrolling!!! simply check MSB sign ;-)
 	BIT fw_ciop+1
 	BPL cn_ok				; positive means no scroll
-; ** scroll routine **
+; ** scroll routine ** not for IOSCREEN
+#ifdef	IOSCREEN
+; just wrap the screen and clear... just the first two rows?
+		JSR cio_home		; reset cursor, sets AA.YY
+		AND #%00000111		; only 2K, do not touch flags EEEEEEEEEEEEK
+		ORA fw_flags		; keep inverse mode (4)
+		STA IO8lh			; set MSB and flags (4)
+;		LDY #0				; reset index, will do a whole page (two rows) should be already 0
+		TYA					; will set zero everywhere
+csc_loop:
+			STY IO8ll		; set address...
+			STA IO8wr		; ...and data
+			INY
+			BNE csc_loop	; until done (BPL will just clear one row)
+		RTS					; is C really clear?
+#else
+; actuall scroll, only memory mapped
 ; rows are 128 bytes apart
 		LDA #<pvdu				; LSB *must* be zero, anyway
+		TAY						; reset index too
 		LDX #>pvdu				; MSB is actually OK for destination
 		STA cio_pt				; set both LSBs
 		ORA #128				; set bit 7 for source, was known to be zero
@@ -265,19 +285,21 @@ cn_hmok:
 		STX cio_pt+1			; MSBs are the same
 		STX cio_src+1			; we're set
 sc_loop:
-
-			LDA (cio_src), Y	; move screen data ASAP
+; memory mapped version
+			LDA (cio_src), Y	; move screen data ASAP (in all modes)
 			STA (cio_pt), Y
-
 			INY					; do a whole page
 			BNE sc_loop
 				INC cio_pt+1	; both MSBs are incremented at once...
-
-				INC cio_src+1	; ...but only source will enter high-32K at the end
+				INC cio_src+1	; note that when this goes negative, half a page of ROM has been copied!
 			BPL sc_loop
 ; data has been transferred, now should clear the last line
+
+
+
 		JSR cio_clear			; cannot be inlined!
 ; important, cursor pointer must get back one row up! that means subtracting one (or two) from MSB
+
 
 		TXA						; trick... A is fw_hires
 		ASL						; now C is set for hires
