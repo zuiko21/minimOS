@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210727-1936
+; last modified 20210728-1447
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -55,11 +55,11 @@
 
 ; *** firmware variables to be reset upon FF ***
 ; fw_ink
-; fw_paper (possibly not worth combining)
+; fw_paper (possibly not worth combining, but putting a byte in between may unify routines)
 ; fw_ciop.w (upper scan of cursor position)
-; fw_fnt (new, pointer to relocatable 2KB font file)
+; fw_fnt.w (new, pointer to relocatable 2KB font file)
 ; fw_mask (for inverse/emphasis mode)
-; fw_hires (0=colour, 128=hires)
+; fw_hires (0=colour, 128=hires, may contain other flags like 64=inverse)
 ; fw_cbin (binary or multibyte mode)
 ; fw_ctmp (temporary use)
 ; first two modes are directly processed, note BM_DLE is the shifted X
@@ -126,18 +126,18 @@ cio_prn:
 	BPL cpc_do				; skip to colour mode, hires is smaller
 ; hires version (17b for CMOS, usually 231t, plus jump to cursor-right)
 cph_loop:
-		_LDAX(cio_src)		; glyph pattern (5)
-		STA (cio_pt), Y		; put it on screen, note variable pointer (5)
-		INC cio_src			; advance to next glyph byte (5)
-		BNE cph_nw_nw		; (usually 3, rarely 7)
-			INC cio_src+1
+			_LDAX(cio_src)	; glyph pattern (5)
+			STA (cio_pt), Y	; put it on screen, note variable pointer (5)
+			INC cio_src		; advance to next glyph byte (5)
+			BNE cph_nw_nw	; (usually 3, rarely 7)
+				INC cio_src+1
 cph_nw:
-		TYA					; advance to next screen raster (2+2)
-		CLC
-		ADC #32				; 32 bytes/raster EEEEEEEEK (2)
-		TAY					; offset ready (2)
-		BPL cph_loop		; offset always below 128 (8x16, 3t)
-	BMI cur_r				; advance to next position!
+			TYA				; advance to next screen raster (2+2)
+			CLC
+			ADC #32			; 32 bytes/raster EEEEEEEEK (2)
+			TAY				; offset ready (2)
+			BPL cph_loop	; offset always below 128 (8x16, 3t)
+		BMI cur_r			; advance to next position!
 ; colour version, 59b, typically 1895t (56/1823 if in ZP, 4% faster)
 cpc_do:
 		_LDAX(cio_src)		; glyph pattern (5)
@@ -549,6 +549,18 @@ xon_inv:
 ignore:
 	RTS						; *** note generic exit ***
 
+md_ink:
+; just set binary mode for receiving ink! *** could use some tricks to unify with paper mode setting
+	LDX #BM_INK				; next byte will set ink
+	STX fw_cbin				; set binary mode and we are done
+	RTS
+
+md_ppr:
+; just set binary mode for receiving paper! *** check above for simpler alternative
+	LDX #BM_PPR				; next byte will set ink
+	STX fw_cbin				; set binary mode and we are done
+	RTS
+
 cio_home:
 ; just reset cursor pointer, to be done after (or before!) CLS
 	LDY #<pvdu				; base address for all modes, actually 0
@@ -556,6 +568,12 @@ cio_home:
 	STY fw_ciop				; just set pointer
 	STA fw_ciop+1
 	RTS						; C is clear, right?
+
+md_atyx:
+; prepare for setting y first
+	LDX #BM_ATY				; next byte will set Y and then expect X for the next one
+	STX fw_cbin				; set new mode, called routine will set back to normal
+	RTS
 
 ; *******************************
 ; *** some multibyte routines ***
@@ -652,7 +670,7 @@ cio_ctl:
 	.word	cio_prn			; 30 ***
 	.word	ignore			; 31, IGNORE back to text mode
 
-; *** table of pointers to multi-byte routines ***
+; *** table of pointers to multi-byte routines *** order must check BM_ definitions!
 cio_mbm:
 	.word	cn_ink			; 2= ink to be set
 	.word	cn_ppr			; 4= paper to be set
