@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210728-1609
+; last modified 20210729-1211
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -192,25 +192,7 @@ rcu_hr:
 	BNE rcu_nw				; check possible carry
 		INC fw_ciop+1
 rcu_nw:
-	JMP ck_wrap				; ...will return
-
-; **********************
-; *** keyboard input *** may be moved elsewhere
-; **********************
-; IO9 port is read, normally 0
-; any non-zero value is stored and returned the first time, otherwise returns empty (C set)
-; any repeated characters must have a zero inbetween, 10 ms would suffice (perhaps as low as 5 ms)
-cn_in:
-	LDY IO9di				; get current data at port
-	BEQ cn_empty			; no transfer is in the making
-		CPY fw_io9			; otherwise compare with last received
-	BEQ cn_ack				; same as last, keep trying
-		STY fw_io9			; this is received and different
-		_DR_OK				; send received
-cn_empty:
-	STY fw_io9				; keep clear
-cn_ack:
-	_DR_ERR(EMPTY)			; set C instead eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
+;	JMP ck_wrap				; ...will return
 
 ; ************************
 ; *** support routines ***
@@ -632,6 +614,24 @@ do_atx:
 	ADC #>pvdu
 	STA fw_ciop+1
 	_BRA md_std
+
+; **********************
+; *** keyboard input *** may be moved elsewhere
+; **********************
+; IO9 port is read, normally 0
+; any non-zero value is stored and returned the first time, otherwise returns empty (C set)
+; any repeated characters must have a zero inbetween, 10 ms would suffice (perhaps as low as 5 ms)
+cn_in:
+	LDY IO9di				; get current data at port
+	BEQ cn_empty			; no transfer is in the making
+		CPY fw_io9			; otherwise compare with last received
+	BEQ cn_ack				; same as last, keep trying
+		STY fw_io9			; this is received and different
+		_DR_OK				; send received
+cn_empty:
+	STY fw_io9				; keep clear
+cn_ack:
+	_DR_ERR(EMPTY)			; set C instead eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 
 ; **************************************************
 ; *** table of pointers to control char routines ***
