@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210729-1226
+; last modified 20210729-1245
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -577,7 +577,7 @@ cn_sety:					; 6= Y to be set, advance mode to 8
 	JSR coord_ok			; common coordinate check as is a square screen
 	STA fw_ciop+1			; note temporary use of MSB as Y coordinate
 	LDX #BM_ATX
-	STA fw_cbin				; go into X-expecting mode
+	STX fw_cbin				; go into X-expecting mode EEEEEEK
 	RTS
 
 coord_ok:
