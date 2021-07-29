@@ -4,7 +4,7 @@
 ; also for any other computer with picoVDU connected via IOSCREEN option
 ; new version based on Durango-X code
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210728-2318
+; last modified 20210729-1207
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -285,7 +285,6 @@ csc_loop:
 		STX cio_pt+1			; MSBs are the same
 		STX cio_src+1			; we're set
 sc_loop:
-; memory mapped version
 			LDA (cio_src), Y	; move screen data ASAP (in all modes)
 			STA (cio_pt), Y
 			INY					; do a whole page
@@ -294,19 +293,16 @@ sc_loop:
 				INC cio_src+1	; note that when this goes negative, half a page of ROM has been copied!
 			BPL sc_loop
 ; data has been transferred, now should clear the last line
-
-
-
-		JSR cio_clear			; cannot be inlined!
-; important, cursor pointer must get back one row up! that means subtracting one (or two) from MSB
-
-
-		TXA						; trick... A is fw_hires
-		ASL						; now C is set for hires
-		LDA fw_ciop+1			; cursor MSB
-		;SBC #1					; with C set (hires) this subtracts 1, but 2 if C is clear! (colour)
+		DEC cio_src+1			; since LSB is $80, this points to RAMTOP-128, and Y is 0
+		TYA						; A also clear
+sc_clear:
+			STA (cio_src), Y	; ad hoc loop, note use of source pointer b/c offset LSB
+			INY
+			BPL sc_clear		; just the last 128 bytes!
+; important, cursor pointer must get back one row up! it is $7F80, actually
+		STY fw_ciop			; Y is already $80
+		LDA cio_src+1		; this known to be $7F
 		STA fw_ciop+1
-
 cn_ok:
 	_DR_OK					; note that some code might set C
 
