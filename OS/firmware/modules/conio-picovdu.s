@@ -4,7 +4,7 @@
 ; also for any other computer with picoVDU connected via IOSCREEN option
 ; new version based on Durango-X code
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210729-1207
+; last modified 20210729-1258
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -74,7 +74,7 @@
 #define	BM_DLE		32
 ; these modes are handled by indexed jump, note offset of 2
 ; first of these modes just ignores the colour code, as no colours to be set, note new codes
-#define	BM_INK		2
+#define	BM_COL		2
 #define	BM_ATY		4
 #define	BM_ATX		6
 ; no custom initial colours!
@@ -142,13 +142,14 @@ cio_prn:
 	LDX #0					; prepare for alternative instruction (2)
 #endif
 cph_loop:
-; main printing loop takes 18b,247t direct and 22b,271t IOSCREEN
-; make that 20b,287t and 24b,311t IOSCREEN for NMOS
+; main printing loop takes 21b,279t direct and 25b,303t IOSCREEN
+; make that 23b,319t and 27b,343t IOSCREEN for NMOS
 #ifdef	NMOS
 		LDA (cio_src, X)	; glyph pattern (6)
 #else
 		LDA (cio_src)		; CMOS is faster (5)
 #endif
+		EOR fw_mask			; eeeeeeeeeeeeeek (4)
 #ifdef	IOSCREEN
 		STY IO8ll			; select address low... (4)
 		STA IO8wr			; ...and write data into screen (4)
@@ -170,7 +171,6 @@ cph_nw:
 		DEX					; next scan (2)
 #endif
 		BNE cph_loop		; until 8 times completed (3)
-; end of loop (8 times) 31·8-1/34·8-1, 36·8-1/39·8-1 NMOS
 ;	BEQ cur_r				; advance to next position! (always 3)
 
 ; **********************
@@ -190,34 +190,16 @@ ck_wrap:
 		BNE cn_begin		; nope, do NEWLINE
 	RTS						; continue normally otherwise (should I clear C?)
 
-; **********************
-; *** keyboard input ***
-; **********************
-; IO9 port is read, normally 0
-; any non-zero value is stored and returned the first time, otherwise returns empty (C set)
-; any repeated characters must have a zero inbetween, 10 ms would suffice (perhaps as low as 5 ms)
-cn_in:
-	LDY IO9di				; get current data at port
-	BEQ cn_empty			; no transfer is in the making
-		CPY fw_io9			; otherwise compare with last received
-	BEQ cn_ack				; same as last, keep trying
-		STY fw_io9			; this is received and different
-		_DR_OK				; send received
-cn_empty:
-	STY fw_io9				; keep clear
-cn_ack:
-	_DR_ERR(EMPTY)			; set C instead eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
-
 ; ************************
 ; *** control routines ***
 ; ************************
 cn_cr:
-; *** this is the CR without LF ***
+; ** this is the CR without LF **
 	LDY #1					; will skip LF routine
 	BNE cn_begin
 
 cur_l:
-; *** cursor left, no big deal, but do not wrap if at leftmost column ***
+; ** cursor left, no big deal, but do not wrap if at leftmost column **
 	LDX fw_ciop				; try decrementing pointer by 1
 	DEX
 	TXA						; keep it in case it's valid
@@ -228,10 +210,10 @@ cl_end:
 	RTS						; C known to be clear!
 
 cn_newl:
-; *** CR, but will do LF afterwards by setting Y appropriately ***
+; ** CR, but will do LF afterwards by setting Y appropriately **
 		TAY					; Y=26>1, thus allows full newline
 cn_begin:
-; *** do CR... but keep Y ***
+; ** do CR... but keep Y **
 ; make LSB AND %1···0000 and, if LF is to be done, add 128
 ; actually is a good idea to clear scanline bits, just in case
 #ifdef	NMOS
@@ -245,7 +227,7 @@ cn_begin:
 ; check whether LF is to be done
 	DEY						; LF needed?
 	BEQ cn_ok				; not if Y was 1 (use BMI if Y was zeroed for LF)
-; *** will do LF if Y>1 ONLY ***
+; ** will do LF if Y>1 ONLY **
 cn_lf:
 ; do LF, adds 128 to LSB
 ; hopefully scan bits are intact!!!
@@ -258,7 +240,7 @@ cn_hmok:
 ; must check for possible scrolling!!! simply check MSB sign ;-)
 	BIT fw_ciop+1
 	BPL cn_ok				; positive means no scroll
-; ** scroll routine ** not for IOSCREEN
+; scroll routine, not for IOSCREEN
 #ifdef	IOSCREEN
 ; just wrap the screen and clear... just the first two rows?
 		JSR cio_home		; reset cursor, sets AA.YY
@@ -306,6 +288,136 @@ sc_clear:
 cn_ok:
 	_DR_OK					; note that some code might set C
 
+cn_tab:
+; ** advance column to the next 8x position **
+; add 8, then clear d0-d2
+	LDA fw_ciop				; this is LSB, contains old X...
+	ADC #8					; add displacement
+	AND #7					; ...but round down position MOD 8!
+	STA fw_ciop
+; not so fast, must check for possible line wrap... and even scrolling!
+	JMP ck_wrap				; will return in any case
+
+cio_bel:
+; ** BEL, make a beep! **
+; 40ms @ 1 kHz is 40 cycles
+; the 500µs halfperiod is about 325t (1.536 MHz)
+	_CRITIC					; let's make things the right way
+	LDX #79					; 80 half-cycles, will end with d0 clear
+cbp_pul:
+		STX IOBeep			; pulse output bit (4)
+		LDY #63				; should make around 500µs halfcycle (2)
+cbp_del:
+			DEY
+			BNE cbp_del		; each iteration is (2+3)
+		DEX					; go for next semicycle
+		BPL cbp_pul			; must do zero too, to clear output bit
+	_NO_CRIT				; eeeeek
+	RTS
+
+
+; ** SO, set inverse mode **
+cn_so:
+	LDA #$FF				; OK for all modes?
+	STA fw_mask				; set value to be EORed
+	RTS
+
+; ** SI, set normal mode **
+cn_si:
+	_STZA fw_mask			; clear value to be EORed
+	RTS
+
+md_dle:
+; ** DLE, set binary mode **
+;	LDX #BM_DLE				; already set if 32
+	STX fw_cbin				; set binary mode and we are done
+	RTS
+
+
+md_col:
+; ** just set mode to ignore next char, as colour is disabled **
+	LDX #BM_COL				; next byte will be ignored
+	STX fw_cbin				; set special mode and we are done
+	RTS
+
+cio_home:
+; ** just reset cursor pointer, to be done after (or before!) CLS **
+	LDY #<pvdu				; base address for all modes, actually 0
+	LDA #>pvdu
+	STY fw_ciop				; just set pointer
+	STA fw_ciop+1
+	RTS						; C is clear, right?
+
+md_atyx:
+; ** prepare for setting y first **
+	LDX #BM_ATY				; next byte will set Y and then expect X for the next one
+	STX fw_cbin				; set new mode, called routine will set back to normal
+	RTS
+
+; *******************************
+; *** some multibyte routines ***
+; *******************************
+cn_sety:					; 4= Y to be set, advance mode to 6
+	JSR coord_ok			; common coordinate check as is a square screen
+	ASL fw_ciop				; eliminate row lowest bit
+	ROR						; d0 is now in C, three bits for row remainder
+	STA fw_ctmp
+	LDA fw_ciop+1			; get current MSB
+	AND #%11111000			; clear older Y
+	ORA fw_ctmp				; new Y is set... except lsb
+	STA fw_ciop+1
+	ROR fw_ciop				; now inject C into the missing bit which is d7 in LSB!
+	LDX #BM_ATX
+	STX fw_cbin				; go into X-expecting mode
+	RTS
+
+coord_ok:
+#ifdef	SAFE
+	CMP #32					; check for not-yet-supported pixel coordinates
+		BCC not_px			; must be at least 32, remember stack balance!
+#endif
+	AND #15					; filter coordinates, note +32 offset is deleted as well
+	RTS						; if both coordinates setting is combined, could be inlined
+
+#ifdef	SAFE
+not_px:
+; must ignore pixel coordinates, just rounding up to character position
+	PLA
+	PLA						; discard coordinate checking return address!
+	RTS						; that's all, as C known clear
+#endif
+
+cn_atyx:					; 6= X to be set and return to normal
+	JSR coord_ok
+	ASL						; X times two (2)
+	ROL fw_ciop				; keep C, which is from Y (6)
+	ROR						; now we have Y's lsb, scanline 0 and proper X! (2+4)
+	STA fw_ciop
+	_BRA md_std
+
+md_std:
+; ** back to standard mode **
+	_STZA fw_cbin			; set standard mode and we're done
+ignore:
+	RTS
+
+; **********************
+; *** keyboard input ***
+; **********************
+; IO9 port is read, normally 0
+; any non-zero value is stored and returned the first time, otherwise returns empty (C set)
+; any repeated characters must have a zero inbetween, 10 ms would suffice (perhaps as low as 5 ms)
+cn_in:
+	LDY IO9di				; get current data at port
+	BEQ cn_empty			; no transfer is in the making
+		CPY fw_io9			; otherwise compare with last received
+	BEQ cn_ack				; same as last, keep trying
+		STY fw_io9			; this is received and different
+		_DR_OK				; send received
+cn_empty:
+	STY fw_io9				; keep clear
+cn_ack:
+	_DR_ERR(EMPTY)			; set C instead eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 
 ; **************************************************
 ; *** table of pointers to control char routines ***
