@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210729-1211
+; last modified 20210729-1226
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -127,6 +127,7 @@ cio_prn:
 ; hires version (17b for CMOS, usually 231t, plus jump to cursor-right)
 cph_loop:
 			_LDAX(cio_src)	; glyph pattern (5)
+			EOR fw_mask		; eeeeeeeeeek (4)
 			STA (cio_pt), Y	; put it on screen, note variable pointer (5)
 			INC cio_src		; advance to next glyph byte (5)
 			BNE cph_nw_nw	; (usually 3, rarely 7)
