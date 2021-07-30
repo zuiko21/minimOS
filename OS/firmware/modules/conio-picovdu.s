@@ -4,7 +4,7 @@
 ; also for any other computer with picoVDU connected via IOSCREEN option
 ; new version based on Durango-X code
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210730-1304
+; last modified 20210730-2356
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -454,11 +454,12 @@ md_dle:
 
 cio_cur:
 ; ** XON, we have no cursor, but show its position for a moment **
-; ONLY for memory-mapped, IOSCREEN cannot read VRAM!
 ; at least a full frame (40 ms or ~62kt)
-#ifndef	IOSCREEN
+; ONLY for memory-mapped, IOSCREEN cannot read VRAM!
+; but I can anyway display the cursor position in IOSCREEN, hoping that it will be cleared afterwards
 	LDY fw_ciop				; get current position pointer
 	LDX fw_ciop+1
+#ifndef	IOSCREEN
 	STY cio_pt
 	STX cio_pt+1			; pointer complete
 	JSR xon_inv				; invert current contents (will return to caller the second time!)
@@ -471,12 +472,23 @@ xon_del:
 		BNE xon_del
 ; invert
 xon_inv:
-	LDY #112				; constant offset
+	LDY #112				; constant offset for 7th scanline
 	LDA (cio_pt), Y			; revert to original
 	EOR #$FF
 	STA (cio_pt), Y
+#else
+; display the same line, just forever!
+	TXA						; get page number
+	AND #%00000111			; limit to 2K
+	ORA fw_flags			; preserve inverse
+	STA IO8lh				; store MSB
+	TYA						; get address LSB
+	ADC #112				; offset for 7th scanline, carry had to be clear and should remain so
+	STA IO8ll				; stored LSB
+	LDA #$FF				; pattern of all bits on
+	STA IO8wr				; stored into VRAM
 #endif
-	RTS						; *** note generic exit ***
+	RTS	
 
 md_col:
 ; ** just set mode to ignore next char, as colour is disabled **
