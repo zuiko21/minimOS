@@ -431,7 +431,7 @@ ff_loop:
 	CLC						; it ended with C set
 #else
 			INC cio_pt+1
-		BPL sc_clr
+		BPL ff_loop
 #endif
 	RTS
 
