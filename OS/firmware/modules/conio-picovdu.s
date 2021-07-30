@@ -4,7 +4,7 @@
 ; also for any other computer with picoVDU connected via IOSCREEN option
 ; new version based on Durango-X code
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210729-1258
+; last modified 20210730-1304
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -49,7 +49,31 @@
 ;	OUTPUT
 ; C ->	no available char (if Y was 0)
 
+#ifndef		HEADERS
+#ifdef			TESTING
+; ** special include set to be assembled via... **
+; xa firmware/modules/conio-picovdu.s -I drivers/fonts/ -DTESTING=1
+#include "options.h"
+#include "macros.h"
+#include "abi.h"
+.zero
+#include "zeropage.h"
+#else
+; ** regular assembly **
 #include "../../usual.h"
+#endif
+; specific header for this driver (TESTING)
+.bss
+fw_ciop	= $210
+fw_fnt	= $212
+fw_mask	= $214
+fw_flags= $215
+fw_cbin	= $216
+fw_ctmp	= $217
+fw_io9	= $218
+.text
+* = $F000
+#endif
 
 ; in Durango-proto and the standalone IOx-picoVDU, enable IOSCREEN option for IO-based access
 ; in case of direct mapping (Durango-L?) comment line below
@@ -254,7 +278,6 @@ csc_loop:
 			STA IO8wr		; ...and data
 			INY
 			BNE csc_loop	; until done (BPL will just clear one row)
-		RTS					; is C really clear?
 #else
 ; actuall scroll, only memory mapped
 ; rows are 128 bytes apart
@@ -285,15 +308,16 @@ sc_clear:
 		STY fw_ciop			; Y is already $80
 		LDA cio_src+1		; this known to be $7F
 		STA fw_ciop+1
+#endif
 cn_ok:
-	_DR_OK					; note that some code might set C
+	_EXIT_OK
 
 cn_tab:
-; ** advance column to the next 8x position **
+; ** TAB, advance column to the next 8x position **
 ; add 8, then clear d0-d2
 	LDA fw_ciop				; this is LSB, contains old X...
 	ADC #8					; add displacement
-	AND #7					; ...but round down position MOD 8!
+	AND #%11111000			; ...but round down position MOD 8! eeeeeeek
 	STA fw_ciop
 ; not so fast, must check for possible line wrap... and even scrolling!
 	JMP ck_wrap				; will return in any case
@@ -315,6 +339,101 @@ cbp_del:
 	_NO_CRIT				; eeeeek
 	RTS
 
+cio_bs:
+; ** BACKSPACE, go back one char and clear cursor position **
+	JSR cur_l				; C know to be clear
+	LDY fw_ciop
+	LDA fw_ciop+1			; get current cursor position...
+#ifdef	IOSCREEN
+	AND #%00000111			; 2K only
+	ORA fw_flags			; preserve inverse mode
+	STA IO8lh
+#else
+	_STZX cio_pt			; will keep LSB at 0 for common code
+	STA cio_pt+1			; ...into zp pointer
+#endif
+	LDX #8					; number of scanlines...
+bs_loop:
+#ifdef	IOSCREEN
+		STY IO8ll			; select address
+		_STZA IO8wr			; clear byte
+#else
+		LDA #0				; A should be zero for bitmaps
+		STA (cio_pt), Y		; no STZ indirect post-indexed!
+#endif
+		TYA
+		ADC #16				; next raster, C should keep clear!
+		TAY
+		DEX					; until done
+		BNE bs_loop
+	RTS
+
+cio_up:
+; ** cursor up, will stop at top row **
+; since addresses are 01111yyy ysssxxxx, subtraction takes part of LSB too...
+	LDA fw_ciop+1			; get MSB, top 3 bits of row
+	ASL fw_ciop				; this puts the row lsb in C, plus clears d0
+	ROL						; now A is 1111yyyy!
+	_DEC					; should keep over 11110000!
+	CMP #%11110000			; after this, C should be set!
+	BCC cu_done				; if clear, then do nothing... but restore that rotated LSB! shifting in a 0 is OK
+		LSR					; back to normal, d7 is 0 and d0 goes into C, to be shifted into LSB
+		STA fw_ciop+1		; MSB corrected
+cu_done:
+	ROR fw_ciop				; restore LSB in any case, note d0 was zero, thus will clear C
+	RTS
+
+; ** FF, clear screen AND intialise values! **
+cio_ff:
+; note that firmware must set fw_flags AND hardware register appropriately at boot!
+; a font reset is acceptable, set it again afterwards if needed
+; * things to be initialised... *
+; fw_fnt (new, pointer to relocatable 2KB font file)
+; fw_mask (for inverse/emphasis mode)
+; fw_cbin (binary or multibyte mode)
+
+	_STZA fw_cbin			; standard, character mode
+	_STZA fw_mask			; true video
+	LDY #>font				; standard font address
+	LDA #<font
+	STY fw_fnt				; set firmware pointer (will need that again after FF)
+	STA fw_fnt+1
+; standard CLS, reset cursor and clear screen
+	JSR cio_home			; reset cursor and load appropriate address
+#ifdef	IOSCREEN
+	AND #%00000111			; 2K size
+	ORA fw_flags			; preserve inverse
+	STA IO8lh
+	TAX						; worth keeping here, no more flag insertion
+	AND #%11111000
+	ORA #%00001000			; compute end page (incl. flags)
+	STA cio_pt+1			; not using this anyway
+#else
+	STY cio_pt				; set pointer (LSB=0)
+	STA cio_pt+1
+#endif
+; generic screen clear-to-end routine no longer needed
+	TYA						; A should be zero
+ff_loop:
+#ifdef	IOSCREEN
+		STY IO8ll
+		STA IO8wr			; clear byte at +Y
+#else
+		STA (cio_pt), Y		; clear all remaining bytes
+#endif
+		INY
+		BNE ff_loop			; finish this page
+#ifdef	IOSCREEN
+			INX				; next page (with flags)
+			STX IO8lh		; eeeeeeek
+			CPX cio_pt+1	; is it done?
+		BNE ff_loop
+	CLC						; it ended with C set
+#else
+			INC cio_pt+1
+		BPL sc_clr
+#endif
+	RTS
 
 ; ** SO, set inverse mode **
 cn_so:
@@ -333,6 +452,31 @@ md_dle:
 	STX fw_cbin				; set binary mode and we are done
 	RTS
 
+cio_cur:
+; ** XON, we have no cursor, but show its position for a moment **
+; ONLY for memory-mapped, IOSCREEN cannot read VRAM!
+; at least a full frame (40 ms or ~62kt)
+#ifndef	IOSCREEN
+	LDY fw_ciop				; get current position pointer
+	LDX fw_ciop+1
+	STY cio_pt
+	STX cio_pt+1			; pointer complete
+	JSR xon_inv				; invert current contents (will return to caller the second time!)
+; delay
+	LDY #49					; about 40 ms, or a full frame
+xon_del:
+			INX
+			BNE xon_del		; each iteration is (2+3), for full X is near 1.28kt
+		DEY					; go for next cycle
+		BNE xon_del
+; invert
+xon_inv:
+	LDY #112				; constant offset
+	LDA (cio_pt), Y			; revert to original
+	EOR #$FF
+	STA (cio_pt), Y
+#endif
+	RTS						; *** note generic exit ***
 
 md_col:
 ; ** just set mode to ignore next char, as colour is disabled **
@@ -465,3 +609,5 @@ cio_mbm:
 font:
 #include "../../drivers/fonts/8x8.s"
 .)
+conio_end:
+
