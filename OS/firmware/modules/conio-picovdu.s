@@ -4,7 +4,7 @@
 ; also for any other computer with picoVDU connected via IOSCREEN option
 ; new version based on Durango-X code
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210730-2356
+; last modified 20210731-1757
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
