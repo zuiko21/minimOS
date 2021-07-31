@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; Durango-X firmware console 0.9.6a1
+; Durango-X firmware console 0.9.6a2
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210729-1245
+; last modified 20210731-1743
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
