@@ -1,6 +1,6 @@
 ; variables for PacMan
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210527-1306
+; last modified 20210527-1306 
 
 ; **************************
 ; *** zeropage variables ***
