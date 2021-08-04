@@ -1,6 +1,5 @@
 *This project is under [the MIT License](https://opensource.org/licenses/MIT), see LICENSE for details.*
 
-
 # minimOS
 
 *Please note that this doc is OBSOLETE. Read about [updated details in the new 
