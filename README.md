@@ -5,6 +5,7 @@
 *Please note that this doc is OBSOLETE. Read about [updated details in the new 
 architecture.md](architecture.md) file.*
 
+
 #### Minimalistic, portable, scalable Operating System for everything from embedded devices to (quasi) full-featured desktop computers!
 
 ## Purpose
