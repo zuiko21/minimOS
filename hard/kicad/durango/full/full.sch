@@ -1,5 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
+LIBS:durango-flags-cache
 EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
@@ -2073,8 +2074,6 @@ Wire Wire Line
 	8100 6300 8100 5800
 Wire Wire Line
 	8400 6100 9400 6100
-Text Label 1950 1550 0    50   ~ 0
-~RESET
 Text Label 9000 6100 2    50   ~ 0
 ~RESET
 Text Label 8700 5700 0    50   ~ 0
@@ -2492,6 +2491,8 @@ F1 "power.sch" 50
 $EndSheet
 Text Label 4400 6850 1    50   ~ 0
 ~HIRES
+Text GLabel 3000 6200 2    50   Input ~ 0
+R~W
 Wire Wire Line
 	2550 6200 3000 6200
 Wire Wire Line
@@ -2534,6 +2535,8 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Text GLabel 3000 6200 2    50   Input ~ 0
-R~W
+Text GLabel 1900 1550 3    50   Input ~ 0
+~RESET
+Text Label 5350 4950 0    50   ~ 0
+~RESET
 $EndSCHEMATC

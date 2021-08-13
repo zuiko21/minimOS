@@ -1,5 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
+LIBS:durango-flags-cache
 EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
@@ -174,22 +175,7 @@ Wire Wire Line
 Connection ~ 3500 1650
 Wire Wire Line
 	3500 1650 3950 1650
-$Comp
-L 74xx:74LS126 U21
-U 5 1 63C8D79E
-P 4400 1150
-F 0 "U21" H 4400 1600 50  0000 L CNN
-F 1 "74HC126*" H 4400 1500 50  0000 L CNN
-F 2 "Package_DIP:DIP-14_W7.62mm" H 4400 1150 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS126" H 4400 1150 50  0001 C CNN
-	5    4400 1150
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	3950 650  4400 650 
 Connection ~ 3950 650 
-Wire Wire Line
-	3950 1650 4400 1650
 Connection ~ 3950 1650
 $Comp
 L 74xx:74HC86 U26
@@ -213,39 +199,14 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS32" H 5300 1150 50  0001 C CNN
 	5    5300 1150
 	1    0    0    -1  
 $EndComp
-$Comp
-L 74xx:74HC74 U29
-U 3 1 61BADF7E
-P 5750 1150
-F 0 "U29" H 5750 1600 50  0000 L CNN
-F 1 "74HC74*" H 5750 1500 50  0000 L CNN
-F 2 "Package_DIP:DIP-14_W7.62mm" H 5750 1150 50  0001 C CNN
-F 3 "74xx/74hc_hct74.pdf" H 5750 1150 50  0001 C CNN
-	3    5750 1150
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	4400 650  4850 650 
-Wire Wire Line
-	5750 650  5750 750 
-Connection ~ 4400 650 
 Connection ~ 4850 650 
 Wire Wire Line
 	4850 650  5300 650 
 Connection ~ 5300 650 
-Wire Wire Line
-	5300 650  5750 650 
-Wire Wire Line
-	4400 1650 4850 1650
-Wire Wire Line
-	5750 1650 5750 1550
 Connection ~ 4850 1650
 Wire Wire Line
 	4850 1650 5300 1650
 Connection ~ 5300 1650
-Wire Wire Line
-	5300 1650 5750 1650
-Connection ~ 4400 1650
 $Comp
 L 74xx:74HC86 U127
 U 5 1 61BC27C7
@@ -268,15 +229,9 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS30" H 6650 1150 50  0001 C CNN
 	2    6650 1150
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	5750 650  6200 650 
-Connection ~ 5750 650 
 Connection ~ 6200 650 
 Wire Wire Line
 	6200 650  6650 650 
-Wire Wire Line
-	5750 1650 6200 1650
-Connection ~ 5750 1650
 Connection ~ 6200 1650
 Wire Wire Line
 	6200 1650 6650 1650
@@ -389,4 +344,12 @@ Wire Bus Line
 	800  2050 800  3250
 Wire Bus Line
 	900  2050 900  3050
+Wire Wire Line
+	5300 650  6200 650 
+Wire Wire Line
+	5300 1650 6200 1650
+Wire Wire Line
+	3950 650  4850 650 
+Wire Wire Line
+	3950 1650 4850 1650
 $EndSCHEMATC
