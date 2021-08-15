@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 30 0
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -339,10 +339,6 @@ F 3 "" H 1350 2150 50  0001 C CNN
 $EndComp
 Text GLabel 1350 2050 1    50   Input ~ 0
 SCLK
-Wire Bus Line
-	800  2050 800  3250
-Wire Bus Line
-	900  2050 900  3050
 Wire Wire Line
 	5300 650  6200 650 
 Wire Wire Line
@@ -351,4 +347,8 @@ Wire Wire Line
 	3950 650  4850 650 
 Wire Wire Line
 	3950 1650 4850 1650
+Wire Bus Line
+	800  2050 800  3250
+Wire Bus Line
+	900  2050 900  3050
 $EndSCHEMATC
