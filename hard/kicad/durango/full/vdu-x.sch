@@ -1,7 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-LIBS:durango-flags-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1465,10 +1464,7 @@ F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 9550 4900 50  0001 C CNN
 	-1   0    0    -1  
 $EndComp
 Wire Wire Line
-	9850 4800 9850 5000
-Wire Wire Line
 	9850 5000 10150 5000
-Connection ~ 9850 5000
 Wire Wire Line
 	9250 4600 9250 4900
 Text Label 9000 4600 0    50   ~ 0
@@ -2322,4 +2318,15 @@ Wire Bus Line
 	1150 4350 3700 4350
 Wire Bus Line
 	2650 550  8050 550 
+$Comp
+L power:+5V #PWR?
+U 1 1 612087BE
+P 9850 4800
+F 0 "#PWR?" H 9850 4650 50  0001 C CNN
+F 1 "+5V" H 9865 4973 50  0000 C CNN
+F 2 "" H 9850 4800 50  0001 C CNN
+F 3 "" H 9850 4800 50  0001 C CNN
+	1    9850 4800
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC

@@ -1,7 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-LIBS:durango-flags-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -2493,6 +2492,10 @@ Text Label 4400 6850 1    50   ~ 0
 ~HIRES
 Text GLabel 3000 6200 2    50   Input ~ 0
 R~W
+Text GLabel 1900 1550 3    50   Input ~ 0
+~RESET
+Text Label 5350 4950 0    50   ~ 0
+~RESET
 Wire Wire Line
 	2550 6200 3000 6200
 Wire Wire Line
@@ -2535,8 +2538,4 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Text GLabel 1900 1550 3    50   Input ~ 0
-~RESET
-Text Label 5350 4950 0    50   ~ 0
-~RESET
 $EndSCHEMATC
