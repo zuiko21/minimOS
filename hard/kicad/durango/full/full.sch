@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 30 0
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1715,7 +1715,7 @@ L 74xx:74HCT00 U19
 U 3 1 60E5980E
 P 3800 5900
 F 0 "U19" V 3900 6300 50  0000 R CNN
-F 1 "74HC00*" V 3700 6450 50  0000 R CNN
+F 1 "74HC00" V 3700 6450 50  0000 R CNN
 F 2 "Package_DIP:DIP-14_W7.62mm" H 3800 5900 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74hct00" H 3800 5900 50  0001 C CNN
 	3    3800 5900
@@ -2495,6 +2495,7 @@ Text Label 5350 4950 0    50   ~ 0
 ~RESET
 Wire Wire Line
 	7200 6400 9100 6400
+Connection ~ 9900 4900
 Wire Wire Line
 	2550 6200 3000 6200
 Wire Wire Line
@@ -2514,9 +2515,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	10800 650  10800 1650
-Wire Bus Line
 	7450 950  7450 5050
+Wire Bus Line
+	10800 650  10800 1650
 Wire Bus Line
 	1650 5800 1650 6900
 Wire Bus Line
@@ -2537,5 +2538,4 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Connection ~ 9900 4900
 $EndSCHEMATC
