@@ -136,20 +136,6 @@ Wire Wire Line
 Connection ~ 4450 1400
 Wire Wire Line
 	4450 1400 4450 1500
-Wire Wire Line
-	5450 1200 5450 650 
-Wire Wire Line
-	5450 1300 5550 1300
-Wire Wire Line
-	5550 1300 5550 650 
-Wire Wire Line
-	5450 1400 5650 1400
-Wire Wire Line
-	5650 1400 5650 650 
-Wire Wire Line
-	5450 1500 5750 1500
-Wire Wire Line
-	5750 1500 5750 650 
 Connection ~ 3500 2500
 Wire Wire Line
 	3500 2500 4950 2500
@@ -351,28 +337,26 @@ Wire Wire Line
 Wire Wire Line
 	1200 900  1200 1700
 Text Label 7950 1050 1    50   ~ 0
-VA19
-Text Label 7850 1050 1    50   ~ 0
 VA18
-Text Label 7750 1050 1    50   ~ 0
+Text Label 7850 1050 1    50   ~ 0
 VA17
-Text Label 7650 1050 1    50   ~ 0
+Text Label 7750 1050 1    50   ~ 0
 VA16
-Text Label 7550 1050 1    50   ~ 0
+Text Label 7650 1050 1    50   ~ 0
 VA15
-Text Label 7450 1050 1    50   ~ 0
+Text Label 7550 1050 1    50   ~ 0
 VA14
-Text Label 7350 1050 1    50   ~ 0
+Text Label 7450 1050 1    50   ~ 0
 VA13
-Text Label 7250 1050 1    50   ~ 0
+Text Label 7350 1050 1    50   ~ 0
 VA12
-Text Label 5750 1050 1    50   ~ 0
+Text Label 7250 1050 1    50   ~ 0
 VA11
-Text Label 5650 1050 1    50   ~ 0
+Text Label 5750 1100 1    50   ~ 0
 VA10
-Text Label 5550 1050 1    50   ~ 0
+Text Label 5650 1050 1    50   ~ 0
 VA9
-Text Label 5450 1050 1    50   ~ 0
+Text Label 5550 1050 1    50   ~ 0
 VA8
 Text Label 4300 1050 1    50   ~ 0
 VA7
@@ -413,8 +397,6 @@ Entry Wire Line
 Entry Wire Line
 	5550 650  5650 550 
 Entry Wire Line
-	5450 650  5550 550 
-Entry Wire Line
 	4300 650  4400 550 
 Entry Wire Line
 	4200 650  4300 550 
@@ -448,7 +430,7 @@ F 3 "" H 6750 4000 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	4200 3000 3950 3000
+	4100 3000 3950 3000
 Wire Wire Line
 	5650 3100 3950 3100
 Wire Wire Line
@@ -543,7 +525,7 @@ Text Label 8050 2200 0    50   ~ 0
 ~DEH
 Text Label 8050 3500 2    50   ~ 0
 ~DEV
-Connection ~ 5750 1500
+Connection ~ 5750 1400
 Wire Wire Line
 	8050 3400 8050 2650
 $Comp
@@ -566,23 +548,11 @@ Text Label 7600 4250 0    50   ~ 0
 Wire Wire Line
 	5750 3200 3950 3200
 Wire Wire Line
-	5750 1500 5750 2150
-Wire Wire Line
-	5650 3100 5650 1400
-Connection ~ 5650 1400
-Connection ~ 4200 1400
-Wire Wire Line
-	4200 1400 4200 3000
-Wire Wire Line
 	5750 3400 5750 3200
 Connection ~ 5750 3200
 Wire Wire Line
 	5650 3400 5650 3100
 Connection ~ 5650 3100
-Wire Wire Line
-	5550 3400 5550 1300
-Connection ~ 5550 1300
-Connection ~ 5450 1200
 Wire Wire Line
 	4650 4400 4750 4400
 Connection ~ 4950 900 
@@ -769,8 +739,6 @@ Text Label 10450 4850 3    50   ~ 0
 ~CDE
 Text Label 10650 4800 3    50   ~ 0
 ~HRDE
-Wire Wire Line
-	5450 1200 5450 3400
 Text GLabel 1150 4350 0    50   Input ~ 0
 D[0..7]
 Entry Wire Line
@@ -2028,7 +1996,7 @@ Wire Wire Line
 Wire Wire Line
 	5950 2900 5950 2100
 Text Label 5950 2100 0    50   ~ 0
-~VA2
+~VA2*
 Text Label 6500 7050 0    50   ~ 0
 ~CDE
 $Comp
@@ -2205,7 +2173,7 @@ Wire Wire Line
 Wire Wire Line
 	9850 2000 5900 2000
 Text Label 5900 2000 0    50   ~ 0
-~VA3
+~VA3*
 Wire Wire Line
 	8650 1950 10350 1950
 Wire Wire Line
@@ -2321,6 +2289,38 @@ F 3 "" H 9850 4800 50  0001 C CNN
 	1    9850 4800
 	1    0    0    -1  
 $EndComp
+Wire Wire Line
+	5450 1400 5650 1400
+Wire Wire Line
+	5750 1400 5750 650 
+Wire Wire Line
+	5650 650  5650 1300
+Wire Wire Line
+	5750 1400 5750 2150
+Wire Wire Line
+	5550 650  5550 1200
+Wire Wire Line
+	5650 1400 5750 1400
+Wire Wire Line
+	5450 1300 5650 1300
+Connection ~ 5650 1300
+Wire Wire Line
+	5450 1200 5550 1200
+Connection ~ 5550 1200
+Wire Wire Line
+	5550 1200 5550 3400
+Wire Wire Line
+	5650 1300 5650 3100
+NoConn ~ 5450 1500
+Wire Wire Line
+	4300 1500 4300 2650
+Wire Wire Line
+	4300 2650 5450 2650
+Wire Wire Line
+	5450 2650 5450 3400
+Connection ~ 4300 1500
+Wire Wire Line
+	4100 1300 4100 3000
 Wire Bus Line
 	1000 7700 1400 7700
 Wire Bus Line
@@ -2329,4 +2329,5 @@ Wire Bus Line
 	1150 4350 3700 4350
 Wire Bus Line
 	2650 550  8050 550 
+Connection ~ 4100 1300
 $EndSCHEMATC

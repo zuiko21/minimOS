@@ -730,21 +730,21 @@ Wire Wire Line
 Wire Wire Line
 	7600 4100 7800 4100
 Text Label 7600 1050 0    50   ~ 0
-VA7
+VA7*
 Text Label 7600 1350 0    50   ~ 0
-VA5
+VA5*
 Text Label 7600 1650 0    50   ~ 0
-VA6
+VA6*
 Text Label 7600 1950 0    50   ~ 0
-VA4
+VA4*
 Text Label 7600 3200 0    50   ~ 0
-VA14
+VA14*
 Text Label 7600 3500 0    50   ~ 0
-VA9
+VA9*
 Text Label 7600 3800 0    50   ~ 0
-VA13
+VA13*
 Text Label 7600 4100 0    50   ~ 0
-VA8
+VA8*
 Entry Wire Line
 	5850 950  5950 1050
 Entry Wire Line
@@ -766,15 +766,15 @@ Entry Wire Line
 Wire Wire Line
 	5950 3500 6150 3500
 Text Label 5950 1050 0    50   ~ 0
-VA18
+VA18*
 Text Label 5950 1350 0    50   ~ 0
-VA16
+VA16*
 Text Label 5950 1650 0    50   ~ 0
-VA17
+VA17*
 Text Label 5950 1950 0    50   ~ 0
-VA15
+VA15*
 Text Label 5950 3500 0    50   ~ 0
-VA19
+VA19*
 Wire Wire Line
 	6150 4100 6100 4100
 Wire Wire Line
@@ -1031,13 +1031,13 @@ Wire Wire Line
 Wire Wire Line
 	4300 4350 4500 4350
 Text Label 4300 3450 0    50   ~ 0
-VA14
+VA14*
 Text Label 4300 3750 0    50   ~ 0
-VA12
+VA12*
 Text Label 4300 4050 0    50   ~ 0
-VA13
+VA13*
 Text Label 4300 4350 0    50   ~ 0
-VA9
+VA9*
 $Comp
 L 74xx:74LS257 U204
 U 1 1 611A3D57
