@@ -217,17 +217,6 @@ F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 6200 1150 50  0001 C CNN
 	5    6200 1150
 	1    0    0    -1  
 $EndComp
-$Comp
-L 74xx:74LS30 U231
-U 2 1 61BC4EA7
-P 6650 1150
-F 0 "U231" H 6650 1600 50  0000 L CNN
-F 1 "74HC30" H 6650 1500 50  0000 L CNN
-F 2 "Package_DIP:DIP-14_W7.62mm" H 6650 1150 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS30" H 6650 1150 50  0001 C CNN
-	2    6650 1150
-	1    0    0    -1  
-$EndComp
 Connection ~ 6200 650 
 Wire Wire Line
 	6200 650  6650 650 
@@ -351,4 +340,15 @@ Wire Bus Line
 	800  2050 800  3250
 Wire Bus Line
 	900  2050 900  3050
+$Comp
+L 74xx:74LS20 U231
+U 3 1 6259510E
+P 6650 1150
+F 0 "U231" H 6700 1600 50  0000 L CNN
+F 1 "74HC20" H 6700 1500 50  0000 L CNN
+F 2 "" H 6650 1150 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS20" H 6650 1150 50  0001 C CNN
+	3    6650 1150
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
