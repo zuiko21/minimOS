@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 30 0
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -2365,6 +2365,17 @@ Wire Wire Line
 	4500 3000 4500 5050
 Wire Wire Line
 	4500 5050 4700 5050
+$Comp
+L power:+5V #PWR0163
+U 1 1 61A0366E
+P 4700 4850
+F 0 "#PWR0163" H 4700 4700 50  0001 C CNN
+F 1 "+5V" H 4715 5023 50  0000 C CNN
+F 2 "" H 4700 4850 50  0001 C CNN
+F 3 "" H 4700 4850 50  0001 C CNN
+	1    4700 4850
+	1    0    0    -1  
+$EndComp
 Wire Bus Line
 	1000 7700 1400 7700
 Wire Bus Line
@@ -2373,15 +2384,4 @@ Wire Bus Line
 	700  4350 3700 4350
 Wire Bus Line
 	2650 550  8050 550 
-$Comp
-L power:+5V #PWR?
-U 1 1 61A0366E
-P 4700 4850
-F 0 "#PWR?" H 4700 4700 50  0001 C CNN
-F 1 "+5V" H 4715 5023 50  0000 C CNN
-F 2 "" H 4700 4850 50  0001 C CNN
-F 3 "" H 4700 4850 50  0001 C CNN
-	1    4700 4850
-	1    0    0    -1  
-$EndComp
 $EndSCHEMATC
