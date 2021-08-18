@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -336,19 +336,19 @@ Wire Wire Line
 	3950 650  4850 650 
 Wire Wire Line
 	3950 1650 4850 1650
-Wire Bus Line
-	800  2050 800  3250
-Wire Bus Line
-	900  2050 900  3050
 $Comp
-L 74xx:74LS20 U231
+L 74xx:74LS20 U31
 U 3 1 6259510E
 P 6650 1150
-F 0 "U231" H 6700 1600 50  0000 L CNN
+F 0 "U31" H 6700 1600 50  0000 L CNN
 F 1 "74HC20" H 6700 1500 50  0000 L CNN
 F 2 "" H 6650 1150 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS20" H 6650 1150 50  0001 C CNN
 	3    6650 1150
 	1    0    0    -1  
 $EndComp
+Wire Bus Line
+	800  2050 800  3250
+Wire Bus Line
+	900  2050 900  3050
 $EndSCHEMATC

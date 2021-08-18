@@ -730,21 +730,21 @@ Wire Wire Line
 Wire Wire Line
 	7600 4100 7800 4100
 Text Label 7600 1050 0    50   ~ 0
-VA7
-Text Label 7600 1350 0    50   ~ 0
-VA5
-Text Label 7600 1650 0    50   ~ 0
-VA6
-Text Label 7600 1950 0    50   ~ 0
-VA4
-Text Label 7600 3200 0    50   ~ 0
-VA14
-Text Label 7600 3500 0    50   ~ 0
-VA9
-Text Label 7600 3800 0    50   ~ 0
-VA13
-Text Label 7600 4100 0    50   ~ 0
 VA8
+Text Label 7600 1350 0    50   ~ 0
+VA6
+Text Label 7600 1650 0    50   ~ 0
+VA7
+Text Label 7600 1950 0    50   ~ 0
+VA5
+Text Label 7600 3200 0    50   ~ 0
+VA13
+Text Label 7600 3500 0    50   ~ 0
+VA10
+Text Label 7600 3800 0    50   ~ 0
+VA12
+Text Label 7600 4100 0    50   ~ 0
+VA9
 Entry Wire Line
 	5850 950  5950 1050
 Entry Wire Line
@@ -766,15 +766,15 @@ Entry Wire Line
 Wire Wire Line
 	5950 3500 6150 3500
 Text Label 5950 1050 0    50   ~ 0
-VA18
-Text Label 5950 1350 0    50   ~ 0
-VA16
-Text Label 5950 1650 0    50   ~ 0
 VA17
-Text Label 5950 1950 0    50   ~ 0
+Text Label 5950 1350 0    50   ~ 0
 VA15
+Text Label 5950 1650 0    50   ~ 0
+VA16
+Text Label 5950 1950 0    50   ~ 0
+VA14
 Text Label 5950 3500 0    50   ~ 0
-VA19
+VA18
 Wire Wire Line
 	6150 4100 6100 4100
 Wire Wire Line
@@ -975,7 +975,7 @@ F0 "VDU-X" 50
 F1 "vdu-x.sch" 50
 $EndSheet
 Text GLabel 5850 7200 2    50   Input ~ 0
-VA[0..19]
+VA[0..18]
 Text GLabel 2800 650  0    50   Input ~ 0
 D[0..7]
 Connection ~ 5850 5100
@@ -1031,13 +1031,13 @@ Wire Wire Line
 Wire Wire Line
 	4300 4350 4500 4350
 Text Label 4300 3450 0    50   ~ 0
-VA14
-Text Label 4300 3750 0    50   ~ 0
-VA12
-Text Label 4300 4050 0    50   ~ 0
 VA13
+Text Label 4300 3750 0    50   ~ 0
+VA11
+Text Label 4300 4050 0    50   ~ 0
+VA12
 Text Label 4300 4350 0    50   ~ 0
-VA9
+VA10
 $Comp
 L 74xx:74LS257 U204
 U 1 1 611A3D57
@@ -1090,13 +1090,13 @@ Wire Wire Line
 Wire Wire Line
 	4300 6450 4500 6450
 Text Label 4300 5550 0    50   ~ 0
-VA8
+VA9
 Text Label 4300 5850 0    50   ~ 0
-VA6
-Text Label 4300 6150 0    50   ~ 0
 VA7
+Text Label 4300 6150 0    50   ~ 0
+VA8
 Text Label 4300 6450 0    50   ~ 0
-VA5
+VA6
 Wire Wire Line
 	4450 6750 4500 6750
 Entry Wire Line
@@ -1715,7 +1715,7 @@ L 74xx:74HCT00 U19
 U 3 1 60E5980E
 P 3800 5900
 F 0 "U19" V 3900 6300 50  0000 R CNN
-F 1 "74HC00*" V 3700 6450 50  0000 R CNN
+F 1 "74HC00" V 3700 6450 50  0000 R CNN
 F 2 "Package_DIP:DIP-14_W7.62mm" H 3800 5900 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74hct00" H 3800 5900 50  0001 C CNN
 	3    3800 5900
@@ -2495,6 +2495,7 @@ Text Label 5350 4950 0    50   ~ 0
 ~RESET
 Wire Wire Line
 	7200 6400 9100 6400
+Connection ~ 9900 4900
 Wire Wire Line
 	2550 6200 3000 6200
 Wire Wire Line
@@ -2514,9 +2515,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	10800 650  10800 1650
-Wire Bus Line
 	7450 950  7450 5050
+Wire Bus Line
+	10800 650  10800 1650
 Wire Bus Line
 	1650 5800 1650 6900
 Wire Bus Line
@@ -2537,5 +2538,4 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Connection ~ 9900 4900
 $EndSCHEMATC
