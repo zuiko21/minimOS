@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -953,7 +953,7 @@ F0 "VDU-X" 50
 F1 "vdu-x.sch" 50
 $EndSheet
 Text GLabel 5850 7200 2    50   Input ~ 0
-VA[0..18]
+VA[2..18]
 Text GLabel 2800 650  0    50   Input ~ 0
 D[0..7]
 Connection ~ 5850 5100
@@ -1263,24 +1263,6 @@ Wire Wire Line
 	4450 5150 2900 5150
 Wire Wire Line
 	2900 2050 3000 2050
-$Comp
-L 4xxx:4020 U17
-U 1 1 60AC5D57
-P 1900 3750
-F 0 "U17" H 2050 4400 50  0000 C CNN
-F 1 "74HCT4020" H 1650 4400 50  0000 C CNN
-F 2 "Package_DIP:DIP-16_W7.62mm" H 1900 3750 50  0001 C CNN
-F 3 "http://www.intersil.com/content/dam/Intersil/documents/cd40/cd4020bms-24bms-40bms.pdf" H 1900 3750 50  0001 C CNN
-	1    1900 3750
-	-1   0    0    -1  
-$EndComp
-Wire Wire Line
-	2400 3250 2900 3250
-Wire Wire Line
-	2900 2050 2900 3250
-Connection ~ 2900 3250
-Wire Wire Line
-	2900 3250 2900 4800
 NoConn ~ 1400 3250
 NoConn ~ 1400 3350
 NoConn ~ 1400 3450
@@ -1290,27 +1272,26 @@ NoConn ~ 1400 3750
 NoConn ~ 1400 3850
 NoConn ~ 1400 3950
 NoConn ~ 1400 4050
-NoConn ~ 1400 4350
 $Comp
 L power:GND #PWR0125
 U 1 1 60C0180B
-P 1900 4650
-F 0 "#PWR0125" H 1900 4400 50  0001 C CNN
-F 1 "GND" H 1905 4477 50  0000 C CNN
-F 2 "" H 1900 4650 50  0001 C CNN
-F 3 "" H 1900 4650 50  0001 C CNN
-	1    1900 4650
+P 1900 4550
+F 0 "#PWR0125" H 1900 4300 50  0001 C CNN
+F 1 "GND" H 1905 4377 50  0000 C CNN
+F 2 "" H 1900 4550 50  0001 C CNN
+F 3 "" H 1900 4550 50  0001 C CNN
+	1    1900 4550
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:+5V #PWR0126
 U 1 1 60C01E93
-P 1900 2950
-F 0 "#PWR0126" H 1900 2800 50  0001 C CNN
-F 1 "+5V" H 1800 3050 50  0000 C CNN
-F 2 "" H 1900 2950 50  0001 C CNN
-F 3 "" H 1900 2950 50  0001 C CNN
-	1    1900 2950
+P 1900 2850
+F 0 "#PWR0126" H 1900 2700 50  0001 C CNN
+F 1 "+5V" H 1800 2950 50  0000 C CNN
+F 2 "" H 1900 2850 50  0001 C CNN
+F 3 "" H 1900 2850 50  0001 C CNN
+	1    1900 2850
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -2069,8 +2050,6 @@ PHI2
 Text Label 2950 4500 0    50   ~ 0
 PHI1
 Wire Wire Line
-	4100 2850 4100 4500
-Wire Wire Line
 	9150 2650 9150 5250
 Wire Wire Line
 	9400 2750 9350 2750
@@ -2537,6 +2516,33 @@ Wire Wire Line
 	1850 7500 1850 7700
 Wire Wire Line
 	3100 7500 3500 7500
+Connection ~ 3500 7500
+Wire Wire Line
+	3500 7500 3500 7650
+$Comp
+L 4xxx:4040 U17
+U 1 1 6125842B
+P 1900 3650
+F 0 "U17" H 2300 4400 50  0000 C CNN
+F 1 "74HCT4040" H 2300 4300 50  0000 C CNN
+F 2 "" H 1900 3650 50  0001 C CNN
+F 3 "http://www.intersil.com/content/dam/Intersil/documents/cd40/cd4020bms-24bms-40bms.pdf" H 1900 3650 50  0001 C CNN
+	1    1900 3650
+	-1   0    0    -1  
+$EndComp
+NoConn ~ 1400 3150
+Wire Wire Line
+	2900 2050 2900 4800
+Entry Wire Line
+	4100 3750 4200 3850
+Wire Wire Line
+	4100 3750 2450 3750
+Text Label 3800 3750 0    50   ~ 0
+VA4
+Wire Wire Line
+	2450 3150 2450 3750
+Wire Wire Line
+	2450 3150 2400 3150
 Wire Wire Line
 	10600 1050 10850 1050
 Wire Bus Line
@@ -2554,8 +2560,6 @@ Wire Bus Line
 Wire Bus Line
 	850  7600 3100 7600
 Wire Bus Line
-	4200 3350 4200 7200
-Wire Bus Line
 	7500 950  7500 5100
 Wire Bus Line
 	7550 700  7550 5600
@@ -2564,6 +2568,8 @@ Wire Bus Line
 Wire Bus Line
 	5500 650  5500 1650
 Wire Bus Line
+	4200 3350 4200 7200
+Wire Bus Line
 	750  5550 2800 5550
 Wire Bus Line
 	5900 700  5900 6100
@@ -2571,7 +2577,6 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 7300
-Connection ~ 3500 7500
 Wire Wire Line
-	3500 7500 3500 7650
+	4100 2850 4100 4500
 $EndSCHEMATC
