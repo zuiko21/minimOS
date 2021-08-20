@@ -335,10 +335,10 @@ Wire Wire Line
 Wire Wire Line
 	3950 1650 4850 1650
 $Comp
-L 74xx:74LS20 U31
+L 74xx:74LS20 U231
 U 3 1 6259510E
 P 6650 1150
-F 0 "U31" H 6700 1600 50  0000 L CNN
+F 0 "U231" H 6700 1600 50  0000 L CNN
 F 1 "74HC20" H 6700 1500 50  0000 L CNN
 F 2 "" H 6650 1150 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS20" H 6650 1150 50  0001 C CNN
@@ -472,16 +472,16 @@ Wire Wire Line
 	900  3450 1350 3450
 Wire Wire Line
 	900  3550 1350 3550
-Wire Bus Line
-	2300 4350 2300 5150
-Wire Bus Line
-	800  2050 800  4450
-Wire Bus Line
-	900  2050 900  3050
 Text Label 1200 3450 0    50   ~ 0
 A13
 Text Label 1200 3550 0    50   ~ 0
 A12
 Text Label 1250 2350 0    50   ~ 0
 R~W
+Wire Bus Line
+	2300 4350 2300 5150
+Wire Bus Line
+	800  2050 800  4450
+Wire Bus Line
+	900  2050 900  3050
 $EndSCHEMATC
