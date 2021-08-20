@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 30 0
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -228,14 +228,14 @@ D[0..7]
 Text GLabel 800  2050 1    50   Input ~ 0
 A[0..15]
 $Comp
-L Connector_Generic:Conn_01x14 J8
+L Connector_Generic:Conn_01x17 J8
 U 1 1 60AD9E5D
-P 1550 2650
-F 0 "J8" H 1630 2642 50  0000 L CNN
-F 1 "DEBUG" H 1630 2551 50  0000 L CNN
-F 2 "Connector_PinSocket_2.54mm:PinSocket_1x14_P2.54mm_Vertical" H 1550 2650 50  0001 C CNN
-F 3 "~" H 1550 2650 50  0001 C CNN
-	1    1550 2650
+P 1550 2850
+F 0 "J8" H 1630 2842 50  0000 L CNN
+F 1 "DEBUG" H 1630 2751 50  0000 L CNN
+F 2 "Connector_PinSocket_2.54mm:PinSocket_1x14_P2.54mm_Vertical" H 1550 2850 50  0001 C CNN
+F 3 "~" H 1550 2850 50  0001 C CNN
+	1    1550 2850
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
@@ -305,12 +305,12 @@ Wire Wire Line
 $Comp
 L power:GND #PWR0150
 U 1 1 60AD9E86
-P 1350 2250
-F 0 "#PWR0150" H 1350 2000 50  0001 C CNN
-F 1 "GND" V 1355 2122 50  0000 R CNN
-F 2 "" H 1350 2250 50  0001 C CNN
-F 3 "" H 1350 2250 50  0001 C CNN
-	1    1350 2250
+P 1350 3650
+F 0 "#PWR0150" H 1350 3400 50  0001 C CNN
+F 1 "GND" V 1355 3522 50  0000 R CNN
+F 2 "" H 1350 3650 50  0001 C CNN
+F 3 "" H 1350 3650 50  0001 C CNN
+	1    1350 3650
 	0    1    1    0   
 $EndComp
 $Comp
@@ -348,123 +348,140 @@ $EndComp
 $Comp
 L 74xx:74LS365 U34
 U 1 1 61BBA3E6
-P 1500 4350
-F 0 "U34" H 1700 5000 50  0000 C CNN
-F 1 "74HC365" H 1700 4900 50  0000 C CNN
-F 2 "" H 1500 4350 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS365" H 1500 4350 50  0001 C CNN
-	1    1500 4350
+P 1500 4650
+F 0 "U34" H 1700 5300 50  0000 C CNN
+F 1 "74HC365" H 1700 5200 50  0000 C CNN
+F 2 "" H 1500 4650 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS365" H 1500 4650 50  0001 C CNN
+	1    1500 4650
 	1    0    0    -1  
 $EndComp
 Entry Wire Line
-	800  3850 900  3950
-Entry Wire Line
-	800  3950 900  4050
-Entry Wire Line
-	800  4050 900  4150
-Entry Wire Line
 	800  4150 900  4250
-Wire Wire Line
-	900  3950 1000 3950
-Wire Wire Line
-	900  4050 1000 4050
-Wire Wire Line
-	900  4150 1000 4150
+Entry Wire Line
+	800  4250 900  4350
+Entry Wire Line
+	800  4350 900  4450
+Entry Wire Line
+	800  4450 900  4550
 Wire Wire Line
 	900  4250 1000 4250
-Text Label 900  3950 0    50   ~ 0
-A0
-Text Label 900  4050 0    50   ~ 0
-A1
-Text Label 900  4150 0    50   ~ 0
-A2
+Wire Wire Line
+	900  4350 1000 4350
+Wire Wire Line
+	900  4450 1000 4450
+Wire Wire Line
+	900  4550 1000 4550
 Text Label 900  4250 0    50   ~ 0
+A0
+Text Label 900  4350 0    50   ~ 0
+A1
+Text Label 900  4450 0    50   ~ 0
+A2
+Text Label 900  4550 0    50   ~ 0
 A3
-Text Label 2000 3950 0    50   ~ 0
-BA0
-Text Label 2000 4050 0    50   ~ 0
-BA1
-Text Label 2000 4150 0    50   ~ 0
-BA2
 Text Label 2000 4250 0    50   ~ 0
+BA0
+Text Label 2000 4350 0    50   ~ 0
+BA1
+Text Label 2000 4450 0    50   ~ 0
+BA2
+Text Label 2000 4550 0    50   ~ 0
 BA3
-Text Label 2150 4350 3    50   ~ 0
+Text Label 2150 4650 3    50   ~ 0
 BA4
 Wire Wire Line
 	1000 2050 1000 2250
 Wire Wire Line
-	1000 4450 1000 4650
+	1000 4750 1000 4950
 Wire Wire Line
-	1000 5050 1500 5050
-Connection ~ 1000 4650
+	1000 5350 1500 5350
+Connection ~ 1000 4950
 Wire Wire Line
-	1000 4650 1000 4750
-Connection ~ 1000 4750
+	1000 4950 1000 5050
+Connection ~ 1000 5050
 Wire Wire Line
-	1000 4750 1000 5050
+	1000 5050 1000 5350
 $Comp
 L power:GND #PWR0164
 U 1 1 61BDD435
-P 1500 5050
-F 0 "#PWR0164" H 1500 4800 50  0001 C CNN
-F 1 "GND" H 1505 4877 50  0000 C CNN
-F 2 "" H 1500 5050 50  0001 C CNN
-F 3 "" H 1500 5050 50  0001 C CNN
-	1    1500 5050
+P 1500 5350
+F 0 "#PWR0164" H 1500 5100 50  0001 C CNN
+F 1 "GND" H 1505 5177 50  0000 C CNN
+F 2 "" H 1500 5350 50  0001 C CNN
+F 3 "" H 1500 5350 50  0001 C CNN
+	1    1500 5350
 	1    0    0    -1  
 $EndComp
-Connection ~ 1500 5050
+Connection ~ 1500 5350
 $Comp
 L power:+5V #PWR0165
 U 1 1 61BDD606
-P 1500 3650
-F 0 "#PWR0165" H 1500 3500 50  0001 C CNN
-F 1 "+5V" H 1515 3823 50  0000 C CNN
-F 2 "" H 1500 3650 50  0001 C CNN
-F 3 "" H 1500 3650 50  0001 C CNN
-	1    1500 3650
+P 1500 3950
+F 0 "#PWR0165" H 1500 3800 50  0001 C CNN
+F 1 "+5V" H 1515 4123 50  0000 C CNN
+F 2 "" H 1500 3950 50  0001 C CNN
+F 3 "" H 1500 3950 50  0001 C CNN
+	1    1500 3950
 	1    0    0    -1  
 $EndComp
-Text Label 900  4350 0    50   ~ 0
+Text Label 900  4650 0    50   ~ 0
 R~W
-Text Label 2000 4350 0    50   ~ 0
+Text Label 2000 4650 0    50   ~ 0
 ~BWR
-NoConn ~ 2000 4450
-Wire Wire Line
-	2200 3950 2000 3950
-Wire Wire Line
-	2200 4050 2000 4050
-Wire Wire Line
-	2200 4150 2000 4150
+NoConn ~ 2000 4750
 Wire Wire Line
 	2200 4250 2000 4250
 Wire Wire Line
 	2200 4350 2000 4350
-Entry Wire Line
-	2200 3950 2300 4050
-Entry Wire Line
-	2200 4050 2300 4150
-Entry Wire Line
-	2200 4150 2300 4250
+Wire Wire Line
+	2200 4450 2000 4450
+Wire Wire Line
+	2200 4550 2000 4550
+Wire Wire Line
+	2200 4650 2000 4650
 Entry Wire Line
 	2200 4250 2300 4350
 Entry Wire Line
 	2200 4350 2300 4450
-Text GLabel 2300 4850 3    50   Input ~ 0
+Entry Wire Line
+	2200 4450 2300 4550
+Entry Wire Line
+	2200 4550 2300 4650
+Entry Wire Line
+	2200 4650 2300 4750
+Text GLabel 2300 5150 3    50   Input ~ 0
 BA[0..4]
 Wire Wire Line
 	1000 2250 750  2250
 Wire Wire Line
-	750  2250 750  4350
+	750  2250 750  4650
 Wire Wire Line
-	750  4350 1000 4350
+	750  4650 1000 4650
 Connection ~ 1000 2250
 Wire Wire Line
 	1000 2250 1000 2350
+NoConn ~ 1350 2250
+Text Notes 1600 2300 0    50   ~ 0
+KEY
+Entry Wire Line
+	800  3350 900  3450
+Entry Wire Line
+	800  3450 900  3550
+Wire Wire Line
+	900  3450 1350 3450
+Wire Wire Line
+	900  3550 1350 3550
 Wire Bus Line
-	2300 4050 2300 4850
+	2300 4350 2300 5150
 Wire Bus Line
-	800  2050 800  4150
+	800  2050 800  4450
 Wire Bus Line
 	900  2050 900  3050
+Text Label 1200 3450 0    50   ~ 0
+A13
+Text Label 1200 3550 0    50   ~ 0
+A12
+Text Label 1250 2350 0    50   ~ 0
+R~W
 $EndSCHEMATC

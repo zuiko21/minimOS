@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1685,8 +1685,6 @@ Wire Wire Line
 Wire Wire Line
 	2500 3100 3600 3100
 Wire Wire Line
-	2500 2800 2550 2800
-Wire Wire Line
 	1800 2950 1900 2950
 Text Label 1800 2950 0    50   ~ 0
 ~PE
@@ -1697,7 +1695,7 @@ Wire Wire Line
 Wire Wire Line
 	2650 6550 3450 6550
 Text Label 2700 6550 0    50   ~ 0
-VA4
+VA3
 Wire Wire Line
 	6650 6400 6650 6300
 Connection ~ 6650 6400
@@ -1716,7 +1714,7 @@ Connection ~ 6650 5800
 Connection ~ 6650 5700
 Wire Wire Line
 	8650 1950 8650 2550
-Text Label 2950 4150 2    50   ~ 0
+Text Label 2950 4200 2    50   ~ 0
 ~VA3
 Wire Wire Line
 	2950 4250 4350 4250
@@ -1763,14 +1761,14 @@ F 3 "" H 3850 3600 50  0001 C CNN
 	1    3850 3600
 	0    1    1    0   
 $EndComp
-Text GLabel 2950 4100 2    50   Input ~ 0
+Text GLabel 2950 4150 2    50   Input ~ 0
 SCLK
 Wire Wire Line
 	4300 4200 4300 2850
 Wire Wire Line
 	5900 2850 5900 2000
 Text Label 4000 4200 0    50   ~ 0
-~VA4
+~VA4?
 Wire Wire Line
 	5850 1650 5850 2750
 Wire Wire Line
@@ -2212,8 +2210,6 @@ Wire Wire Line
 	1500 2550 2950 2550
 Wire Wire Line
 	2550 1500 2850 1500
-Text Label 2900 4600 0    50   ~ 0
-~VA4
 $Comp
 L 74xx:74HCT02 U16
 U 2 1 608EFBD8
@@ -2226,27 +2222,22 @@ F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 3950 3900 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 Wire Wire Line
-	2900 4550 2900 4200
+	2900 4550 2900 4250
 Wire Wire Line
 	4000 1200 4050 1200
 Wire Wire Line
-	4050 1200 4050 3350
+	4050 1200 4050 3200
 Connection ~ 4000 1200
-Connection ~ 3950 4200
 Wire Wire Line
 	3950 4200 4300 4200
-Wire Wire Line
-	2900 4200 3950 4200
 Wire Wire Line
 	2850 1500 2850 2900
 Connection ~ 2850 1500
 Wire Wire Line
-	2650 6550 2650 3350
+	2650 3200 4050 3200
+Connection ~ 4050 3200
 Wire Wire Line
-	2650 3350 4050 3350
-Connection ~ 4050 3350
-Wire Wire Line
-	4050 3350 4050 3600
+	4050 3200 4050 3600
 Wire Wire Line
 	1900 4200 2450 4200
 $Comp
@@ -2261,24 +2252,18 @@ F 3 "" H 2350 3600 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 Text Label 1900 4200 0    50   ~ 0
-~VA2
+~VA1
 Wire Wire Line
 	2750 1400 2750 2800
 Connection ~ 2750 1400
-Wire Wire Line
-	2550 3600 2550 2800
-Connection ~ 2550 2800
-Wire Wire Line
-	2550 2800 2750 2800
 Connection ~ 2850 2900
 Wire Wire Line
 	2850 2900 2850 3500
 Wire Wire Line
-	2650 3350 2650 3000
+	2650 3200 2650 3000
 Wire Wire Line
 	2650 3000 2500 3000
-Connection ~ 2650 3350
-Text Label 3250 3350 0    50   ~ 0
+Text Label 3300 3200 0    50   ~ 0
 VA4
 Wire Wire Line
 	3600 3000 3600 3100
@@ -2316,7 +2301,6 @@ VA9
 Text Label 2850 3050 1    50   ~ 0
 VA3
 NoConn ~ 2550 1200
-NoConn ~ 2550 1300
 $Comp
 L Device:R R124
 U 1 1 61CA1F20
@@ -2402,14 +2386,6 @@ Text Label 5950 4900 3    50   ~ 0
 ~HVEN
 Text Label 9800 5000 0    50   ~ 0
 CSYNC
-Wire Bus Line
-	8800 550  10750 550 
-Wire Bus Line
-	1000 7700 1800 7700
-Wire Bus Line
-	800  4350 3700 4350
-Wire Bus Line
-	2850 550  8050 550 
 Text Label 10550 1800 1    50   ~ 0
 M5
 Text Label 10650 1800 1    50   ~ 0
@@ -2418,4 +2394,30 @@ Text Label 10750 1800 1    50   ~ 0
 M3
 Text Label 10850 1800 1    50   ~ 0
 M2
+Wire Wire Line
+	2500 2800 2750 2800
+Wire Wire Line
+	2550 1300 2600 1300
+Wire Wire Line
+	2600 1300 2600 3600
+Wire Wire Line
+	2600 3600 2550 3600
+Text Label 2600 1300 0    50   ~ 0
+VA1
+Wire Wire Line
+	2850 3500 2650 3500
+Wire Wire Line
+	2650 3500 2650 6550
+Connection ~ 2850 3500
+Wire Wire Line
+	2900 4250 2950 4250
+Connection ~ 2950 4250
+Wire Bus Line
+	8800 550  10750 550 
+Wire Bus Line
+	1000 7700 1800 7700
+Wire Bus Line
+	800  4350 3700 4350
+Wire Bus Line
+	2850 550  8050 550 
 $EndSCHEMATC
