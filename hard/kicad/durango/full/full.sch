@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1462,12 +1462,12 @@ $Comp
 L 74xx:74LS132 U18
 U 1 1 60904857
 P 1250 4550
-F 0 "U18" V 1250 4250 50  0000 C CNN
-F 1 "74HC132" V 1350 4200 50  0000 C CNN
+F 0 "U18" V 1350 4800 50  0000 C CNN
+F 1 "74HC132" V 1450 4800 50  0000 C CNN
 F 2 "Package_DIP:DIP-14_W7.62mm" H 1250 4550 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS132" H 1250 4550 50  0001 C CNN
 	1    1250 4550
-	0    -1   1    0   
+	0    1    1    0   
 $EndComp
 Wire Wire Line
 	2950 1950 2950 5200
@@ -2560,9 +2560,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	7450 950  7450 5050
-Wire Bus Line
 	10800 650  10800 1650
+Wire Bus Line
+	7450 950  7450 5050
 Wire Bus Line
 	850  7600 3100 7600
 Wire Bus Line

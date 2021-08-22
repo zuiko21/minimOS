@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -2430,6 +2430,7 @@ Wire Wire Line
 	5900 4600 6000 4600
 Wire Wire Line
 	6000 4600 6000 4700
+Connection ~ 5900 4600
 Wire Bus Line
 	8800 550  10750 550 
 Wire Bus Line
@@ -2438,5 +2439,4 @@ Wire Bus Line
 	800  4350 3700 4350
 Wire Bus Line
 	2850 550  8050 550 
-Connection ~ 5900 4600
 $EndSCHEMATC
