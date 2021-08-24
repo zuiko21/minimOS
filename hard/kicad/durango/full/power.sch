@@ -738,6 +738,10 @@ Wire Wire Line
 	4100 3450 4100 5300
 Wire Wire Line
 	4100 5300 4000 5300
+Text GLabel 4000 3050 2    50   Input ~ 0
+~FRAME
+Text GLabel 4000 3150 2    50   Input ~ 0
+~LINE
 Wire Bus Line
 	2450 2050 2450 4250
 Wire Bus Line
@@ -748,8 +752,4 @@ Wire Bus Line
 	800  2050 800  4450
 Wire Bus Line
 	900  2050 900  3050
-Text GLabel 4000 3050 2    50   Input ~ 0
-~FRAME
-Text GLabel 4000 3150 2    50   Input ~ 0
-~LINE
 $EndSCHEMATC

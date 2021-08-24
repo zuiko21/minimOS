@@ -730,21 +730,21 @@ Wire Wire Line
 Wire Wire Line
 	7600 4100 7800 4100
 Text Label 7600 1050 0    50   ~ 0
-VA8
+VA3
 Text Label 7600 1350 0    50   ~ 0
-VA6
+VA1
 Text Label 7600 1650 0    50   ~ 0
-VA7
+VA2
 Text Label 7600 1950 0    50   ~ 0
-VA5
+VA0
 Text Label 7600 3200 0    50   ~ 0
-VA13
+VA8
 Text Label 7600 3500 0    50   ~ 0
-VA10
+VA5
 Text Label 7600 3800 0    50   ~ 0
-VA12
+VA7
 Text Label 7600 4100 0    50   ~ 0
-VA9
+VA4
 Entry Wire Line
 	5850 950  5950 1050
 Entry Wire Line
@@ -766,15 +766,15 @@ Entry Wire Line
 Wire Wire Line
 	5950 3500 6150 3500
 Text Label 5950 1050 0    50   ~ 0
-VA17
+VA12
 Text Label 5950 1350 0    50   ~ 0
-VA15
+VA10
 Text Label 5950 1650 0    50   ~ 0
-VA16
+VA11
 Text Label 5950 1950 0    50   ~ 0
-VA14
+VA9
 Text Label 5950 3500 0    50   ~ 0
-VA18
+VA13
 Wire Wire Line
 	6150 4100 6100 4100
 Wire Wire Line
@@ -925,7 +925,7 @@ D[0..7]
 Text Label 7550 850  0    50   ~ 0
 A[0..15]
 Text Label 5850 2950 2    50   ~ 0
-VA[0..19]
+VA[0..13]
 Text Label 8700 5050 0    50   ~ 0
 MA[0..14]
 NoConn ~ 3000 2550
@@ -953,7 +953,7 @@ F0 "VDU-X" 50
 F1 "vdu-x.sch" 50
 $EndSheet
 Text GLabel 5850 7200 2    50   Input ~ 0
-VA[2..18]
+VA[0..13]
 Text GLabel 2800 650  0    50   Input ~ 0
 D[0..7]
 Connection ~ 5850 5100
@@ -1009,13 +1009,13 @@ Wire Wire Line
 Wire Wire Line
 	4300 4350 4500 4350
 Text Label 4300 3450 0    50   ~ 0
-VA13
+VA8
 Text Label 4300 3750 0    50   ~ 0
-VA11
+VA6
 Text Label 4300 4050 0    50   ~ 0
-VA12
+VA7
 Text Label 4300 4350 0    50   ~ 0
-VA10
+VA5
 $Comp
 L 74xx:74LS257 U204
 U 1 1 611A3D57
@@ -1068,13 +1068,13 @@ Wire Wire Line
 Wire Wire Line
 	4300 6450 4500 6450
 Text Label 4300 5550 0    50   ~ 0
-VA9
+VA4
 Text Label 4300 5850 0    50   ~ 0
-VA7
+VA2
 Text Label 4300 6150 0    50   ~ 0
-VA8
+VA3
 Text Label 4300 6450 0    50   ~ 0
-VA6
+VA1
 Wire Wire Line
 	4450 6750 4500 6750
 Entry Wire Line
@@ -1693,7 +1693,7 @@ Text Label 1550 5800 1    50   ~ 0
 D7
 Wire Wire Line
 	1550 5800 1550 5650
-Text Label 4250 7300 0    50   ~ 0
+Text Label 4250 6250 2    50   ~ 0
 A[0..15]
 Entry Wire Line
 	1050 7600 950  7500
@@ -2026,7 +2026,7 @@ Wire Wire Line
 	7300 6400 7300 5900
 Wire Wire Line
 	6950 6400 6950 7700
-Text Label 2150 5450 0    50   ~ 0
+Text Label 2400 5350 0    50   ~ 0
 HZ250
 Text Label 850  2450 0    50   ~ 0
 ~INTREQ
@@ -2533,8 +2533,6 @@ $EndComp
 NoConn ~ 1400 3150
 Wire Wire Line
 	2900 2050 2900 4800
-Text Label 3800 3750 0    50   ~ 0
-VA4
 Wire Wire Line
 	2450 3150 2400 3150
 Entry Wire Line
@@ -2548,7 +2546,7 @@ Wire Wire Line
 Wire Wire Line
 	2450 3150 2450 5000
 Text Label 4300 4650 0    50   ~ 0
-VA4
+VA0
 Wire Wire Line
 	10600 1050 10850 1050
 Wire Bus Line
@@ -2560,9 +2558,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	7450 950  7450 5050
-Wire Bus Line
 	10800 650  10800 1650
+Wire Bus Line
+	7450 950  7450 5050
 Wire Bus Line
 	850  7600 3100 7600
 Wire Bus Line
@@ -2576,11 +2574,19 @@ Wire Bus Line
 Wire Bus Line
 	4200 3350 4200 7200
 Wire Bus Line
-	750  5550 2800 5550
+	5900 700  5900 5900
 Wire Bus Line
-	5900 700  5900 6100
+	750  5550 2800 5550
 Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
-	4250 700  4250 7300
+	4250 700  4250 6450
+Text Label 1900 5550 0    50   ~ 0
+D[0..7]
+Text Label 5900 2800 0    50   ~ 0
+A[0..15]
+Text Label 5800 4750 2    50   ~ 0
+MA[0..14]
+Text Label 7450 2350 2    50   ~ 0
+MA[0..14]
 $EndSCHEMATC
