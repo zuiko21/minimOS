@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 30 0
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1583,8 +1583,6 @@ Wire Wire Line
 Wire Wire Line
 	2000 4450 2000 4550
 Connection ~ 2500 4550
-Text Label 6100 3000 1    50   ~ 0
-INVERT
 $Comp
 L 74xx:74LS688 U630
 U 1 1 62499306
@@ -2439,4 +2437,10 @@ Wire Bus Line
 	800  4350 3700 4350
 Wire Bus Line
 	2850 550  8050 550 
+Text GLabel 4500 3150 2    50   Input ~ 0
+INVERT
+Text GLabel 8050 3200 2    50   Input ~ 0
+~FRAME
+Text GLabel 5750 1400 2    50   Input ~ 0
+~LINE
 $EndSCHEMATC
