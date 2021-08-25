@@ -904,7 +904,7 @@ L power:GND #PWR0107
 U 1 1 60AEA38E
 P 3500 3650
 F 0 "#PWR0107" H 3500 3400 50  0001 C CNN
-F 1 "GND" H 3505 3477 50  0000 C CNN
+F 1 "GND" H 3350 3550 50  0000 C CNN
 F 2 "" H 3500 3650 50  0001 C CNN
 F 3 "" H 3500 3650 50  0001 C CNN
 	1    3500 3650
@@ -1445,7 +1445,7 @@ Wire Wire Line
 Wire Wire Line
 	4150 5250 3400 5250
 Wire Wire Line
-	4000 3900 4000 2950
+	4000 3800 4000 2950
 Wire Wire Line
 	3450 4500 4100 4500
 Wire Wire Line
@@ -1484,8 +1484,6 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS132" H 1150 5150 50  0001 C CNN
 	2    1150 5150
 	0    1    1    0   
 $EndComp
-Wire Wire Line
-	3350 3900 3550 3900
 $Comp
 L 74xx:74LS132 U18
 U 3 1 60A388CF
@@ -1497,14 +1495,13 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS132" H 850 4050 50  0001 C CNN
 	3    850  4050
 	0    -1   -1   0   
 $EndComp
-Connection ~ 3550 3900
 Wire Wire Line
-	3550 3900 4000 3900
+	3550 3800 4000 3800
 Wire Wire Line
 	3450 4500 3450 4600
 Connection ~ 3450 4500
 Text Label 3700 4500 0    50   ~ 0
-~UOE
+~OE
 Text Label 4050 4700 3    50   ~ 0
 ~WE
 Wire Wire Line
@@ -2331,14 +2328,11 @@ F 3 "" H 3800 6300 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	3350 3900 2750 3900
-Wire Wire Line
-	2750 3900 2750 5500
+	3350 3900 2900 3900
 Wire Wire Line
 	2300 6850 1750 6850
 Wire Wire Line
 	1750 6850 1750 6800
-Connection ~ 3350 3900
 Wire Wire Line
 	2300 6850 3400 6850
 Wire Wire Line
@@ -2497,7 +2491,7 @@ Wire Wire Line
 Connection ~ 8400 6100
 Text Label 7250 6350 2    50   ~ 0
 ~IO9Q
-Text Label 3950 3900 2    50   ~ 0
+Text Label 4000 3800 2    50   ~ 0
 R~W
 Wire Wire Line
 	1750 5500 1750 5100
@@ -2532,7 +2526,7 @@ F 3 "http://www.intersil.com/content/dam/Intersil/documents/cd40/cd4020bms-24bms
 $EndComp
 NoConn ~ 1400 3150
 Wire Wire Line
-	2900 2050 2900 4800
+	2900 2050 2900 3900
 Wire Wire Line
 	2450 3150 2400 3150
 Entry Wire Line
@@ -2547,6 +2541,25 @@ Wire Wire Line
 	2450 3150 2450 5000
 Text Label 4300 4650 0    50   ~ 0
 VA0
+Text Label 1900 5550 0    50   ~ 0
+D[0..7]
+Text Label 5900 2800 0    50   ~ 0
+A[0..15]
+Text Label 5800 4750 2    50   ~ 0
+MA[0..14]
+Text Label 7450 2350 2    50   ~ 0
+MA[0..14]
+Text Label 3150 4800 0    50   ~ 0
+PHI2
+Connection ~ 2900 3900
+Wire Wire Line
+	2900 3900 2900 4800
+Wire Wire Line
+	3550 3800 3550 3900
+Wire Wire Line
+	3550 3800 2750 3800
+Wire Wire Line
+	2750 3800 2750 5500
 Wire Wire Line
 	10600 1050 10850 1050
 Wire Bus Line
@@ -2581,12 +2594,7 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Text Label 1900 5550 0    50   ~ 0
-D[0..7]
-Text Label 5900 2800 0    50   ~ 0
-A[0..15]
-Text Label 5800 4750 2    50   ~ 0
-MA[0..14]
-Text Label 7450 2350 2    50   ~ 0
-MA[0..14]
+Connection ~ 3550 3800
+Text Label 3150 3900 0    50   ~ 0
+PHI2
 $EndSCHEMATC

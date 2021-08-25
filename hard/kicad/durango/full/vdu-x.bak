@@ -1417,9 +1417,9 @@ F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 9550 4900 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 Text Label 2450 5550 2    50   ~ 0
-HVID
-Text Label 5300 4950 3    50   ~ 0
 HPIX
+Text Label 5300 4950 3    50   ~ 0
+HVID
 $Comp
 L Device:R R824
 U 1 1 6090A54B
@@ -2171,12 +2171,12 @@ Wire Wire Line
 $Comp
 L power:+5V #PWR0163
 U 1 1 61A0366E
-P 5900 4600
-F 0 "#PWR0163" H 5900 4450 50  0001 C CNN
-F 1 "+5V" H 5800 4700 50  0000 C CNN
-F 2 "" H 5900 4600 50  0001 C CNN
-F 3 "" H 5900 4600 50  0001 C CNN
-	1    5900 4600
+P 5950 4600
+F 0 "#PWR0163" H 5950 4450 50  0001 C CNN
+F 1 "+5V" H 5850 4700 50  0000 C CNN
+F 2 "" H 5950 4600 50  0001 C CNN
+F 3 "" H 5950 4600 50  0001 C CNN
+	1    5950 4600
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
@@ -2385,27 +2385,19 @@ Text Label 2750 2900 1    50   ~ 0
 Q2
 Text Label 2600 2800 1    50   ~ 0
 Q1
-Wire Wire Line
-	5850 4900 5900 4900
 $Comp
 L Device:R R825
 U 1 1 617C1771
-P 5900 4750
-F 0 "R825" H 5650 4900 50  0000 L CNN
-F 1 "68K" V 5900 4650 50  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical" V 5830 4750 50  0001 C CNN
-F 3 "~" H 5900 4750 50  0001 C CNN
-	1    5900 4750
+P 5950 4750
+F 0 "R825" H 5700 4850 50  0000 L CNN
+F 1 "68K" V 5950 4650 50  0000 L CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical" V 5880 4750 50  0001 C CNN
+F 3 "~" H 5950 4750 50  0001 C CNN
+	1    5950 4750
 	1    0    0    -1  
 $EndComp
-Connection ~ 5900 4900
-Wire Wire Line
-	5900 4900 6000 4900
-Wire Wire Line
-	5900 4600 6000 4600
 Wire Wire Line
 	6000 4600 6000 4700
-Connection ~ 5900 4600
 Text GLabel 4500 3150 2    50   Input ~ 0
 INVERT
 Text GLabel 8050 3200 2    50   Input ~ 0
@@ -2422,4 +2414,12 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
+Connection ~ 5950 4600
+Wire Wire Line
+	5950 4600 6000 4600
+Connection ~ 5950 4900
+Wire Wire Line
+	5950 4900 6000 4900
+Wire Wire Line
+	5850 4900 5950 4900
 $EndSCHEMATC

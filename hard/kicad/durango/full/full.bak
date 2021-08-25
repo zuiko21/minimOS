@@ -904,7 +904,7 @@ L power:GND #PWR0107
 U 1 1 60AEA38E
 P 3500 3650
 F 0 "#PWR0107" H 3500 3400 50  0001 C CNN
-F 1 "GND" H 3505 3477 50  0000 C CNN
+F 1 "GND" H 3350 3550 50  0000 C CNN
 F 2 "" H 3500 3650 50  0001 C CNN
 F 3 "" H 3500 3650 50  0001 C CNN
 	1    3500 3650
@@ -2497,7 +2497,7 @@ Wire Wire Line
 Connection ~ 8400 6100
 Text Label 7250 6350 2    50   ~ 0
 ~IO9Q
-Text Label 3950 3900 2    50   ~ 0
+Text Label 4000 3800 2    50   ~ 0
 R~W
 Wire Wire Line
 	1750 5500 1750 5100
@@ -2547,6 +2547,14 @@ Wire Wire Line
 	2450 3150 2450 5000
 Text Label 4300 4650 0    50   ~ 0
 VA0
+Text Label 1900 5550 0    50   ~ 0
+D[0..7]
+Text Label 5900 2800 0    50   ~ 0
+A[0..15]
+Text Label 5800 4750 2    50   ~ 0
+MA[0..14]
+Text Label 7450 2350 2    50   ~ 0
+MA[0..14]
 Wire Wire Line
 	10600 1050 10850 1050
 Wire Bus Line
@@ -2558,9 +2566,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	10800 650  10800 1650
-Wire Bus Line
 	7450 950  7450 5050
+Wire Bus Line
+	10800 650  10800 1650
 Wire Bus Line
 	850  7600 3100 7600
 Wire Bus Line
@@ -2581,12 +2589,6 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Text Label 1900 5550 0    50   ~ 0
-D[0..7]
-Text Label 5900 2800 0    50   ~ 0
-A[0..15]
-Text Label 5800 4750 2    50   ~ 0
-MA[0..14]
-Text Label 7450 2350 2    50   ~ 0
-MA[0..14]
+Text Label 3150 4800 0    50   ~ 0
+PHI2
 $EndSCHEMATC
