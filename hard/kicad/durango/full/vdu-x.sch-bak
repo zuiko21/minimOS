@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -824,12 +824,12 @@ $Comp
 L 74xx:74HC245 U125
 U 1 1 60A3BC75
 P 6150 6200
-F 0 "U125" H 6300 6950 50  0000 C CNN
-F 1 "74HC245" H 6350 6850 50  0000 C CNN
+F 0 "U125" H 6000 6950 50  0000 C CNN
+F 1 "74HC245" H 5950 6850 50  0000 C CNN
 F 2 "Package_DIP:DIP-20_W7.62mm" H 6150 6200 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC245" H 6150 6200 50  0001 C CNN
 	1    6150 6200
-	1    0    0    -1  
+	-1   0    0    -1  
 $EndComp
 Wire Wire Line
 	5650 5700 5650 5800
@@ -843,16 +843,11 @@ Wire Wire Line
 	5650 6100 5650 6200
 Connection ~ 5650 6200
 Wire Wire Line
-	5650 6600 5600 6600
-Wire Wire Line
-	5600 6600 5600 5400
-Wire Wire Line
-	5600 5400 6150 5400
+	6150 5300 6150 5400
 Wire Wire Line
 	4350 7200 6150 7200
 Wire Wire Line
 	6150 7200 6150 7000
-Connection ~ 5600 5400
 $Comp
 L Device:R R107
 U 1 1 60B1D57F
@@ -1079,15 +1074,9 @@ Wire Wire Line
 Wire Wire Line
 	7550 6400 7500 6400
 Wire Wire Line
-	5650 6700 5650 7050
-Wire Wire Line
-	6500 6500 10450 6500
+	6900 6500 10450 6500
 Wire Wire Line
 	10450 6500 10450 4400
-Wire Wire Line
-	6500 6500 6500 7050
-Wire Wire Line
-	5650 7050 6500 7050
 $Comp
 L Device:CP C5
 U 1 1 60C049B1
@@ -1699,7 +1688,7 @@ Wire Wire Line
 	5950 2950 5950 2100
 Text Label 5950 2100 0    50   ~ 0
 ~Q3
-Text Label 6500 7050 0    50   ~ 0
+Text Label 6750 6700 0    50   ~ 0
 ~CDE
 $Comp
 L 74xx:74HC00 U19
@@ -2156,9 +2145,7 @@ $EndComp
 Wire Wire Line
 	4500 5050 4500 5200
 Wire Wire Line
-	5600 5300 5600 5400
-Wire Wire Line
-	4350 5300 5600 5300
+	4350 5300 6150 5300
 Connection ~ 4500 5050
 NoConn ~ 10650 4400
 Wire Wire Line
@@ -2334,7 +2321,7 @@ Text Label 7450 5000 0    50   ~ 0
 ZMIX
 Wire Wire Line
 	5850 4800 5850 4900
-Text Label 6100 5200 3    50   ~ 0
+Text Label 6050 4900 3    50   ~ 0
 ~HVEN
 Text Label 9800 5000 0    50   ~ 0
 CSYNC
@@ -2406,14 +2393,6 @@ Text GLabel 5750 1400 2    50   Input ~ 0
 ~LINE
 Text Label 1500 2350 1    50   ~ 0
 MCLK
-Wire Bus Line
-	8800 550  10750 550 
-Wire Bus Line
-	1000 7700 1800 7700
-Wire Bus Line
-	4100 550  8050 550 
-Wire Bus Line
-	800  4350 3700 4350
 Connection ~ 5950 4600
 Wire Wire Line
 	5950 4600 6000 4600
@@ -2422,4 +2401,23 @@ Wire Wire Line
 	5950 4900 6000 4900
 Wire Wire Line
 	5850 4900 5950 4900
+Wire Wire Line
+	6900 6500 6900 6700
+Wire Wire Line
+	6900 6700 6650 6700
+Wire Wire Line
+	6650 6600 6700 6600
+Wire Wire Line
+	6700 6600 6700 7200
+Wire Wire Line
+	6700 7200 6150 7200
+Wire Bus Line
+	8800 550  10750 550 
+Wire Bus Line
+	1000 7700 1800 7700
+Wire Bus Line
+	4100 550  8050 550 
+Wire Bus Line
+	800  4350 3700 4350
+Connection ~ 6150 7200
 $EndSCHEMATC
