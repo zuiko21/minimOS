@@ -35,8 +35,6 @@ int main(void) {
 	pinMode(CB1, OUTPUT);
 	pinMode(CB2, OUTPUT);
 	pinMode(STB, OUTPUT);	/* not actually used */
-while(-1){dato(0b10000101);}
-return 0;
 /* open source file */
 	printf("File: ");
 	scanf("%s", nombre);
@@ -66,7 +64,7 @@ return 0;
 			printf("$%02X...\n", i>>8);
 		}
 		c = fgetc(f);
-		dato(c);
+		cabe(c);	//instead of 
 	}
 	digitalWrite(CB2, 0);	/* let data line float high, note OC */
 	printf("\nEnded at $%04X\n", fin);
@@ -83,9 +81,9 @@ void cabe(int x) {			/* just like dato() but with longer bit delay, whole header
 		bit = x & 1;
 		digitalWrite(CB2, bit);		/* send bit for OC, NO longer INVERTED */
 		digitalWrite(CB1, 1);
-		delay(2);			/* way too long, just in case, note OC */
+		delay(1);			/* way too long, just in case, note OC */
 		digitalWrite(CB1, 0);
-		useg(200);
+		delay(2);
 /* in case the NMI is not edge-triggered as in the 6502, you should put the delay here */
 		x >>= 1;
 		i--;
@@ -100,9 +98,9 @@ void dato(int x) {			/* send a byte at 'top' speed */
 		bit = x & 1;
 		digitalWrite(CB2, bit);		/* note OC */
 		digitalWrite(CB1, 1);
-		useg(65);			/* *** 75 µs or so (at 1 MHz), may need more with IOB beep *** */
+		useg(10);			/* *** 75 µs or so (at 1 MHz), may need more with IOB beep *** */
 		digitalWrite(CB1, 0);
-		useg(10);
+		useg(65);
 /* in case the NMI is not edge-triggered as in the 6502, you should put the delay here */
 		x >>= 1;
 		i--;
