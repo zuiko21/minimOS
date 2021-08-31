@@ -1,7 +1,7 @@
 ; FULL test of Durango-X
 ; (c) 2021 Carlos J. Santisteban
 ; began 20210831-0212
-; last modified 20210831-1442
+; last modified 20210901-0002
 
 * = $C000					; standard ROM start
 
@@ -13,7 +13,7 @@ banner:
 	.bin	0, 512, "../../other/data/durango-x.sv"
 
 ; *** panic routines ***
-; $FE0x = zero page fail
+* = $FE00					; *** zero page fail ***
 zp_bad:
 ; high pitched beep (146t ~5.26 kHz, actually 145t or ~5.3 kHz)
 	LDY #27
@@ -24,24 +24,30 @@ zb_1:
 	STX $B000				; toggle buzzer output
 	JMP zp_bad				; outer loop is 11t 
 
-	.ds		addr_bad-*, $FF	; padding
+	.ds		addr_bad-*, $FF	; padding from $FE0C
 
-; $FE1x = bad address bus *** TBD
+* = $FE10					; *** bad address bus *** may begin a bit earlier ($FE0C) so most of the code runs in $FE1x
 addr_bad:
-; perhaps flashing screen and intermittent beep?
-	LDA #65					; initial inverse, plus buzzer bit enable!
+; flashing screen and intermittent beep ~0.21s
+	LDA #64					; initial inverse video
+	STA $8000				; set flags
 ab_1:
-		STA $8000			; set flags
-		STA $B000			; set buzzer output
+			INY
+			BNE ab_1		; delay 1.28 kt (~830 µs, 600 Hz)
+		INX
+		STX $B000			; toggle buzzer output
+		BNE ab_1
+	STX $8000				; this returns to true video, buzzer was off
 ab_2:
-			INX
-			BNE ab_2		; delay 1.28 kt (~830 µs, 600 Hz)
-		EOR #65				; toggle inverse mode AND buzzer enable
-		JMP rb_1
+			INY
+			BNE ab_2		; delay 1.28 kt (~830 µs)
+		INX
+		BNE ab_2
+	BEQ addr_bad
 
 	.ds		ram_bad-*, $FF	; padding
 
-; $FE3x = bad RAM
+* = $FE30					; *** bad RAM ***
 ram_bad:
 ; inverse bars and low pitched beep
 rb_1:
@@ -55,7 +61,7 @@ rb_2:
 
 	.ds		rom_bad-*, $FF	; padding
 
-; $FE4x = bad ROM
+* = $FE40					; *** bad ROM ***
 rom_bad:
 ; silent, will not show banner, try to use as few ROM addresses as possible, arrive with Z clear
 	BNE rom_bad
@@ -66,15 +72,36 @@ rom_bad:
 	BNE rom_bad+10
 	BNE rom_bad+12
 	BNE rom_bad+14
-; already at $FE30, no padding
+; already at $FE50, no padding
 
-; $FE5x = slow IRQ
+* = $FE50					; *** slow or missing IRQ ***
 slow_irq:
+; keep IRQ LED off, low pitch buzz (~119 Hz)
+	LDX #10					; 10x123t ~4 ms (125 Hz)
+si_1:
+		LDY #123			; 10x123t ~4 ms (125 Hz)
+si_2:
+			DEY
+			BPL si_3
+		DEX
+		STX $B000			; toggle buzzer output
+		BNE si_1
+	BEQ slow_irq
 
 	.ds		fast_irq-*, $FF	; padding
 
-; $FE6x = fast IRQ
+* = $FE60					; *** fast or spurious IRQ ***
 fast_irq:
+; 600 Hz beep while IRQ LED blinks *** TBD TBD TBD
+			INY
+			BNE fast_irq	; delay 1.28 kt (~830 µs, 600 Hz)
+		EOR #1				; toggle buzzer and interrupt control pointer
+		STX $B000			; set buzzer output
+	INX
+	
+		TAX					; use as index
+		STA $A000, X		; enable/disable LED
+		JMP fast_irq
 
 	.ds		isr-*, $FF	; padding
 
