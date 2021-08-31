@@ -1,35 +1,61 @@
 ; FULL test of Durango-X
 ; (c) 2021 Carlos J. Santisteban
 ; began 20210831-0212
-; last modified 20210831-0340
+; last modified 20210831-1442
 
 * = $C000					; standard ROM start
 
-; *** binary data from file ($8000-$FDFF) ***
-	.bin	0, $3E00, "../../other/data/romtest.bin"
+; *** binary data from file ($C000-$FBFF, LHHL format) ***
+	.bin	0, $3C00, "../../other/data/romtest.bin"
+
+; *** banner data ($FC00...FDFF) *** TBD 512-byte raw file!
+banner:
+	.bin	0, 512, "../../other/data/durango-x.sv"
 
 ; *** panic routines ***
 ; $FE0x = zero page fail
 zp_bad:
-; high pitched beep
+; high pitched beep (146t ~5.26 kHz, actually 145t or ~5.3 kHz)
+	LDY #27
+zb_1:
+		DEY
+		BNE zb_1			; inner loop is 5Y-1
+	INX
+	STX $B000				; toggle buzzer output
+	JMP zp_bad				; outer loop is 11t 
+
+	.ds		addr_bad-*, $FF	; padding
+
+; $FE1x = bad address bus *** TBD
+addr_bad:
+; perhaps flashing screen and intermittent beep?
+	LDA #65					; initial inverse, plus buzzer bit enable!
+ab_1:
+		STA $8000			; set flags
+		STA $B000			; set buzzer output
+ab_2:
+			INX
+			BNE ab_2		; delay 1.28 kt (~830 µs, 600 Hz)
+		EOR #65				; toggle inverse mode AND buzzer enable
+		JMP rb_1
 
 	.ds		ram_bad-*, $FF	; padding
 
-; $FE1x = bad RAM
+; $FE3x = bad RAM
 ram_bad:
 ; inverse bars and low pitched beep
-	LDA #64
 rb_1:
-		STA $8000			; set flags
+		STA $8000			; set flags (hopefully A<128)
+		STA $B000			; set buzzer output
 rb_2:
 			INX
 			BNE rb_2		; delay 1.28 kt (~830 µs, 600 Hz)
-		EOR #64				; toggle inverse mode
+		EOR #65				; toggle inverse mode... and buzzer output
 		JMP rb_1
 
 	.ds		rom_bad-*, $FF	; padding
 
-; $FE2x = bad ROM
+; $FE4x = bad ROM
 rom_bad:
 ; silent, will not show banner, try to use as few ROM addresses as possible, arrive with Z clear
 	BNE rom_bad
@@ -42,24 +68,20 @@ rom_bad:
 	BNE rom_bad+14
 ; already at $FE30, no padding
 
-; $FE3x = slow IRQ
+; $FE5x = slow IRQ
 slow_irq:
 
 	.ds		fast_irq-*, $FF	; padding
 
-; $FE4x = fast IRQ
+; $FE6x = fast IRQ
 fast_irq:
 
-	.ds		banner-*, $FF	; padding
+	.ds		isr-*, $FF	; padding
 
-; *** some more data and code ***
-; banner data ($FE50...FECF) *** TBD raw file!
-banner:
-	.bin	0, $80, "../../other/data/durango-x.sv"
 
-; $FED0 = interrupt routine (for both IRQ and NMI test)
+; $FED0 = interrupt routine (for both IRQ and NMI test) *** could be elsewhere
 isr:
-	DEC test				; decrement standard zeropage address
+	INC test				; increment standard zeropage address (no longer DEC)
 	RTI
 
 	.ds		all_ok-*, $FF	; padding
@@ -88,33 +110,69 @@ reset:
 	CLD
 	LDX #$FF
 	TXS
+; Durango-X specific stuff
 	STX $A000				; disable hardware interrupt
+	LDA #0					; flag init and zp test initial value
+	STA $8000				; set colour mode
 
-; zeropage test
-; make high pitched beep during test ()
+; * zeropage test *
+; make high pitched chirp during test
 	LDX #<test				; 6510-savvy...
 zp_1:
-		LDA #0				; initial value (2+4?)
-		STA 0, X
+		STA 0, X			; A=0 during whole ZP test (4)
 		LDA 0, X			; must be clear right now! (4+2)
 			BNE zp_3
-		SEC					; prepare for shifting bit
-		LDY #10				; number of shifts +1
+		SEC					; prepare for shifting bit (2)
+		LDY #10				; number of shifts +1 (2)
 zp_2:
 			DEY				; avoid infinite loop (2+2)
 				BEQ zp_3
 			ROL 0, X		; rotate (6)
 			BNE zp_2		; only zero at the end (3...)
 			BCC zp_3		; C must be set at the end (...or 5 last time) (total inner loop = 119t)
+		CPY #1				; expected value after 9 shifts (2+2)
+			BNE zp_3
 		INX					; next address (2+4)
-		STX $B000			; make beep at 141t ~5.45 kHz
+		STX $B000			; make beep at 146t ~5.26 kHz
 		BNE zp_1			; complete page (3)
 	BEQ zp_ok
 zp_3:
 		JMP zp_bad			; panic if failed
 zp_ok:
 
-; RAM test
+; * simple mirroring test *
+; probe responding size first
+	LDY #127				; max 32 KB, also a fairly good offset
+	STY test+1				; pointer set (test.LSB known to be zero)
+mt_1:
+		LDA #$AA			; first test value
+mt_2:
+			STA (test), Y	; probe address
+			CMP (test), Y
+				BNE mt_3	; failed
+			LSR				; try $55 as well
+			BCC mt_2
+mt_3:
+			BCS mt_4		; failed (¬C) or passed (C)?
+		LSR test+1			; if failed, try half the amount
+		BNE mt_1
+	JMP ram_bad				; if arrived here, there is no more than 256 bytes of RAM, which is a BAD thing
+mt_4:
+; size is probed, let's check for mirroring
+	LDX test+1				; keep highest responding page number
+mt_5:
+		LDA test+1			; get page number under test
+		STA (test), Y		; mark page number
+		LSR test+1			; try half the amount
+		BNE mt_5
+	STX test+1				; recompute highest address tested
+	LDA (test), Y			; this is highest non-mirrored page
+	STA himem				; store in a safe place (needed afterwards)
+
+; * address lines test *
+
+
+; * RAM test *
 ; silent but will show up on screen
 	LDA #$F0				; initial value
 	LDY #0
@@ -130,8 +188,8 @@ rt_2:
 			BNE rt_2
 				INX			; next page
 				STX test+1
-;				CPX #$80
-			BPL rt_2		; ends at $8000, alternatively use BNE if CPX above
+				CPX himem	; should check against actual RAMtop
+			BNE rt_2		; ends at $8000 or whatever detected RAMtop
 		LSR					; create new value, either $0F or 0
 		LSR
 		LSR
@@ -142,7 +200,7 @@ rt_3:
 		JMP ram_bad			; panic if failed
 ram_ok:
 
-; ROM test
+; * ROM test *
 ; must check sequence LHHLLHHL...
 	LDX #$C0				; ROM start
 	STX test+1				; set pointer (LSB and Y already at zero)
@@ -170,6 +228,7 @@ ro_1:
 	BEQ rom_ok
 ro_3:
 		JMP rom_bad			; jump as easily as possible (Z is clear)
+
 ; *** delay routine (may be elsewhere)
 delay:
 	JSR dl_1				; (12)
@@ -181,41 +240,60 @@ dl_1:
 rom_ok:
 ; show banner if ROM checked OK
 	LDX #0					; reset index
-ro_2:
+ro_1:
 		LDA banner, X		; put data...
+		LDA banner+256, X
 		STA $6000, X		; ...on screen
+		STA $6100, X
 		INX
-		BPL ro_2			; 128-byte banner! (may use BNE if a highres 256 banner is used)
+		BNE ro_1			; 512-byte banner as 2x256!
 
-; NMI test
+; * NMI test *
 ; wait a few seconds for NMI
-	STY test				; Y known to be zero
 	LDY #<isr				; ISR address
 	LDX #>isr
 	STY fw_nmi				; standard-ish NMI vector
 	STX fw_nmi+1
-	LDY #0
 	LDX #0					; reset timeout counters
+;	LDY #0					; makes little effect up to 0.4%
+	STX test				; reset interrupt counter
 ; print minibanner *** TBD
+	TXA						; or whatever is zero
 nt_1:
 		JSR delay			; (48)
 		INY					; (2)
 		BNE nt_2			; (usually 3)
 			INX
-			BNE nt_3		; this is timeout
+			BEQ nt_3		; this does timeout after ~2.5s
 nt_2:
-		LDA test			; otherwise wait for non-zero, up to 2.5s (3+3)
-		BEQ nt_1
+		CMP test			; NMI happened?
+		BEQ nt_1			; nope
+			LDY #0			; otherwise do some click
+			STY $B000		; buzzer = 1
+			JSR delay		; 50 µs pulse
+			INY
+			STY $B000		; turn off buzzer
+			LDA test		; get new target
+		BNE nt_1			; no need for BRA
+; display dots indicating how many times was called (button bounce)
 nt_3:
-; optionally display dots indicating how many times was called (button bounce) *** TBD
+	LDX test				; using amount as index
+	BNE irq_test			; did not respond, don't bother printing dots
+		LDA #$0F			; nice clear value in all modes
+nt_4:
+			STA $6845, X	; place 'dot', note offset
+			DEX
+			BNE nt_4
 
-; IRQ test
-	LDA #2					; initial value, will time IRQ during 1...0
+; * IRQ test *
+irq_test:
+	LDA #2					; initial value $FF, will time IRQ from 0
 	STA test
 	LDY #<isr				; ISR address
 	LDX #>isr
 	STY fw_irq				; standard-ish IRQ vector
 	STX fw_irq+1
+; must enable interrupts!
 it_1:
 ; MUST provide some timeout *** TBD
 		LDA test
@@ -225,7 +303,7 @@ it_1:
 ; *** all OK, end of test ***
 	JMP all_ok
 
-; *** interrupt handlers ***
+; *** interrupt handlers *** could be elsewhere
 irq:
 	JMP (fw_irq)
 nmi:
