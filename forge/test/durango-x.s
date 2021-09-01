@@ -1,7 +1,7 @@
 ; FULL test of Durango-X
 ; (c) 2021 Carlos J. Santisteban
 ; began 20210831-0212
-; last modified 20210901-0002
+; last modified 20210901-2330
 
 * = $C000					; standard ROM start
 
@@ -15,20 +15,22 @@ banner:
 ; *** panic routines ***
 * = $FE00					; *** zero page fail ***
 zp_bad:
-; high pitched beep (146t ~5.26 kHz, actually 145t or ~5.3 kHz)
-	LDY #27
+; high pitched beep (158t ~4.86 kHz)
+	LDY #29
 zb_1:
 		DEY
 		BNE zb_1			; inner loop is 5Y-1
+	NOP						; perfect timing!
 	INX
 	STX $B000				; toggle buzzer output
 	JMP zp_bad				; outer loop is 11t 
 
-	.ds		addr_bad-*, $FF	; padding from $FE0C
+	.ds		addr_bad-*, $FF	; padding from $FE0D
 
-* = $FE10					; *** bad address bus *** may begin a bit earlier ($FE0C) so most of the code runs in $FE1x
+* = $FE10					; *** bad address bus ***
 addr_bad:
 ; flashing screen and intermittent beep ~0.21s
+; note that inverse video runs on $FE1x while true video on $FE2x
 	LDA #64					; initial inverse video
 	STA $8000				; set flags
 ab_1:
@@ -146,11 +148,16 @@ reset:
 ; make high pitched chirp during test
 	LDX #<test				; 6510-savvy...
 zp_1:
-		STA 0, X			; A=0 during whole ZP test (4)
-		LDA 0, X			; must be clear right now! (4+2)
+		TXA
+		STA 0, X			; try storing address itself (2+4)
+		CMP 0, X			; properly stored? (4+2)
 			BNE zp_3
-		SEC					; prepare for shifting bit (2)
-		LDY #10				; number of shifts +1 (2)
+		LDA #0				; A=0 during whole ZP test (2)
+		STA 0, X			; clear byte (4)
+		CMP 0, X			; must be clear right now! sets carry too (4+2)
+			BNE zp_3
+;		SEC					; prepare for shifting bit (2)
+		LDY #10				; number of shifts +1 (2, 26t up here)
 zp_2:
 			DEY				; avoid infinite loop (2+2)
 				BEQ zp_3
@@ -160,8 +167,8 @@ zp_2:
 		CPY #1				; expected value after 9 shifts (2+2)
 			BNE zp_3
 		INX					; next address (2+4)
-		STX $B000			; make beep at 146t ~5.26 kHz
-		BNE zp_1			; complete page (3)
+		STX $B000			; make beep at 158t ~4.86 kHz
+		BNE zp_1			; complete page (3, post 13t)
 	BEQ zp_ok
 zp_3:
 		JMP zp_bad			; panic if failed
