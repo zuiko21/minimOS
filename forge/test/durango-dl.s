@@ -1,6 +1,6 @@
 ; FULL test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210902-2144
+; last modified 20210902-2320
 
 ; *** standard definitions ***
 	fw_irq	= $0200
@@ -11,11 +11,12 @@
 * = $4000					; downloadable start address
 
 	JMP reset				; this goes to actual code, ROMtest must skip this!
+	NOP						; must take 4 bytes EEEEEEEK
 
 ; *** binary data from file ($4004-$5BFF, LHHL format) ***
 	.bin	$4004, $1BFC, "../../other/data/lhhl.bin"
 
-; *** banner data ($5C00...5DFF) *** TBD 512-byte raw file!
+; *** banner data ($5C00...5DFF) *** 512-byte raw file!
 banner:
 	.bin	0, 512, "../../other/data/durango-x.sv"
 
