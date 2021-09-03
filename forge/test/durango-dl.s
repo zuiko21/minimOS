@@ -1,6 +1,6 @@
 ; FULL test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210903-2304
+; last modified 20210903-2339
 
 ; *** memory maps ***
 ;				ROMable		DOWNLOADable
@@ -353,6 +353,9 @@ it_b:
 		STA $6FBF, X
 		DEX
 		BNE it_b
+; inverse video during test (brief flash)
+	LDA #64
+	STA $8000
 ; interrupt setup
 	LDY #<isr				; ISR address
 	LDX #>isr
@@ -361,7 +364,7 @@ it_b:
 	LDY #0					; initial value and inner counter reset
 	STY test
 ; must enable interrupts!
-	STY $A001				; hardware interrupt enable
+	STY $A001				; hardware interrupt enable (LED goes off)
 	LDX #154				; about 129 ms, time for 32 interrupts
 	CLI						; start counting!
 ; this provides timeout
@@ -372,6 +375,8 @@ it_1:
 		BNE it_1
 ; check timeout results for slow or fast
 	SEI						; no more interrupts
+; back to true video
+	STX $8000				; X known to be zero
 ; display dots indicating how many times IRQ happened
 	LDX test				; using amount as index
 		BNE it_slow			; did not respond at all!
@@ -394,6 +399,7 @@ it_3:
 
 it_ok:
 ; *** all OK, end of test ***
+
 	JMP all_ok
 
 test_end: 
@@ -483,7 +489,7 @@ ab_2:
 
 * = $5F30					; *** bad RAM ***
 ram_bad:
-; inverse bars and low pitched beep
+; inverse bars and continuous beep
 rb_1:
 		STA $8000			; set flags (hopefully A<128)
 		STA $B000			; set buzzer output
@@ -511,9 +517,9 @@ rom_bad:
 * = $5F50					; *** slow or missing IRQ ***
 slow_irq:
 ; keep IRQ LED off, low pitch buzz (~119 Hz)
-	LDX #10					; 10x123t ~4 ms (125 Hz)
+	LDX #10					; 10x123t
 si_1:
-		LDY #123			; 10x123t ~4 ms (125 Hz)
+		LDY #123			; 10x123t
 si_2:
 			DEY
 			BPL si_2
@@ -526,23 +532,26 @@ si_2:
 
 * = $5F60					; *** fast or spurious IRQ ***
 fast_irq:
-; 600 Hz beep while IRQ LED blinks *** TBD TBD TBD
-			INY
-			BNE fast_irq	; delay 1.28 kt (~830 µs, 600 Hz)
-		EOR #1				; toggle buzzer and interrupt control pointer
+; 1.7 kHz beep while IRQ LED blinks
+	LDA #$0F				; %00001111·1, ~44% duty cycle for LED (note C is set in test!)
+fi_1:
+		LDY #91
+fi_2:
+			DEY
+			BNE fi_2		; delay 455t (~296 µs, 1688 Hz)
+		INX
 		STX $B000			; set buzzer output
-	INX
-	
-		TAX					; use as index
-		STA $A000, X		; enable/disable LED
-		JMP fast_irq
+		BNE fi_1			; 256 times is ~76 ms
+	ROL						; keep rotating pattern (cycle ~0.68 s)
+	TAY						; use as index
+	STA $A000, Y			; LED is on only when D0=0, ~44% the time
+	BNE fast_irq			; A/X are NEVER zero
 
 	.dsb	$5FF0-*, $FF	; padding
 
 ; $5FFx = ERROR FREE final lock
 * = $5FF0
 all_ok:
-	STA $A000				; keep LED on
 	NOP
 	NOP
 	NOP
