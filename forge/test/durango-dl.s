@@ -1,6 +1,14 @@
 ; FULL test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210903-0047
+; last modified 20210903-1144
+
+; *** memory maps ***
+;				ROMable		DOWNLOADable
+;	test RAM	<$7FFF		<$3FFF, $6000-$7FFF
+;	test ROM	$C000-$F7FF	$4004-$57FF
+;	banner		$F800-$FBFF	$5800-$5BFF
+;	test code	$FC00-$FEFF	$5C00-$5EFF
+;	panics		$FFxx		$5Fxx
 
 ; *** standard definitions ***
 	fw_irq	= $0200
@@ -13,133 +21,13 @@
 	JMP reset				; this goes to actual code, ROMtest must skip this!
 	NOP						; must take 4 bytes EEEEEEEK
 
-; *** binary data from file ($4004-$59FF, LHHL format) ***
-	.bin	$4004, $19FC, "../../other/data/lhhl.bin"
+; *** binary data from file ($4004-$57FF, LHHL format) ***
+	.bin	$4004, $17FC, "../../other/data/lhhl.bin"
 
-; *** banner data ($5A00...5DFF) *** 1 Kbyte raw file!
+; *** banner data ($5800...5BFF) *** 1 Kbyte raw file!
 banner:
 	.bin	0, 1024, "../../other/data/durango-x.sv"
 
-; *** panic routines ***
-* = $5E00					; *** zero page fail ***
-zp_bad:
-; high pitched beep (158t ~4.86 kHz)
-	LDY #29
-zb_1:
-		DEY
-		BNE zb_1			; inner loop is 5Y-1
-	NOP						; perfect timing!
-	INX
-	STX $B000				; toggle buzzer output
-	JMP zp_bad				; outer loop is 11t 
-
-	.ds		addr_bad-*, $FF	; padding from $5E0D
-
-* = $5E10					; *** bad address bus ***
-addr_bad:
-; flashing screen and intermittent beep ~0.21s
-; note that inverse video runs on $5E1x while true video on $5E2x
-	LDA #64					; initial inverse video
-	STA $8000				; set flags
-ab_1:
-			INY
-			BNE ab_1		; delay 1.28 kt (~830 µs, 600 Hz)
-		INX
-		STX $B000			; toggle buzzer output
-		BNE ab_1
-	STX $8000				; this returns to true video, buzzer was off
-ab_2:
-			INY
-			BNE ab_2		; delay 1.28 kt (~830 µs)
-		INX
-		BNE ab_2
-	BEQ addr_bad
-
-	.ds		ram_bad-*, $FF	; padding
-
-* = $5E30					; *** bad RAM ***
-ram_bad:
-; inverse bars and low pitched beep
-rb_1:
-		STA $8000			; set flags (hopefully A<128)
-		STA $B000			; set buzzer output
-rb_2:
-			INX
-			BNE rb_2		; delay 1.28 kt (~830 µs, 600 Hz)
-		EOR #65				; toggle inverse mode... and buzzer output
-		JMP rb_1
-
-	.ds		rom_bad-*, $FF	; padding
-
-* = $5E40					; *** bad ROM ***
-rom_bad:
-; silent, will not show banner, try to use as few ROM addresses as possible, arrive with Z clear
-	BNE rom_bad
-	BNE rom_bad+2
-	BNE rom_bad+4
-	BNE rom_bad+6
-	BNE rom_bad+8
-	BNE rom_bad+10
-	BNE rom_bad+12
-	BNE rom_bad+14
-; already at $5E50, no padding
-
-* = $5E50					; *** slow or missing IRQ ***
-slow_irq:
-; keep IRQ LED off, low pitch buzz (~119 Hz)
-	LDX #10					; 10x123t ~4 ms (125 Hz)
-si_1:
-		LDY #123			; 10x123t ~4 ms (125 Hz)
-si_2:
-			DEY
-			BPL si_3
-		DEX
-		STX $B000			; toggle buzzer output
-		BNE si_1
-	BEQ slow_irq
-
-	.ds		fast_irq-*, $FF	; padding
-
-* = $5E60					; *** fast or spurious IRQ ***
-fast_irq:
-; 600 Hz beep while IRQ LED blinks *** TBD TBD TBD
-			INY
-			BNE fast_irq	; delay 1.28 kt (~830 µs, 600 Hz)
-		EOR #1				; toggle buzzer and interrupt control pointer
-		STX $B000			; set buzzer output
-	INX
-	
-		TAX					; use as index
-		STA $A000, X		; enable/disable LED
-		JMP fast_irq
-
-	.ds		isr-*, $FF	; padding
-
-
-; $5ED0 = interrupt routine (for both IRQ and NMI test) *** could be elsewhere
-isr:
-	INC test				; increment standard zeropage address (no longer DEC)
-	RTI
-
-	.ds		all_ok-*, $FF	; padding
-
-; $5EFx = ERROR FREE final lock
-all_ok:
-	STA $A000				; keep LED on
-	NOP
-	NOP
-	NOP
-	NOP
-	NOP
-	NOP
-	NOP
-	NOP
-	NOP
-	NOP
-	NOP
-	NOP
-	CLC
-	BCC all_ok
 
 ; ******************
 ; *** test suite ***
@@ -282,24 +170,20 @@ ro_1:
 ro_3:
 		JMP rom_bad			; jump as easily as possible (Z is clear)
 
-; *** delay routine (may be elsewhere)
-delay:
-	JSR dl_1				; (12)
-	JSR dl_1				; (12)
-	JSR dl_1				; (12... +12 total overhead =48)
-dl_1:
-	RTS						; for timeout counters
-
 rom_ok:
 ; show banner if ROM checked OK
 	LDX #0					; reset index
-ro_1:
+ro_4:
 		LDA banner, X		; put data...
-		LDA banner+256, X
 		STA $6000, X		; ...on screen
+		LDA banner+256, X
 		STA $6100, X
+		LDA banner+512, X	; it's 1K EEEEEEEK
+		STA $6200, X
+		LDA banner+768, X
+		STA $6300, X
 		INX
-		BNE ro_1			; 512-byte banner as 2x256!
+		BNE ro_4			; 512-byte banner as 2x256!
 
 ; * NMI test *
 ; wait a few seconds for NMI
@@ -403,11 +287,22 @@ it_ok:
 ; *** all OK, end of test ***
 	JMP all_ok
 
+test_end: 
+
+; ********************************************
+; *** miscelaneous stuff, may be elsewhere ***
+; ********************************************
+
 ; *** interrupt handlers *** could be elsewhere
 irq:
 	JMP (fw_irq)
 nmi:
 	JMP (fw_nmi)
+
+; interrupt routine (for both IRQ and NMI test) *** could be elsewhere
+isr:
+	INC test				; increment standard zeropage address (no longer DEC)
+	RTI
 
 ; *** mini banners *** could be elsewhere
 nmi_b:
@@ -417,6 +312,132 @@ irq_b:
 	.byt	$F0, $FF, $F0, $FF, $F0
 	.byt	$F0, $FF, $00, $F0, $F0
 	.byt	$F0, $F0, $F0, $FF, $0F
+
+; *** delay routine (may be elsewhere)
+delay:
+	JSR dl_1				; (12)
+	JSR dl_1				; (12)
+	JSR dl_1				; (12... +12 total overhead =48)
+dl_1:
+	RTS						; for timeout counters
+
+misc_end:
+
+	.dsb	$5F00-*, $FF	; padding
+
+; **********************
+; *** panic routines ***
+; **********************
+* = $5F00					; *** zero page fail ***
+zp_bad:
+; high pitched beep (158t ~4.86 kHz)
+	LDY #29
+zb_1:
+		DEY
+		BNE zb_1			; inner loop is 5Y-1
+	NOP						; perfect timing!
+	INX
+	STX $B000				; toggle buzzer output
+	JMP zp_bad				; outer loop is 11t 
+
+	.dsb	$5F10-*, $FF	; padding from $5F0D
+
+* = $5F10					; *** bad address bus ***
+addr_bad:
+; flashing screen and intermittent beep ~0.21s
+; note that inverse video runs on $5F1x while true video on $5F2x
+	LDA #64					; initial inverse video
+	STA $8000				; set flags
+ab_1:
+			INY
+			BNE ab_1		; delay 1.28 kt (~830 µs, 600 Hz)
+		INX
+		STX $B000			; toggle buzzer output
+		BNE ab_1
+	STX $8000				; this returns to true video, buzzer was off
+ab_2:
+			INY
+			BNE ab_2		; delay 1.28 kt (~830 µs)
+		INX
+		BNE ab_2
+	BEQ addr_bad
+
+	.dsb	$5F30-*, $FF	; padding
+
+* = $5F30					; *** bad RAM ***
+ram_bad:
+; inverse bars and low pitched beep
+rb_1:
+		STA $8000			; set flags (hopefully A<128)
+		STA $B000			; set buzzer output
+rb_2:
+			INX
+			BNE rb_2		; delay 1.28 kt (~830 µs, 600 Hz)
+		EOR #65				; toggle inverse mode... and buzzer output
+		JMP rb_1
+
+	.dsb	$5F40-*, $FF	; padding
+
+* = $5F40					; *** bad ROM ***
+rom_bad:
+; silent, will not show banner, try to use as few ROM addresses as possible, arrive with Z clear
+	BNE rom_bad
+	BNE rom_bad+2
+	BNE rom_bad+4
+	BNE rom_bad+6
+	BNE rom_bad+8
+	BNE rom_bad+10
+	BNE rom_bad+12
+	BNE rom_bad+14
+; already at $5F50, no padding
+
+* = $5F50					; *** slow or missing IRQ ***
+slow_irq:
+; keep IRQ LED off, low pitch buzz (~119 Hz)
+	LDX #10					; 10x123t ~4 ms (125 Hz)
+si_1:
+		LDY #123			; 10x123t ~4 ms (125 Hz)
+si_2:
+			DEY
+			BPL si_2
+		DEX
+		STX $B000			; toggle buzzer output
+		BNE si_1
+	BEQ slow_irq
+
+	.dsb	$5F60-*, $FF	; padding
+
+* = $5F60					; *** fast or spurious IRQ ***
+fast_irq:
+; 600 Hz beep while IRQ LED blinks *** TBD TBD TBD
+			INY
+			BNE fast_irq	; delay 1.28 kt (~830 µs, 600 Hz)
+		EOR #1				; toggle buzzer and interrupt control pointer
+		STX $B000			; set buzzer output
+	INX
+	
+		TAX					; use as index
+		STA $A000, X		; enable/disable LED
+		JMP fast_irq
+
+	.dsb	$5FF0-*, $FF	; padding
+
+; $5FFx = ERROR FREE final lock
+* = $5FF0
+all_ok:
+	STA $A000				; keep LED on
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	CLC
+	BCC all_ok
 
 suite_end:
 
