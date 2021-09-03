@@ -1,6 +1,6 @@
 ; FULL test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210904-0008
+; last modified 20210904-0045
 
 ; *** memory maps ***
 ;				ROMable		DOWNLOADable
@@ -244,7 +244,8 @@ rt_2:
 		LSR
 		LSR
 		BNE rt_1			; test with new value
-	BCC ram_ok				; if arrived here first time, C is set and A=0
+		BCS rt_1			; EEEEEEEEEEEEK
+	BCC ram_ok				; if arrived here SECOND time, C is CLEAR and A=0
 rt_3:
 		JMP ram_bad			; panic if failed
 ram_ok:
