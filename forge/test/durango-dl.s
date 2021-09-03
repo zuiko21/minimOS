@@ -1,6 +1,6 @@
 ; FULL test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210903-1144
+; last modified 20210903-2304
 
 ; *** memory maps ***
 ;				ROMable		DOWNLOADable
@@ -10,11 +10,16 @@
 ;	test code	$FC00-$FEFF	$5C00-$5EFF
 ;	panics		$FFxx		$5Fxx
 
+; ****************************
 ; *** standard definitions ***
 	fw_irq	= $0200
 	fw_nmi	= $0202
 	test	= 0
-	himem	= $FF
+	posi	= $FB			; %11111011
+	systmp	= $FC			; %11111100
+	sysptr	= $FD			; %11111101
+	himem	= $FF			; %11111111
+; ****************************
 
 * = $4000					; downloadable start address
 
@@ -27,7 +32,6 @@
 ; *** banner data ($5800...5BFF) *** 1 Kbyte raw file!
 banner:
 	.bin	0, 1024, "../../other/data/durango-x.sv"
-
 
 ; ******************
 ; *** test suite ***
@@ -100,9 +104,114 @@ mt_5:
 	STX test+1				; recompute highest address tested
 	LDA (test), Y			; this is highest non-mirrored page
 	STA himem				; store in a safe place (needed afterwards)
+; the address test needs himem in a bit-position format (An+1)
+	LDY #8					; limit in case of a 256-byte RAM!
+#ifdef	NMOS
+	INC						; CMOS only
+#else
+	CLC
+	ADC #1
+#endif
+mt_6:
+		INY					; one more bit...
+		LSR					; ...and half the memory
+		BCC mt_6
+	STY posi				; X & Y cannot reach this in address lines test
 
 ; * address lines test *
-
+; X=bubble bit, Y=base bit (An+1)
+; written value =$XY
+; first write all values
+#ifndef	NMOS
+	STZ 0					; zero is a special case, as no bits are used
+#else
+	LDA #0
+	STA 0
+#endif
+	LDY #1					; first base bit, representing A0
+at_0:
+		LDX #0				; init bubble bit as disabled, will jump to Y+1
+at_1:
+			LDA bit_l, Y
+			ORA bit_l, X	; create pointer LSB
+			STA sysptr
+			LDA bit_h, Y
+			ORA bit_h, X	; with MSB, pointer complete
+			STA sysptr+1
+			STY systmp		; lower nibble to write
+			TXA				; this will be higher nibble...
+			ASL
+			ASL
+			ASL
+			ASL				; ...times 16
+			ORA systmp		; byte complete in A
+#ifndef	NMOS
+			STA (sysptr)	; CMOS only
+#else
+			LDY #0
+			STA (sysptr), Y
+			LDY systmp		; easily recovered writing $XY instead of $YX
+#endif
+			TXA				; check if bubble bit is present
+			BNE at_2		; it is, just advance it
+				TYA			; if not, will be base+1
+				TAX
+at_2:
+			INX				; advance bubble in any case
+;			CPX #$F			; only 16K allowed! (ROM based use $10)
+			CPX posi		; size-savvy!
+			BNE at_1
+		INY					; end of bubble, advance base bit
+;		CPY #$F				; max. 16K (ROM use $10)
+		CPY posi			; size-savvy
+		BNE at_0			; this will disable bubble, too
+; then compare computed and stored values
+	LDA #0
+	CMP 0					; zero is a special case, as no bits are used
+		BNE at_bad
+	LDY #1					; first base bit, representing A0
+at_3:
+		LDX #0				; init bubble bit as disabled, will jump to Y+1
+at_4:
+			LDA bit_l, Y
+			ORA bit_l, X	; create pointer LSB
+			STA sysptr
+			LDA bit_h, Y
+			ORA bit_h, X	; with MSB, pointer complete
+			STA sysptr+1
+			STY systmp		; lower nibble to write
+			TXA				; this will be higher nibble...
+			ASL
+			ASL
+			ASL
+			ASL				; ...times 16
+			ORA systmp		; byte complete in A
+#ifndef	NMOS
+			CMP (sysptr)	; CMOS only
+				BNE at_bad
+#else
+			LDY #0
+			CMP (sysptr), Y
+				BNE at_bad
+			LDY systmp		; easily recovered writing $XY instead of $YX
+#endif
+			TXA				; check if bubble bit is present
+			BNE at_5		; it is, just advance it
+				TYA			; if not, will be base+1
+				TAX
+at_5:
+			INX				; advance bubble in any case
+;			CPX #$F			; only 16K allowed! (ROM based use $10)
+			CPX posi		; size-savvy!
+			BNE at_4
+		INY					; end of bubble, advance base bit
+;		CPY #$F				; max. 16K (ROM use $10)
+		CPY posi			; size-savvy!
+		BNE at_3			; this will disable bubble, too
+	BEQ addr_ok
+at_bad:
+		JMP addr_bad
+addr_ok:
 
 ; * RAM test *
 ; silent but will show up on screen
@@ -320,6 +429,14 @@ delay:
 	JSR dl_1				; (12... +12 total overhead =48)
 dl_1:
 	RTS						; for timeout counters
+
+; *** bit position table ***
+; INDEX =    0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
+bit_l:
+	.byt	$00, $01, $02, $04, $08, $10, $20, $40, $80, $00, $00, $00, $00, $00, $00, $00
+;            -    A0   A1   A2   A3   A4   A5   A6   A7   A8   A9   AA   AB   AC   AD   AE (A14)
+bit_h:
+	.byt    $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $02, $04, $08, $10, $20, $40
 
 misc_end:
 
