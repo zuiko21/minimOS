@@ -1,6 +1,6 @@
 ; FULL test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210903-2339
+; last modified 20210904-0008
 
 ; *** memory maps ***
 ;				ROMable		DOWNLOADable
@@ -292,7 +292,7 @@ ro_4:
 		LDA banner+768, X
 		STA $6300, X
 		INX
-		BNE ro_4			; 512-byte banner as 2x256!
+		BNE ro_4			; 1K-byte banner as 4x256!
 
 ; * NMI test *
 ; wait a few seconds for NMI
@@ -304,14 +304,14 @@ ro_4:
 ;	LDY #0					; makes little effect up to 0.4%
 	STX test				; reset interrupt counter
 ; print minibanner
-	LDX #6					; number of horizontal bytes
+	LDX #5					; max. horizontal offset
 nt_b:
-		LDA nmi_b, X		; copy banner data into screen, note offsets
-		STA $67FF, X
+		LDA nmi_b, X		; copy banner data into screen
+		STA $6800, X
 		LDA nmi_b+6, X
-		STA $683F, X
+		STA $6840, X
 		DEX
-		BNE nt_b
+		BPL nt_b			; no offset!
 ; proceed with timeout
 	TXA						; or whatever is zero
 nt_1:
@@ -343,16 +343,16 @@ nt_4:
 ; * IRQ test *
 irq_test:
 ; prepare screen with minibanner
-	LDX #5					; number of horizontal bytes
+	LDX #4					; max. horizontal offset
 it_b:
-		LDA irq_b, X		; copy banner data into screen, note offsets
-		STA $6F3F, X
+		LDA irq_b, X		; copy banner data into screen
+		STA $6F40, X
 		LDA irq_b+5, X
-		STA $6F7F, X
+		STA $6F80, X
 		LDA irq_b+10, X
-		STA $6FBF, X
+		STA $6FC0, X
 		DEX
-		BNE it_b
+		BPL it_b			; no offset!
 ; inverse video during test (brief flash)
 	LDA #64
 	STA $8000
@@ -374,7 +374,7 @@ it_1:
 		DEX
 		BNE it_1
 ; check timeout results for slow or fast
-	SEI						; no more interrupts
+	SEI						; no more interrupts, but hardware still generates them (LED off)
 ; back to true video
 	STX $8000				; X known to be zero
 ; display dots indicating how many times IRQ happened
@@ -383,7 +383,7 @@ it_1:
 	LDA #$0F				; nice clear value in all modes
 	STA $6FD9				; place index dot @ 32
 it_2:
-		STA $7040, X		; place 'dot', note vertical offset
+		STA $703F, X		; place 'dot', note offsets
 		DEX
 		BNE it_2
 ; compare results
@@ -398,9 +398,45 @@ it_3:
 		JMP fast_irq		; >33 is fast
 
 it_ok:
-; *** all OK, end of test ***
 
-	JMP all_ok
+; *** next is testing for HSYNC and VSYNC... ***
+
+; *** all OK, end of test ***
+; sweep sound, print OK banner and lock
+	STA $A000				; interrupts are masked, let's turn the LED on anyway
+	TXA						; X known to be zero, again
+	STA test				; sweep counter
+sweep:
+		LDX #8				; sound length in half-cycles
+beep_l:
+			TAY				; determines frequency (2)
+			STX $B000		; send X's LSB to beeper (4)
+rb_zi:
+				STY test+1	; small delay for 1.536 MHz! (3)
+				DEY			; count pulse length (y*2)
+				BNE rb_zi	; stay this way for a while (y*3-1)
+			DEX				; toggles even/odd number (2)
+			BNE beep_l		; new half cycle (3)
+		STX $B000			; turn off the beeper!
+		LDA test			; period goes down, freq. goes up
+		SEC
+		SBC #4				; frequency change rate
+		STA test
+		CMP #16				; upper limit
+		BCS sweep
+; sound done, print GREEN banner
+	LDX #3					; max. offset
+ok_l:
+		LDA ok_b, X			; put banner data...
+		STA $77DC, X		; ...in appropriate screen place
+		LDA ok_b+4, X
+		STA $781C, X
+		LDA ok_b+8, X
+		STA $785C, X
+		DEX
+		BPL ok_l			; note offset-avoiding BPL
+
+	JMP all_ok				; final lock at $5FFx
 
 test_end: 
 
@@ -427,6 +463,10 @@ irq_b:
 	.byt	$F0, $FF, $F0, $FF, $F0
 	.byt	$F0, $FF, $00, $F0, $F0
 	.byt	$F0, $F0, $F0, $FF, $0F
+ok_b:
+	.byt	$55, $50, $50, $50
+	.byt	$50, $50, $55, $00
+	.byt	$55, $50, $50, $50
 
 ; *** delay routine (may be elsewhere)
 delay:
@@ -549,9 +589,14 @@ fi_2:
 
 	.dsb	$5FF0-*, $FF	; padding
 
+; *** next is testing for HSYNC and VSYNC... ***
+
 ; $5FFx = ERROR FREE final lock
 * = $5FF0
 all_ok:
+	NOP
+	NOP
+	NOP
 	NOP
 	NOP
 	NOP
