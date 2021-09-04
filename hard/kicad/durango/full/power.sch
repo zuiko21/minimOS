@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 30 0
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -545,7 +545,7 @@ Entry Wire Line
 Entry Wire Line
 	2550 2750 2650 2850
 Text GLabel 2900 5100 0    50   Input ~ 0
-R~W
+~WE
 Wire Wire Line
 	3000 2950 2950 2950
 Wire Wire Line
@@ -632,42 +632,19 @@ Text GLabel 4000 2950 2    50   Input ~ 0
 HIRES
 Text GLabel 4000 2850 2    50   Input ~ 0
 INVERT
-$Comp
-L Device:R R826
-U 1 1 613E846A
-P 4400 2900
-F 0 "R826" H 4300 2700 50  0000 L CNN
-F 1 "68K" V 4400 2850 50  0000 L CNN
-F 2 "" V 4330 2900 50  0001 C CNN
-F 3 "~" H 4400 2900 50  0001 C CNN
-	1    4400 2900
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:R R927
-U 1 1 613E9540
-P 4650 2900
-F 0 "R927" H 4700 2900 50  0000 L CNN
-F 1 "68K" V 4650 2850 50  0000 L CNN
-F 2 "" V 4580 2900 50  0001 C CNN
-F 3 "~" H 4650 2900 50  0001 C CNN
-	1    4650 2900
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
-	4400 3050 4650 3050
+	4400 3150 4650 3150
 $Comp
 L power:GND #PWR0169
 U 1 1 613EE0D2
-P 4650 3050
-F 0 "#PWR0169" H 4650 2800 50  0001 C CNN
-F 1 "GND" H 4655 2877 50  0000 C CNN
-F 2 "" H 4650 3050 50  0001 C CNN
-F 3 "" H 4650 3050 50  0001 C CNN
-	1    4650 3050
+P 4650 3150
+F 0 "#PWR0169" H 4650 2900 50  0001 C CNN
+F 1 "GND" H 4655 2977 50  0000 C CNN
+F 2 "" H 4650 3150 50  0001 C CNN
+F 3 "" H 4650 3150 50  0001 C CNN
+	1    4650 3150
 	1    0    0    -1  
 $EndComp
-Connection ~ 4650 3050
 Wire Wire Line
 	4000 2750 4400 2750
 Wire Wire Line
@@ -701,7 +678,6 @@ Wire Wire Line
 	4650 2650 4650 2600
 Wire Wire Line
 	4400 2600 4400 2750
-Connection ~ 4400 2750
 Wire Wire Line
 	4400 2000 4650 2000
 $Comp
@@ -742,6 +718,30 @@ Text GLabel 4000 3050 2    50   Input ~ 0
 ~FRAME
 Text GLabel 4000 3150 2    50   Input ~ 0
 ~LINE
+Connection ~ 4400 2750
+$Comp
+L Jumper:Jumper_2_Open JP905
+U 1 1 61F1D207
+P 4650 2950
+F 0 "JP905" V 4604 3048 50  0000 L CNN
+F 1 "HR-ONLY" V 4695 3048 50  0000 L CNN
+F 2 "" H 4650 2950 50  0001 C CNN
+F 3 "~" H 4650 2950 50  0001 C CNN
+	1    4650 2950
+	0    1    1    0   
+$EndComp
+Connection ~ 4650 3150
+$Comp
+L Jumper:Jumper_2_Open JP806
+U 1 1 61F257E4
+P 4400 2950
+F 0 "JP806" V 4650 2800 50  0000 L CNN
+F 1 "C-ONLY" V 4750 2750 50  0000 L CNN
+F 2 "" H 4400 2950 50  0001 C CNN
+F 3 "~" H 4400 2950 50  0001 C CNN
+	1    4400 2950
+	0    1    1    0   
+$EndComp
 Wire Bus Line
 	2450 2050 2450 4250
 Wire Bus Line

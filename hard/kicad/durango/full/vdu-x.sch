@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 30 0
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -722,37 +722,21 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS257" H 4350 6200 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	3400 5550 3400 5600
+	3800 5600 3850 5600
 Wire Wire Line
-	3400 5600 3850 5600
+	3400 5700 3850 5700
 Wire Wire Line
-	3800 5550 3800 5700
+	3700 5900 3850 5900
 Wire Wire Line
-	3800 5700 3850 5700
+	3300 6000 3850 6000
 Wire Wire Line
-	3300 5550 3300 5900
+	3600 6200 3850 6200
 Wire Wire Line
-	3300 5900 3850 5900
+	3200 6300 3850 6300
 Wire Wire Line
-	3700 5550 3700 6000
+	3500 6500 3850 6500
 Wire Wire Line
-	3700 6000 3850 6000
-Wire Wire Line
-	3200 5550 3200 6200
-Wire Wire Line
-	3200 6200 3850 6200
-Wire Wire Line
-	3600 5550 3600 6300
-Wire Wire Line
-	3600 6300 3850 6300
-Wire Wire Line
-	3100 5550 3100 6500
-Wire Wire Line
-	3100 6500 3850 6500
-Wire Wire Line
-	3500 5550 3500 6600
-Wire Wire Line
-	3500 6600 3850 6600
+	3400 6600 3850 6600
 $Comp
 L power:GND #PWR0145
 U 1 1 60A2F9CC
@@ -1591,14 +1575,6 @@ Wire Wire Line
 Text Label 1800 2950 0    50   ~ 0
 ~PE
 Wire Wire Line
-	3850 6800 3450 6800
-Wire Wire Line
-	3450 6800 3450 6550
-Wire Wire Line
-	2650 6550 3450 6550
-Text Label 2700 6550 0    50   ~ 0
-Q3
-Wire Wire Line
 	6650 6400 6650 6300
 Connection ~ 6650 6400
 Connection ~ 6650 6300
@@ -1663,8 +1639,6 @@ F 3 "" H 3850 3600 50  0001 C CNN
 	1    3850 3600
 	0    1    1    0   
 $EndComp
-Text GLabel 2950 4150 2    50   Input ~ 0
-SCLK
 Wire Wire Line
 	4300 4200 4300 2850
 Wire Wire Line
@@ -2272,10 +2246,7 @@ Wire Wire Line
 Wire Wire Line
 	2600 3600 2550 3600
 Wire Wire Line
-	2850 3500 2650 3500
-Wire Wire Line
-	2650 3500 2650 6550
-Connection ~ 2850 3500
+	2650 4250 2650 6500
 Wire Wire Line
 	2900 4250 2950 4250
 Connection ~ 2950 4250
@@ -2402,18 +2373,6 @@ Wire Wire Line
 Connection ~ 1550 1800
 Wire Wire Line
 	1550 1800 1550 1900
-Wire Wire Line
-	1450 2000 1500 2000
-Wire Wire Line
-	1500 2000 1550 2000
-Wire Bus Line
-	8800 550  10750 550 
-Wire Bus Line
-	1000 7700 1800 7700
-Wire Bus Line
-	4100 550  8050 550 
-Wire Bus Line
-	800  4350 3700 4350
 $Comp
 L power:+5V #PWR0171
 U 1 1 6132FBA4
@@ -2425,4 +2384,47 @@ F 3 "" H 1550 2200 50  0001 C CNN
 	1    1550 2200
 	1    0    0    -1  
 $EndComp
+Wire Wire Line
+	1450 2000 1550 2000
+Wire Wire Line
+	3800 5600 3800 5550
+Wire Wire Line
+	3400 5700 3400 5550
+Wire Wire Line
+	3700 5900 3700 5550
+Wire Wire Line
+	3300 6000 3300 5550
+Wire Wire Line
+	3600 6200 3600 5550
+Wire Wire Line
+	3200 5550 3200 6300
+Wire Wire Line
+	3500 6500 3500 5550
+Wire Wire Line
+	3400 6600 3400 6400
+Wire Wire Line
+	3400 6400 3100 6400
+Wire Wire Line
+	3100 6400 3100 5550
+Wire Wire Line
+	2650 4250 2900 4250
+Connection ~ 2900 4250
+Wire Wire Line
+	2650 6500 3300 6500
+Wire Wire Line
+	3300 6500 3300 6800
+Wire Wire Line
+	3300 6800 3850 6800
+Wire Bus Line
+	8800 550  10750 550 
+Wire Bus Line
+	1000 7700 1800 7700
+Wire Bus Line
+	4100 550  8050 550 
+Wire Bus Line
+	800  4350 3700 4350
+Text GLabel 2950 4100 2    50   Input ~ 0
+VCLK
+Text Label 2800 6500 0    50   ~ 0
+~Q3
 $EndSCHEMATC
