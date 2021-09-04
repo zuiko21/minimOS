@@ -249,7 +249,7 @@ rt_2:
 rt_3:
 		JMP ram_bad			; panic if failed
 ram_ok:
-
+jmp rom_ok
 ; * ROM test *
 ; must check sequence LHHLLHHL...
 	LDX #$40				; ROM start
@@ -447,9 +447,9 @@ test_end:
 
 ; *** interrupt handlers *** could be elsewhere
 irq:
-	JMP (fw_irq)
+;	JMP (fw_irq)
 nmi:
-	JMP (fw_nmi)
+;	JMP (fw_nmi)
 
 ; interrupt routine (for both IRQ and NMI test) *** could be elsewhere
 isr:
