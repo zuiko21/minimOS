@@ -1,6 +1,6 @@
 ; FULL test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210904-0045
+; last modified 20210904-1133
 
 ; *** memory maps ***
 ;				ROMable		DOWNLOADable
@@ -249,7 +249,7 @@ rt_2:
 rt_3:
 		JMP ram_bad			; panic if failed
 ram_ok:
-jmp rom_ok
+
 ; * ROM test *
 ; must check sequence LHHLLHHL...
 	LDX #$40				; ROM start
@@ -274,7 +274,7 @@ ro_1:
 		BNE ro_1
 			INX				; next page
 			STX test+1
-			CPX #$5C		; end of data
+			CPX #$58		; end of data EEEEEEK
 		BNE ro_1
 	BEQ rom_ok
 ro_3:
