@@ -1,6 +1,6 @@
 ; FULL test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210904-1133
+; last modified 20210904-1145
 
 ; *** memory maps ***
 ;				ROMable		DOWNLOADable
@@ -301,9 +301,6 @@ ro_4:
 	LDX #>isr
 	STY fw_nmi				; standard-ish NMI vector
 	STX fw_nmi+1
-	LDX #0					; reset timeout counters
-;	LDY #0					; makes little effect up to 0.4%
-	STX test				; reset interrupt counter
 ; print minibanner
 	LDX #5					; max. horizontal offset
 nt_b:
@@ -314,6 +311,9 @@ nt_b:
 		DEX
 		BPL nt_b			; no offset!
 ; proceed with timeout
+	LDX #0					; reset timeout counters (might use INX as well)
+;	LDY #0					; makes little effect up to 0.4%
+	STX test				; reset interrupt counter
 	TXA						; or whatever is zero
 nt_1:
 		JSR delay			; (48)
@@ -334,10 +334,10 @@ nt_2:
 ; display dots indicating how many times was called (button bounce)
 nt_3:
 	LDX test				; using amount as index
-	BNE irq_test			; did not respond, don't bother printing dots
-		LDA #$0F			; nice clear value in all modes
+	BEQ irq_test			; did not respond, don't bother printing dots EEEEEEEK
+		LDA #$0F			; nice white value in all modes
 nt_4:
-			STA $6845, X	; place 'dot', note offset
+			STA $6845, X	; place 'dot', note offset as zero does not count
 			DEX
 			BNE nt_4
 
@@ -458,14 +458,14 @@ isr:
 
 ; *** mini banners *** could be elsewhere
 nmi_b:
-	.byt	$FF, $0F, $0F, $F0, $FF, $0F
-	.byt	$F0, $FF, $0F, $0F, $0F, $0F
+	.byt	$DD, $0D, $0D, $D0, $DD, $0D	; cyan
+	.byt	$D0, $DD, $0D, $0D, $0D, $0D
 irq_b:
-	.byt	$F0, $FF, $F0, $FF, $F0
-	.byt	$F0, $FF, $00, $F0, $F0
-	.byt	$F0, $F0, $F0, $FF, $0F
+	.byt	$60, $66, $60, $66, $60			; 'brick' colour
+	.byt	$60, $66, $00, $60, $60
+	.byt	$60, $60, $60, $66, $06
 ok_b:
-	.byt	$55, $50, $50, $50
+	.byt	$55, $50, $50, $50				; green
 	.byt	$50, $50, $55, $00
 	.byt	$55, $50, $50, $50
 
