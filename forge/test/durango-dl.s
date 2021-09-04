@@ -1,6 +1,6 @@
 ; FULL test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210904-1145
+; last modified 20210904-1212
 
 ; *** memory maps ***
 ;				ROMable		DOWNLOADable
@@ -381,8 +381,9 @@ it_1:
 ; display dots indicating how many times IRQ happened
 	LDX test				; using amount as index
 		BNE it_slow			; did not respond at all!
-	LDA #$0F				; nice clear value in all modes
-	STA $6FD9				; place index dot @ 32
+	LDA #$01				; nice mid green value in all modes
+	STA $6FDF				; place index dot @32 eeeeeek
+	LDA #$0F				; nice white value in all modes
 it_2:
 		STA $703F, X		; place 'dot', note offsets
 		DEX
@@ -531,14 +532,13 @@ ab_2:
 * = $5F30					; *** bad RAM ***
 ram_bad:
 ; inverse bars and continuous beep
+	STA $8000				; set flags (hopefully A<128)
+	STA $B000				; set buzzer output
 rb_1:
-		STA $8000			; set flags (hopefully A<128)
-		STA $B000			; set buzzer output
-rb_2:
-			INX
-			BNE rb_2		; delay 1.28 kt (~830 µs, 600 Hz)
-		EOR #65				; toggle inverse mode... and buzzer output
-		JMP rb_1
+		INX
+		BNE rb_1			; delay 1.28 kt (~830 µs, 600 Hz)
+	EOR #65					; toggle inverse mode... and buzzer output
+	JMP ram_bad
 
 	.dsb	$5F40-*, $FF	; padding
 
@@ -557,17 +557,15 @@ rom_bad:
 
 * = $5F50					; *** slow or missing IRQ ***
 slow_irq:
-; keep IRQ LED off, low pitch buzz (~119 Hz)
-	LDX #10					; 10x123t
+; keep IRQ LED off, low pitch buzz (~125 Hz)
+	LDY #116				; 116x53t ~4 ms
 si_1:
-		LDY #123			; 10x123t
-si_2:
-			DEY
-			BPL si_2
-		DEX
-		STX $B000			; toggle buzzer output
-		BNE si_1
-	BEQ slow_irq
+		JSR delay
+		DEY
+		BPL si_1
+	INX
+	STX $B000				; toggle buzzer output
+	JMP slow_irq
 
 	.dsb	$5F60-*, $FF	; padding
 
@@ -585,7 +583,7 @@ fi_2:
 		BNE fi_1			; 256 times is ~76 ms
 	ROL						; keep rotating pattern (cycle ~0.68 s)
 	TAY						; use as index
-	STA $A000, Y			; LED is on only when D0=0, ~44% the time
+	STA $A000, Y			; LED is on only when A0=0, ~44% the time
 	BNE fast_irq			; A/X are NEVER zero
 
 	.dsb	$5FF0-*, $FF	; padding
