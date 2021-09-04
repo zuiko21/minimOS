@@ -380,7 +380,7 @@ it_1:
 	STX $8000				; X known to be zero
 ; display dots indicating how many times IRQ happened
 	LDX test				; using amount as index
-		BNE it_slow			; did not respond at all!
+		BEQ it_slow			; did not respond at all! eeeeeek
 	LDA #$01				; nice mid green value in all modes
 	STA $6FDF				; place index dot @32 eeeeeek
 	LDA #$0F				; nice white value in all modes
