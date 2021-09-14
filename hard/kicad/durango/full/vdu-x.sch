@@ -1006,10 +1006,6 @@ Wire Wire Line
 	7550 6100 7550 6400
 Wire Wire Line
 	7550 6400 7500 6400
-Wire Wire Line
-	6900 6500 10450 6500
-Wire Wire Line
-	10450 6500 10450 4400
 $Comp
 L Device:CP C5
 U 1 1 60C049B1
@@ -2303,8 +2299,6 @@ Wire Wire Line
 Wire Wire Line
 	5850 4900 5950 4900
 Wire Wire Line
-	6900 6500 6900 6700
-Wire Wire Line
 	6900 6700 6650 6700
 Wire Wire Line
 	6650 6600 6700 6600
@@ -2413,8 +2407,40 @@ Wire Wire Line
 	2650 6500 3300 6500
 Wire Wire Line
 	3300 6500 3300 6800
+Text GLabel 2950 4100 2    50   Input ~ 0
+VCLK
+Text Label 2800 6500 0    50   ~ 0
+~Q3
+$Comp
+L Device:R R127
+U 1 1 614B20D9
+P 3700 6800
+F 0 "R127" V 3600 6800 50  0000 C CNN
+F 1 "3K6" V 3700 6800 50  0000 C CNN
+F 2 "" V 3630 6800 50  0001 C CNN
+F 3 "~" H 3700 6800 50  0001 C CNN
+	1    3700 6800
+	0    1    1    0   
+$EndComp
 Wire Wire Line
-	3300 6800 3850 6800
+	3300 6800 3550 6800
+Wire Wire Line
+	6900 6500 6900 6700
+Wire Wire Line
+	6900 6500 10450 6500
+$Comp
+L Device:R R128
+U 1 1 615883A5
+P 10450 6350
+F 0 "R128" H 10200 6300 50  0000 L CNN
+F 1 "1K8" V 10450 6300 50  0000 L CNN
+F 2 "" V 10380 6350 50  0001 C CNN
+F 3 "~" H 10450 6350 50  0001 C CNN
+	1    10450 6350
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	10450 6200 10450 4400
 Wire Bus Line
 	8800 550  10750 550 
 Wire Bus Line
@@ -2423,8 +2449,20 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
-Text GLabel 2950 4100 2    50   Input ~ 0
-VCLK
-Text Label 2800 6500 0    50   ~ 0
-~Q3
+Text Notes 2250 1100 0    50   ~ 0
+REPLACED BY\n74HCT4040
+Text Notes 3250 3200 0    50   ~ 0
+REPLACED BY\n74HC21
+Text Notes 7650 4150 0    50   ~ 0
+REPLACED BY\n74HC21
+Text Notes 6300 4550 0    50   ~ 0
+NO LONGER USED
+Text Label 6250 3400 3    50   ~ 0
+FEND
+Text Notes 3000 2500 0    50   ~ 0
+NOW LEND\nactive high
+Text Notes 3250 650  0    50   ~ 0
+NO LONGER USED
+Text Notes 4650 650  0    50   ~ 0
+NO LONGER USED
 $EndSCHEMATC

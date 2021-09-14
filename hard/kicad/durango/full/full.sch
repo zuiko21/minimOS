@@ -2619,6 +2619,10 @@ Wire Wire Line
 	2900 2550 3000 2550
 Wire Wire Line
 	3000 2050 2900 2050
+Text GLabel 2900 2050 1    50   Input ~ 0
+VCLK
+Text GLabel 10400 3850 2    50   Input ~ 0
+~WE
 Wire Wire Line
 	10600 1050 10850 1050
 Wire Bus Line
@@ -2630,9 +2634,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	10800 650  10800 1650
-Wire Bus Line
 	7450 950  7450 5050
+Wire Bus Line
+	10800 650  10800 1650
 Wire Bus Line
 	850  7600 3100 7600
 Wire Bus Line
@@ -2653,8 +2657,4 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Text GLabel 2900 2050 1    50   Input ~ 0
-VCLK
-Text GLabel 10400 3850 2    50   Input ~ 0
-~WE
 $EndSCHEMATC

@@ -752,4 +752,10 @@ Wire Bus Line
 	800  2050 800  4450
 Wire Bus Line
 	900  2050 900  3050
+Text Notes 3650 4050 0    50   ~ 0
+BECOMES\nU10
+Text Notes 3900 2550 0    50   ~ 0
+BECOMES\nU11
+Text Notes 5350 600  0    50   ~ 0
+U10
 $EndSCHEMATC
