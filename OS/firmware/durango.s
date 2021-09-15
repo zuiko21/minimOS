@@ -2,7 +2,7 @@
 ; based on generic firmware template for minimOS·65
 ; v0.6b20
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20210409-1406
+; last modified 20210915-2222
 
 #define		FIRMWARE	_FIRMWARE
 #define		DOWNLOAD	_DOWNLOAD
@@ -11,8 +11,12 @@
 ; already set at FW_BASE via rom.s
 
 .(
+#ifdef	DOWNLOAD
 	* = $4000					; *** *** standard downloadable firmware address *** ***
-	
+#else
+	* = $E000					; 8 KiB ROM, otherwise at $4000-$5FFF
+#endif
+
 ; *** since nanoBoot will start executing from first loaded address, an empty page with a JMP is mandatory ***
 	JMP dreset					; skip up to two pages
 ; could put here some routines, or tables, really disposable once booted into minimOS...
@@ -47,11 +51,8 @@
 ; ID strings unless residing on header
 #ifdef	NOHEAD
 fw_splash:
-	.asc	"0.6 FW @ "
-fw_mname:
-	.asc	MACHINE_NAME, 0		; store the name at least
+	.asc	"DURANGO FW 0.6 ", 0
 #endif
-
 
 ; *** firmware code follows ***
 #ifndef	NOHEAD
@@ -66,15 +67,18 @@ fw_start:
 	.asc "****", CR				; flags TBD
 	.asc "boot", 0				; standard filename
 fw_splash:
-	.asc "0.6 LOADABLE firmware for "	; machine description as comment
+	.asc "0.6 "
+#ifdef	DOWNLOAD
+	.asc "DOWNLOADABLE "
+	.asc "firmware for "	; machine description as comment
 fw_mname:
-	.asc	MACHINE_NAME, 0
+	.asc	"DURANGO", 0
 ; advance to end of header (may need extra fields for relocation)
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$4BC0				; time, 09.30
-	.word	$5251				; date, 2021/2/17
+	.word	$B3C0				; time, 22.30
+	.word	$532F				; date, 2021/9/15
 
 fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 
@@ -105,7 +109,8 @@ dreset:
 ; check for VIA presence and disable all interrupts *** currently no VIA!
 ; perhaps make certain that hardware interrupt is disabled?
 ;#include "modules/viacheck_irq.s"
-	STA $AF00				; irrelevant data, as long as the ADDRESS is EVEN
+	STA $A000				; irrelevant data, as long as the ADDRESS is EVEN
+	_STZA $B000				; ...and turn beeper off
 
 ; *********************************
 ; *** optional firmware modules ***
@@ -115,7 +120,7 @@ dreset:
 ;#include "modules/bootoff.s"
 
 ; might check ROM integrity here
-;#include "modules/romcheck.s"
+#include "modules/romcheck8k.s"
 
 ; some systems might copy ROM-in-RAM and continue at faster speed!
 ;#include "modules/rominram.s"
@@ -123,8 +128,8 @@ dreset:
 ; startup beep *** not really using this
 ;#include "modules/beep.s" 
 
-; SRAM test *** integrates new beep for breadboard loader
-#include "modules/ramtestI0B.s"
+; SRAM test *** new code from test suite
+#include "modules/ramtest_DX.s"
 
 ; ********************************
 ; *** hardware interrupt setup ***
@@ -132,7 +137,7 @@ dreset:
 
 ; VIA initialisation (and stop beeping) *** stop beeping integrated in RAMtest
 ; this will enable hardware periodic interrupt
-	STA $AF01				; irrelevant data, as long as the ADDRESS is ODD
+	STA $A001				; irrelevant data, as long as the ADDRESS is ODD
 
 ; ***********************************
 ; *** firmware parameter settings ***
@@ -160,7 +165,7 @@ dreset:
 ;#include "modules/mini_nmi.s"
 #include "modules/mini_irq.s"
 
-; preset jiffy irq frequency *** this hardware is fixed-freq, so much with 0.5.x compatibility! might just preset that 244 Hz
+; preset jiffy irq frequency *** this hardware is fixed-freq, so much with 0.5.x compatibility! might just preset that 250 Hz
 ;#include "modules/jiffy_hz.s"
 
 ; reset jiffy count
@@ -170,7 +175,7 @@ dreset:
 #include "modules/rst_lastk.s"
 
 ; *** direct print splash string code comes here, when available ***
-; perhaps time to initialise picoVDU
+#
 
 ; *** optional network booting *** makes no sense with nanoBoot
 
