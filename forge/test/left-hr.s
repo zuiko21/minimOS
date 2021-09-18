@@ -5,6 +5,8 @@
 
 ptr = 0
 
+	LDA #$80
+	STA $8000				; set hires mode
 	LDX #$60
 	LDY #0
 	STX ptr+1
@@ -19,7 +21,7 @@ loop:
 norm:
 		CMP #0
 		BNE blk
-			LDA #%10101010	; four spaced pixels
+			LDA #%01010101	; four spaced pixels***
 			CPX #$70		; modify middle lines
 			BNE put
 				LDA #%11000000	; just two leftmost pixels
