@@ -782,22 +782,11 @@ Wire Wire Line
 Wire Wire Line
 	6150 7200 6150 7000
 $Comp
-L Device:R R107
-U 1 1 60B1D57F
-P 6800 5700
-F 0 "R107" V 6800 6000 50  0000 C CNN
-F 1 "6K8" V 6800 5700 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical" V 6730 5700 50  0001 C CNN
-F 3 "~" H 6800 5700 50  0001 C CNN
-	1    6800 5700
-	0    1    1    0   
-$EndComp
-$Comp
 L Device:R R108
 U 1 1 60B1DE2A
 P 6800 5900
 F 0 "R108" V 6800 6200 50  0000 C CNN
-F 1 "10K" V 6800 5900 50  0000 C CNN
+F 1 "12K" V 6800 5900 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical" V 6730 5900 50  0001 C CNN
 F 3 "~" H 6800 5900 50  0001 C CNN
 	1    6800 5900
@@ -808,7 +797,7 @@ L Device:R R109
 U 1 1 60B2BC5D
 P 6800 6100
 F 0 "R109" V 6800 6400 50  0000 C CNN
-F 1 "12K" V 6800 6100 50  0000 C CNN
+F 1 "22K" V 6800 6100 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical" V 6730 6100 50  0001 C CNN
 F 3 "~" H 6800 6100 50  0001 C CNN
 	1    6800 6100
@@ -819,7 +808,7 @@ L Device:R R110
 U 1 1 60B2C251
 P 6800 6300
 F 0 "R110" V 6800 6600 50  0000 C CNN
-F 1 "27K" V 6800 6300 50  0000 C CNN
+F 1 "39K" V 6800 6300 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical" V 6730 6300 50  0001 C CNN
 F 3 "~" H 6800 6300 50  0001 C CNN
 	1    6800 6300
@@ -936,7 +925,7 @@ $Comp
 L Connector:Conn_Coaxial J206
 U 1 1 6096E3AF
 P 8550 5500
-F 0 "J206" H 8600 5600 50  0000 L CNN
+F 0 "J206" H 8450 5600 50  0000 L CNN
 F 1 "VIDEO" H 8600 5400 50  0000 L CNN
 F 2 "Connector_Coaxial:BNC_PanelMountable_Vertical" H 8550 5500 50  0001 C CNN
 F 3 " ~" H 8550 5500 50  0001 C CNN
@@ -2219,7 +2208,7 @@ Wire Wire Line
 	5200 4850 5250 4850
 Text Label 6600 4800 3    50   ~ 0
 HVEN
-Text Label 8350 5800 0    50   ~ 0
+Text Label 8550 5800 0    50   ~ 0
 FBLANK
 Text Label 7450 5000 0    50   ~ 0
 ZMIX
@@ -2441,14 +2430,6 @@ F 3 "~" H 10450 6350 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	10450 6200 10450 4400
-Wire Bus Line
-	8800 550  10750 550 
-Wire Bus Line
-	1000 7700 1800 7700
-Wire Bus Line
-	4100 550  8050 550 
-Wire Bus Line
-	800  4350 3700 4350
 Text Notes 2250 1100 0    50   ~ 0
 REPLACED BY\n74HCT4040
 Text Notes 3250 3200 0    50   ~ 0
@@ -2465,4 +2446,51 @@ Text Notes 3250 650  0    50   ~ 0
 NO LONGER USED
 Text Notes 4650 650  0    50   ~ 0
 NO LONGER USED
+Wire Bus Line
+	8800 550  10750 550 
+Wire Bus Line
+	1000 7700 1800 7700
+Wire Bus Line
+	4100 550  8050 550 
+Wire Bus Line
+	800  4350 3700 4350
+Text Notes 6900 5900 0    50   ~ 0
+*
+Text Notes 8900 6450 0    50   ~ 0
+*) NOT FOR SYNC-ON-GREEN
+Text Notes 6900 6300 0    50   ~ 0
+*
+Text Notes 8750 5550 1    50   ~ 0
+SYNC-ON-GREEN
+Text Notes 6650 5650 0    50   ~ 0
+OR 4K7
+Text Notes 6650 6050 0    50   ~ 0
+OR 10K
+Text Notes 9350 5400 0    50   ~ 0
+*
+Text Notes 9800 5550 0    50   ~ 0
+*
+Text Notes 9450 5800 0    50   ~ 0
+*
+Text Notes 9050 5900 0    50   ~ 0
+*
+Text Label 7550 5700 0    50   ~ 0
+RED
+Text Label 7550 6100 0    50   ~ 0
+BLUE
+Text Label 7650 5900 0    50   ~ 0
+GRN
+Text Label 8400 5500 3    50   ~ 0
+VBS
+$Comp
+L Device:R R107
+U 1 1 60B1D57F
+P 6800 5700
+F 0 "R107" V 6800 6000 50  0000 C CNN
+F 1 "6K8" V 6800 5700 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical" V 6730 5700 50  0001 C CNN
+F 3 "~" H 6800 5700 50  0001 C CNN
+	1    6800 5700
+	0    1    1    0   
+$EndComp
 $EndSCHEMATC

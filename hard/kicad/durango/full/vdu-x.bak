@@ -2441,14 +2441,6 @@ F 3 "~" H 10450 6350 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	10450 6200 10450 4400
-Wire Bus Line
-	8800 550  10750 550 
-Wire Bus Line
-	1000 7700 1800 7700
-Wire Bus Line
-	4100 550  8050 550 
-Wire Bus Line
-	800  4350 3700 4350
 Text Notes 2250 1100 0    50   ~ 0
 REPLACED BY\n74HCT4040
 Text Notes 3250 3200 0    50   ~ 0
@@ -2461,4 +2453,44 @@ Text Label 6250 3400 3    50   ~ 0
 FEND
 Text Notes 3000 2500 0    50   ~ 0
 NOW LEND\nactive high
+Text Notes 3250 650  0    50   ~ 0
+NO LONGER USED
+Text Notes 4650 650  0    50   ~ 0
+NO LONGER USED
+Wire Bus Line
+	8800 550  10750 550 
+Wire Bus Line
+	1000 7700 1800 7700
+Wire Bus Line
+	4100 550  8050 550 
+Wire Bus Line
+	800  4350 3700 4350
+Text Notes 6900 5900 0    50   ~ 0
+*
+Text Notes 8900 6450 0    50   ~ 0
+*) NOT FOR SYNC-ON-GREEN
+Text Notes 6900 6300 0    50   ~ 0
+*
+Text Notes 8800 5350 1    50   ~ 0
+SYNC-ON-GREEN
+Text Notes 6650 5650 0    50   ~ 0
+OR 4K7
+Text Notes 6650 6050 0    50   ~ 0
+OR 10K
+Text Notes 9350 5400 0    50   ~ 0
+*
+Text Notes 9800 5550 0    50   ~ 0
+*
+Text Notes 9450 5800 0    50   ~ 0
+*
+Text Notes 9050 5900 0    50   ~ 0
+*
+Text Label 7550 5700 0    50   ~ 0
+RED
+Text Label 7550 6100 0    50   ~ 0
+BLUE
+Text Label 7650 5900 0    50   ~ 0
+GRN
+Text Label 8400 5500 3    50   ~ 0
+VBS
 $EndSCHEMATC
