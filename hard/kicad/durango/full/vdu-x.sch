@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1038,7 +1038,7 @@ L Device:R R21
 U 1 1 60E10F90
 P 7100 5500
 F 0 "R21" V 7200 5450 50  0000 C CNN
-F 1 "1K3" V 7100 5500 50  0000 C CNN
+F 1 "1K" V 7100 5500 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical" V 7030 5500 50  0001 C CNN
 F 3 "~" H 7100 5500 50  0001 C CNN
 	1    7100 5500
@@ -2331,6 +2331,8 @@ Text Label 4400 4500 2    50   ~ 0
 HPIX
 Wire Wire Line
 	3600 6800 3850 6800
+Text Label 3600 6800 0    50   ~ 0
+~DQ3
 Wire Bus Line
 	8800 550  10750 550 
 Wire Bus Line
@@ -2339,6 +2341,4 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
-Text Label 3600 6800 0    50   ~ 0
-~DQ3
 $EndSCHEMATC
