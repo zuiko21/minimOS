@@ -1260,10 +1260,6 @@ Wire Wire Line
 	2400 2350 3000 2350
 Wire Wire Line
 	4450 5150 2900 5150
-NoConn ~ 1400 3250
-NoConn ~ 1400 3350
-NoConn ~ 1400 3450
-NoConn ~ 1400 3550
 NoConn ~ 1400 3650
 NoConn ~ 1400 3750
 NoConn ~ 1400 3850
@@ -1272,23 +1268,23 @@ NoConn ~ 1400 4050
 $Comp
 L power:GND #PWR0125
 U 1 1 60C0180B
-P 1900 4550
-F 0 "#PWR0125" H 1900 4300 50  0001 C CNN
-F 1 "GND" H 1905 4377 50  0000 C CNN
-F 2 "" H 1900 4550 50  0001 C CNN
-F 3 "" H 1900 4550 50  0001 C CNN
-	1    1900 4550
+P 1800 4450
+F 0 "#PWR0125" H 1800 4200 50  0001 C CNN
+F 1 "GND" H 1805 4277 50  0000 C CNN
+F 2 "" H 1800 4450 50  0001 C CNN
+F 3 "" H 1800 4450 50  0001 C CNN
+	1    1800 4450
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:+5V #PWR0126
 U 1 1 60C01E93
-P 1900 2850
-F 0 "#PWR0126" H 1900 2700 50  0001 C CNN
-F 1 "+5V" H 1800 2950 50  0000 C CNN
-F 2 "" H 1900 2850 50  0001 C CNN
-F 3 "" H 1900 2850 50  0001 C CNN
-	1    1900 2850
+P 1800 3450
+F 0 "#PWR0126" H 1800 3300 50  0001 C CNN
+F 1 "+5V" H 1700 3550 50  0000 C CNN
+F 2 "" H 1800 3450 50  0001 C CNN
+F 3 "" H 1800 3450 50  0001 C CNN
+	1    1800 3450
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1615,7 +1611,7 @@ $EndComp
 Wire Wire Line
 	1050 4850 1250 4850
 Wire Wire Line
-	2400 5450 2400 3450
+	2400 5450 2400 4050
 $Comp
 L 74xx:74HCT00 U19
 U 3 1 60E5980E
@@ -2506,22 +2502,8 @@ Wire Wire Line
 Connection ~ 3500 7500
 Wire Wire Line
 	3500 7500 3500 7650
-$Comp
-L 4xxx:4040 U17
-U 1 1 6125842B
-P 1900 3650
-F 0 "U17" H 2300 4400 50  0000 C CNN
-F 1 "74HCT4040" H 2300 4300 50  0000 C CNN
-F 2 "" H 1900 3650 50  0001 C CNN
-F 3 "http://www.intersil.com/content/dam/Intersil/documents/cd40/cd4020bms-24bms-40bms.pdf" H 1900 3650 50  0001 C CNN
-	1    1900 3650
-	-1   0    0    -1  
-$EndComp
-NoConn ~ 1400 3150
 Wire Wire Line
 	2900 2550 2900 3900
-Wire Wire Line
-	2450 3150 2400 3150
 Entry Wire Line
 	4200 4550 4300 4650
 Wire Wire Line
@@ -2531,9 +2513,9 @@ Wire Wire Line
 Wire Wire Line
 	4100 2850 4100 4500
 Wire Wire Line
-	2450 3150 2450 5000
+	2450 3850 2450 5000
 Text Label 4300 4650 0    50   ~ 0
-VA0
+VA5
 Text Label 1900 5550 0    50   ~ 0
 D[0..7]
 Text Label 5900 2800 0    50   ~ 0
@@ -2623,6 +2605,21 @@ Text GLabel 2900 2050 1    50   Input ~ 0
 VCLK
 Text GLabel 10400 3850 2    50   Input ~ 0
 ~WE
+$Comp
+L 74xx:74HC4024 U17
+U 1 1 61680248
+P 1800 3950
+F 0 "U17" H 1550 4500 50  0000 C CNN
+F 1 "74HC4024" H 1550 4400 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 1800 4000 50  0001 C CNN
+F 3 "https://assets.nexperia.com/documents/data-sheet/74HC4024.pdf" H 1800 4000 50  0001 C CNN
+	1    1800 3950
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	2400 4050 2200 4050
+Wire Wire Line
+	2450 3850 2200 3850
 Wire Wire Line
 	10600 1050 10850 1050
 Wire Bus Line
@@ -2634,9 +2631,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	7450 950  7450 5050
-Wire Bus Line
 	10800 650  10800 1650
+Wire Bus Line
+	7450 950  7450 5050
 Wire Bus Line
 	850  7600 3100 7600
 Wire Bus Line
