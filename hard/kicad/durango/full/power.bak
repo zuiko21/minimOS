@@ -573,9 +573,9 @@ Wire Wire Line
 Wire Wire Line
 	2800 2650 3000 2650
 Text Label 2650 2850 0    50   ~ 0
-D4
+D0
 Text Label 2650 2950 0    50   ~ 0
-D5
+D1
 Text Label 2650 3050 0    50   ~ 0
 D6
 Text Label 2650 3150 0    50   ~ 0

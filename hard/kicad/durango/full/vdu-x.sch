@@ -1323,42 +1323,10 @@ Wire Wire Line
 Wire Wire Line
 	2000 4450 2000 4550
 Connection ~ 2500 4550
-$Comp
-L 74xx:74LS688 U630
-U 1 1 62499306
-P 2100 6900
-F 0 "U630" V 2550 7000 50  0000 R CNN
-F 1 "74HC688" V 2450 7100 50  0000 R CNN
-F 2 "Package_DIP:DIP-20_W7.62mm" H 2100 6900 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS688" H 2100 6900 50  0001 C CNN
-	1    2100 6900
-	0    -1   -1   0   
-$EndComp
 Wire Wire Line
 	3300 6900 3300 7200
 Wire Wire Line
 	2800 7450 2800 7400
-Wire Wire Line
-	2800 7400 2700 7400
-Connection ~ 2800 7400
-Connection ~ 2200 7400
-Wire Wire Line
-	2200 7400 2100 7400
-Connection ~ 2300 7400
-Wire Wire Line
-	2300 7400 2200 7400
-Connection ~ 2400 7400
-Wire Wire Line
-	2400 7400 2300 7400
-Connection ~ 2500 7400
-Wire Wire Line
-	2500 7400 2400 7400
-Connection ~ 2600 7400
-Wire Wire Line
-	2600 7400 2500 7400
-Connection ~ 2700 7400
-Wire Wire Line
-	2700 7400 2600 7400
 Wire Wire Line
 	3850 7200 3300 7200
 Connection ~ 3850 7200
@@ -2341,4 +2309,6 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
+Wire Wire Line
+	2100 7400 2800 7400
 $EndSCHEMATC
