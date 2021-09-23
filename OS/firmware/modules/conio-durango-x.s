@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; Durango-X firmware console 0.9.6a2
+; Durango-X firmware console 0.9.6a3
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210731-1743
+; last modified 20210924-0037
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -53,15 +53,19 @@
 ; cio_src.w (pointer to glyph definitions)
 ; cio_pt.w (screen pointer)
 
+; *** other variables, perhaps in ZP ***
+; fw_cbyt (temporary glyph storage)
+; fw_ccnt (bytes per raster counter, no longer X)
+; fw_chalf (remaining pages to write)
+
 ; *** firmware variables to be reset upon FF ***
-; fw_ink
-; fw_paper (possibly not worth combining, but putting a byte in between may unify routines)
+; fw_ccol.l (array of two-pixel combos, will store ink & paper)
 ; fw_ciop.w (upper scan of cursor position)
 ; fw_fnt.w (new, pointer to relocatable 2KB font file)
 ; fw_mask (for inverse/emphasis mode)
 ; fw_hires (0=colour, 128=hires, may contain other flags like 64=inverse)
 ; fw_cbin (binary or multibyte mode)
-; fw_ctmp (temporary use)
+
 ; first two modes are directly processed, note BM_DLE is the shifted X
 #define	BM_CMD		0
 #define	BM_DLE		32
@@ -71,9 +75,8 @@
 #define	BM_ATY		6
 #define	BM_ATX		8
 
-; define custom initial ink, change as desired
-#define	STD_INK		15
-; define custom initial paper, but zero is recommended as might be reused for variable resetting!
+; initial colours (combo array will be computed later)
+#define	STD_INK		$F
 #define	STD_PPR		0
 
 .(
@@ -123,59 +126,55 @@ cio_prn:
 	LDY #0					; reset screen offset (common)
 ; *** now check for mode and jump to specific code ***
 	LDX fw_hires			; check mode, code is different, will only check d7 in case other flags get used
-	BPL cpc_do				; skip to colour mode, hires is smaller
+	BPL cpc_col				; skip to colour mode, hires is smaller
 ; hires version (17b for CMOS, usually 231t, plus jump to cursor-right)
 cph_loop:
 			_LDAX(cio_src)	; glyph pattern (5)
 			EOR fw_mask		; eeeeeeeeeek (4)
-			STA (cio_pt), Y	; put it on screen, note variable pointer (5)
+			STA (cio_pt), Y	; put it on screen (5)
 			INC cio_src		; advance to next glyph byte (5)
-			BNE cph_nw_nw	; (usually 3, rarely 7)
+			BNE cph_nw		; (usually 3, rarely 7)
 				INC cio_src+1
 cph_nw:
 			TYA				; advance to next screen raster (2+2)
 			CLC
 			ADC #32			; 32 bytes/raster EEEEEEEEK (2)
 			TAY				; offset ready (2)
-			BPL cph_loop	; offset always below 128 (8x16, 3t)
-		BMI cur_r			; advance to next position!
-; colour version, 59b, typically 1895t (56/1823 if in ZP, 4% faster)
-cpc_do:
+			BNE cph_loop	; offset will just wrap at the end EEEEEEEK (3)
+		BEQ cur_r			; advance to next position! no need for BRA (3)
+; colour version, 60b, typically (53b, t in ZP)
+cpc_col:
+	LDX #2
+	STX fw_chalf			; two pages must be written (2+4*)
+cpc_do:						; outside loop (done 8 times) is 8x(38+159) ~1576t (1464t in ZP)
 		_LDAX(cio_src)		; glyph pattern (5)
-		STA fw_tmp			; consider impact of putting this on ZP *** (4*)
+		EOR fw_mask			; in case inverse mode is set, much better here (4)
+		STA fw_cbyt			; consider impact of putting this on ZP *** (4*)
 		LDX #4				; each glyph byte takes 4 screen bytes! (2)
+		STX fw_ccnt			; cannot stay in X as will need the index (4*)
 		INC cio_src			; advance to next glyph byte (5+usually 3)
 		BNE cpc_loop
 			INC cio_src+1
-cpc_loop:					; (all loop is done 4x52, 207t)
-			ASL fw_tmp		; extract leftmost bit from temporary glyph (6*)
-			BCC cpc_pl
-				LDA fw_ink	; bit ON means INK (in this case, 2+4+3=9)
-				BCS cpc_rot
-cpc_pl:
-				LDA fw_ppr	; bit OFF means PAPER (otherwise, 3+4=7; average 8)
-cpc_rot:
-			ASL
-			ASL
-			ASL
-			ASL				; colour code is now upper nibble (2+2+2+2)
-			ASL fw_tmp		; extract next bit from temporary glyph (6*)
-			BCC cpc_pr		; ditto for rightmost nibble (average 8)
-				ORA fw_ink	; bit ON means INK
-				BCS cpc_msk
-cpc_pr:
-			ORA fw_ppr		; bit OFF means PAPER
-cpc_msk:
-			EOR fw_mask		; in case inverse mode is set (4)
+cpc_loop:					; (all loop is done 4x40, 159t -- 4x37, 147t in ZP)
+			LDA #0			; clear byte to receive the index (2)
+			ASL fw_cbyt		; extract leftmost bit from temporary glyph (6*)
+			ROL				; and insert it into A (2)
+			ASL fw_cbyt		; ditto for next bit (6+2*)
+			ROL
+			TAX				; use as index (2)
+			LDA fw_ccol, X	; get byte pattern for this combo (4)
 			STA (cio_pt), Y	; put it on screen (5)
 			INY				; next screen byte for this glyph byte (2)
-			DEX				; glyph byte done? (2+3)
+			DEC fw_ccnt		; glyph byte done? (6+3*)
 			BNE cpc_loop
 		TYA					; advance to next screen raster, but take into account the 4-byte offset (2+2+2)
 		CLC
 		ADC #60
 		TAY					; offset ready (2)
-		BNE cpc_do			; offset will get zeroed for colour (8x32) (3, like all code is done 8x)
+		BNE cpc_do			; unfortunately will wrap twice! (mostly 3)
+			INC cio_pt+1	; next page for the last 4 raster
+			DEC fw_chalf	; only one half done? go for next and last
+		BNE cpc_do
 ; advance screen pointer before exit, just go to cursor-right routine!
 ;	JMP cur_r				; no need for jump if cursor-right is just here!
 
@@ -446,14 +445,12 @@ cio_ff:
 ; fw_mask (for inverse/emphasis mode)
 ; fw_cbin (binary or multibyte mode)
 
-	_STZA fw_cbin			; standard, character mode
+;	_STZA fw_cbin			; standard, character mode
 	_STZA fw_mask			; true video
-	_STZA fw_ppr			; black background (ignored in hires)
-; might use STA and LDA # with desired background colour, instead of the above
-;	LDA #STD_PPR
-;	STA fw_ppr
-	LDA #STD_INK			; white foreground or as desired
-	STA fw_ink				; ignored in hires
+	LDA #STD_INK			; preload standard colour combos
+	JSR set_ink				; these will clear fw_cbin
+	LDA #STD_PPR
+	JSR set_ppr
 	LDY #>font				; standard font address
 	LDA #<font
 	STY fw_fnt				; set firmware pointer (will need that again after FF)
@@ -563,14 +560,48 @@ md_atyx:
 ; *******************************
 cn_ink:						; 2= ink to be set
 	AND #15					; even if hires will just use d0, keep whole value for this hardware
-	STA fw_ink
+;	STA fw_ink
+set_ink:
+	STA fw_cbyt				; temporary storage
+	ASL
+	ASL
+	ASL
+	ASL						; ink again, but in high nibble
+	STA fw_ccnt				; another temporary storage (high nibble)
+	ORA fw_cbyt				; twice
+	STA fw_ccol+3			; both INK
+	LDA fw_ccol+2			; this was old ink-paper
+	AND #$0F				; keep paper only
+	ORA fw_ccnt				; now it's INK-PAPER
+	STA fw_ccol+2
+	LDA fw_ccol+1			; this is paper and old ink
+	AND #$F0				; keep paper only
+	ORA fw_cbyt				; now it's PAPER-INK
+	STA fw_ccol+1
 md_std:
 	_STZA fw_cbin			; back to standard mode
 	RTS
 
 cn_ppr:						; 4= paper to be set
 	AND #15					; same as ink
-	STA fw_ppr				; could use some trickery to use a common routine taking X as index
+;	STA fw_ppr
+set_paper:
+	STA fw_cbyt				; temporary storage
+	ASL
+	ASL
+	ASL
+	ASL						; paper again, but in high nibble
+	STA fw_ccnt				; another temporary storage (high nibble)
+	ORA fw_cbyt				; twice
+	STA fw_ccol				; both PAPER
+	LDA fw_ccol+1			; this is old paper and ink
+	AND #$0F				; keep ink only
+	ORA fw_ccnt				; now it's PAPER-INK
+	STA fw_ccol+1
+	LDA fw_ccol+2			; this was ink and old paper
+	AND #$F0				; keep ink only
+	ORA fw_cbyt				; now it's INK-PAPER
+	STA fw_ccol+2
 	_BRA md_std
 
 cn_sety:					; 6= Y to be set, advance mode to 8
