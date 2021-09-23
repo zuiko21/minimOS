@@ -12,7 +12,7 @@ fd		= 6
 cnt		= 7
 
 ; code & I/O location
-io8flags	= $DF80			; was $8000
+io8flags	= $8000			; was $8000
 font		= $500			; page aligned!
 
 ; init stuff
