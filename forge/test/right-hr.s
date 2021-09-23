@@ -7,6 +7,7 @@ ptr = 0
 
 	LDA #$80
 	STA $8000				; hires mode
+	STA $DF80
 	LDX #$60
 	LDY #0
 	STX ptr+1

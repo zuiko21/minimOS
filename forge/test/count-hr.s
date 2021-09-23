@@ -7,6 +7,7 @@ ptr = 0
 
 	LDA #$80
 	STA $8000				; set hires (later $DF80) 
+	STA $DF80				; ready for new memory map
 	LDY #0
 	STY ptr
 	TYA						; first value

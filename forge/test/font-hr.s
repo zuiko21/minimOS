@@ -8,6 +8,7 @@ org = 2
 
 	LDA #$80
 	STA $8000				; set hires (later $DF80) 
+	STA $DF80				; new address 
 	LDY #0
 	STY ptr
 	STY org
@@ -45,11 +46,12 @@ loop:
 lock:
 ; inverse bars 
 	STA $8000				; set flags
-	LDX #4
+	STA $DF80				; set flags (new address)
+	LDX #3					; originally 4, compensate if using both old and new addresses
 rb_1:
 		INX
 		BNE rb_1			; delay 1.28 kt (~830 µs, 600 Hz)
-	EOR #64					; toggle inverse mode... and buzzer output
+	EOR #64					; toggle inverse mode
 	JMP lock
 
 	.dsb	$500-*, $FF
