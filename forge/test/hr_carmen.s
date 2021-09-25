@@ -3,13 +3,13 @@
 
 * = $6000					; VRAM start
 
-	LDA #$C0				; set hires, inverted mode!
+	LDA #$F0				; set hires, inverted mode!
 	STA $DF80				; new FLAGS port
 lock:
 	BRA lock				; must lock here as will be exectuted!
 
 off = * - $6000
 ; binary data from file, offset 11+2 as it's a PBM
-	.bin	11+off, 8190, "../../other/data/cra-hires.pbm"
+	.bin	11+off, 8185, "../../other/data/cra-hires.pbm"
 
-	.byt	$C0				; mode switching for the old FLAGS address ($8000)
+	.byt	$F0				; mode switching for the old FLAGS address ($8000)

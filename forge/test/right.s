@@ -1,10 +1,12 @@
-; test of colour Druango-X screen
+; test of colour Durango-X screen
 ; (c) 2021 Carlos J. Santisteban 
 
 	* =	$400
 
 ptr = 0
 
+	LDA #$30
+	STA $8000				; set all flags
 	LDX #$60
 	LDY #0
 	STX ptr+1

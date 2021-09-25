@@ -1,6 +1,6 @@
 ; panics from test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210925-1644
+; last modified 20210925-2227
 
 ; ****************************
 ; *** standard definitions ***
@@ -25,7 +25,7 @@ reset:
 	TXS
 ; Durango-X specific stuff
 	STX IOAen				; disable hardware interrupt
-	LDA #0					; flag init and zp test initial value
+	LDA #$30				; flag init
 	STA IO8lh				; set colour mode
 ; put banner on screen
 	LDX #0					; reset index
@@ -75,7 +75,8 @@ lock:
 
 ; *** print routine (A= 0, $20...)
 prn:
-	STZ IO8lh				; disable inverse
+	LDX #$30
+	STX IO8lh				; disable inverse
 	LSR
 	LSR
 	STA himem				; temporary add
@@ -177,7 +178,7 @@ zb_1:
 addr_bad:
 ; flashing screen and intermittent beep ~0.21s
 ; note that inverse video runs on $5F1x while true video on $5F2x
-	LDA #64					; initial inverse video
+	LDA #$70				; initial inverse video
 	STA IO8lh				; set flags
 ab_1:
 			INY
@@ -185,7 +186,8 @@ ab_1:
 		INX
 		STX IOBeep			; toggle buzzer output
 		BNE ab_1
-	STX IO8lh				; this returns to true video, buzzer was off
+	EOR #$40
+	STA IO8lh				; this returns to true video, buzzer was off
 ab_2:
 			INY
 			BNE ab_2		; delay 1.28 kt (~830 µs)
@@ -198,9 +200,9 @@ ab_2:
 * = $4740					; *** bad RAM ***
 ram_bad:
 ; inverse bars and continuous beep
-	LDA #64
+	LDA #$71
 rb_0:
-	STA IO8lh				; set flags (hopefully A<128)
+	STA IO8lh				; set flags
 	STA IOBeep				; set buzzer output
 rb_1:
 		INX
@@ -244,8 +246,7 @@ si_1:
 fast_irq:
 ; 1.7 kHz beep while IRQ LED blinks
 	SEC
-	LDA #%01101111			; couple of blinks per cycle (note C is set in test!)
-fi_0:
+	LDA #%01011111			; couple of blinks per cycle (note C is set in test!)
 fi_1:
 		LDY #91
 fi_2:
@@ -257,12 +258,12 @@ fi_2:
 	ROL						; keep rotating pattern (cycle ~0.68 s)
 	TAY						; use as index
 	STA IOAen, Y			; LED is on only when A0=0, ~44% the time
-	BNE fi_0				; A/X are NEVER zero
+	BNE fi_1				; A/X are NEVER zero
 
 ; *** internal error handler ***
 break:
 	STZ $681A
-	LDA #$80				; hires mode
+	LDA #$B0				; hires mode
 	STA IO8lh
 	BNE break
 

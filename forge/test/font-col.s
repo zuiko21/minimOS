@@ -12,12 +12,13 @@ fd		= 6
 cnt		= 7
 
 ; code & I/O location
-io8flags	= $8000			; was $8000
+io8flags	= $8000			; will be $DF80
 font		= $500			; page aligned!
 
 ; init stuff
+	LDA #$30
+	STA io8flags			; set colour mode
 	LDY #0
-	STY io8flags			; set colour mode 
 	STY paper				; reset background colour, assume 0
 	STY ptr
 	STY org					; assume font is page-aligned
@@ -100,7 +101,7 @@ lnw:
 
 ; ****************************
 ; ended, keep psychedelic bars
-	LDA #0					; keep colour mode...
+	LDA #$30				; keep colour mode...
 lock:
 ; inverse bars 
 	STA io8flags			; set flags
@@ -109,7 +110,7 @@ rb_1:
 		INX
 		BNE rb_1			; delay 1.28 kt (~830 µs, 600 Hz)
 	CLC
-	ADC #64					; toggle inverse mode... and resolution
+	EOR #64					; toggle inverse mode
 	BRA lock
 fill:
 	.dsb	$500-*, $FF

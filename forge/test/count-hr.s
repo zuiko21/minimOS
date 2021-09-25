@@ -5,7 +5,7 @@
 
 ptr = 0
 
-	LDA #$80
+	LDA #$B0				; VRAM at 24K
 	STA $8000				; set hires (later $DF80) 
 	STA $DF80				; ready for new memory map
 	LDY #0

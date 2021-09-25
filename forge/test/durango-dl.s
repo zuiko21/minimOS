@@ -1,6 +1,6 @@
 ; FULL test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210925-1236
+; last modified 20210925-2232
 
 ; *** memory maps ***
 ;				ROMable		DOWNLOADable
@@ -46,7 +46,7 @@ reset:
 	TXS
 ; Durango-X specific stuff
 	STX IOAen				; disable hardware interrupt
-	LDA #0					; flag init and zp test initial value
+	LDA #$30				; flag init
 	STA IO8lh				; set colour mode
 
 ; * zeropage test *
@@ -363,7 +363,7 @@ it_b:
 		DEX
 		BPL it_b			; no offset!
 ; inverse video during test (brief flash)
-	LDA #64
+	LDA #$70
 	STA IO8lh
 ; interrupt setup
 	LDY #<isr				; ISR address
@@ -373,7 +373,7 @@ it_b:
 	LDY #0					; initial value and inner counter reset
 	STY test
 ; must enable interrupts!
-	STY $A001				; hardware interrupt enable (LED goes off)
+	STY IOAen+1				; hardware interrupt enable (LED goes off)
 	LDX #154				; about 129 ms, time for 32 interrupts
 	CLI						; start counting!
 ; this provides timeout
@@ -385,7 +385,8 @@ it_1:
 ; check timeout results for slow or fast
 	SEI						; no more interrupts, but hardware still generates them (LED off)
 ; back to true video
-	STX IO8lh				; X known to be zero
+	LDX #$30				; can no longer be zero
+	STX IO8lh
 ; display dots indicating how many times IRQ happened
 	LDX test				; using amount as index
 		BEQ it_slow			; did not respond at all! eeeeeek
@@ -512,7 +513,7 @@ zb_1:
 	NOP						; perfect timing!
 	INX
 	STX IOBeep				; toggle buzzer output
-	JMP zp_bad				; outer loop is 11t 
+	BRA zp_bad				; outer loop is 11t 
 
 	.dsb	$5F10-*, $FF	; padding from $5F0D
 
@@ -520,7 +521,7 @@ zb_1:
 addr_bad:
 ; flashing screen and intermittent beep ~0.21s
 ; note that inverse video runs on $5F1x while true video on $5F2x
-	LDA #64					; initial inverse video
+	LDA #$70				; initial inverse video
 	STA IO8lh				; set flags
 ab_1:
 			INY
@@ -528,7 +529,8 @@ ab_1:
 		INX
 		STX IOBeep			; toggle buzzer output
 		BNE ab_1
-	STX IO8lh				; this returns to true video, buzzer was off
+	EOR #$40
+	STA IO8lh				; this returns to true video, buzzer was off
 ab_2:
 			INY
 			BNE ab_2		; delay 1.28 kt (~830 µs)
@@ -541,14 +543,16 @@ ab_2:
 * = $5F30					; *** bad RAM ***
 ram_bad:
 ; inverse bars and continuous beep
+	LDA #$71
+rb_0:
 	STA IO8lh				; set flags (hopefully A<128)
 	STA IOBeep				; set buzzer output
 rb_1:
 		INX
 		BNE rb_1			; delay 1.28 kt (~830 µs, 600 Hz)
 	EOR #65					; toggle inverse mode... and buzzer output
-	JMP ram_bad
-
+	BRA rb_0
+ramend:
 	.dsb	$5F40-*, $FF	; padding
 
 * = $5F40					; *** bad ROM ***
@@ -567,6 +571,7 @@ rom_bad:
 * = $5F50					; *** slow or missing IRQ ***
 slow_irq:
 ; keep IRQ LED off, low pitch buzz (~125 Hz)
+	STA IOAen+1				; LED off
 	LDY #116				; 116x53t ~4 ms
 si_1:
 		JSR delay
@@ -574,7 +579,7 @@ si_1:
 		BPL si_1
 	INX
 	STX IOBeep				; toggle buzzer output
-	JMP slow_irq
+	BRA slow_irq
 
 	.dsb	$5F60-*, $FF	; padding
 
@@ -593,7 +598,7 @@ fi_2:
 	ROL						; keep rotating pattern (cycle ~0.68 s)
 	TAY						; use as index
 	STA IOAen, Y			; LED is on only when A0=0, ~44% the time
-	BNE fast_irq			; A/X are NEVER zero
+	BNE fi_1				; A/X are NEVER zero
 
 	.dsb	$5FF0-*, $FF	; padding
 
@@ -602,7 +607,6 @@ fi_2:
 ; $5FFx = ERROR FREE final lock
 * = $5FF0
 all_ok:
-	NOP
 	NOP
 	NOP
 	NOP

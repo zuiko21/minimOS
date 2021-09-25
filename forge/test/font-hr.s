@@ -6,7 +6,7 @@
 ptr = 0
 org = 2
 
-	LDA #$80
+	LDA #$B0
 	STA $8000				; set hires (later $DF80) 
 	STA $DF80				; new address 
 	LDY #0
@@ -42,12 +42,12 @@ loop:
 	INC ptr+1
 	BPL loop
 
-	LDA #$80				; keep hires mode...
+	LDA #$B0				; keep hires mode...
 lock:
 ; inverse bars 
 	STA $8000				; set flags
 	STA $DF80				; set flags (new address)
-	LDX #3					; originally 4, compensate if using both old and new addresses
+	LDX #23					; originally 4, compensate if using both old and new addresses
 rb_1:
 		INX
 		BNE rb_1			; delay 1.28 kt (~830 µs, 600 Hz)
