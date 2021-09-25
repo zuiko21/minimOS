@@ -1,6 +1,6 @@
 ; panics from test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210925-1347
+; last modified 20210925-1644
 
 ; ****************************
 ; *** standard definitions ***
@@ -53,15 +53,15 @@ clear:
 		INC sysptr+1
 		BPL clear
 ; set NMI for panic switching
-	LDX #$47				; panic address start
-	LDY #0
-	STX posi				; set indirect jump
-	STY posi+1
+	LDX #>panics			; panic address start
+	LDY #<panics
+	STY posi				; set indirect jump
+	STX posi+1
 
 	STZ test				; bounce control
 
 	LDX #>isr				; set interrupt vector
-;	LDY #<isr
+	LDY #<isr
 	STY fw_nmi
 	STX fw_nmi+1
 
@@ -72,6 +72,32 @@ clear:
 	STX fw_irq+1
 lock:
 	BNE lock				; locked... but wait for NMI!
+
+; *** print routine (A= 0, $20...)
+prn:
+	STZ IO8lh				; disable inverse
+	LSR
+	LSR
+	STA himem				; temporary add
+	LSR
+;	CLC
+	ADC himem				; n*12
+	TAX						; index of minibanner
+	LDY #0					; reset offset, worth it
+pl:
+		LDA texts, X		; first scan
+		STA $681C, Y
+		LDA texts+3, X		; second
+		STA $685C, Y
+		LDA texts+6, X		; third
+		STA $689C, Y
+		LDA texts+9, X		; and fourth
+		STA $68DC, Y
+		INX					; advance in banner offset
+		INY
+		CPY #3				; number of bytes?
+		BNE pl
+	RTS
 
 	.dsb	$4100-*, $FF	; padding
 
@@ -85,8 +111,10 @@ banner:
 
 ; interrupt routine (for NMI as a routine switching button) *** currently $4500
 isr:
+	PHA
 	LDA test
 	BNE exit				; avoid bouncing
+		PHX:PHY
 		INC test
 loop:
 			INC himem
@@ -99,9 +127,12 @@ loop:
 			LDA #0
 do:
 		STA posi
+		JSR prn				; display little text (A=0, $20, $40...)
 		STZ test			; allow future interrupts after delay
+		PLY:PLX:PLA
 		JMP (posi)
 exit:
+	PLA
 	RTI
 
 ; *** delay routine (may be elsewhere)
@@ -112,6 +143,14 @@ delay:
 dl_1:
 	RTS						; for timeout counters
 
+; *** small texts (3x3)
+texts:
+	.byt	$FF, $BF, $FB, $BF, $BF, $FB, $FB, $BF, $BB, $FF, $BF, $BB	; ZP
+	.byt	$FF, $FB, $FB, $FB, $FB, $FB, $FF, $FB, $FB, $FB, $FB, $FF	; AL
+	.byt	$FF, $FB, $FB, $FB, $FB, $FB, $FF, $BB, $FF, $FB, $FB, $FF	; RB
+	.byt	$FF, $BF, $FF, $FB, $BF, $BF, $FB, $BF, $FB, $FF, $BF, $BF	; CR
+	.byt	$FF, $BF, $BB, $FB, $BF, $BB, $BF, $BF, $BB, $FF, $BF, $BB	; SI
+	.byt	$FF, $BF, $BB, $FB, $BF, $BB, $FF, $BF, $BB, $FB, $BF, $BB	; FI
 misc_end:
 
 	.dsb	$4700-*, $FF	; padding
@@ -120,6 +159,7 @@ misc_end:
 ; *** panic routines ***
 ; **********************
 * = $4700					; *** zero page fail ***
+panics:
 zp_bad:
 ; high pitched beep (158t ~4.86 kHz)
 	LDY #29
@@ -158,13 +198,15 @@ ab_2:
 * = $4740					; *** bad RAM ***
 ram_bad:
 ; inverse bars and continuous beep
+	LDA #64
+rb_0:
 	STA IO8lh				; set flags (hopefully A<128)
 	STA IOBeep				; set buzzer output
 rb_1:
 		INX
 		BNE rb_1			; delay 1.28 kt (~830 µs, 600 Hz)
 	EOR #65					; toggle inverse mode... and buzzer output
-	JMP ram_bad
+	JMP rb_0
 
 	.dsb	$4760-*, $FF	; padding
 
@@ -185,6 +227,8 @@ rom_bad:
 * = $4780					; *** slow or missing IRQ ***
 slow_irq:
 ; keep IRQ LED off, low pitch buzz (~125 Hz)
+	STA IOAen+1				; LED off
+si_0:
 	LDY #116				; 116x53t ~4 ms
 si_1:
 		JSR delay
@@ -199,7 +243,9 @@ si_1:
 * = $47A0					; *** fast or spurious IRQ ***
 fast_irq:
 ; 1.7 kHz beep while IRQ LED blinks
-	LDA #$0F				; %00001111·1, ~44% duty cycle for LED (note C is set in test!)
+	SEC
+	LDA #%01101111			; couple of blinks per cycle (note C is set in test!)
+fi_0:
 fi_1:
 		LDY #91
 fi_2:
@@ -211,10 +257,11 @@ fi_2:
 	ROL						; keep rotating pattern (cycle ~0.68 s)
 	TAY						; use as index
 	STA IOAen, Y			; LED is on only when A0=0, ~44% the time
-	BNE fast_irq			; A/X are NEVER zero
+	BNE fi_0				; A/X are NEVER zero
 
 ; *** internal error handler ***
 break:
+	STZ $681A
 	LDA #$80				; hires mode
 	STA IO8lh
 	BNE break
