@@ -1483,17 +1483,6 @@ F 3 "" H 11150 1250 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Connection ~ 11150 1250
-$Comp
-L Connector_Generic:Conn_01x04 J9
-U 1 1 624530A2
-P 10750 1950
-F 0 "J9" V 10622 2130 50  0000 L CNN
-F 1 "MID8" V 10713 2130 50  0000 L CNN
-F 2 "" H 10750 1950 50  0001 C CNN
-F 3 "~" H 10750 1950 50  0001 C CNN
-	1    10750 1950
-	0    1    1    0   
-$EndComp
 Connection ~ 11150 2100
 Wire Wire Line
 	10550 2150 10350 2150
@@ -1813,14 +1802,6 @@ Text Label 5850 4900 3    50   ~ 0
 ~HVG
 Text Label 9800 5000 0    50   ~ 0
 CSYNC
-Text Label 10550 1800 1    50   ~ 0
-M5
-Text Label 10650 1800 1    50   ~ 0
-M4
-Text Label 10750 1800 1    50   ~ 0
-M3
-Text Label 10850 1800 1    50   ~ 0
-M2
 Wire Wire Line
 	2600 1200 2600 2800
 Wire Wire Line
@@ -2206,7 +2187,7 @@ Wire Wire Line
 Text Label 2500 5900 2    50   ~ 0
 ~FLAGS
 Text GLabel 1800 6000 2    50   Input ~ 0
-~FEAT
+~STAT
 Text GLabel 1800 6200 2    50   Input ~ 0
 ~BLANK
 Wire Wire Line
@@ -2364,16 +2345,30 @@ Wire Wire Line
 	8300 4800 8300 4650
 Wire Wire Line
 	8300 6200 8300 6400
+Text Notes 700  7400 0    50   ~ 0
+MAY CONNECT TO PIN 1\nREMOVING PIN 12
+NoConn ~ 10750 1750
+NoConn ~ 10850 1750
+Text GLabel 10650 1850 2    50   Input ~ 0
+SC0
+Text GLabel 10650 1950 2    50   Input ~ 0
+SC1
+Wire Wire Line
+	10650 1850 10650 1750
+Wire Wire Line
+	10650 1950 10550 1950
+Wire Wire Line
+	10550 1950 10550 1750
+Wire Bus Line
+	600  5800 600  7750
 Wire Bus Line
 	2200 6300 2700 6300
 Wire Bus Line
 	600  7750 2300 7750
 Wire Bus Line
-	600  5800 600  7750
-Wire Bus Line
-	800  4350 3700 4350
-Wire Bus Line
 	8800 550  10750 550 
 Wire Bus Line
 	4100 550  8050 550 
+Wire Bus Line
+	800  4350 3700 4350
 $EndSCHEMATC

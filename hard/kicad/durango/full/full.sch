@@ -791,19 +791,7 @@ Wire Bus Line
 Wire Bus Line
 	7500 5100 5850 5100
 Wire Wire Line
-	6650 2900 6100 2900
-Wire Wire Line
-	6100 2900 6100 3200
-Wire Wire Line
-	6100 3200 6150 3200
-Wire Wire Line
-	6100 3200 6100 3800
-Wire Wire Line
-	6100 3800 6150 3800
-Connection ~ 6100 3200
-Wire Wire Line
 	6650 2900 6950 2900
-Connection ~ 6650 2900
 Wire Wire Line
 	6650 750  7600 750 
 Wire Wire Line
@@ -2593,9 +2581,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	10800 650  10800 1650
-Wire Bus Line
 	7450 950  7450 5050
+Wire Bus Line
+	10800 650  10800 1650
 Wire Bus Line
 	650  5500 650  7300
 Wire Bus Line
@@ -2612,4 +2600,8 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
+Text GLabel 6150 3200 1    50   Input ~ 0
+SC1
+Text GLabel 6150 3800 1    50   Input ~ 0
+SC0
 $EndSCHEMATC
