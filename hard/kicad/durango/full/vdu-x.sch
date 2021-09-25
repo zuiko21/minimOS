@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1426,8 +1426,6 @@ Text Label 10150 1750 2    50   ~ 0
 HIRES
 Wire Wire Line
 	11150 1250 11150 2100
-Text GLabel 9950 750  0    50   Input ~ 0
-~RESET
 Wire Wire Line
 	9650 1750 10350 1750
 Wire Wire Line
@@ -2371,4 +2369,17 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
+Text Notes 3000 6900 0    50   ~ 0
+LOWER FOR INVERSE?
+$Comp
+L power:+5V #PWR0151
+U 1 1 6156618F
+P 9950 750
+F 0 "#PWR0151" H 9950 600 50  0001 C CNN
+F 1 "+5V" V 9965 878 50  0000 L CNN
+F 2 "" H 9950 750 50  0001 C CNN
+F 3 "" H 9950 750 50  0001 C CNN
+	1    9950 750 
+	0    -1   -1   0   
+$EndComp
 $EndSCHEMATC

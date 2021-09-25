@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1169,20 +1169,7 @@ Text Label 7350 6100 0    50   ~ 0
 ~IOAQ
 Text Label 7350 6200 0    50   ~ 0
 ~IOBQ
-Wire Wire Line
-	3500 750  2700 750 
 Connection ~ 3500 750 
-$Comp
-L Device:R_Network04 RN1
-U 1 1 60A49F0F
-P 2500 950
-F 0 "RN1" H 2800 1000 50  0000 R CNN
-F 1 "4K7" H 2800 900 50  0000 R CNN
-F 2 "Resistor_THT:R_Array_SIP5" V 2775 950 50  0001 C CNN
-F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 2500 950 50  0001 C CNN
-	1    2500 950 
-	-1   0    0    -1  
-$EndComp
 Wire Wire Line
 	2700 1150 2700 1650
 Wire Wire Line
@@ -1311,7 +1298,6 @@ F 3 "" H 2150 2050 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	2150 1650 2700 1650
-Connection ~ 2700 1650
 Wire Wire Line
 	2700 1650 2700 2250
 $Comp
@@ -1451,8 +1437,6 @@ $EndComp
 Wire Wire Line
 	1750 1550 2750 1550
 Wire Wire Line
-	2750 1550 2750 2150
-Wire Wire Line
 	2750 2150 2850 2150
 Wire Wire Line
 	1650 950  1750 950 
@@ -1495,9 +1479,6 @@ $EndComp
 Connection ~ 1850 950 
 Wire Wire Line
 	2150 950  2150 750 
-Wire Wire Line
-	2150 750  2700 750 
-Connection ~ 2700 750 
 $Comp
 L Switch:SW_Push SW1
 U 1 1 60D71AF9
@@ -1962,8 +1943,6 @@ Text Label 4400 6850 1    50   ~ 0
 ~HIRES
 Text GLabel 2200 5300 2    50   Input ~ 0
 R~W
-Text GLabel 1900 1550 3    50   Input ~ 0
-~RESET
 Text Label 5350 4950 0    50   ~ 0
 ~RESET
 Connection ~ 9900 4900
@@ -1983,10 +1962,6 @@ Wire Wire Line
 Wire Wire Line
 	2700 5650 2700 5800
 Wire Wire Line
-	2800 5650 2800 5800
-Wire Wire Line
-	2900 5650 2900 5800
-Wire Wire Line
 	3000 5650 3000 5800
 Wire Wire Line
 	3100 5650 3100 5800
@@ -1997,7 +1972,7 @@ Entry Wire Line
 Entry Wire Line
 	2700 5650 2600 5550
 Entry Wire Line
-	2800 5650 2700 5550
+	2900 5650 2800 5550
 Entry Wire Line
 	2900 5650 2800 5550
 Entry Wire Line
@@ -2014,8 +1989,6 @@ Text Label 2700 5800 1    50   ~ 0
 D1
 Text Label 2800 5800 1    50   ~ 0
 D2
-Text Label 2900 5800 1    50   ~ 0
-D3
 Text Label 3000 5800 1    50   ~ 0
 D4
 Text Label 3100 5800 1    50   ~ 0
@@ -2067,7 +2040,7 @@ Wire Wire Line
 	2700 7450 2700 7300
 Text Label 3100 7450 1    50   ~ 0
 ~BWR
-Connection ~ 2700 5550
+Connection ~ 2800 5550
 $Comp
 L power:+5V #PWR0159
 U 1 1 618E9A3A
@@ -2200,7 +2173,7 @@ Wire Wire Line
 	2450 3400 2450 5000
 Text Label 4300 4650 0    50   ~ 0
 VA5
-Text Label 2750 5550 0    50   ~ 0
+Text Label 2800 5550 0    50   ~ 0
 D[0..7]
 Text Label 5800 4750 2    50   ~ 0
 MA[0..14]
@@ -2443,14 +2416,8 @@ F 3 "http://www.ti.com/lit/gpn/sn74hc00" H 3950 5850 50  0001 C CNN
 	4    3950 5850
 	0    1    -1   0   
 $EndComp
-Wire Bus Line
-	2700 650  2700 750 
 Wire Wire Line
 	2200 6850 3500 6850
-Wire Bus Line
-	2700 1650 2700 5550
-Wire Bus Line
-	2700 750  2700 1650
 Wire Wire Line
 	3500 6850 3500 6800
 Connection ~ 3600 7450
@@ -2566,14 +2533,42 @@ Wire Wire Line
 	3850 6150 3850 6750
 Text Label 4050 7050 2    50   ~ 0
 ~IO
-Wire Bus Line
-	2500 5550 2700 5550
+Text GLabel 6150 3200 1    50   Input ~ 0
+SC1
+Text GLabel 6150 3800 1    50   Input ~ 0
+SC0
+Wire Wire Line
+	2750 1550 2750 2150
+Wire Wire Line
+	2150 750  2700 750 
+Wire Wire Line
+	3500 750  2700 750 
+Connection ~ 2700 750 
+$Comp
+L Device:R_Network04 RN1
+U 1 1 60A49F0F
+P 2500 950
+F 0 "RN1" H 2800 1000 50  0000 R CNN
+F 1 "4K7" H 2800 900 50  0000 R CNN
+F 2 "Resistor_THT:R_Array_SIP5" V 2775 950 50  0001 C CNN
+F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 2500 950 50  0001 C CNN
+	1    2500 950 
+	-1   0    0    -1  
+$EndComp
+Entry Wire Line
+	2700 5550 2800 5650
+Wire Wire Line
+	2800 5650 2800 5800
+Wire Wire Line
+	2900 5650 2900 5800
 Wire Wire Line
 	10600 1050 10850 1050
 Wire Bus Line
+	2500 5550 2800 5550
+Wire Bus Line
 	2800 7550 3200 7550
 Wire Bus Line
-	2700 5550 3200 5550
+	2800 5550 3200 5550
 Wire Bus Line
 	5800 3350 5800 5050
 Wire Bus Line
@@ -2581,9 +2576,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	7450 950  7450 5050
-Wire Bus Line
 	10800 650  10800 1650
+Wire Bus Line
+	7450 950  7450 5050
 Wire Bus Line
 	650  5500 650  7300
 Wire Bus Line
@@ -2595,13 +2590,13 @@ Wire Bus Line
 Wire Bus Line
 	5500 650  5500 1650
 Wire Bus Line
+	2800 650  2800 5550
+Wire Bus Line
 	5900 700  5900 5900
 Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Text GLabel 6150 3200 1    50   Input ~ 0
-SC1
-Text GLabel 6150 3800 1    50   Input ~ 0
-SC0
+Text Label 2900 5800 1    50   ~ 0
+D3
 $EndSCHEMATC
