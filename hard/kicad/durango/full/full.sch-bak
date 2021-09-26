@@ -2561,6 +2561,8 @@ Wire Wire Line
 	2800 5650 2800 5800
 Wire Wire Line
 	2900 5650 2900 5800
+Text Label 2900 5800 1    50   ~ 0
+D3
 Wire Wire Line
 	10600 1050 10850 1050
 Wire Bus Line
@@ -2576,9 +2578,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	10800 650  10800 1650
-Wire Bus Line
 	7450 950  7450 5050
+Wire Bus Line
+	10800 650  10800 1650
 Wire Bus Line
 	650  5500 650  7300
 Wire Bus Line
@@ -2597,6 +2599,4 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Text Label 2900 5800 1    50   ~ 0
-D3
 $EndSCHEMATC

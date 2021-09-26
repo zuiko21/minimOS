@@ -1195,12 +1195,12 @@ $Comp
 L 74xx:74HCT02 U16
 U 4 1 6181229E
 P 2950 3800
-F 0 "U16" V 2900 4050 50  0000 L CNN
-F 1 "74HC02" V 3000 4000 50  0000 L CNN
+F 0 "U16" V 2900 3350 50  0000 L CNN
+F 1 "74HC02" V 3000 3300 50  0000 L CNN
 F 2 "Package_DIP:DIP-14_W7.62mm" H 2950 3800 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 2950 3800 50  0001 C CNN
 	4    2950 3800
-	0    1    1    0   
+	0    -1   1    0   
 $EndComp
 Wire Wire Line
 	8050 2450 8050 2150
@@ -2357,18 +2357,6 @@ Wire Wire Line
 	10650 1950 10550 1950
 Wire Wire Line
 	10550 1950 10550 1750
-Wire Bus Line
-	600  5800 600  7750
-Wire Bus Line
-	2200 6300 2700 6300
-Wire Bus Line
-	600  7750 2300 7750
-Wire Bus Line
-	8800 550  10750 550 
-Wire Bus Line
-	4100 550  8050 550 
-Wire Bus Line
-	800  4350 3700 4350
 Text Notes 3000 6900 0    50   ~ 0
 LOWER FOR INVERSE?
 $Comp
@@ -2382,4 +2370,18 @@ F 3 "" H 9950 750 50  0001 C CNN
 	1    9950 750 
 	0    -1   -1   0   
 $EndComp
+Wire Bus Line
+	600  5800 600  7750
+Wire Bus Line
+	2200 6300 2700 6300
+Wire Bus Line
+	600  7750 2300 7750
+Wire Bus Line
+	8800 550  10750 550 
+Wire Bus Line
+	4100 550  8050 550 
+Wire Bus Line
+	800  4350 3700 4350
+Text Notes 900  7600 0    50   ~ 0
+OR AS ~FLAGS\nFOR TESTING!
 $EndSCHEMATC

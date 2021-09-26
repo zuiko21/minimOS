@@ -26,17 +26,6 @@ F 3 "http://archive.6502.org/datasheets/rockwell_r650x_r651x.pdf" H 3500 2250 50
 	1    0    0    -1  
 $EndComp
 $Comp
-L Memory_EPROM:27C128 U2
-U 1 1 607C6140
-P 4900 1950
-F 0 "U2" H 4700 3000 50  0000 C CNN
-F 1 "27C128" H 5100 3000 50  0000 C CNN
-F 2 "Package_DIP:DIP-28_W15.24mm" H 4900 1950 50  0001 C CNN
-F 3 "http://ww1.microchip.com/downloads/en/devicedoc/11003L.pdf" H 4900 1950 50  0001 C CNN
-	1    4900 1950
-	1    0    0    -1  
-$EndComp
-$Comp
 L 74xx:74LS257 U6
 U 1 1 607C7F32
 P 6650 1650
@@ -880,19 +869,16 @@ Text Label 8700 5050 0    50   ~ 0
 MA[0..14]
 NoConn ~ 4000 2750
 Wire Wire Line
-	4500 2650 4500 2550
-Wire Wire Line
-	4500 2550 4400 2550
-Connection ~ 4500 2550
+	4500 2650 4400 2650
 $Comp
 L power:+5V #PWR0108
 U 1 1 60BFF56F
-P 4400 2550
-F 0 "#PWR0108" H 4400 2400 50  0001 C CNN
-F 1 "+5V" H 4450 2700 50  0000 C CNN
-F 2 "" H 4400 2550 50  0001 C CNN
-F 3 "" H 4400 2550 50  0001 C CNN
-	1    4400 2550
+P 4400 2650
+F 0 "#PWR0108" H 4400 2500 50  0001 C CNN
+F 1 "+5V" H 4450 2800 50  0000 C CNN
+F 2 "" H 4400 2650 50  0001 C CNN
+F 3 "" H 4400 2650 50  0001 C CNN
+	1    4400 2650
 	1    0    0    -1  
 $EndComp
 $Sheet
@@ -2563,6 +2549,23 @@ Wire Wire Line
 	2900 5650 2900 5800
 Text Label 2900 5800 1    50   ~ 0
 D3
+$Comp
+L Memory_EPROM:27C256 U2
+U 1 1 6153D194
+P 4900 1950
+F 0 "U2" H 4700 3000 50  0000 C CNN
+F 1 "27C256" H 5100 3000 50  0000 C CNN
+F 2 "Package_DIP:DIP-28_W15.24mm" H 4900 1950 50  0001 C CNN
+F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/doc0014.pdf" H 4900 1950 50  0001 C CNN
+	1    4900 1950
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4500 2450 4350 2450
+Entry Wire Line
+	4250 2350 4350 2450
+Text Label 4350 2450 0    50   ~ 0
+A14
 Wire Wire Line
 	10600 1050 10850 1050
 Wire Bus Line
@@ -2578,9 +2581,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	7450 950  7450 5050
-Wire Bus Line
 	10800 650  10800 1650
+Wire Bus Line
+	7450 950  7450 5050
 Wire Bus Line
 	650  5500 650  7300
 Wire Bus Line
