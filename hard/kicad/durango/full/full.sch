@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 30 0
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1338,7 +1338,7 @@ Entry Wire Line
 	4150 5350 4250 5450
 Wire Wire Line
 	3950 5350 4150 5350
-Text Label 4050 5350 0    50   ~ 0
+Text Label 4100 5350 2    50   ~ 0
 A15
 Wire Wire Line
 	4500 2750 4150 2750
@@ -2382,26 +2382,11 @@ Wire Wire Line
 Wire Wire Line
 	3200 7450 3200 7300
 Wire Wire Line
-	1950 7600 1950 5600
-Wire Wire Line
 	7200 5600 7200 5750
 Wire Wire Line
 	7200 5750 6150 5750
 Text Label 6900 7450 2    50   ~ 0
 ~IO9Q
-$Comp
-L 74xx:74HC00 U?
-U 4 1 616824B6
-P 3950 5850
-AR Path="/60C42E7C/616824B6" Ref="U?"  Part="4" 
-AR Path="/616824B6" Ref="U9"  Part="4" 
-F 0 "U9" V 4000 5450 50  0000 L CNN
-F 1 "74HC00" V 4100 5450 50  0000 L CNN
-F 2 "Package_DIP:DIP-14_W7.62mm" H 3950 5850 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74hc00" H 3950 5850 50  0001 C CNN
-	4    3950 5850
-	0    1    -1   0   
-$EndComp
 Wire Wire Line
 	2200 6850 3500 6850
 Wire Wire Line
@@ -2493,15 +2478,10 @@ Wire Wire Line
 Wire Wire Line
 	1950 7600 4050 7600
 Wire Wire Line
-	4050 6150 4050 7600
+	4050 5550 4050 7600
 Connection ~ 4050 7600
 Wire Wire Line
 	4050 7600 6100 7600
-Wire Wire Line
-	2300 6300 2300 6750
-Wire Wire Line
-	2300 6750 3850 6750
-Connection ~ 2300 6300
 $Comp
 L 74xx:74HC245 U31
 U 1 1 617B2F50
@@ -2515,9 +2495,7 @@ F 3 "http://www.ti.com/lit/gpn/sn74HC245" H 3100 6300 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	3900 6300 3950 6300
-Wire Wire Line
-	3850 6150 3850 6750
-Text Label 4050 7050 2    50   ~ 0
+Text Label 4050 5550 2    50   ~ 0
 ~IO
 Text GLabel 6150 3200 1    50   Input ~ 0
 SC1
@@ -2566,6 +2544,24 @@ Entry Wire Line
 	4250 2350 4350 2450
 Text Label 4350 2450 0    50   ~ 0
 A14
+Wire Wire Line
+	1950 7600 1950 5600
+$Comp
+L 74xx:74HC00 U?
+U 4 1 616824B6
+P 6600 6850
+AR Path="/60C42E7C/616824B6" Ref="U?"  Part="4" 
+AR Path="/616824B6" Ref="U9"  Part="4" 
+F 0 "U9" V 6650 6450 50  0000 L CNN
+F 1 "74HC00" V 6750 6450 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 6600 6850 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74hc00" H 6600 6850 50  0001 C CNN
+	4    6600 6850
+	0    1    -1   0   
+$EndComp
+NoConn ~ 6600 6550
+Wire Wire Line
+	4050 5550 3950 5550
 Wire Wire Line
 	10600 1050 10850 1050
 Wire Bus Line
