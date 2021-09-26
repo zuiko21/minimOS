@@ -1,6 +1,6 @@
 ; music player for breadboard!
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210306-1816
+; last modified 20210927-0004
 
 ; *** required variables (not necessarily in ZP) ***
 
@@ -191,13 +191,13 @@ end:
 ; *****************************
 mt_beep:
 		TAY				; determines frequency (2)
-		STX $BFF0		; send X's LSB to beeper (4)
+		STX $DFB0		; send X's LSB to beeper (4)
 rb_zi:
 			DEY			; count pulse length (y*2)
 			BNE rb_zi	; stay this way for a while (y*3-1)
 		DEX				; toggles even/odd number (2)
 		BNE mt_beep		; new half cycle (3)
-	STX $BFF0			; turn off the beeper!
+	STX $DFB0			; turn off the beeper!
 	RTS
 ; *****************************
 
@@ -250,14 +250,14 @@ mt_double:
 mt_beep2:
 ; first note, 10n + 20
 		LDY cur			; determines frequency (3)
-		STX $BFF0		; send X's LSB to beeper (4)
+		STX $DFB0		; send X's LSB to beeper (4)
 rb_d1:
 			DEY			; count pulse length (y*2)
 			BNE rb_d1	; stay this way for a while (y*3-1)
 		DEX				; toggles even/odd number (2)
 		LDA 0			; ***eq***
 		LDY cur			; determines frequency (3)
-		STX $BFF0		; send X's LSB to beeper (4)
+		STX $DFB0		; send X's LSB to beeper (4)
 rb_u1:
 			DEY			; count pulse length (y*2)
 			BNE rb_u1	; stay this way for a while (y*3-1)
@@ -265,21 +265,21 @@ rb_u1:
 		LDA 0			; ***eq***
 ; second note
 		LDY cur+1		; determines frequency (3)
-		STX $BFF0		; send X's LSB to beeper (4)
+		STX $DFB0		; send X's LSB to beeper (4)
 rb_d2:
 			DEY			; count pulse length (y*2)
 			BNE rb_d2	; stay this way for a while (y*3-1)
 		DEX				; toggles even/odd number (2)
 		LDA 0			; ***eq***
 		LDY cur+1		; determines frequency (3)
-		STX $BFF0		; send X's LSB to beeper (4)
+		STX $DFB0		; send X's LSB to beeper (4)
 rb_u2:
 			DEY			; count pulse length (y*2)
 			BNE rb_u2	; stay this way for a while (y*3-1)
 ; repeat cycle, note X *must* be a multiple of 4!
 		DEX				; toggles even/odd number (2)
 		BNE mt_beep2	; new half cycles (3)
-	STX $BFF0			; turn off the beeper!
+	STX $DFB0			; turn off the beeper!
 	RTS
 ; *****************************
 

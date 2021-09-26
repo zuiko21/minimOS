@@ -3,7 +3,7 @@
 
 * = $6000					; VRAM start
 
-IO8lh	= $8000				; will change to $DF80
+IO8lh	= $DF80				; will change to $DF80
 
 	LDA #$30				; colour, non-inverted, 24K
 	STA IO8lh
