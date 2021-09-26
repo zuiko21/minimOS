@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -2370,6 +2370,8 @@ F 3 "" H 9950 750 50  0001 C CNN
 	1    9950 750 
 	0    -1   -1   0   
 $EndComp
+Text Notes 900  7600 0    50   ~ 0
+OR AS ~FLAGS\nFOR TESTING!
 Wire Bus Line
 	600  5800 600  7750
 Wire Bus Line
@@ -2382,6 +2384,4 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
-Text Notes 900  7600 0    50   ~ 0
-OR AS ~FLAGS\nFOR TESTING!
 $EndSCHEMATC
