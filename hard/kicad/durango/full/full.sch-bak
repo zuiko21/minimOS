@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -2549,19 +2549,21 @@ Wire Wire Line
 $Comp
 L 74xx:74HC00 U?
 U 4 1 616824B6
-P 6600 6850
+P 6700 6850
 AR Path="/60C42E7C/616824B6" Ref="U?"  Part="4" 
 AR Path="/616824B6" Ref="U9"  Part="4" 
-F 0 "U9" V 6650 6450 50  0000 L CNN
-F 1 "74HC00" V 6750 6450 50  0000 L CNN
-F 2 "Package_DIP:DIP-14_W7.62mm" H 6600 6850 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74hc00" H 6600 6850 50  0001 C CNN
-	4    6600 6850
+F 0 "U9" V 6750 6450 50  0000 L CNN
+F 1 "74HC00" V 6850 6450 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 6700 6850 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74hc00" H 6700 6850 50  0001 C CNN
+	4    6700 6850
 	0    1    -1   0   
 $EndComp
-NoConn ~ 6600 6550
+NoConn ~ 6700 6550
 Wire Wire Line
 	4050 5550 3950 5550
+Wire Wire Line
+	6800 7150 6600 7150
 Wire Wire Line
 	10600 1050 10850 1050
 Wire Bus Line
@@ -2598,4 +2600,16 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
+$Comp
+L power:+5V #PWR?
+U 1 1 615A5F05
+P 6600 7150
+F 0 "#PWR?" H 6600 7000 50  0001 C CNN
+F 1 "+5V" V 6615 7278 50  0000 L CNN
+F 2 "" H 6600 7150 50  0001 C CNN
+F 3 "" H 6600 7150 50  0001 C CNN
+	1    6600 7150
+	0    -1   -1   0   
+$EndComp
+Connection ~ 6600 7150
 $EndSCHEMATC
