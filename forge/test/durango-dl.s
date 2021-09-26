@@ -19,9 +19,9 @@
 	systmp	= $FC			; %11111100
 	sysptr	= $FD			; %11111101
 	himem	= $FF			; %11111111
-	IO8lh	= $8000			; will become $DF80
-	IOAen	= $A000			; will become $DFA0
-	IOBeep	= $B000			; will become $DFB0
+	IO8lh	= $DF80			; will become $DF80
+	IOAen	= $DFA0			; will become $DFA0
+	IOBeep	= $DFB0			; will become $DFB0
 ; ****************************
 
 * = $4000					; downloadable start address
