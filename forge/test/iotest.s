@@ -39,16 +39,21 @@ clear:
 			BNE clear
 		INC sysptr+1
 		BPL clear
-/*
+
+	LDA #%00111111
+	SEC
+recrap:
+INY:bne recrap:inx:bne recrap
+ldx#7
 crap:
-;	STA IOAen, Y
-	STY $DFB0
-	INY
-	CPY #16
-	BNE crap
-	LDY #0
-	BRA crap
-*/
+;		STA IOAen+6, X
+		DEX
+		BNE crap
+sta IO8lh+22
+	stA IOBeep+8
+	ROL
+	BRA recrap
+
 ; **********************
 ; *** test  routines ***
 ; **********************
