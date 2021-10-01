@@ -1,6 +1,6 @@
 ; FULL test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210925-2232
+; last modified 20211001-1745
 
 ; *** memory maps ***
 ;				ROMable		DOWNLOADable
@@ -9,6 +9,9 @@
 ;	banner		$F800-$FBFF	$5800-$5BFF
 ;	test code	$FC00-$FEFF	$5C00-$5EFF
 ;	panics		$FFxx		$5Fxx
+
+; prototype uses old I/O addresses and A0-driven interrupt control
+;#define	PROTO	_PROTO
 
 ; ****************************
 ; *** standard definitions ***
@@ -19,9 +22,15 @@
 	systmp	= $FC			; %11111100
 	sysptr	= $FD			; %11111101
 	himem	= $FF			; %11111111
-	IO8lh	= $DF80			; will become $DF80
-	IOAen	= $DFA0			; will become $DFA0
-	IOBeep	= $DFB0			; will become $DFB0
+#ifndef	PROTO
+	IO8lh	= $DF80
+	IOAen	= $DFA0
+	IOBeep	= $DFB0
+#else
+	IO8lh	= $8000
+	IOAen	= $A000
+	IOBeep	= $B000
+#endif
 ; ****************************
 
 * = $4000					; downloadable start address
@@ -45,9 +54,9 @@ reset:
 	LDX #$FF
 	TXS
 ; Durango-X specific stuff
-	STX IOAen				; disable hardware interrupt
-	LDA #$30				; flag init
+	LDA #$30				; flag init and interrupt disable
 	STA IO8lh				; set colour mode
+	STA IOAen				; disable hardware interrupt, also for PROTO
 
 ; * zeropage test *
 ; make high pitched chirp during test
@@ -363,7 +372,7 @@ it_b:
 		DEX
 		BPL it_b			; no offset!
 ; inverse video during test (brief flash)
-	LDA #$70
+	LDA #$71				; colour, inverse and interrupt enable (valid for PROTO)
 	STA IO8lh
 ; interrupt setup
 	LDY #<isr				; ISR address
@@ -373,7 +382,7 @@ it_b:
 	LDY #0					; initial value and inner counter reset
 	STY test
 ; must enable interrupts!
-	STY IOAen+1				; hardware interrupt enable (LED goes off)
+	STY IOAen+1				; hardware interrupt enable (LED goes off) suitable for all
 	LDX #154				; about 129 ms, time for 32 interrupts
 	CLI						; start counting!
 ; this provides timeout
@@ -411,12 +420,13 @@ it_3:
 it_ok:
 
 ; *** next is testing for HSYNC and VSYNC... ***
+; make sure X ends at 0, or load after!
 
 ; *** all OK, end of test ***
 ; sweep sound, print OK banner and lock
-	STA IOAen				; interrupts are masked, let's turn the LED on anyway
+	STX IOAen				; interrupts are masked, let's turn the LED on anyway, suitable for all
+	STX test				; sweep counter
 	TXA						; X known to be zero, again
-	STA test				; sweep counter
 sweep:
 		LDX #8				; sound length in half-cycles
 beep_l:
@@ -545,12 +555,12 @@ ram_bad:
 ; inverse bars and continuous beep
 	LDA #$71
 rb_0:
-	STA IO8lh				; set flags (hopefully A<128)
+	STA IO8lh				; set flags
 	STA IOBeep				; set buzzer output
 rb_1:
 		INX
 		BNE rb_1			; delay 1.28 kt (~830 µs, 600 Hz)
-	EOR #65					; toggle inverse mode... and buzzer output
+	EOR #$41				; toggle inverse mode... and buzzer output
 	BRA rb_0
 ramend:
 	.dsb	$5F40-*, $FF	; padding
@@ -571,7 +581,8 @@ rom_bad:
 * = $5F50					; *** slow or missing IRQ ***
 slow_irq:
 ; keep IRQ LED off, low pitch buzz (~125 Hz)
-	STA IOAen+1				; LED off
+	LDA #1					; LED off, suitable for all, no need if PROTO
+	STA IOAen+1				; LED off, suitable for all
 	LDY #116				; 116x53t ~4 ms
 si_1:
 		JSR delay
@@ -596,8 +607,12 @@ fi_2:
 		STX IOBeep			; set buzzer output
 		BNE fi_1			; 256 times is ~76 ms
 	ROL						; keep rotating pattern (cycle ~0.68 s)
+#ifndef	PROTO
+	STA IOAen				; LED is on only when A0=0, ~44% the time
+#else
 	TAY						; use as index
 	STA IOAen, Y			; LED is on only when A0=0, ~44% the time
+#endif
 	BNE fi_1				; A/X are NEVER zero
 
 	.dsb	$5FF0-*, $FF	; padding
@@ -623,4 +638,3 @@ all_ok:
 	BCC all_ok
 
 suite_end:
-

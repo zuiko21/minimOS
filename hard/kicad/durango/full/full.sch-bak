@@ -2564,6 +2564,18 @@ Wire Wire Line
 	4050 5550 3950 5550
 Wire Wire Line
 	6800 7150 6600 7150
+$Comp
+L power:+5V #PWR?
+U 1 1 615A5F05
+P 6600 7150
+F 0 "#PWR?" H 6600 7000 50  0001 C CNN
+F 1 "+5V" V 6615 7278 50  0000 L CNN
+F 2 "" H 6600 7150 50  0001 C CNN
+F 3 "" H 6600 7150 50  0001 C CNN
+	1    6600 7150
+	0    -1   -1   0   
+$EndComp
+Connection ~ 6600 7150
 Wire Wire Line
 	10600 1050 10850 1050
 Wire Bus Line
@@ -2579,9 +2591,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	10800 650  10800 1650
-Wire Bus Line
 	7450 950  7450 5050
+Wire Bus Line
+	10800 650  10800 1650
 Wire Bus Line
 	650  5500 650  7300
 Wire Bus Line
@@ -2600,16 +2612,4 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-$Comp
-L power:+5V #PWR?
-U 1 1 615A5F05
-P 6600 7150
-F 0 "#PWR?" H 6600 7000 50  0001 C CNN
-F 1 "+5V" V 6615 7278 50  0000 L CNN
-F 2 "" H 6600 7150 50  0001 C CNN
-F 3 "" H 6600 7150 50  0001 C CNN
-	1    6600 7150
-	0    -1   -1   0   
-$EndComp
-Connection ~ 6600 7150
 $EndSCHEMATC

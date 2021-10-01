@@ -1,6 +1,6 @@
 ; panics from test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210925-2227
+; last modified 20211001-1748
 
 ; ****************************
 ; *** standard definitions ***
@@ -229,6 +229,7 @@ rom_bad:
 * = $4780					; *** slow or missing IRQ ***
 slow_irq:
 ; keep IRQ LED off, low pitch buzz (~125 Hz)
+	LDA #1					; LED off
 	STA IOAen+1				; LED off
 si_0:
 	LDY #116				; 116x53t ~4 ms
@@ -256,8 +257,9 @@ fi_2:
 		STX IOBeep			; set buzzer output
 		BNE fi_1			; 256 times is ~76 ms
 	ROL						; keep rotating pattern (cycle ~0.68 s)
-	TAY						; use as index
-	STA IOAen, Y			; LED is on only when A0=0, ~44% the time
+;	TAY						; use as index
+;	STA IOAen, Y			; LED is on only when A0=0, ~44% the time
+	STA IOAen
 	BNE fi_1				; A/X are NEVER zero
 
 ; *** internal error handler ***
