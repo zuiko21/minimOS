@@ -1,6 +1,6 @@
 ; FULL test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211001-1745
+; last modified 20211001-2004
 
 ; *** memory maps ***
 ;				ROMable		DOWNLOADable
@@ -382,7 +382,7 @@ it_b:
 	LDY #0					; initial value and inner counter reset
 	STY test
 ; must enable interrupts!
-	STY IOAen+1				; hardware interrupt enable (LED goes off) suitable for all
+	STA IOAen+1				; hardware interrupt enable (LED goes off) suitable for all
 	LDX #154				; about 129 ms, time for 32 interrupts
 	CLI						; start counting!
 ; this provides timeout
@@ -411,6 +411,9 @@ it_2:
 	CMP #31					; one less is aceptable
 	BCS it_3				; <31 is slow 
 it_slow:
+#ifndef	PROTO
+		LDA #1				; ready for LED off
+#endif
 		JMP slow_irq
 it_3:
 	CMP #34					; up to 33 is fine
@@ -581,8 +584,7 @@ rom_bad:
 * = $5F50					; *** slow or missing IRQ ***
 slow_irq:
 ; keep IRQ LED off, low pitch buzz (~125 Hz)
-	LDA #1					; LED off, suitable for all, no need if PROTO
-	STA IOAen+1				; LED off, suitable for all
+	STA IOAen+1				; LED off, suitable for all (assume A=1)
 	LDY #116				; 116x53t ~4 ms
 si_1:
 		JSR delay
@@ -591,7 +593,7 @@ si_1:
 	INX
 	STX IOBeep				; toggle buzzer output
 	BRA slow_irq
-
+si_end:
 	.dsb	$5F60-*, $FF	; padding
 
 * = $5F60					; *** fast or spurious IRQ ***
@@ -636,5 +638,4 @@ all_ok:
 	NOP
 	CLC
 	BCC all_ok
-
 suite_end:
