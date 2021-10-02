@@ -1,6 +1,6 @@
 ; Greyscale test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211002-2155
+; last modified 20211002-2234
 
 ; ****************************
 ; *** standard definitions ***
@@ -46,6 +46,7 @@ clear:
 colour:
 	LDX #0					; reset h-pos
 	TXA						; first byte is 0
+	TAY						; first colour
 loop:
 		STA $6E00, X
 		STA $6E01, X
@@ -55,15 +56,16 @@ loop:
 		STA $6F01, X
 		STA $6F02, X
 		STA $6F03, X
-		INX
-		INX
-		INX
-		INX
-		TXA					; colour changes every 4 bytes
-		AND #$F				; EEEEEEEK
-		TAY
+		INY
+		CPY #16
+		BNE set
+			LDY #0
+set:
 		LDA scale, Y		; desired index for both pixels!
-		CPX #0
+		INX
+		INX
+		INX
+		INX
 	BNE loop
 	 
 ; *** greyscale data ***
