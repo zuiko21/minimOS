@@ -2631,6 +2631,7 @@ Wire Wire Line
 Connection ~ 10300 5700
 Wire Wire Line
 	10200 6000 10200 6100
+Connection ~ 10200 6100
 Wire Wire Line
 	10600 1050 10850 1050
 Wire Bus Line
@@ -2646,9 +2647,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	10800 650  10800 1650
-Wire Bus Line
 	7450 950  7450 5050
+Wire Bus Line
+	10800 650  10800 1650
 Wire Bus Line
 	650  5500 650  7300
 Wire Bus Line
@@ -2667,5 +2668,6 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Connection ~ 10200 6100
+Text Notes 6550 6500 0    50   ~ 0
+instead\nof COL
 $EndSCHEMATC

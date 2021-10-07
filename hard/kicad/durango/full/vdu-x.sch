@@ -2384,4 +2384,6 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
+Text Notes 10900 2100 0    50   ~ 0
+or Q1\n‘174
 $EndSCHEMATC
