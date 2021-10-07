@@ -3,7 +3,7 @@
  * PWM for VIA's shift register         *
  *
  * (c) 2019-2021 Carlos J. Santisteban  *
- * last modified 20190517-1045          *
+ * last modified 20211007-1247          *
  */
 
 #include <stdio.h>
@@ -66,9 +66,10 @@ int main(void) {
 			printf("Cannot output dithered file!\n");
 		} else {
 /* proceed! */
-			fseek(f, 44, SEEK_SET);	/* skip WAV header */
+//			fseek(f, 44, SEEK_SET);	/* skip WAV header */
 			while (!feof(f)) {
 				c=fgetc(f);
+				c^=128;				/* sign elimination if RAW instead of WAV */
 				fputc(dither(c),s);
 			}
 /* clean up */
