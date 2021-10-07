@@ -98,5 +98,5 @@ lock:
 audio:
 	.bin	0, 12335, "hello.pwm"	; get sample
 
-	.dsb	12544-*, 0		; end padding for page-alignment, not sure about best value
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
 end:
