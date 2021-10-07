@@ -22,7 +22,7 @@ cur		.byt	0			; current score position
 	TXS
 
 	STX $FFF0				; turn off display, just in case
-
+/*
 ; *** experimental code ***
 	LDA #83
 	LDX #0
@@ -43,6 +43,7 @@ cur		.byt	0			; current score position
 	JSR mt_beep
 
 	JMP end
+*/
 ; sweep for pacman eating ghost ** OK
 	LDA #0
 	STA cur
@@ -169,6 +170,7 @@ loop:
 rest:
 		TAY					; if period is zero for rests, this resets the counter
 r_loop:
+			STY 0		; 1.536 MHz delay
 			INY
 			BNE r_loop		; this will take ~ 1.28 ms
 		DEX					; continue
@@ -193,6 +195,7 @@ mt_beep:
 		TAY				; determines frequency (2)
 		STX $DFB0		; send X's LSB to beeper (4)
 rb_zi:
+			STY 0		; 1.536 MHz delay
 			DEY			; count pulse length (y*2)
 			BNE rb_zi	; stay this way for a while (y*3-1)
 		DEX				; toggles even/odd number (2)
