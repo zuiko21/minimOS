@@ -3,12 +3,13 @@
  * PWM for VIA's shift register         *
  *
  * (c) 2019-2021 Carlos J. Santisteban  *
- * last modified 20211007-1247          *
+ * last modified 20211007-1320          *
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 /* global variables */
 	FILE	*f, *s;
@@ -24,8 +25,8 @@ unsigned char	dither(unsigned char x) {
 	else {		/* dither intermediate value */
 		y = thr[i+1]-thr[i];				/* range */
 		z = x-thr[i];						/* position of current sample */
-		if (rand()%y > z)		r=thr[i];	/* closer to lower threshold... */
-		else					r=thr[i+1];	/* ...or closer to ceiling */	
+		if (rand()%y > z)		r=i;		/* closer to lower threshold... */
+		else					r=i+1;		/* ...or closer to ceiling */	
 	}
 
 	return	pwm[r];							/* return direct PWM pattern */
@@ -69,9 +70,14 @@ int main(void) {
 //			fseek(f, 44, SEEK_SET);	/* skip WAV header */
 			while (!feof(f)) {
 				c=fgetc(f);
-				c^=128;				/* sign elimination if RAW instead of WAV */
-				fputc(dither(c),s);
+//				printf("%2X>", c);
+				c=dither(c);
+//				printf("%2X ", c);
+				if(!feof(f)) {		/* make certain there is no extra byte at the end! */
+					fputc(c,s);
+				}
 			}
+
 /* clean up */
 			fclose(f);
 			fclose(s);
