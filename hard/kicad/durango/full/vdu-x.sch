@@ -420,8 +420,6 @@ Wire Wire Line
 	6150 4400 6150 2600
 Wire Wire Line
 	6150 2600 6250 2600
-Text GLabel 10950 3250 2    50   Input ~ 0
-COL
 Text GLabel 9650 1750 0    50   Input ~ 0
 HIRES
 $Comp
@@ -1235,7 +1233,7 @@ $EndComp
 Wire Wire Line
 	8350 5800 8800 5800
 Wire Wire Line
-	10950 5600 9600 5600
+	10950 5600 9400 5600
 Wire Wire Line
 	8300 4650 8900 4650
 Wire Wire Line
@@ -1245,17 +1243,6 @@ Wire Wire Line
 Wire Wire Line
 	9100 5150 9100 5400
 Connection ~ 8300 4650
-$Comp
-L Device:Jumper_NC_Small JP102
-U 1 1 62154B58
-P 9500 5600
-F 0 "JP102" H 9700 5650 50  0000 C CNN
-F 1 "COLOUR/GREY" H 9850 5550 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 9500 5600 50  0001 C CNN
-F 3 "~" H 9500 5600 50  0001 C CNN
-	1    9500 5600
-	1    0    0    -1  
-$EndComp
 $Comp
 L Device:R R122
 U 1 1 615F5223
@@ -1387,9 +1374,7 @@ Connection ~ 10150 2050
 Wire Wire Line
 	10150 2050 9550 2050
 Wire Wire Line
-	10250 2200 10250 2100
-Wire Wire Line
-	11150 2100 11150 2700
+	10250 2200 10250 2000
 Wire Wire Line
 	9650 1750 9650 2200
 Wire Wire Line
@@ -1420,12 +1405,10 @@ Wire Wire Line
 	8650 1950 10350 1950
 Wire Wire Line
 	10550 2150 10550 2200
-Text Label 10250 3200 2    50   ~ 0
-COL
+Text Label 10950 5600 2    50   ~ 0
+RGB
 Text Label 10150 1750 2    50   ~ 0
 HIRES
-Wire Wire Line
-	11150 1250 11150 2100
 Wire Wire Line
 	9650 1750 10350 1750
 Wire Wire Line
@@ -1481,7 +1464,6 @@ F 3 "" H 11150 1250 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Connection ~ 11150 1250
-Connection ~ 11150 2100
 Wire Wire Line
 	10550 2150 10350 2150
 Wire Wire Line
@@ -1750,29 +1732,6 @@ VA5
 Text Label 2850 3000 1    50   ~ 0
 Q3
 $Comp
-L Device:R R123
-U 1 1 61CA1F20
-P 9400 5750
-F 0 "R123" H 9250 5700 50  0000 C CNN
-F 1 "68K" V 9400 5750 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical" V 9330 5750 50  0001 C CNN
-F 3 "~" H 9400 5750 50  0001 C CNN
-	1    9400 5750
-	1    0    0    -1  
-$EndComp
-$Comp
-L power:GND #PWR0166
-U 1 1 61CE0406
-P 9400 5900
-F 0 "#PWR0166" H 9400 5650 50  0001 C CNN
-F 1 "GND" H 9405 5727 50  0000 C CNN
-F 2 "" H 9400 5900 50  0001 C CNN
-F 3 "" H 9400 5900 50  0001 C CNN
-	1    9400 5900
-	1    0    0    -1  
-$EndComp
-Connection ~ 9400 5600
-$Comp
 L 74xx:74LS20 U227
 U 2 1 61F6AF44
 P 5450 4800
@@ -1929,11 +1888,7 @@ OR 4K7
 Text Notes 6650 6050 0    50   ~ 0
 OR 10K
 Text Notes 9350 5400 0    50   ~ 0
-*
-Text Notes 9800 5550 0    50   ~ 0
-*
-Text Notes 9450 5800 0    50   ~ 0
-*
+*MIGHT CONNECT E-C\nIF ONLY COLOUR MODE
 Text Notes 9050 5900 0    50   ~ 0
 *
 Text Label 7550 5700 0    50   ~ 0
@@ -2200,8 +2155,6 @@ Connection ~ 10550 2200
 Connection ~ 9550 2200
 Wire Wire Line
 	8750 3300 9850 3300
-Wire Wire Line
-	10250 2100 11150 2100
 $Comp
 L 74xx:74LS257 U321
 U 1 1 613D5371
@@ -2345,16 +2298,15 @@ Wire Wire Line
 	8300 6200 8300 6400
 Text Notes 700  7400 0    50   ~ 0
 MAY CONNECT TO PIN 1\nREMOVING PIN 12
-NoConn ~ 10750 1750
 NoConn ~ 10850 1750
-Text GLabel 10650 1850 2    50   Input ~ 0
+Text GLabel 10950 1850 2    50   Input ~ 0
 SC0
-Text GLabel 10650 1950 2    50   Input ~ 0
+Text GLabel 10950 1950 2    50   Input ~ 0
 SC1
 Wire Wire Line
 	10650 1850 10650 1750
 Wire Wire Line
-	10650 1950 10550 1950
+	10950 1950 10550 1950
 Wire Wire Line
 	10550 1950 10550 1750
 Text Notes 3000 6900 0    50   ~ 0
@@ -2372,6 +2324,14 @@ F 3 "" H 9950 750 50  0001 C CNN
 $EndComp
 Text Notes 900  7600 0    50   ~ 0
 OR AS ~FLAGS\nFOR TESTING!
+Wire Wire Line
+	11150 1250 11150 2700
+Wire Wire Line
+	10950 1850 10650 1850
+Wire Wire Line
+	10250 2000 10750 2000
+Wire Wire Line
+	10750 2000 10750 1750
 Wire Bus Line
 	600  5800 600  7750
 Wire Bus Line
@@ -2384,6 +2344,6 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
-Text Notes 10900 2100 0    50   ~ 0
-or Q1\n‘174
+Text Label 10400 2000 0    50   ~ 0
+COLOUR
 $EndSCHEMATC

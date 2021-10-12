@@ -880,7 +880,7 @@ U 60C42E7C
 F0 "VDU-X" 50
 F1 "vdu-x.sch" 50
 $EndSheet
-Text GLabel 5750 7200 1    50   Input ~ 0
+Text GLabel 4200 7100 2    50   Input ~ 0
 VA[0..13]
 Text GLabel 2800 650  0    50   Input ~ 0
 D[0..7]
@@ -1045,7 +1045,7 @@ Wire Wire Line
 Wire Wire Line
 	4400 6850 4500 6850
 Text Label 7700 4300 3    50   ~ 0
-~COL
+~LOW
 Wire Wire Line
 	7800 2350 7700 2350
 Wire Wire Line
@@ -1494,7 +1494,7 @@ Text Label 600  3300 3    50   ~ 0
 IEN
 Text GLabel 7300 5900 2    50   Input ~ 0
 ~IO8Q
-Text GLabel 7700 4500 3    50   Input ~ 0
+Text GLabel 7700 6450 2    50   Input ~ 0
 HIRES
 Text Label 4250 5350 0    50   ~ 0
 A[0..15]
@@ -1877,7 +1877,7 @@ U 6310B9C7
 F0 "power" 50
 F1 "power.sch" 50
 $EndSheet
-Text Label 4400 6850 1    50   ~ 0
+Text Label 5500 7000 0    50   ~ 0
 ~HIRES
 Text GLabel 2200 5300 2    50   Input ~ 0
 R~W
@@ -2501,33 +2501,29 @@ Wire Wire Line
 $Comp
 L 74xx:74HC00 U?
 U 4 1 616824B6
-P 6500 6650
+P 6450 7000
 AR Path="/60C42E7C/616824B6" Ref="U?"  Part="4" 
 AR Path="/616824B6" Ref="U9"  Part="4" 
-F 0 "U9" V 6550 6250 50  0000 L CNN
-F 1 "74HC00" V 6650 6250 50  0000 L CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 6500 6650 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74hc00" H 6500 6650 50  0001 C CNN
-	4    6500 6650
-	0    1    -1   0   
+F 0 "U9" H 6350 6800 50  0000 L CNN
+F 1 "74HC00" H 6300 7200 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 6450 7000 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74hc00" H 6450 7000 50  0001 C CNN
+	4    6450 7000
+	-1   0    0    1   
 $EndComp
-NoConn ~ 6500 6350
 Wire Wire Line
 	4050 5550 3950 5550
-Wire Wire Line
-	6600 6950 6400 6950
 $Comp
 L power:+5V #PWR0152
 U 1 1 615A5F05
-P 6400 6950
-F 0 "#PWR0152" H 6400 6800 50  0001 C CNN
-F 1 "+5V" V 6415 7078 50  0000 L CNN
-F 2 "" H 6400 6950 50  0001 C CNN
-F 3 "" H 6400 6950 50  0001 C CNN
-	1    6400 6950
-	0    -1   -1   0   
+P 6750 6900
+F 0 "#PWR0152" H 6750 6750 50  0001 C CNN
+F 1 "+5V" H 6600 7050 50  0000 L CNN
+F 2 "" H 6750 6900 50  0001 C CNN
+F 3 "" H 6750 6900 50  0001 C CNN
+	1    6750 6900
+	1    0    0    -1  
 $EndComp
-Connection ~ 6400 6950
 Wire Wire Line
 	9100 5300 8100 5300
 Wire Wire Line
@@ -2580,9 +2576,6 @@ F 3 "~" H 850 1150 50  0001 C CNN
 	1    850  1150
 	0    1    -1   0   
 $EndComp
-Wire Wire Line
-	6300 7250 5000 7250
-Connection ~ 5000 7250
 $Comp
 L Device:R R29
 U 1 1 61E14266
@@ -2600,8 +2593,6 @@ Connection ~ 10300 5700
 Wire Wire Line
 	10200 6000 10200 6100
 Connection ~ 10200 6100
-Text Notes 6550 6500 0    50   ~ 0
-instead\nof COL
 Wire Wire Line
 	850  1300 1350 1300
 Connection ~ 1350 1300
@@ -2628,6 +2619,26 @@ Wire Wire Line
 	1450 1000 1450 950 
 Wire Wire Line
 	1450 950  1650 950 
+Connection ~ 1350 1000
+Connection ~ 1650 950 
+Connection ~ 2350 750 
+Wire Wire Line
+	2350 750  2700 750 
+Wire Wire Line
+	6650 750  8300 750 
+Wire Wire Line
+	4400 6850 4400 7000
+Wire Wire Line
+	4400 7000 6150 7000
+Connection ~ 4400 6850
+Wire Wire Line
+	7700 4500 7700 6450
+Wire Wire Line
+	7700 6450 6950 6450
+Wire Wire Line
+	6950 6450 6950 7100
+Wire Wire Line
+	6950 7100 6750 7100
 Wire Wire Line
 	10600 1050 10850 1050
 Wire Bus Line
@@ -2664,11 +2675,5 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Connection ~ 1350 1000
-Connection ~ 1650 950 
-Connection ~ 2350 750 
-Wire Wire Line
-	2350 750  2700 750 
-Wire Wire Line
-	6650 750  8300 750 
+Connection ~ 7700 4500
 $EndSCHEMATC
