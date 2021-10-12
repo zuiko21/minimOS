@@ -781,22 +781,15 @@ Wire Bus Line
 	7500 5100 5850 5100
 Wire Wire Line
 	6650 2900 6950 2900
-Wire Wire Line
-	6650 750  7600 750 
-Wire Wire Line
-	7600 750  7600 600 
-Connection ~ 7600 750 
-Wire Wire Line
-	7600 750  8300 750 
 $Comp
 L power:+5V #PWR0105
 U 1 1 60ACA058
-P 7600 600
-F 0 "#PWR0105" H 7600 450 50  0001 C CNN
-F 1 "+5V" H 7615 773 50  0000 C CNN
-F 2 "" H 7600 600 50  0001 C CNN
-F 3 "" H 7600 600 50  0001 C CNN
-	1    7600 600 
+P 2350 750
+F 0 "#PWR0105" H 2350 600 50  0001 C CNN
+F 1 "+5V" H 2250 850 50  0000 C CNN
+F 2 "" H 2350 750 50  0001 C CNN
+F 3 "" H 2350 750 50  0001 C CNN
+	1    2350 750 
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1403,36 +1396,34 @@ Wire Wire Line
 	1750 1550 2750 1550
 Wire Wire Line
 	2750 2150 2850 2150
-Wire Wire Line
-	1650 950  1750 950 
 $Comp
 L Device:R R3
 U 1 1 60C96840
-P 1300 750
-F 0 "R3" V 1200 750 50  0000 C CNN
-F 1 "1K*" V 1300 750 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical" V 1230 750 50  0001 C CNN
-F 3 "~" H 1300 750 50  0001 C CNN
-	1    1300 750 
-	0    1    1    0   
+P 1350 1150
+F 0 "R3" H 1450 1150 50  0000 C CNN
+F 1 "1K*" V 1350 1150 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical" V 1280 1150 50  0001 C CNN
+F 3 "~" H 1350 1150 50  0001 C CNN
+	1    1350 1150
+	-1   0    0    1   
 $EndComp
 $Comp
 L power:GND #PWR0131
 U 1 1 60CB619C
-P 1150 750
-F 0 "#PWR0131" H 1150 500 50  0001 C CNN
-F 1 "GND" H 1155 577 50  0000 C CNN
-F 2 "" H 1150 750 50  0001 C CNN
-F 3 "" H 1150 750 50  0001 C CNN
-	1    1150 750 
+P 1350 1300
+F 0 "#PWR0131" H 1350 1050 50  0001 C CNN
+F 1 "GND" H 1250 1150 50  0000 C CNN
+F 2 "" H 1350 1300 50  0001 C CNN
+F 3 "" H 1350 1300 50  0001 C CNN
+	1    1350 1300
 	1    0    0    -1  
 $EndComp
 $Comp
 L Device:CP C1
 U 1 1 60CB72E6
 P 2000 950
-F 0 "C1" V 2050 1050 50  0000 C CNN
-F 1 "1uF*" V 2150 950 50  0000 C CNN
+F 0 "C1" V 1850 950 50  0000 C CNN
+F 1 "1uF*" V 2150 1000 50  0000 C CNN
 F 2 "Capacitor_THT:CP_Radial_D5.0mm_P2.50mm" H 2038 800 50  0001 C CNN
 F 3 "~" H 2000 950 50  0001 C CNN
 	1    2000 950 
@@ -1444,20 +1435,14 @@ Wire Wire Line
 $Comp
 L Switch:SW_Push SW1
 U 1 1 60D71AF9
-P 1950 750
-F 0 "SW1" H 1850 850 50  0000 C CNN
-F 1 "RESET" H 2100 850 50  0000 C CNN
-F 2 "Button_Switch_THT:KSA_Tactile_SPST" H 1950 950 50  0001 C CNN
-F 3 "~" H 1950 950 50  0001 C CNN
-	1    1950 750 
-	1    0    0    -1  
+P 1350 800
+F 0 "SW1" V 1300 950 50  0000 C CNN
+F 1 "RESET" V 1400 1000 50  0000 C CNN
+F 2 "Button_Switch_THT:KSA_Tactile_SPST" H 1350 1000 50  0001 C CNN
+F 3 "~" H 1350 1000 50  0001 C CNN
+	1    1350 800 
+	0    -1   1    0   
 $EndComp
-Connection ~ 2150 750 
-Wire Wire Line
-	1750 750  1750 950 
-Connection ~ 1750 950 
-Wire Wire Line
-	1750 950  1850 950 
 $Comp
 L 74xx:74HCT00 U9
 U 1 1 60DCA974
@@ -1774,8 +1759,6 @@ Wire Wire Line
 Connection ~ 1500 2050
 Wire Wire Line
 	1500 550  10900 550 
-Text GLabel 4400 6850 3    50   Input ~ 0
-COL
 Text Label 6050 5250 0    50   ~ 0
 PHI2
 Wire Wire Line
@@ -2473,7 +2456,7 @@ SC0
 Wire Wire Line
 	2750 1550 2750 2150
 Wire Wire Line
-	2150 750  2700 750 
+	2150 750  2350 750 
 Wire Wire Line
 	3500 750  2700 750 
 Connection ~ 2700 750 
@@ -2552,30 +2535,16 @@ Wire Wire Line
 Connection ~ 9100 5300
 Text Label 8100 5400 1    50   ~ 0
 D0
-Wire Wire Line
-	1750 750  1450 750 
-Connection ~ 1750 750 
 $Comp
 L Switch:SW_Push SW2
 U 1 1 61A768F0
-P 1000 1650
-F 0 "SW2" H 900 1750 50  0000 C CNN
-F 1 "NMI" H 1150 1750 50  0000 C CNN
-F 2 "Button_Switch_THT:KSA_Tactile_SPST" H 1000 1850 50  0001 C CNN
-F 3 "~" H 1000 1850 50  0001 C CNN
-	1    1000 1650
+P 1100 1650
+F 0 "SW2" H 1000 1750 50  0000 C CNN
+F 1 "NMI" H 1200 1750 50  0000 C CNN
+F 2 "Button_Switch_THT:KSA_Tactile_SPST" H 1100 1850 50  0001 C CNN
+F 3 "~" H 1100 1850 50  0001 C CNN
+	1    1100 1650
 	1    0    0    -1  
-$EndComp
-$Comp
-L power:GND #PWR0162
-U 1 1 61AB2A3B
-P 800 1650
-F 0 "#PWR0162" H 800 1400 50  0001 C CNN
-F 1 "GND" V 805 1522 50  0000 R CNN
-F 2 "" H 800 1650 50  0001 C CNN
-F 3 "" H 800 1650 50  0001 C CNN
-	1    800  1650
-	0    1    1    0   
 $EndComp
 Wire Wire Line
 	2700 1150 2700 1650
@@ -2591,7 +2560,7 @@ F 3 "https://www.onsemi.com/pub/Collateral/BC550-D.pdf" H 2050 1950 50  0001 L C
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	1200 1650 2150 1650
+	1300 1650 2150 1650
 Wire Wire Line
 	2150 1650 2150 1750
 Wire Wire Line
@@ -2603,13 +2572,13 @@ Connection ~ 2150 1650
 $Comp
 L Device:LED D6
 U 1 1 61DC3B9F
-P 6450 7250
-F 0 "D6" H 6450 7350 50  0000 C CNN
-F 1 "POWER" H 6500 7150 50  0000 C CNN
-F 2 "LED_THT:LED_D3.0mm" H 6450 7250 50  0001 C CNN
-F 3 "~" H 6450 7250 50  0001 C CNN
-	1    6450 7250
-	1    0    0    -1  
+P 850 1150
+F 0 "D6" V 900 1000 50  0000 C CNN
+F 1 "POWER" V 800 950 50  0000 C CNN
+F 2 "LED_THT:LED_D3.0mm" H 850 1150 50  0001 C CNN
+F 3 "~" H 850 1150 50  0001 C CNN
+	1    850  1150
+	0    1    -1   0   
 $EndComp
 Wire Wire Line
 	6300 7250 5000 7250
@@ -2617,21 +2586,48 @@ Connection ~ 5000 7250
 $Comp
 L Device:R R29
 U 1 1 61E14266
-P 6600 7100
-F 0 "R29" H 6450 7100 50  0000 C CNN
-F 1 "390" V 6600 7100 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical" V 6530 7100 50  0001 C CNN
-F 3 "~" H 6600 7100 50  0001 C CNN
-	1    6600 7100
+P 850 850
+F 0 "R29" H 1000 850 50  0000 C CNN
+F 1 "390" V 850 850 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P5.08mm_Vertical" V 780 850 50  0001 C CNN
+F 3 "~" H 850 850 50  0001 C CNN
+	1    850  850 
 	-1   0    0    1   
 $EndComp
-Connection ~ 6600 6950
 Wire Wire Line
 	10200 5700 10300 5700
 Connection ~ 10300 5700
 Wire Wire Line
 	10200 6000 10200 6100
 Connection ~ 10200 6100
+Text Notes 6550 6500 0    50   ~ 0
+instead\nof COL
+Wire Wire Line
+	850  1300 1350 1300
+Connection ~ 1350 1300
+Wire Wire Line
+	1650 950  1850 950 
+Wire Wire Line
+	1350 600  2150 600 
+Wire Wire Line
+	2150 600  2150 750 
+Connection ~ 2150 750 
+Wire Wire Line
+	1350 600  850  600 
+Wire Wire Line
+	850  600  850  700 
+Connection ~ 1350 600 
+Wire Wire Line
+	850  1300 850  1650
+Wire Wire Line
+	850  1650 900  1650
+Connection ~ 850  1300
+Wire Wire Line
+	1350 1000 1450 1000
+Wire Wire Line
+	1450 1000 1450 950 
+Wire Wire Line
+	1450 950  1650 950 
 Wire Wire Line
 	10600 1050 10850 1050
 Wire Bus Line
@@ -2647,9 +2643,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	7450 950  7450 5050
-Wire Bus Line
 	10800 650  10800 1650
+Wire Bus Line
+	7450 950  7450 5050
 Wire Bus Line
 	650  5500 650  7300
 Wire Bus Line
@@ -2668,6 +2664,11 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Text Notes 6550 6500 0    50   ~ 0
-instead\nof COL
+Connection ~ 1350 1000
+Connection ~ 1650 950 
+Connection ~ 2350 750 
+Wire Wire Line
+	2350 750  2700 750 
+Wire Wire Line
+	6650 750  8300 750 
 $EndSCHEMATC
