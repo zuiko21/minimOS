@@ -1,6 +1,6 @@
 ; panics from test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211001-1748
+; last modified 20211012-1921
 
 ; ****************************
 ; *** standard definitions ***
@@ -25,7 +25,7 @@ reset:
 	TXS
 ; Durango-X specific stuff
 	STX IOAen				; disable hardware interrupt
-	LDA #$30				; flag init
+	LDA #$38				; flag init
 	STA IO8lh				; set colour mode
 ; put banner on screen
 	LDX #0					; reset index
@@ -75,7 +75,7 @@ lock:
 
 ; *** print routine (A= 0, $20...)
 prn:
-	LDX #$30
+	LDX #$38
 	STX IO8lh				; disable inverse
 	LSR
 	LSR
@@ -178,7 +178,7 @@ zb_1:
 addr_bad:
 ; flashing screen and intermittent beep ~0.21s
 ; note that inverse video runs on $5F1x while true video on $5F2x
-	LDA #$70				; initial inverse video
+	LDA #$78				; initial inverse video
 	STA IO8lh				; set flags
 ab_1:
 			INY
@@ -200,7 +200,7 @@ ab_2:
 * = $4740					; *** bad RAM ***
 ram_bad:
 ; inverse bars and continuous beep
-	LDA #$71
+	LDA #$79
 rb_0:
 	STA IO8lh				; set flags
 	STA IOBeep				; set buzzer output

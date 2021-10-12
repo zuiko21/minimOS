@@ -1,6 +1,6 @@
 ; FULL test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211001-2004
+; last modified 20211012-1920
 
 ; *** memory maps ***
 ;				ROMable		DOWNLOADable
@@ -54,7 +54,7 @@ reset:
 	LDX #$FF
 	TXS
 ; Durango-X specific stuff
-	LDA #$30				; flag init and interrupt disable
+	LDA #$38				; flag init and interrupt disable, RGB
 	STA IO8lh				; set colour mode
 	STA IOAen				; disable hardware interrupt, also for PROTO
 
@@ -372,7 +372,7 @@ it_b:
 		DEX
 		BPL it_b			; no offset!
 ; inverse video during test (brief flash)
-	LDA #$71				; colour, inverse and interrupt enable (valid for PROTO)
+	LDA #$79				; colour, inverse and interrupt enable (valid for PROTO)
 	STA IO8lh
 ; interrupt setup
 	LDY #<isr				; ISR address
@@ -394,7 +394,7 @@ it_1:
 ; check timeout results for slow or fast
 	SEI						; no more interrupts, but hardware still generates them (LED off)
 ; back to true video
-	LDX #$30				; can no longer be zero
+	LDX #$38				; can no longer be zero
 	STX IO8lh
 ; display dots indicating how many times IRQ happened
 	LDX test				; using amount as index
@@ -534,7 +534,7 @@ zb_1:
 addr_bad:
 ; flashing screen and intermittent beep ~0.21s
 ; note that inverse video runs on $5F1x while true video on $5F2x
-	LDA #$70				; initial inverse video
+	LDA #$78				; initial inverse video
 	STA IO8lh				; set flags
 ab_1:
 			INY
@@ -556,7 +556,7 @@ ab_2:
 * = $5F30					; *** bad RAM ***
 ram_bad:
 ; inverse bars and continuous beep
-	LDA #$71
+	LDA #$79
 rb_0:
 	STA IO8lh				; set flags
 	STA IOBeep				; set buzzer output

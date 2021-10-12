@@ -3,7 +3,7 @@
 
 * = $6000					; VRAM start
 
-	LDA #$F0				; set hires, inverted mode!
+	LDA #$F8				; set hires, inverted mode! should ignore RGB enable
 	STA $DF80				; new FLAGS port
 lock:
 	BRA lock				; must lock here as will be exectuted!

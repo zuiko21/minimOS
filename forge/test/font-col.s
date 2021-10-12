@@ -16,7 +16,7 @@ io8flags	= $DF80			; will be $DF80
 font		= $500			; page aligned!
 
 ; init stuff
-	LDA #$30
+	LDA #$38
 	STA io8flags			; set colour mode
 	LDY #0
 	STY paper				; reset background colour, assume 0
@@ -101,7 +101,7 @@ lnw:
 
 ; ****************************
 ; ended, keep psychedelic bars
-	LDA #$30				; keep colour mode...
+	LDA #$38				; keep colour mode...
 lock:
 ; inverse bars 
 	STA io8flags			; set flags
