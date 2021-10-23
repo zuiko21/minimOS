@@ -1,6 +1,6 @@
 ; FULL test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211012-1920
+; last modified 20211023-1753
 
 ; *** memory maps ***
 ;				ROMable		DOWNLOADable
@@ -460,8 +460,8 @@ ok_l:
 		DEX
 		BPL ok_l			; note offset-avoiding BPL
 
-	JMP all_ok				; final lock at $5FFx
-
+;	JMP all_ok				; final lock at $5FFx
+	JMP reset				; continuous test
 test_end: 
 
 ; ********************************************
