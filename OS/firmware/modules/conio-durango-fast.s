@@ -3,7 +3,7 @@
 ; FAST colour mode, takes a full page of RAM (but just 13 sparse bytes of it)
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211030-2351
+; last modified 20211031-0017
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -145,16 +145,16 @@ cph_nw:
 			TAY				; offset ready (2)
 			BNE cph_loop	; offset will just wrap at the end EEEEEEEK (3)
 		BEQ cur_r			; advance to next position! no need for BRA (3)
-; colour version, 76b, typically (67b, t in ZP)
+; colour version, 85b, typically 975t (77b, 924t in ZP)
 ; new FAST version with sparse array
 cpc_col:
 	LDX #2
 	STX fw_chalf			; two pages must be written (2+4*)
-cpc_do:						; outside loop (done 8 times) is 8x(51+inner)+113=1497, 8x(47+inner)+111=1407 in ZP  (was ~1576/1464t)
+cpc_do:						; outside loop (done 8 times) is 8x(45+inner)+113=969, 8x(42+inner)+111=919 in ZP  (was ~1497/1407)
 		_LDAX(cio_src)		; glyph pattern (5)
 		EOR fw_mask			; in case inverse mode is set, much better here (4)
 ; *** *** glyph pattern is loaded and masked, let's try an even faster alternative, store all 4 positions premasked as sparse indexes
-; fw_cbyt not yet used
+; fw_cbyt, fw_ccnt not used
 		TAX					; keep safe (2)
 		AND #%00000011		; rightmost pixels (2)
 		STA fw_sind			; fourth and last sparse index (4*, note inverted order)
@@ -167,22 +167,31 @@ cpc_do:						; outside loop (done 8 times) is 8x(51+inner)+113=1497, 8x(47+inner
 		TXA
 		AND #%11000000		; two leftmost pixels (will be processed first) (2+2)
 ;		STA fw_sind+3		; first sparse index storage (and ready to use as index)
-		LDX #3				; each glyph byte takes 4 screen bytes, this is max offset (2)
-		STX fw_ccnt			; cannot stay in X as indexing will be used (4*)
+;		LDX #3				; each glyph byte takes 4 screen bytes, this is max offset (2)
+;		STX fw_ccnt			; cannot stay in X as indexing will be used (4*)
 		INC cio_src			; advance to next glyph byte (5+usually 3)
 		BNE cpc_loop
 			INC cio_src+1
-cpc_loop:					; (all loop is done 33+33+33+23, 122t -- 31+31+31+22, 115t in ZP)
+cpc_loop:					; (all loop was 122/115t, now unrolled is 62/59t)
 			TAX					; A was sparse index (2)
 			LDA fw_ccol, X		; get proper colour pair (4)
 			STA (cio_pt), Y		; put it on screen (6 eeek)
 			INY					; next screen byte for this glyph byte (2)
-			DEC fw_ccnt			; one less byte per raster (6*, 20 up here)
-				BMI cpc_rend	; last byte in raster is done (2 +1 the fourth time)
-			LDX fw_ccnt			; update index (4*, not done last time)
-			LDA fw_sind, X		; get new sparse index (4~, not done last time)
-			_BRA cpc_loop		; (3, not done last time)
-cpc_rend:					; end segment has not changed, takes 6x11t + 2x24t - 1, 113t (66+46-1=111t in ZP)
+; here comes the time critical part, let's try to unroll
+			LDX fw_sind+2		; get next sparse index (4*)
+			LDA fw_ccol, X		; get proper colour pair (4)
+			STA (cio_pt), Y		; put it on screen (6 eeek)
+			INY					; next screen byte for this glyph byte (2)
+			LDX fw_sind+2		; get next sparse index (4*)
+			LDA fw_ccol, X		; get proper colour pair (4)
+			STA (cio_pt), Y		; put it on screen (6 eeek)
+			INY					; next screen byte for this glyph byte (2)
+			LDX fw_sind+2		; get next sparse index (4*)
+			LDA fw_ccol, X		; get proper colour pair (4)
+			STA (cio_pt), Y		; put it on screen (6 eeek)
+			INY					; next screen byte for this glyph byte (2)
+; ...etc
+cpc_rend:					; end segment has not changed, takes 6x11 + 2x24 - 1, 113t (66+46-1=111t in ZP)
 		TYA					; advance to next screen raster, but take into account the 4-byte offset (2+2+2)
 		CLC
 		ADC #60
