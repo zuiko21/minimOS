@@ -1,6 +1,6 @@
 ; RLE decoder for minimOS
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211030-1543
+; last modified 20211030-1832
 
 ; *** zeropage variables ***
 .zero
@@ -56,7 +56,7 @@ rle_u:
 			LDA (src), Y	; read immediate value to be sent, just once
 			STA (ptr), Y	; store it just once
 			INY				; next byte in chunk, will never wrap as <= 127
-			DEX				; one less to go
+			INX				; one less to go
 			BNE rle_u
 		TYA					; how many were read?
 rle_adv:

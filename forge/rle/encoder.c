@@ -1,28 +1,23 @@
 /* RLE encoder for minimOS        *
  * (c) 2021 Carlos J. Santisteban *
- * last modified 20211030-1648    */
+ * last modified 20211030-1804    */
 
 #include <stdio.h>
 
-/* function declarations and definitions */
-void	send_u(int i, int u, int c) {	// go backwards and send uncompressed chunk
-	int		x;					// x = uncompressed chunk index
+/* function declarations */
+void	send_u(void);			// go backwards and send uncompressed chunk
 
-	fputc(-u, f);				// negative 'command' means length of uncompressed chunk
-	x = i - u - c;				// compute start of chunk
-	while (u--) {
-		fputc(src[x++]);		// send uncompressed byte
-	}
-}
+/* global variables, WTF */
+	char	src[32768];			// just in case, read whole input file
+	FILE*	f;					// file handler, both source and output as not simultaneous
+	int		i;					// i = source index
+	int		siz, unc, count, output;
+	int		clocks = 0;			// estimated 6502 decompression time!
 
 /* main code */
 int		main(void) {
-	char	src[32768];			// just in case, read whole input file
-	char	b;					// repeated character
-	int		s, u, c, o;			// s = original size, u = uncompressed length, c = counted repetitions, o = output size
-	int		i, x;				// i = source index, x = start of uncompressed chunk
+	char	base;				// repeated character
 	char	name[80];			// input filename
-	FILE*	f;					// file handler, both source and output as not simultaneous
 
 /* read source file into memory */
 	printf("File to compress: ");
@@ -33,13 +28,13 @@ int		main(void) {
 		return -1;
 	}
 	fseek(f, 0, SEEK_END);		// go to the end for a moment
-	s = ftell(f);				// get length
+	siz = ftell(f);				// get length
 	fseek(f, 0, SEEK_SET);		// back to start
-	if (s>32768) {
+	if (siz>32768) {
 		printf("\n*** File is too large ***\n");
 		return -2;
 	}
-	fread(src, 1, s, f);		// read file into memory
+	fread(src, 1, siz, f);		// read file into memory
 	fclose(f);					// all done with input
 /* prepare output file */
 	f = fopen("source.rle", "wb");		// get ready for output file
@@ -48,30 +43,55 @@ int		main(void) {
 		return -3;
 	}
 /* compress array */
-	i = 0;						// cursor reset
-	u = 0;						// this gets reset every time but first
-	while (i < size) {
-		b = src[i++];			// read this first byte and point to following one
-		c = 1;					// assume not yet repeated
-		while (src[i]==b && c<127) {	// next one is the same?
-			c++;						// count it
-			i++;						// and check the next one
+	i = output = 0;				// cursor and output size reset
+	unc = 0;					// this gets reset every time but first
+	while (i < siz) {
+		base = src[i++];		// read this first byte and point to following one
+		count = 1;				// assume not yet repeated
+		while (src[i]==base && count<127 && i<siz) {	// next one is the same?
+			count++;									// count it
+			i++;										// and check the next one
 		}
-		if (c>1) {				// any actual repetition?
-			send_u(i, u, c);	// send previous uncompressed chunk, if any!
-			u = 0;
-			fputc(c, f);		// first goes 'command', positive means repeat following byte
-			fputc(b, f);		// this was the repeated value
+		if (count>1) {			// any actual repetition?
+			if (unc)
+				send_u();		// send previous uncompressed chunk, if any!
+			fputc(count, f);	// first goes 'command', positive means repeat following byte
+			fputc(base, f);		// this was the repeated value
+			output += 2;
+			clocks += 47+13*count;
 		} else {
-			u++;				// different, thus one more for the uncompressed chunk
-			if (u==128) {
-				send_u(i, u, c);		// cannot add more to chunk
-				u = 0;
+			unc++;				// different, thus one more for the uncompressed chunk
+			if (unc==128) {
+				send_u();		// cannot add more to chunk
 			}
 		}
 	}
+/* input stream ended, but check for anything in progress! */
+	count=0;					// EEEEEEEEEEEK
+	if (unc)
+		send_u();				// send uncompressed chunk in progress!
+
+/* end output stream and cleanout */
 	fputc(0, f);				// end of stream
+	output++;
 	fclose(f);
+	printf("\nDone! Encoded %d bytes into %d (%d%%)\n", siz, output, 100*output/siz);
+	printf("Estimated 6502 timing: %d clock cycles\n", clocks);
 
 	return 0;
+}
+
+/* function definitions */
+void	send_u(void) {	// go backwards and send uncompressed chunk
+	int		x;					// x = uncompressed chunk index
+
+	clocks += 46+18*unc;
+	fputc(-unc, f);				// negative 'command' means length of uncompressed chunk
+	output++;
+	x = i - unc - count;		// compute start of chunk
+	while (unc) {
+		fputc(src[x++], f);		// send uncompressed byte
+		output++;
+		unc--;					// will finish as 0
+	}
 }
