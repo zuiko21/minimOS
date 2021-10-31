@@ -3,7 +3,7 @@
 ; FAST colour mode, takes a full page of RAM (but just 13 sparse bytes of it)
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211031-0017
+; last modified 20211101-0010
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -63,6 +63,7 @@
 ; fw_ccol.p (SPARSE array of two-pixel combos, will store ink & paper)
 ;  above will use offsets 0, 1, 2, 3; 4, 8, 12; 16, 32, 48; 64, 128, 192
 ;  set patterns will be  00,01,10,11,01,10, 11, 01, 10, 11, 01,  10,  11 (0=paper, 1=ink)
+;  * now reduced to simple 00.01.10.11 array
 ; fw_ciop.w (upper scan of cursor position)
 ; fw_fnt.w (new, pointer to relocatable 2KB font file)
 ; fw_mask (for inverse/emphasis mode)
@@ -84,9 +85,9 @@
 
 .(
 pvdu	= $6000				; base address
-IO9di	= $9FFF				; data input (TBD)
-IO8attr	= $8000				; compatible IO8lh for setting attributes (d7=HIRES, d6=INVERSE)
-IOBeep	= $BFF0				; canonical buzzer address (d0)
+IO9di	= $DF9F				; data input (TBD)
+IO8attr	= $DF80				; compatible IO8lh for setting attributes (d7=HIRES, d6=INVERSE)
+IOBeep	= $DFB0				; canonical buzzer address (d0)
 
 	TYA						; is going to be needed here anyway
 	LDX fw_cbin				; check whether in binary/multibyte mode
@@ -146,7 +147,7 @@ cph_nw:
 			BNE cph_loop	; offset will just wrap at the end EEEEEEEK (3)
 		BEQ cur_r			; advance to next position! no need for BRA (3)
 ; colour version, 85b, typically 975t (77b, 924t in ZP)
-; new FAST version with sparse array
+; new FAST version, but no longer with sparse array
 cpc_col:
 	LDX #2
 	STX fw_chalf			; two pages must be written (2+4*)
@@ -160,12 +161,16 @@ cpc_do:						; outside loop (done 8 times) is 8x(45+inner)+113=969, 8x(42+inner)
 		STA fw_sind			; fourth and last sparse index (4*, note inverted order)
 		TXA					; quickly get the rest (2)
 		AND #%00001100		; pixels 4-5 (2)
+		LSR: LSR			; no longer sparse (2+2)
 		STA fw_sind+1		; third sparse index (4*)
 		TXA
 		AND #%00110000		; pixels 2-3 (2+2)
+		LSR: LSR
+		LSR: LSR			; no longer sparse, C is clear (2+2+2+2)
 		STA fw_sind+2		; second sparse index (4*)
 		TXA
 		AND #%11000000		; two leftmost pixels (will be processed first) (2+2)
+		ROL: ROL: ROL		; no longer sparse, faster this way (2+2+2)
 ;		STA fw_sind+3		; first sparse index storage (and ready to use as index)
 ;		LDX #3				; each glyph byte takes 4 screen bytes, this is max offset (2)
 ;		STX fw_ccnt			; cannot stay in X as indexing will be used (4*)
@@ -391,12 +396,13 @@ cio_bs:
 	TAX						; so should be last index offset, for hires!
 	LDY #31					; this is what must be added to Y each scanline, in hires
 	BCS bs_hr
-		LDA fw_ppr			; but the paper colour otherwise
-		ASL
-		ASL
-		ASL
-		ASL
-		ORA fw_ppr
+		LDA fw_ccol			; this is all paper value
+;		LDA fw_ppr			; but the paper colour otherwise
+;		ASL
+;		ASL
+;		ASL
+;		ASL
+;		ORA fw_ppr
 		LDX #3				; last index offset per scan (colour)
 		LDY #60				; this is what must be added to Y each scanline, in colour
 bs_hr:
@@ -475,7 +481,7 @@ cio_ff:
 	LDA #STD_INK			; preload standard colour combos
 	JSR set_ink				; these will clear fw_cbin
 	LDA #STD_PPR
-	JSR set_ppr
+	JSR set_paper
 	LDY #>font				; standard font address
 	LDA #<font
 	STY fw_fnt				; set firmware pointer (will need that again after FF)
@@ -596,23 +602,23 @@ set_ink:
 	STA fw_ccnt				; another temporary storage (high nibble)
 	ORA fw_cbyt				; twice
 	STA fw_ccol+3			; both INK
-	STA fw_ccol+12			; both INK (FAST version)
-	STA fw_ccol+48			; both INK (FAST version)
-	STA fw_ccol+192			; both INK (FAST version)
+;	STA fw_ccol+12			; both INK (FAST version) no longer sparse
+;	STA fw_ccol+48			; both INK (FAST version)
+;	STA fw_ccol+192			; both INK (FAST version)
 	LDA fw_ccol+2			; this was old ink-paper
 	AND #$0F				; keep paper only
 	ORA fw_ccnt				; now it's INK-PAPER
 	STA fw_ccol+2
-	STA fw_ccol+8			; INK-PAPER (FAST)
-	STA fw_ccol+32			; INK-PAPER (FAST)
-	STA fw_ccol+128			; INK-PAPER (FAST)
+;	STA fw_ccol+8			; INK-PAPER (FAST)
+;	STA fw_ccol+32			; INK-PAPER (FAST)
+;	STA fw_ccol+128			; INK-PAPER (FAST)
 	LDA fw_ccol+1			; this is paper and old ink
 	AND #$F0				; keep paper only
 	ORA fw_cbyt				; now it's PAPER-INK
 	STA fw_ccol+1
-	STA fw_ccol+4			; PAPER-INK (FAST)
-	STA fw_ccol+16			; PAPER-INK (FAST)
-	STA fw_ccol+64			; PAPER-INK (FAST)
+;	STA fw_ccol+4			; PAPER-INK (FAST)
+;	STA fw_ccol+16			; PAPER-INK (FAST)
+;	STA fw_ccol+64			; PAPER-INK (FAST)
 md_std:
 	_STZA fw_cbin			; back to standard mode
 	RTS
@@ -633,16 +639,16 @@ set_paper:
 	AND #$0F				; keep ink only
 	ORA fw_ccnt				; now it's PAPER-INK
 	STA fw_ccol+1
-	STA fw_ccol+4			; PAPER-INK (FAST)
-	STA fw_ccol+16			; PAPER-INK (FAST)
-	STA fw_ccol+64			; PAPER-INK (FAST)
+;	STA fw_ccol+4			; PAPER-INK (FAST)
+;	STA fw_ccol+16			; PAPER-INK (FAST)
+;	STA fw_ccol+64			; PAPER-INK (FAST)
 	LDA fw_ccol+2			; this was ink and old paper
 	AND #$F0				; keep ink only
 	ORA fw_cbyt				; now it's INK-PAPER
 	STA fw_ccol+2
-	STA fw_ccol+8			; INK-PAPER (FAST)
-	STA fw_ccol+32			; INK-PAPER (FAST)
-	STA fw_ccol+128			; INK-PAPER (FAST)
+;	STA fw_ccol+8			; INK-PAPER (FAST)
+;	STA fw_ccol+32			; INK-PAPER (FAST)
+;	STA fw_ccol+128			; INK-PAPER (FAST)
 	_BRA md_std
 
 cn_sety:					; 6= Y to be set, advance mode to 8
