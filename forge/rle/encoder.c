@@ -1,6 +1,6 @@
 /* RLE encoder for minimOS        *
  * (c) 2021 Carlos J. Santisteban *
- * last modified 20211030-1804    */
+ * last modified 20211031-1756    */
 
 #include <stdio.h>
 
@@ -18,7 +18,7 @@ void	send_u(void);			// go backwards and send uncompressed chunk
 int		main(void) {
 	char	base;				// repeated character
 	char	name[80];			// input filename
-
+	int		thres;				// compression threshold (usually 2 is optimum, but ~19 is faster)
 /* read source file into memory */
 	printf("File to compress: ");
 	scanf("%s", name);			// does this put terminator? I think so
@@ -43,6 +43,9 @@ int		main(void) {
 		return -3;
 	}
 /* compress array */
+	printf("Compression threshold? (optimum ~2): ");
+	scanf("%d", &thres);
+
 	i = output = 0;				// cursor and output size reset
 	unc = 0;					// this gets reset every time but first
 	while (i < siz) {
@@ -52,7 +55,7 @@ int		main(void) {
 			count++;									// count it
 			i++;										// and check the next one
 		}
-		if (count>1) {			// any actual repetition?
+		if (count>thres) {		// any actual repetition?
 			if (unc)
 				send_u();		// send previous uncompressed chunk, if any!
 			fputc(count, f);	// first goes 'command', positive means repeat following byte
@@ -60,8 +63,8 @@ int		main(void) {
 			output += 2;
 			clocks += 47+13*count;
 		} else {
-			unc++;				// different, thus one more for the uncompressed chunk
-			if (unc==128) {
+			unc+=count;			// different, thus more for the uncompressed chunk EEEEEEK
+			if (unc>=128) {
 				send_u();		// cannot add more to chunk
 			}
 		}
@@ -83,15 +86,16 @@ int		main(void) {
 
 /* function definitions */
 void	send_u(void) {	// go backwards and send uncompressed chunk
-	int		x;					// x = uncompressed chunk index
+	int		x, y;				// x = uncompressed chunk index, y = min(unc,128)
 
-	clocks += 46+18*unc;
-	fputc(-unc, f);				// negative 'command' means length of uncompressed chunk
-	output++;
 	x = i - unc - count;		// compute start of chunk
-	while (unc) {
+	y = (unc<128)?unc:128;		// cannot sent more than 128 in a chunk
+	clocks += 46+18*y;
+	fputc(-y, f);				// negative 'command' means length of uncompressed chunk EEEEK
+	output++;
+	while (y--) {
 		fputc(src[x++], f);		// send uncompressed byte
 		output++;
-		unc--;					// will finish as 0
+		unc--;					// may NOT finish as 0
 	}
 }

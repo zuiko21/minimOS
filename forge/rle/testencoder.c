@@ -1,7 +1,7 @@
 /* RLE encoder for minimOS        *
  * investigates optimum threshold *
  * (c) 2021 Carlos J. Santisteban *
- * last modified 20211031-1735    */
+ * last modified 20211031-1752    */
 
 #include <stdio.h>
 
@@ -106,10 +106,9 @@ void	send_u(void) {	// go backwards and send uncompressed chunk
 	clocks += 46+18*y;
 //	fputc(-y, f);				// negative 'command' means length of uncompressed chunk
 	output++;
-	while (y) {
+	while (y--) {
 //		fputc(src[x++], f);		// send uncompressed byte
 		output++;
 		unc--;					// may not finish as 0!
-		y--;
 	}
 }
