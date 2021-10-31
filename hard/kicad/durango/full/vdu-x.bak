@@ -1405,7 +1405,7 @@ Wire Wire Line
 	8650 1950 10350 1950
 Wire Wire Line
 	10550 2150 10550 2200
-Text Label 10250 3200 2    50   ~ 0
+Text Label 10950 5600 2    50   ~ 0
 RGB
 Text Label 10150 1750 2    50   ~ 0
 HIRES
@@ -1888,7 +1888,7 @@ OR 4K7
 Text Notes 6650 6050 0    50   ~ 0
 OR 10K
 Text Notes 9350 5400 0    50   ~ 0
-*
+*MIGHT CONNECT E-C\nIF ONLY COLOUR MODE
 Text Notes 9050 5900 0    50   ~ 0
 *
 Text Label 7550 5700 0    50   ~ 0
@@ -2345,5 +2345,5 @@ Wire Bus Line
 Wire Bus Line
 	800  4350 3700 4350
 Text Label 10400 2000 0    50   ~ 0
-COL
+COLOUR
 $EndSCHEMATC
