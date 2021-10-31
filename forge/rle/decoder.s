@@ -1,6 +1,6 @@
 ; RLE decoder for minimOS
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211030-1832
+; last modified 20211031-1931
 
 ; *** zeropage variables ***
 .zero
@@ -11,6 +11,8 @@ src		.word	0			; pointer to compressed source
 ptr		.word	0			; pointer to screen output
 
 .text
+
+* = $4000					; room enough
 
 ; *** parameter definitions ***
 dest	= $6000				; Durango-X screen address
@@ -81,4 +83,4 @@ rle_exit:
 	BRA rle_exit			; just hang after decoding!
 ; ** compressed 'file' ahead **
 source:
-	.bin	0, , "banner.rle"
+	.bin	0, 2908, "../rle/source.rle"
