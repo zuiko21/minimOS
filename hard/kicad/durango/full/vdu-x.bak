@@ -2332,6 +2332,8 @@ Wire Wire Line
 	10250 2000 10750 2000
 Wire Wire Line
 	10750 2000 10750 1750
+Text Label 10400 2000 0    50   ~ 0
+COLOUR
 Wire Bus Line
 	600  5800 600  7750
 Wire Bus Line
@@ -2344,6 +2346,4 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
-Text Label 10400 2000 0    50   ~ 0
-COLOUR
 $EndSCHEMATC
