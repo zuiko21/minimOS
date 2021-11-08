@@ -15,17 +15,6 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L Connector:Barrel_Jack J7
-U 1 1 63122170
-P 900 1100
-F 0 "J7" H 957 1425 50  0000 C CNN
-F 1 "5V DC" H 957 1334 50  0000 C CNN
-F 2 "Connector_BarrelJack:BarrelJack_Wuerth_6941xx301002" H 950 1060 50  0001 C CNN
-F 3 "~" H 950 1060 50  0001 C CNN
-	1    900  1100
-	1    0    0    -1  
-$EndComp
-$Comp
 L power:GND #PWR0111
 U 1 1 6315BD20
 P 1350 1300
@@ -48,21 +37,17 @@ F 3 "~" H 1350 1150 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	1200 1200 1200 1300
-Wire Wire Line
-	1200 1300 1350 1300
+	850  1300 950  1300
 Connection ~ 1350 1300
-Wire Wire Line
-	1200 1000 1350 1000
 $Comp
 L power:+5V #PWR0153
 U 1 1 6315CF6B
-P 1350 1000
-F 0 "#PWR0153" H 1350 850 50  0001 C CNN
-F 1 "+5V" H 1365 1173 50  0000 C CNN
-F 2 "" H 1350 1000 50  0001 C CNN
-F 3 "" H 1350 1000 50  0001 C CNN
-	1    1350 1000
+P 1700 650
+F 0 "#PWR0153" H 1700 500 50  0001 C CNN
+F 1 "+5V" H 1800 750 50  0000 C CNN
+F 2 "" H 1700 650 50  0001 C CNN
+F 3 "" H 1700 650 50  0001 C CNN
+	1    1700 650 
 	1    0    0    -1  
 $EndComp
 Connection ~ 1350 1000
@@ -475,6 +460,27 @@ Wire Wire Line
 	2750 3650 2750 3600
 Connection ~ 1350 2150
 Connection ~ 1350 3650
+$Comp
+L Connector:USB_B J7
+U 1 1 61A5663E
+P 950 900
+F 0 "J7" H 600 950 50  0000 C CNN
+F 1 "POWER" H 600 850 50  0000 C CNN
+F 2 "Connector_USB:USB_B_OST_USB-B1HSxx_Horizontal" H 1100 850 50  0001 C CNN
+F 3 " ~" H 1100 850 50  0001 C CNN
+	1    950  900 
+	1    0    0    -1  
+$EndComp
+Connection ~ 950  1300
+Wire Wire Line
+	950  1300 1350 1300
+Connection ~ 1700 650 
+Wire Wire Line
+	1350 1000 1350 700 
+Wire Wire Line
+	1350 700  1250 700 
+NoConn ~ 1250 900 
+NoConn ~ 1250 1000
 Wire Bus Line
 	3700 2150 3700 2900
 Wire Bus Line

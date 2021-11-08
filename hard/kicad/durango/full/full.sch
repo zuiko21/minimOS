@@ -1223,7 +1223,7 @@ U 1 1 60C1DFDD
 P 1950 2450
 F 0 "D1" H 1950 2667 50  0000 C CNN
 F 1 "1N4148" H 1950 2576 50  0000 C CNN
-F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 1950 2275 50  0001 C CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_KathodeUp" H 1950 2275 50  0001 C CNN
 F 3 "https://assets.nexperia.com/documents/data-sheet/1N4148_1N4448.pdf" H 1950 2450 50  0001 C CNN
 	1    1950 2450
 	1    0    0    -1  
@@ -1438,7 +1438,7 @@ U 1 1 60D71AF9
 P 1350 800
 F 0 "SW1" V 1300 950 50  0000 C CNN
 F 1 "RESET" V 1400 1000 50  0000 C CNN
-F 2 "Button_Switch_THT:KSA_Tactile_SPST" H 1350 1000 50  0001 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1350 1000 50  0001 C CNN
 F 3 "~" H 1350 1000 50  0001 C CNN
 	1    1350 800 
 	0    -1   1    0   
@@ -1537,21 +1537,10 @@ U 1 1 608BF1C3
 P 9850 5700
 F 0 "D2" H 9950 5750 50  0000 C CNN
 F 1 "1N4148" H 9850 5800 50  0000 C CNN
-F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 9850 5525 50  0001 C CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_KathodeUp" H 9850 5525 50  0001 C CNN
 F 3 "https://assets.nexperia.com/documents/data-sheet/1N4148_1N4448.pdf" H 9850 5700 50  0001 C CNN
 	1    9850 5700
 	-1   0    0    1   
-$EndComp
-$Comp
-L Diode:1N4148 D3
-U 1 1 60986179
-P 10000 5550
-F 0 "D3" V 10100 5750 50  0000 R CNN
-F 1 "1N4148" V 10000 5900 50  0000 R CNN
-F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 10000 5375 50  0001 C CNN
-F 3 "https://assets.nexperia.com/documents/data-sheet/1N4148_1N4448.pdf" H 10000 5550 50  0001 C CNN
-	1    10000 5550
-	0    -1   -1   0   
 $EndComp
 NoConn ~ 9700 5900
 $Comp
@@ -1565,7 +1554,6 @@ F 3 "~" H 10200 5850 50  0001 C CNN
 	1    10200 5850
 	1    0    0    -1  
 $EndComp
-Connection ~ 10000 5700
 $Comp
 L Device:R R5
 U 1 1 609CB229
@@ -1618,19 +1606,6 @@ $EndComp
 Connection ~ 10550 6000
 Text GLabel 10850 5700 2    50   Input ~ 0
 AUDIO
-$Comp
-L Device:Jumper_NO_Small JP1
-U 1 1 60A5C370
-P 10000 5300
-F 0 "JP1" V 9954 5348 50  0000 L CNN
-F 1 "AUDIO FEEDBACK" V 10045 5348 50  0000 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 10000 5300 50  0001 C CNN
-F 3 "~" H 10000 5300 50  0001 C CNN
-	1    10000 5300
-	0    1    1    0   
-$EndComp
-Text Label 10600 5200 0    50   ~ 0
-SERDAT
 $Comp
 L Transistor_BJT:BC547 Q3
 U 1 1 60A6632E
@@ -1719,8 +1694,6 @@ Wire Wire Line
 Wire Wire Line
 	9100 5300 9100 5700
 Wire Wire Line
-	10900 5200 10000 5200
-Wire Wire Line
 	8700 5700 8700 5000
 Wire Wire Line
 	8700 5000 5750 5000
@@ -1752,11 +1725,6 @@ Wire Wire Line
 	1200 2050 1500 2050
 Wire Wire Line
 	1200 1950 1550 1950
-Wire Wire Line
-	1500 2050 1500 550 
-Connection ~ 1500 2050
-Wire Wire Line
-	1500 550  10900 550 
 Text Label 6050 5250 0    50   ~ 0
 PHI2
 Wire Wire Line
@@ -1770,8 +1738,6 @@ Wire Wire Line
 Connection ~ 10000 3150
 Text Label 7250 2850 0    50   ~ 0
 ~WE
-Wire Wire Line
-	10900 550  10900 5200
 $Comp
 L 74xx:74LS32 U13
 U 1 1 60967ED5
@@ -2117,7 +2083,7 @@ U 1 1 615D1EEA
 P 800 3800
 F 0 "D5" V 800 3900 50  0000 L CNN
 F 1 "1N4148" V 700 3850 50  0000 L CNN
-F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 800 3800 50  0001 C CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_KathodeUp" H 800 3800 50  0001 C CNN
 F 3 "~" H 800 3800 50  0001 C CNN
 	1    800  3800
 	0    1    1    0   
@@ -2508,7 +2474,7 @@ U 1 1 61A768F0
 P 1100 1650
 F 0 "SW2" H 1000 1750 50  0000 C CNN
 F 1 "NMI" H 1200 1750 50  0000 C CNN
-F 2 "Button_Switch_THT:KSA_Tactile_SPST" H 1100 1850 50  0001 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1100 1850 50  0001 C CNN
 F 3 "~" H 1100 1850 50  0001 C CNN
 	1    1100 1650
 	1    0    0    -1  
@@ -2734,6 +2700,29 @@ Text Label 3200 6950 1    50   ~ 0
 PD6
 Text Label 3300 6950 1    50   ~ 0
 PD7
+Connection ~ 10000 5700
+$Comp
+L Diode:1N4148 D3
+U 1 1 60986179
+P 10000 5550
+F 0 "D3" V 10100 5750 50  0000 R CNN
+F 1 "1N4148" V 10000 5900 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_KathodeUp" H 10000 5375 50  0001 C CNN
+F 3 "https://assets.nexperia.com/documents/data-sheet/1N4148_1N4448.pdf" H 10000 5550 50  0001 C CNN
+	1    10000 5550
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x01 J2
+U 1 1 6199DFE2
+P 10200 5400
+F 0 "J2" H 10150 5500 50  0000 L CNN
+F 1 "AUDIO IN" H 10050 5300 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical" H 10200 5400 50  0001 C CNN
+F 3 "~" H 10200 5400 50  0001 C CNN
+	1    10200 5400
+	1    0    0    -1  
+$EndComp
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Wire Line
@@ -2749,9 +2738,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	7450 950  7450 5050
-Wire Bus Line
 	10800 650  10800 1650
+Wire Bus Line
+	7450 950  7450 5050
 Wire Bus Line
 	650  5500 650  7300
 Wire Bus Line
