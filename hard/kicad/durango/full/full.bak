@@ -2700,42 +2700,6 @@ Text Label 3200 6950 1    50   ~ 0
 PD6
 Text Label 3300 6950 1    50   ~ 0
 PD7
-Wire Bus Line
-	2500 5250 2800 5250
-Wire Wire Line
-	10600 1050 10850 1050
-Wire Bus Line
-	2800 5250 3200 5250
-Wire Bus Line
-	2800 7700 3200 7700
-Wire Bus Line
-	5800 3350 5800 5050
-Wire Bus Line
-	5800 5050 5800 6350
-Wire Bus Line
-	5850 950  5850 5100
-Wire Bus Line
-	7450 950  7450 5050
-Wire Bus Line
-	10800 650  10800 1650
-Wire Bus Line
-	650  5500 650  7300
-Wire Bus Line
-	4200 3350 4200 7200
-Wire Bus Line
-	7500 950  7500 5100
-Wire Bus Line
-	7550 700  7550 4100
-Wire Bus Line
-	2800 650  2800 5250
-Wire Bus Line
-	5500 650  5500 1650
-Wire Bus Line
-	5900 700  5900 5900
-Wire Bus Line
-	9100 950  9100 5050
-Wire Bus Line
-	4250 700  4250 6450
 Connection ~ 10000 5700
 $Comp
 L Diode:1N4148 D3
@@ -2759,4 +2723,40 @@ F 3 "~" H 10200 5400 50  0001 C CNN
 	1    10200 5400
 	1    0    0    -1  
 $EndComp
+Wire Bus Line
+	2500 5250 2800 5250
+Wire Wire Line
+	10600 1050 10850 1050
+Wire Bus Line
+	2800 5250 3200 5250
+Wire Bus Line
+	2800 7700 3200 7700
+Wire Bus Line
+	5800 3350 5800 5050
+Wire Bus Line
+	5800 5050 5800 6350
+Wire Bus Line
+	5850 950  5850 5100
+Wire Bus Line
+	10800 650  10800 1650
+Wire Bus Line
+	7450 950  7450 5050
+Wire Bus Line
+	650  5500 650  7300
+Wire Bus Line
+	4200 3350 4200 7200
+Wire Bus Line
+	7500 950  7500 5100
+Wire Bus Line
+	7550 700  7550 4100
+Wire Bus Line
+	2800 650  2800 5250
+Wire Bus Line
+	5500 650  5500 1650
+Wire Bus Line
+	5900 700  5900 5900
+Wire Bus Line
+	9100 950  9100 5050
+Wire Bus Line
+	4250 700  4250 6450
 $EndSCHEMATC
