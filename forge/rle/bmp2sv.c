@@ -1,6 +1,6 @@
 /* BMP decoder to SV format       *
  * (c) 2021 Carlos J. Santisteban *
- * last modified 20211106-0927    */
+ * last modified 20211109-1235    */
 
 #include <stdio.h>
 #include <string.h>
@@ -87,7 +87,7 @@ int		main(void) {
 		return -7;
 	}
 /* convert loaded image... backwards */
-	bpl = // EEEEEEEEEEEEEEEEEEK
+	bpl = x/ppb;				// EEEEEEEEEEEEEEEEEEK
 /* if not full height, add some black lines at the top */
 	for (i=0; i<(limit-y)/2; i++) {
 		for (j=0; j<bpr; j++) {
@@ -101,7 +101,9 @@ int		main(void) {
 			fputc('\0', f);		// send black byte
 		}
 /* actual raster */
-
+		for (j=0; j<bpl; j++) {
+			fputc(src[i+j], f);		// send image byte!
+		}
 /* if not full width, add some black pixels to the right */
 		for (j=0; j<(limit-x)/ppb/2; j++) {		// this is DANGEROUS
 			fputc('\0', f);		// send black byte

@@ -4,9 +4,10 @@
 ; expects signature value at $FFDE-$FFDF for a final checksum of 0
 ; suitable for most!
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210910-0040
+; last modified 20211109-1210
 
 ; *** note computed checksum is expected to be ZERO thanks to the word stored at $FFDE (sum)-$FFDF (chk)
+; it usually MUST skip $DF page for I/O!!! EEEEEK
 .(
 ; *** declare some temprorary vars ***
 ptr		= z_used
@@ -22,6 +23,7 @@ chk		= z_used+3			; sum of sums
 	STY sum					; reset values too
 	STY chk
 ; *** main loop *** original version takes 20b, 426kt for 16KB ~0.28s on Durango-X
+; more like 420 kt as must skip IO page
 loop:
 			LDA (ptr), Y	; get ROM byte (5+2)
 			CLC
@@ -33,6 +35,12 @@ loop:
 			INY
 			BNE loop		; complete one page (3..., 6655t per page)
 		INX					; next page (2)
+; *** MUST skip page $DF, very little penalty though ***
+		CPX #$DF			; I/O space?
+		BNE f16_noio
+			INX				; skip it!
+f16_noio:
+; *** resume normal page crossing ***
 		STX ptr+1			; update pointer (3)
 		BNE loop			; will end at last address! (3...)
 ; *** now compare computed checksum with ZERO *** 4b
