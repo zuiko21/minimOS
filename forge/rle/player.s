@@ -1,6 +1,6 @@
 ; RLE-encoded video playback POC
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211109-1220
+; last modified 20211110-1334
 
 ; *** zeropage variables ***
 .zero
@@ -9,6 +9,8 @@
 
 src		.word	0			; pointer to compressed source
 ptr		.word	0			; pointer to screen output
+jiffy	.byt	0			; jiffy counter, if not provided by OS
+next	.byt	0			; next frame decoding deadline
 
 .text
 
@@ -20,7 +22,17 @@ dest	= $6400				; Durango-X screen address (for 192-px height)
 ; *** actual code ***
     LDA #$B0                ; hires mode, screen 3 for testing
     STA $DF80               ; set video flags
- 
+; must install an interrupt handler, 10 fps = 25 jiffys
+	LDY #<isr_rle
+	LDA #>isr_rle
+	STY $200				; fw_isr
+	STA	$201
+	STZ jiffy
+	LDA #25					; next displayed frame
+	STA next
+	STA $DFA0				; d0 is on, enable interrupts
+	CLI						; interrupt is on
+	
 ; *** decompressing algorithm ***
 ; preload pointers as required
 start:
@@ -91,6 +103,16 @@ rle_exit:
 rle_wait:
     LDA (src)               ; CMOS, are we on a second consecutive NULL?
     BEQ rle_end             ; yep, playback is done (may repeat all)
+; ...but make sure we are doing the right fps!
+rle_fps:
+	LDA jiffy
+	CMP next				; wait until next displayable frame
+	BNE rle_fps
+; now set all for next frame
+	CLC
+	ADC #25					; for 10 fps
+	STA next
+; to avoid tearing, wait for vsync
 rle_vsync:
         BIT $DF88           ; wait until VBlank (d6)
         BVC rle_vsync
@@ -99,6 +121,11 @@ rle_end:
 ; *** all frames done, maybe loop again ***
     JMP start
 ; should page-align?
+
+; *** interrupt handler (if not provided) ***
+isr:
+	INC jiffy
+	RTI
 
 ; ** compressed 'file' ahead **
 source:
