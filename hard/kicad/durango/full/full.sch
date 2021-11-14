@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1385,7 +1385,7 @@ L Device:R R3
 U 1 1 60C96840
 P 1350 1150
 F 0 "R3" H 1450 1150 50  0000 C CNN
-F 1 "1K*" V 1350 1150 50  0000 C CNN
+F 1 "22K" V 1350 1150 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical" V 1280 1150 50  0001 C CNN
 F 3 "~" H 1350 1150 50  0001 C CNN
 	1    1350 1150
@@ -1407,7 +1407,7 @@ L Device:CP C1
 U 1 1 60CB72E6
 P 2000 950
 F 0 "C1" V 1850 950 50  0000 C CNN
-F 1 "1uF*" V 2150 1000 50  0000 C CNN
+F 1 "1uF" V 2150 1000 50  0000 C CNN
 F 2 "Capacitor_THT:CP_Radial_D5.0mm_P2.50mm" H 2038 800 50  0001 C CNN
 F 3 "~" H 2000 950 50  0001 C CNN
 	1    2000 950 
@@ -2731,6 +2731,7 @@ Wire Wire Line
 	2700 3000 2700 3750
 Wire Wire Line
 	2700 3750 2650 3750
+Connection ~ 800  3950
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Wire Line
@@ -2746,9 +2747,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	10800 650  10800 1650
-Wire Bus Line
 	7450 950  7450 5050
+Wire Bus Line
+	10800 650  10800 1650
 Wire Bus Line
 	650  5500 650  7300
 Wire Bus Line
@@ -2767,5 +2768,4 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Connection ~ 800  3950
 $EndSCHEMATC
