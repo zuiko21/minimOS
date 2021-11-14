@@ -1,6 +1,6 @@
 ; FULL test of Durango-X (downloadable version)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211023-1753
+; last modified 20211114-1332
 
 ; *** memory maps ***
 ;				ROMable		DOWNLOADable
@@ -476,7 +476,21 @@ nmi:
 
 ; interrupt routine (for both IRQ and NMI test) *** could be elsewhere
 isr:
+	PHA						; universal comprehensive ISR
+	TXA
+	PHA						; X saved, NMOS savvy
+	TSX
+	LDA $101, X				; get saved PSR
+	AND #$10				; B 'flag'
+	BEQ do_isr				; not set, expected IRQ, all OK
+		LDX test
+		LDA #$02			; otherwise print a red dot below
+		STA $7080, X
+do_isr:
 	INC test				; increment standard zeropage address (no longer DEC)
+	PLA						; restore status
+	TAX
+	PLA
 exit:
 	RTI
 
