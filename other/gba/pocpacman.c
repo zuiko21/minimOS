@@ -14,11 +14,21 @@
 #define	MOVEL	2
 #define	MOVEU	3
 
+char mapa[29][32] = {	// laberinto original, celdas de 4x4 píxeles, 0=ocupada, 1=libre, inicializar por columnas!!!
+	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+	{0,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,0,0,0,0,1,1,1,1,1,0,1,1,1,1,1,0},
+	{0,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,0,0,0,0,1,1,1,1,1,0,1,1,1,1,1,0},
+	{0,1,1,0,0,1,1,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,1,1,1,1,1,0,1,1,0},
+	{0,1,1,0,0,1,1,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,1,1,1,1,1,0,1,1,0},
+	
 // valor a cambiar cada coordenada según dirección
 int dx[DIRS] = {1, 0, -1, 0};
 int dy[DIRS] = {0, 1, 0, -1};
+// factores para determinar casilla adyacente del mapa (son de 4x4 mientras que los sprites son de 8x8)
+int fx[DIRS] = {2, 0, -1, 0};
+int fy[DIRS] = {0, 2, 0, -1};
 
-int	px, py;	// coordenadas pacman
+int	px, py;	// coordenadas pacman (añadir [56,16] al mostrar, para que coincida con mapa)
 int pd;		// dirección pacman
 int pm;		// dirección DESEADA pacman
 int gx[FANTS], gy[FANTS];	// coordenadas fantasmaS
@@ -33,12 +43,13 @@ int dd;		// dirección DESEADA fantasma (temporal)
 		}
 		else {
 			// ver teclas y, si es factible, cambiar dirección
+			// en el mapa hay que mirar x+2/y+2 o bien x-1/y-1 :-(
 			// *** pm=0...3 como futuro pd ***
-			if (mapa[px/PASO+dx[pm]][py/PASO+dy[pm]] == 0) {	// casilla libre
+			if (mapa[px/PASO+fx[pm]][py/PASO+fy[pm]]) {	// casilla libre
 				pd = pm;	// se acepta el movimiento
 			}
 			// ver si puede seguir moviéndose, de lo contrario se queda en el sitio
-			if (mapa[px/PASO+dx[pd]][py/PASO+dy[pd]] == 0) {
+			if (mapa[px/PASO+fx[pd]][py/PASO+fy[pd]]) {
 				px += dx[pd];
 				py += dy[pd];
 			}
@@ -48,7 +59,7 @@ int dd;		// dirección DESEADA fantasma (temporal)
 			if (!(gx[i]%PASO || gy[i]%PASO)) {
 				// decidir movimiento aleatorio y, si es factible, cambiar dirección
 				dd = rand()%DIRS;	// aleatorio 0...3, válidos como direcciones
-				while ((mapa[gx[i]/PASO+dx[dd]][gy[i]/PASO+dy[dd]]) || ((dd+DIRS/2)%DIRS == gd[i])) {
+				while (!(mapa[gx[i]/PASO+fx[dd]][gy[i]/PASO+fy[dd]]) || ((dd+DIRS/2)%DIRS == gd[i])) {
 					dd++;		// si la dirección sugerida está ocupada (o es la opuesta a la actual), probar otra
 					dd %= DIRS;	// sólo índices válidos
 				}
