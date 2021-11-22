@@ -8,7 +8,7 @@
 #define FANTS	2
 // numero de direcciones disponibles, por evitar constantes
 #define DIRS	4
-// códigos de dirección
+// códigos de dirección (mejor que no sea un enum)
 #define	MOVER	0
 #define	MOVED	1
 #define	MOVEL	2
@@ -17,11 +17,13 @@
 struct sprite {
 	int		x, y;	// posición en píxeles
 	int		dir;	// 0=dcha, 1=abajo, 2=izq, 3=arriba
+	// añadir puntero al array de objetos (?)
 }
 
 struct sprite pac, gh[FANTS];	// un pacman y dos fantasmas
 
-char mapa[29][32] = {	// laberinto original, celdas de 4x4 píxeles, 0=ocupada, 1=libre, inicializar por columnas!!!
+// laberinto original, celdas de 4x4 píxeles, 0=ocupada, 1=libre, inicializar por columnas!!!
+const unsigned short mapa[29][32] = {
 	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},	// x=0
 	{0,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,0,0,0,0,1,1,1,1,1,0,1,1,1,1,1,0},	// 1
 	{0,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,0,0,0,0,1,1,1,1,1,0,1,1,1,1,1,0},	// 2 = 1
@@ -54,14 +56,14 @@ char mapa[29][32] = {	// laberinto original, celdas de 4x4 píxeles, 0=ocupada, 
 }
 
 // valor a cambiar cada coordenada según dirección
-int dx[DIRS] = {1, 0, -1, 0};
-int dy[DIRS] = {0, 1, 0, -1};
+const int dx[DIRS] = {1, 0, -1,  0};
+const int dy[DIRS] = {0, 1,  0, -1};
 // factores para determinar casilla adyacente del mapa (son de 4x4 mientras que los sprites son de 8x8)
-int fx[DIRS] = {2, 0, -1, 0};
-int fy[DIRS] = {0, 2, 0, -1};
+const int fx[DIRS] = {2, 0, -1,  0};
+const int fy[DIRS] = {0, 2,  0, -1};
 // la otra casilla que hay que comprobar... lo mismo pero cambiando los 0 por 1
-int ax[DIRS] = {2, 1, -1, 1};
-int ay[DIRS] = {1, 2, 1, -1};
+const int ax[DIRS] = {2, 1, -1,  1};
+const int ay[DIRS] = {1, 2,  1, -1};
 
 
 /* determinar si el movimiento previsto en esas coordenadas cae en casilla ocupada (0) o libre (1) */
@@ -74,6 +76,15 @@ int posible(int x, int y, int dir) {
 	return resul;
 }
 
+/* leer teclas de dirección, devuelve el valor 0...3 */
+int direccion(void) {
+	key_poll();
+	if (key_hit(KEY_RIGHT))		return MOVER;		// ¿...o debería usar key_is_down()?
+	if (key_hit(KEY_DOWN))		return MOVED;
+	if (key_hit(KEY_LEFT))		return MOVEL;
+	if (key_hit(KEY_UP))		return MOVEU;
+}
+
 /* movimiento comecocos */
 void mover_come() {
 // pac.x, pac.y		coordenadas pacman (añadir [56,16] al mostrar, para que coincida con mapa)
@@ -82,17 +93,19 @@ void mover_come() {
 
 	if (pac.x%PASO || pac.y%PASO) {
 		// fuera de intersecciones, mover comecocos según dirección actual
+		// *** PROBLEMA: el comecocos no reacciona hasta el cambio de tile, pero en la arcade puede cambiar de sentido SIEMPRE ***
 		pac.x += dx[pac.dir];
 		pac.y += dy[pac.dir];
 	}
 	else {
 		// ver teclas y, si es factible, cambiar dirección
-		// *** pm=0...3 como futuro pac.dir ***
+		pm = direccion();
 		if (posible(pac.x, pac.y, pm)) {	// casilla libre
 			pac.dir = pm;	// se acepta el movimiento
-			// *** debería seleccionar sprite y ajustar 'espejado' ***
+			// *** debería seleccionar sprite y ajustar 'espejado' *** tal vez según pac.dir, al mostrarlo
 		}
 		// ver si puede seguir moviéndose, de lo contrario se queda en el sitio
+		// *** quizá sacar este if del anterior, dejando sólo el else (como el de los fantasmas) ***
 		if (posible(pac.x, pac.y, pac.dir)) {
 			pac.x += dx[pac.dir];
 			pac.y += dy[pac.dir];
@@ -102,7 +115,7 @@ void mover_come() {
 
 /* movimiento fantasmas, devuelve 1  si detecta colisión */
 int mover_fant() {
-// gh[].x, gh[].y	coordenadas fantasmaS
+// gh[].x, gh[].y	coordenadas fantasmaS (añadir [56,16] al mostrar)
 // gh[].dir;		dirección actual fantasmaS
 	int dd;			// dirección DESEADA fantasma
 	int opu;		// dirección OPUESTA a la actual, normalmente no se usa, pero...
@@ -133,3 +146,9 @@ int mover_fant() {
 		} 
 	}
 }
+
+/* a la hora de mostrar los sprites:
+ * hflip: ...attr1 |= (dir==MOVEL)?ATTR1_HFLIP:0;
+ * vflip: ...attr1 |= (dir==MOVEU)?ATTR1_VFLIP:0;
+ * selección sprite PacMan: (dir & MOVED)?{row0}:{row1}	// detecta dirección horiz/vert
+ * */
