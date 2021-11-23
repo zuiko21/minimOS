@@ -131,6 +131,8 @@ void mover_come() {
 		}
 		// ver si puede seguir moviéndose, de lo contrario se queda en el sitio
 		// *** quizá sacar este if del anterior, dejando sólo el else (como el de los fantasmas) ***
+		// *** ...dejando la llamada a direccion() fuera, claro ***
+		// *** y sólo el cambio de sentido sería aceptable fuera de la frontera de tiles ***
 		if (posible(pac.x, pac.y, pac.dir)) {
 			pac.x += dx[pac.dir];
 			pac.y += dy[pac.dir];
@@ -237,30 +239,30 @@ void load_sprites() {
 	// .obp habrá que asignarle algún &game.obj_buffer[ ...
 	// *** *** NI IDEA DE LO QUE ESTOY HACIENDO *** ***
 	pac.obp = &game.obj_buffer[game.obj_buffer_size++];	// espero que ése esté bien
-	obj_set_attr(pac.obp, ATTR0_SQUARE, ATTR1_SIZE_32x32,  ATTR2_PALBANK(0)|ATTR2_PRIO(2)|0);	// ¿PRIO(2) = pacman debajo?
+	obj_set_attr(pac.obp, ATTR0_SQUARE, ATTR1_SIZE_32x32,  ATTR2_PALBANK(0)|ATTR2_PRIO(FANTS)|0);	// ¿PRIO(2) = pacman debajo?
 	for (int i=0; i<FANTS; i++) {
 		gh[i].obp = &game.obj_buffer[game.obj_buffer_size++];	// ** NI IDEA **
-		obj_set_attr(gh[i].obp, ATTR0_SQUARE, ATTR1_SIZE_32x32,  ATTR2_PALBANK(0)|ATTR2_PRIO(1-i)|0);	// distinta prioridad
+		obj_set_attr(gh[i].obp, ATTR0_SQUARE, ATTR1_SIZE_32x32,  ATTR2_PALBANK(0)|ATTR2_PRIO(FANTS-i-1)|0);	// distinta prioridad
 	}
 }
 
 /* a la hora de mostrar los sprites:
  * hflip: ...attr1 |= (dir==MOVEL)?ATTR1_HFLIP:0;
  * vflip: ...attr1 |= (dir==MOVEU)?ATTR1_VFLIP:0;
- * selección sprite PacMan: (dir & MOVED)?{row0}:{row1}	// detecta dirección horiz/vert
+ * selección sprite PacMan: (dir & MOVED)?{row1}:{row0}	// detecta dirección vert/horiz EEEEEK
  * */
 
 // Actualizar y mostar sprites en pantalla ***
 void update_sprites() {
 	obj_set_pos(pac.obp, pac.x, pac.y);	// ¿en vez de &game.obj_buffer[0]? ** NO TENGO NI IDEA **
-	pac.obp->attr2 = ATTR2_BUILD((game.frame%5+((dir & MOVED)?0:5))*16, 0, 0); // ** NI IDEA **
+	pac.obp->attr2 = ATTR2_BUILD((game.frame%5+((dir & MOVED)?5:0))*16, 0, 0); // ** NI IDEA ** EEEEK
 	pac.obp->attr1 &= (~ATTR1_HFLIP & ~ATTR1_VFLIP);	// apago las inversiones un momento
 	pac.obp->attr1 |= (dir==MOVEL)?ATTR1_HFLIP:0;		// a la izquierda, inversión horizontal
 	pac.obp->attr1 |= (dir==MOVEU)?ATTR1_VFLIP:0;		// hacia arriba, inversión vertical
 	// ¿...y los fantasmas?
 	for (int i=0; i<FANTS; i++) {
 		obj_set_pos(gh[i].obp, gh[i].x, gh[i].y);		// ** Dios me proteja...
-		gh[i].obp->attr2 = ATTR2_BUILD((game.frame%5+(i%2*5))*16, 0, 0); // debería funcionar...
+		gh[i].obp->attr2 = ATTR2_BUILD((game.frame%5+(15+i%2*5))*16, 0, 0); // debería funcionar... EEEEK
 		// ¿necesitaré ajustar algo en ATTR1? Nunca se invierte
     // Copiar buffer to sprites memory
     oam_copy(oam_mem, game.obj_buffer, game.obj_buffer_size);	// ¿habrá que cambiar algo?
@@ -269,7 +271,7 @@ void update_sprites() {
 // Actualizar datos juego
 void update_game() {
 	mover_come();		// mueve el pacman, cambiando de dirección si procede
-	if (mover_fant()) {	// mueve los fantasmas, comprobando posible colisión
+	if (mover_fant()) {	// mueve los fantasmas, comprobando si devuelve posible colisión
 		palmatoria();	// animación muerte pacman y ¿vuelta a empezar?
 		partida();
 	}
