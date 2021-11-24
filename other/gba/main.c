@@ -26,7 +26,7 @@ struct sprite_s {
 	int			y;		// posición en píxeles
 	int			dir;	// 0=dcha, 1=abajo, 2=izq, 3=arriba
 	OBJ_ATTR*	obp;	// añadir puntero al array de objetos
-}
+};
 
 // ...del tutorial
 // Definir estructura para guardar los datos del juego
