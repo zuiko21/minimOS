@@ -95,8 +95,8 @@ const int ay[DIRS] = {1, 2,  1, -1};
 int posible(int x, int y, int dir) {
 	int resul;
 
-	resul = mapa[x/PASO+fx[dir]][y/PASO+fy[dir]];	// caso general, +2/-1
-	resul &= mapa[x/PASO+ax[dir]][y/PASO+ay[dir]];	// la otra casilla
+	resul  =	mapa[x/PASO+fx[dir]][y/PASO+fy[dir]];	// caso general, +2/-1
+	resul &=	mapa[x/PASO+ax[dir]][y/PASO+ay[dir]];	// la otra casilla
 
 	return resul;
 }
@@ -195,10 +195,14 @@ void palmatoria(void) {
 	for (i=0;i<60;i++) {	// un segundo
 		VBlankIntrWait();
 	}
-// ¿deshabilito fantasmas?
-// *** animación muerte pacman
+// ¿deshabilito fantasmas? al menos pongo encima el pacman
+	obj_set_attr(pac.obp, ATTR0_SQUARE, ATTR1_SIZE_32x32,  ATTR2_PALBANK(0)|ATTR2_PRIO(-1)|0);	// encima de todo fantasma ¿admite negativos?
+// animación muerte pacman
 	for (int j=0;j<5;j++) {	// 5 fotogramas
 		// *** mostrar frame correspondiente {row2}
+		obj_set_pos(pac.obp, pac.x, pac.y);	// se supone que ya está, pero bueno
+		pac.obp->attr2 = ATTR2_BUILD((j+10)*16, 0, 0); 		// fotograma deseado en tercera fila
+		pac.obp->attr1 &= (~ATTR1_HFLIP & ~ATTR1_VFLIP);	// apago las inversiones en todo caso		
 		for (i=0;i<12;i++) {	// tasa de 5 fotogramas/segundo
 			VBlankIntrWait();
 		}
@@ -206,7 +210,8 @@ void palmatoria(void) {
 	for (i=0;i<60;i++) {	// un segundo
 		VBlankIntrWait();
 	}
-// ¿habilito fantasmas de nuevo?
+// ¿habilito fantasmas de nuevo? o al menos recupero prioridad original
+	obj_set_attr(pac.obp, ATTR0_SQUARE, ATTR1_SIZE_32x32,  ATTR2_PALBANK(0)|ATTR2_PRIO(FANTS)|0);
 }
 
 // ...del tutorial
