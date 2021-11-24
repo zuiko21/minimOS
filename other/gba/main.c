@@ -22,7 +22,8 @@
 
 /* *** declaración de tipos de datos y estructuras *** */
 struct sprite_s {
-	int			x, y;	// posición en píxeles
+	int			x;
+	int			y;		// posición en píxeles
 	int			dir;	// 0=dcha, 1=abajo, 2=izq, 3=arriba
 	OBJ_ATTR*	obp;	// añadir puntero al array de objetos
 }
@@ -203,6 +204,7 @@ void palmatoria(void) {
 		obj_set_pos(pac.obp, pac.x, pac.y);	// se supone que ya está, pero bueno
 		pac.obp->attr2 = ATTR2_BUILD((j+10)*16, 0, 0); 		// fotograma deseado en tercera fila
 		pac.obp->attr1 &= (~ATTR1_HFLIP & ~ATTR1_VFLIP);	// apago las inversiones en todo caso		
+ 	   oam_copy(oam_mem, game.obj_buffer, game.obj_buffer_size);	// EEEEEEK
 		for (i=0;i<12;i++) {	// tasa de 5 fotogramas/segundo
 			VBlankIntrWait();
 		}
