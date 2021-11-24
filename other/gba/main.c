@@ -3,6 +3,7 @@
 #include <string.h>
 #include "background.gfx.h"
 #include "sprites.gfx.h"
+#include <stdlib.h>
 
 // píxeles por unidad de mapa
 #define	PASO	4
@@ -19,6 +20,8 @@
 #define	MOVED	1
 #define	MOVEL	2
 #define	MOVEU	3
+// código especial (no cambia dirección)
+#define	SIGUE	5
 
 /* *** declaración de tipos de datos y estructuras *** */
 struct sprite_s {
@@ -79,7 +82,7 @@ const unsigned short mapa[29][32] = {
 	{0,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,0,0,0,0,1,1,1,1,1,0,1,1,1,1,1,0},	// 26 = 2 = 1
 	{0,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,0,0,0,0,1,1,1,1,1,0,1,1,1,1,1,0},	// 27 = 1
 	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}	// 28 = 0
-}
+};
 
 // valor a cambiar cada coordenada según dirección
 const int dx[DIRS] = {1, 0, -1,  0};
@@ -105,10 +108,12 @@ int posible(int x, int y, int dir) {
 /* leer teclas de dirección, devuelve el valor 0...3 */
 int direccion(void) {
 	key_poll();
-	if (key_hit(KEY_RIGHT))		return MOVER;		// ¿...o debería usar key_is_down()?
-	if (key_hit(KEY_DOWN))		return MOVED;
-	if (key_hit(KEY_LEFT))		return MOVEL;
-	if (key_hit(KEY_UP))		return MOVEU;
+	if (key_is_down(KEY_RIGHT))		return MOVER;		// key_hit() responde muy mal
+	if (key_is_down(KEY_DOWN))		return MOVED;
+	if (key_is_down(KEY_LEFT))		return MOVEL;
+	if (key_is_down(KEY_UP))		return MOVEU;
+
+	return	SIGUE;
 }
 
 /* movimiento comecocos */
@@ -117,7 +122,7 @@ void mover_come() {
 // pac.dir			dirección pacman
 	int pm;			// dirección DESEADA pacman
 
-	if (pac.x%PASO || pac.y%PASO) {
+	if ((pac.x%PASO) || (pac.y%PASO)) {
 		// fuera de intersecciones, mover comecocos según dirección actual
 		// *** PROBLEMA: el comecocos no reacciona hasta el cambio de tile, pero en la arcade puede cambiar de sentido SIEMPRE ***
 		pac.x += dx[pac.dir];
@@ -126,6 +131,7 @@ void mover_come() {
 	else {
 		// ver teclas y, si es factible, cambiar dirección
 		pm = direccion();
+		if (pm == SIGUE)	pm = pac.dir;
 		if (posible(pac.x, pac.y, pm)) {	// casilla libre
 			pac.dir = pm;	// se acepta el movimiento
 			// *** debería seleccionar sprite y ajustar 'espejado' *** tal vez según pac.dir, al mostrarlo
@@ -153,10 +159,10 @@ int mover_fant() {
 	for (int i=0; i<FANTS; i++) {
 		if (!(gh[i].x%PASO || gh[i].y%PASO)) {
 			opu = (gh[i].dir+DIRS/2)%DIRS;		// necesita saber la dirección opuesta a la actual, por si tiene que evitarla
-			lim = DIRS;		// inicialmente 4
+			lim = DIRS+1;		// inicialmente 4 ¿o 5?
 			// decidir movimiento aleatorio y, si es factible, cambiar dirección
 			dd = rand()%DIRS;	// aleatorio 0...3, válidos como direcciones
-			while (((!posible(gh[i].x, gh[i].y, dd)) || (dd == opu)) && lim--) {	// no es posible girar 180º
+			while (((!posible(gh[i].x, gh[i].y, dd)) || (dd == opu)) && --lim) {	// no es posible girar 180º
 				dd++;		// si la dirección sugerida está ocupada (o es la opuesta a la actual), probar otra
 				dd %= DIRS;	// sólo índices válidos
 			}
@@ -179,13 +185,13 @@ int mover_fant() {
 
 /* Inicializar posiciones de los sprites */
 void partida(void) {
-	pac.x = 110;		// centrado, para un sprite de 8x8
-	pac.y = 108; 
+	pac.x = 54;			// centrado, para un sprite de 8x8 EEEEEEEK
+	pac.y = 92; 
 	pac.dir = MOVEL;	// como en la arcade, el pacman comienza mirando a la izquierda
 	
 	for (int i=0; i<FANTS; i++) {
-		gh[i].x = 120 - (i%2)*20;				// el primero (par) más a la derecha, el otro (impar) más a la izquierda
-		gh[i].y = 60;							// pasillo sobre la 'casa'
+		gh[i].x = 64 - (i%2)*20;				// el primero (par) más a la derecha, el otro (impar) más a la izquierda
+		gh[i].y = 44;							// pasillo sobre la 'casa'
 		gh[i].dir = MOVER+(MOVEL-MOVER)*(i%2);	// el primero (par) mira a la derecha, el otro (impar) a la izquierda
     }
 }
@@ -201,10 +207,10 @@ void palmatoria(void) {
 // animación muerte pacman
 	for (int j=0;j<5;j++) {	// 5 fotogramas
 		// *** mostrar frame correspondiente {row2}
-		obj_set_pos(pac.obp, pac.x, pac.y);	// se supone que ya está, pero bueno
+		obj_set_pos(pac.obp, pac.x+56, pac.y+16);	// se supone que ya está, pero bueno
 		pac.obp->attr2 = ATTR2_BUILD((j+10)*16, 0, 0); 		// fotograma deseado en tercera fila
 		pac.obp->attr1 &= (~ATTR1_HFLIP & ~ATTR1_VFLIP);	// apago las inversiones en todo caso		
- 	   oam_copy(oam_mem, game.obj_buffer, game.obj_buffer_size);	// EEEEEEK
+		oam_copy(oam_mem, game.obj_buffer, game.obj_buffer_size);	// EEEEEEK
 		for (i=0;i<12;i++) {	// tasa de 5 fotogramas/segundo
 			VBlankIntrWait();
 		}
@@ -261,14 +267,14 @@ void load_sprites() {
 
 // Actualizar y mostar sprites en pantalla ***
 void update_sprites() {
-	obj_set_pos(pac.obp, pac.x, pac.y);	// ¿en vez de &game.obj_buffer[0]? ** NO TENGO NI IDEA **
-	pac.obp->attr2 = ATTR2_BUILD((game.frame%5+((dir & MOVED)?5:0))*16, 0, 0); // ** NI IDEA ** EEEEK
+	obj_set_pos(pac.obp, pac.x+56-(pac.dir==MOVEL?24:0), pac.y+16-(pac.dir==MOVEU?24:0));			// EEEEEEEEEK
+	pac.obp->attr2 = ATTR2_BUILD((game.frame%5+((pac.dir & MOVED)?5:0))*16, 0, 0); // ** NI IDEA ** EEEEK
 	pac.obp->attr1 &= (~ATTR1_HFLIP & ~ATTR1_VFLIP);	// apago las inversiones un momento
-	pac.obp->attr1 |= (dir==MOVEL)?ATTR1_HFLIP:0;		// a la izquierda, inversión horizontal
-	pac.obp->attr1 |= (dir==MOVEU)?ATTR1_VFLIP:0;		// hacia arriba, inversión vertical
+	pac.obp->attr1 |= (pac.dir==MOVEL)?ATTR1_HFLIP:0;	// a la izquierda, inversión horizontal... pero corrigiendo coordenadas
+	pac.obp->attr1 |= (pac.dir==MOVEU)?ATTR1_VFLIP:0;	// hacia arriba, inversión vertical
 	// ¿...y los fantasmas?
 	for (int i=0; i<FANTS; i++) {
-		obj_set_pos(gh[i].obp, gh[i].x, gh[i].y);		// ** Dios me proteja...
+		obj_set_pos(gh[i].obp, gh[i].x+56, gh[i].y+16);	// EEEEEEEEEK
 		gh[i].obp->attr2 = ATTR2_BUILD((game.frame%5+(15+i%2*5))*16, 0, 0); // debería funcionar... EEEEK
 		// ¿necesitaré ajustar algo en ATTR1? Nunca se invierte
 	}
@@ -318,6 +324,7 @@ int main()
 		// Sincronizar con VBlank mediante interrupcion.
 		// Esto se hace para evitar modificar la memoria a mitad de un refresco de pantalla.
 		// *** si va muy rápido, poner 3 seguidos, por ejemplo
+        VBlankIntrWait();
         VBlankIntrWait();
         // Actualizar contador de frames
 		game.frame++;
