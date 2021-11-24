@@ -271,6 +271,7 @@ void update_sprites() {
 		obj_set_pos(gh[i].obp, gh[i].x, gh[i].y);		// ** Dios me proteja...
 		gh[i].obp->attr2 = ATTR2_BUILD((game.frame%5+(15+i%2*5))*16, 0, 0); // debería funcionar... EEEEK
 		// ¿necesitaré ajustar algo en ATTR1? Nunca se invierte
+	}
     // Copiar buffer to sprites memory
     oam_copy(oam_mem, game.obj_buffer, game.obj_buffer_size);	// ¿habrá que cambiar algo?
 }
