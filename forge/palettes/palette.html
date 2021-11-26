@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>GRgB palette</title>
+	</head>
+	<body>
+		<table style="font-family:monospace;" border="1">
+			<tr>
+				<th colspan="2">BgRG</th><th colspan="2">PICO-8</th>
+			</tr>
+			<script type="text/javascript">
+				var dx=['0','5','A','F'];
+				var p= [0, 3, 8, 9, 5, 11, 4, 10, 1, 6, 2, 15, 13, 12, 14, 7];
+				var pico=[	'000000',
+							'1D2B53',
+							'7E2553',
+							'008751',
+							'AB5236',
+							'5F574F',
+							'C2C3C7',
+							'FFF1E8',
+							'FF004D',
+							'FFA300',
+							'FFEC27',
+							'00E436',
+							'29ADFF',
+							'83769C',
+							'FF77A8',
+							'FFCCAA'];
+				var r,gh,gl,b;
+				var i=0;
+				for(b=0;b<2;b++) {
+					for (gl=0;gl<2;gl++) {
+						for (r=0;r<2;r++) {
+							for (gh=0;gh<2;gh++) {
+//document.write( "<tr><td>"+gh+"</td></tr>");
+								document.write("<tr>");
+								document.write("<td>"+b+gl+r+gh+"</td>");
+								document.write("<td style='background-color:#"+dx[r*3]+dx[gh*2+gl]+dx[b*3]+";'>");
+								document.write(dx[r*3]+dx[r*3]+dx[gh*2+gl]+dx[gh*2+gl]+dx[b*3]+dx[b*3]+"</td>");
+								document.write("<td style='background-color:#"+pico[p[i]]+";'>"+pico[p[i]]+"</td>");
+								document.write("<td>"+p[i]+"</td>");
+								document.write("</tr>");
+								i++;
+							}
+						}
+					}
+				}
+			</script>
+		</table>
+	</body>
+</html>
