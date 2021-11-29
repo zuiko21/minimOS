@@ -1,7 +1,7 @@
 ; PacMan for Durango-X colour computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211010-1438
+; last modified 20211129-1330
 
 ; can be assembled from this folder
 
@@ -17,6 +17,7 @@
 ; I/O addresses
 	IO8attr	= $DF80			; screen latch high, actually video mode flags
 	IO9in	= $DF9F			; joystick/keyboard input
+	IO9kbd	= $DF9D			; matrix keyboard port, caps lock off (write column D7...D4, read rows D3...D0)
 	IOAie	= $DFA0			; enable hardware interrupt, note status is controlled via D0
 	IOBeep	= $DFB0			; beeper address (latches D0 value)
 	LTCdo	= $FFF0			; LTC display port
@@ -39,27 +40,21 @@ start:
 	STA IO8attr				; Durango-X hardware init
 
 ; the pseudo-random number generator must have a proper seed...
+; ...will time it upon joystick/keyboard selection screen!
 ; NES Tetris used $8988, but might randomise it with some EOR with zp bytes?
-;	LDX #0
-	INX						; X was $FF, this saves one byte
-	TXA						; another byte saving
-rander:
-		ROR
-		EOR 0, X
-		INX
-		BNE rander
-	STA seed				; could just store $88 here, like Tetris
 	LDA #$89
 	STA seed+1
+; this value may enable interrupts in any machine
+	STA IOAie				; hardware interrupts enabled, not yet in software!
 
 ; system setup
 	LDY #<pm_isr			; set interrupt vector
 	LDA #>pm_isr
 	STY fw_isr				; standard minimOS address
-	STA fw_isr+1
+	STA fw_isr+1			; now it's possible to execute CLI for input selection (and randomize)
 
 ; perhaps is time to init data...
-	INX						; gets a zero (X known to be zero)
+	INX						; gets a zero (X was known to be $FF)
 	STX score				; reset score
 	STX score+1
 	LDA #5					; initial lives
@@ -112,7 +107,6 @@ play:
 	LDA #>s_clr
 	JSR l_text
 	CLI						; make sure interrupts are enabled as will be needed for timing
-	LDA IOAie				; ...and enable in hardware too! eeeeek
 
 ; game engine
 	LDX #4					; first of all, preset all timers for instant start
@@ -211,10 +205,15 @@ release:
 ; * select between joystick and keyboard *
 ; sets stkb_tab accordingly, reads from IO9
 sel_if:
+		CLI					; enable interrupts
 		LDA IO9in			; get port input
 		CMP #8				; is it joystick up?
 		BEQ sel_joy
-			CMP #13			; is it keyboard instead?
+;			LDA #$D0		; RETURN key column (scancode $D4)
+;			STA IO9kbd		; select matrix column
+; 			LDA IO9kbd		; check keyboard instead
+;			AND #4			; filter row signal (inverted)
+			CMP #13			; is it keyboard instead? ** supress after AND as will no longer use PASK standard **
 		BNE sel_if			; if neither, keep trying ** could check for Escape or joy down for exit **
 ; if arrived here, keyboard is selected
 	LDY dir_tab				; pointer for keyboard tables ** should add extra label for clarity
@@ -226,6 +225,9 @@ sel_joy:
 sel_ok:
 	STY stkb_tab			; prepare input pointer
 	STA stkb_tab+1
+	LDA jiffy				; this will change during selection screen, initial value irrelevant (most likely 0 if memory was tested)
+	STA seed				; randomized generator
+	SEI						; shut down interrupts for music
 	RTS
 
 ; * 20ms generic delay *
