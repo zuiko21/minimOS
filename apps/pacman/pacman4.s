@@ -11,8 +11,8 @@
 ; *** addresses definition ***
 	fw_isr	= $200			; standard minimOS firmware address
 	vram	= $6000			; suitable for Durango-X
-	sc_da	= vram + $31C	; address for score display, usually $7B1C***
-	lv_da	= vram + $49D	; address for lives display, usually $7C9D***
+	sc_da	= vram + $C70	; address for score display, usually $6C70 *** check
+	lv_da	= vram + $1274	; address for lives display, usually $7274 *** check
 
 ; I/O addresses
 	IO8attr	= $DF80			; screen latch high, actually video mode flags
@@ -66,8 +66,8 @@ start:
 	JSR newmap				; reset initial map
 	JSR screen				; draw initial field (and current dots), may modify X
 ; *** ask here for keyboard/joystick selection ***
-	LDY #<(p_text+50)		; third chunk (new!) is the joystick/keyboard selection message***
-	LDA #>(p_text+50)
+	LDY #<(p_text+200)		; third chunk (new!) is the joystick/keyboard selection message ** check
+	LDA #>(p_text+200)
 	JSR l_text
 	JSR sel_if				; for the sake of clarity, choose depending on IO9 input, 8=joystick (UP), 13=keyboard (CR)
 ; *** continue with screen setup ***
@@ -189,8 +189,8 @@ die:
 ; *** *** end of game *** *** if lives is 0 after death
 ; ***************************
 gameover:
-	LDY #<(p_text+25)		; second chunk is the 'Game Over' message***
-	LDA #>(p_text+25)
+	LDY #<(p_text+100)		; second chunk is the 'Game Over' message ** check offset
+	LDA #>(p_text+100)
 	JSR l_text
 ; shall I wait for some key to start a new game? exit option?
 release:
@@ -247,6 +247,7 @@ m20d:
 
 ; * preload map with initial state *
 ; will just copy 0.5 Kbyte, don't bother with individual coordinates (5.9 ms)
+; don't think it's worth dealing with RLE
 ; returns X=0, modifies A
 newmap:
 	LDX #0
