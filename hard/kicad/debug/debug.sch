@@ -147,8 +147,6 @@ Wire Wire Line
 Connection ~ 2750 3800
 Wire Wire Line
 	2750 3800 2750 5000
-Wire Wire Line
-	1150 5000 1150 3500
 $Comp
 L power:+5V #PWR0102
 U 1 1 619C2C95
@@ -328,7 +326,6 @@ F 3 "~" H 1000 3500 50  0001 C CNN
 	1    1000 3500
 	0    1    1    0   
 $EndComp
-Connection ~ 1150 3500
 Wire Wire Line
 	1150 3500 1150 3300
 $Comp
@@ -342,4 +339,20 @@ F 3 "" H 850 3500 50  0001 C CNN
 	1    850  3500
 	1    0    0    -1  
 $EndComp
+$Comp
+L Device:Jumper_NC_Small JP1
+U 1 1 61A58ADE
+P 1150 4700
+F 0 "JP1" V 1104 4774 50  0000 L CNN
+F 1 "+5V" V 1195 4774 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 1150 4700 50  0001 C CNN
+F 3 "~" H 1150 4700 50  0001 C CNN
+	1    1150 4700
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	1150 4800 1150 5000
+Wire Wire Line
+	1150 4600 1150 3500
+Connection ~ 1150 3500
 $EndSCHEMATC
