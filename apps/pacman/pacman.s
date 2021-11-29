@@ -94,7 +94,6 @@ start:
 
 ; **********************************************************
 ; screen is ready, now play the tune... that started it all!
-	SEI						; shut down interrupts for music
 	LDX #0					; *** don't know if X is still zero after positions AND drawing sprites
 	STX temp				; reset cursor (temporary use)
 m_loop:
@@ -115,7 +114,6 @@ m_next:
 		INC temp			; advance cursor to next note
 		BNE m_loop
 m_end:
-	CLI						; make sure interrupts are enabled as will be needed for timing
 
 ; **********************************************************
 ; **********************************************************
@@ -127,6 +125,7 @@ play:
 	LDY #<s_clr				; clear area in order to delete 'Ready!' message
 	LDA #>s_clr
 	JSR l_text
+;	CLI						; make sure interrupts are enabled as will be needed for timing
 
 ; game engine
 	LDX #4					; first of all, preset all timers for instant start
@@ -1323,7 +1322,6 @@ af_nw:
 
 ; * Pacman death, animation plus integrated sound *
 death:
-	SEI						; shut off interrupts for sound!
 	LDA #50					; one second pause
 	JSR ms20
 ; actual pacman arcade deletes all sprites during animation
@@ -1395,7 +1393,6 @@ dth_sw:
 	JSR ms20
 ; subtract one life!
 	LDA #$99				; in BCD, this is -1
-	CLI						; reenable interrupts
 	JMP up_lives			; will return
 
 ; *** ** beeping routine ** ***

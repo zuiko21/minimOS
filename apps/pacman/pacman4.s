@@ -1,7 +1,6 @@
 ; PacMan for Durango-X colour computer!
-; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211129-1330
+; last modified 20211129-1815
 
 ; can be assembled from this folder
 
@@ -52,6 +51,7 @@ start:
 	LDA #>pm_isr
 	STY fw_isr				; standard minimOS address
 	STA fw_isr+1			; now it's possible to execute CLI for input selection (and randomize)
+	CLI						; interrupts won't harm unless sound effects
 
 ; perhaps is time to init data...
 	INX						; gets a zero (X was known to be $FF)
@@ -106,7 +106,7 @@ play:
 	LDY #<s_clr				; clear area in order to delete 'Ready!' message
 	LDA #>s_clr
 	JSR l_text
-	CLI						; make sure interrupts are enabled as will be needed for timing
+;	CLI						; make sure interrupts are enabled as will be needed for timing
 
 ; game engine
 	LDX #4					; first of all, preset all timers for instant start
@@ -205,7 +205,6 @@ release:
 ; * select between joystick and keyboard *
 ; sets stkb_tab accordingly, reads from IO9
 sel_if:
-		CLI					; enable interrupts
 		LDA IO9in			; get port input
 		CMP #8				; is it joystick up?
 		BEQ sel_joy
@@ -227,7 +226,6 @@ sel_ok:
 	STA stkb_tab+1
 	LDA jiffy				; this will change during selection screen, initial value irrelevant (most likely 0 if memory was tested)
 	STA seed				; randomized generator
-	SEI						; shut down interrupts for music
 	RTS
 
 ; * 20ms generic delay *
