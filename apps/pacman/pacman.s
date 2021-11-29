@@ -1,7 +1,7 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211129-1251
+; last modified 20211129-1815
 
 ; can be assembled from this folder
 ; uncomment this for picoDurango/proto, otherwise runs on picoVDU fitted to Durango-X
@@ -62,13 +62,14 @@ start:
 	LDA #$89
 	STA seed+1
 ; this value may enable interrupts in any machine
-	STA IOAie				; hardware interrupts enabled, not yet in software!
+	STA IOAie				; since $89 is odd, hardware interrupts enabled, not yet in software!
 
 ; system setup
 	LDY #<pm_isr			; set interrupt vector
 	LDA #>pm_isr
 	STY fw_isr				; standard minimOS address
 	STA fw_isr+1			; now it's possible to execute CLI for input selection (and randomize)
+	CLI						; interrupts won't harm unless sound effects
 
 ; perhaps is time to init data...
 	INX						; gets a zero (X was known to be $FF)
@@ -93,6 +94,7 @@ start:
 
 ; **********************************************************
 ; screen is ready, now play the tune... that started it all!
+	SEI						; shut down interrupts for music
 	LDX #0					; *** don't know if X is still zero after positions AND drawing sprites
 	STX temp				; reset cursor (temporary use)
 m_loop:
@@ -113,6 +115,8 @@ m_next:
 		INC temp			; advance cursor to next note
 		BNE m_loop
 m_end:
+	CLI						; make sure interrupts are enabled as will be needed for timing
+
 ; **********************************************************
 ; **********************************************************
 ; ***  ***   music finished, now start the game!    ***  ***
@@ -123,7 +127,6 @@ play:
 	LDY #<s_clr				; clear area in order to delete 'Ready!' message
 	LDA #>s_clr
 	JSR l_text
-	CLI						; make sure interrupts are enabled as will be needed for timing
 
 ; game engine
 	LDX #4					; first of all, preset all timers for instant start
@@ -221,8 +224,8 @@ release:
 
 ; * select between joystick and keyboard *
 ; sets stkb_tab accordingly, reads from IO9
+; *** assume interrupts ON ***
 sel_if:
-		CLI					; enable interrupts!
 		LDA IO9in			; get port input
 		CMP #8				; is it joystick up?
 		BEQ sel_joy
@@ -244,7 +247,6 @@ sel_ok:
 	STA stkb_tab+1
 	LDA jiffy				; this will change during selection screen, initial value irrelevant (most likely 0 if memory was tested)
 	STA seed				; randomized generator
-	SEI						; shut down interrupts for music
 	RTS
 
 ; * 20ms generic delay *
@@ -1171,7 +1173,7 @@ dl_tnw:
 		BNE ds_lv
 	RTS
 
-; * text routine *
+; * banner routine *
 ; 40x5 patch to be placed is pointed by A.Y (will use org_pt)
 ; will be placed at (40,70), which starts at $7C65 up to $7CA9 (no page crossing)
 l_text:
@@ -1321,6 +1323,7 @@ af_nw:
 
 ; * Pacman death, animation plus integrated sound *
 death:
+	SEI						; shut off interrupts for sound!
 	LDA #50					; one second pause
 	JSR ms20
 ; actual pacman arcade deletes all sprites during animation
@@ -1392,6 +1395,7 @@ dth_sw:
 	JSR ms20
 ; subtract one life!
 	LDA #$99				; in BCD, this is -1
+	CLI						; reenable interrupts
 	JMP up_lives			; will return
 
 ; *** ** beeping routine ** ***
@@ -1481,20 +1485,16 @@ sw_down:
 
 ; *********************************
 ; *********************************
-; *** interrupt service routine ***
+; *** interrupt service routine *** joystick or PASK only
 ; *********************************
 ; *********************************
 pm_isr:
 	PHA						; (3)
-	PHY						; (3)
-; *** I'm a bit paranoid about the interrupt being somewhat irregular, thus I'll waste some time ***
-;	LDA #%00010000			; enable column 1 from keyboard/keypad
-;	STA LTCdo				; display remains shut down, as all anodes are low
-; *** end of paranoid code *** no longer needed
+	PHY						; (3) CMOS
 	LDY IO9in				; get input port (4)
-	LDA (stkb_tab), Y		; on keyboard, QAOP, ESDF, Spectrum and cursor keys supported! Otherwise get joystick pattern (5)
+	LDA (stkb_tab), Y		; on keyboard, QAOP, ESDF (instead of WASD!), Spectrum and cursor keys supported! Otherwise get joystick pattern (5)
 	STA stick				; store in variable (3)
-	PLY						; (4) eeek
+	PLY						; (4) eeek CMOS
 	PLA						; (4)
 	INC jiffy				; count time (5)
 		BNE i_end			; (3 in the fastest case)
@@ -1569,7 +1569,7 @@ dir_tab:
 ; ** ** ** end of pointer tables ** ** **
 ; ***************************************
 
-; * IO9 keyboard to stick index conversion *
+; * IO9 PASK keyboard to stick index conversion *
 asc2dir:
 	.byt	STK_K, STK_K, STK_L, STK_K, STK_K, STK_K, STK_R, STK_K, STK_K, STK_K, STK_D, STK_U, STK_K, STK_K, STK_K, STK_K	; arrow keys
 	.dsb	16, STK_K																										; no valid values here (16...31)
