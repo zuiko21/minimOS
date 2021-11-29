@@ -1,9 +1,11 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210704-1236
+; last modified 20211129-1251
 
 ; can be assembled from this folder
+; uncomment this for picoDurango/proto, otherwise runs on picoVDU fitted to Durango-X
+;#define	PROTO	_PROTO
 
 ; variables, esp. zeropage
 #include "pacman.h"
@@ -14,7 +16,11 @@
 	sc_da	= vram + $31C	; address for score display, usually $7B1C
 	lv_da	= vram + $49D	; address for lives display, usually $7C9D
 
+; for use with proto/picoDurango, or picoVDU + Durango-X, I/O screen is always used
+#define	IOSCREEN	_IOSCREEN
+
 ; I/O addresses
+#ifdef PROTO
 	IO8lh	= $8000			; screen latch high
 	IO8ll	= $8001			; screen latch low
 	IO8wr	= $8002			; screen write data **new address**
@@ -23,9 +29,18 @@
 	IOAid	= $A000			; disable hardware interrupt
 	IOBeep	= $BFF0			; beeper address (latches D0 value)
 	LTCdo	= $FFF0			; LTC display port
-
+#else
+	IO8lh	= $DF90			; screen latch high ** new addresses for IO9 connected picoVDU on Durango-X **
+	IO8ll	= $DF91			; screen latch low
+	IO8wr	= $DF92			; screen write data **new address**
+	IO9in	= $DF9F			; joystick/keyboard input
+	IO9kbd	= $DF9D			; matrix keyboard port, caps lock off (write column D7...D4, read rows D3...D0)
+	IOAie	= $DFA1			; enable/disable hardware interrupt, LSB must be $01! (any $DFA0-$DFAF will do)
+	IOAid	= $DFA0			; enable/disable hardware interrupt
+	IOBeep	= $DFB0			; beeper address (latches D0 value)
+	LTCdo	= $FFF0			; LTC display port (any $E000-$FFFF will do)
+#endif
 ; uncomment this if non-direct, IO-based display interface is used
-#define	IOSCREEN	_IOSCREEN
 
 ; *** actual code starts here ***
 	.text
@@ -39,30 +54,24 @@ start:
 	LDX #$FF
 	TXS
 
-	STX LTCdo				; turn off Durango debug display *** might use upper bits for keyboard read, unless using iox-kbd ASCII interface!
+	STX LTCdo				; turn off debug display
 
 ; the pseudo-random number generator must have a proper seed...
-; NES Tetris used $8988, but might randomise it with some EOR with zp bytes?
-;	LDX #0
-	INX						; X was $FF, this saves one byte
-	TXA						; another byte saving
-rander:
-		ROR
-		EOR 0, X
-		INX
-		BNE rander
-	STA seed				; could just store $88 here, like Tetris
+; ...will time it upon joystick/keyboard selection screen!
+; NES Tetris used $8988, but might randomise it with selection time in jiffys (LSB only)
 	LDA #$89
 	STA seed+1
+; this value may enable interrupts in any machine
+	STA IOAie				; hardware interrupts enabled, not yet in software!
 
 ; system setup
 	LDY #<pm_isr			; set interrupt vector
 	LDA #>pm_isr
 	STY fw_isr				; standard minimOS address
-	STA fw_isr+1
+	STA fw_isr+1			; now it's possible to execute CLI for input selection (and randomize)
 
 ; perhaps is time to init data...
-	INX						; gets a zero (X known to be zero)
+	INX						; gets a zero (X was known to be $FF)
 	STX score				; reset score
 	STX score+1
 	LDA #5					; initial lives
@@ -115,7 +124,6 @@ play:
 	LDA #>s_clr
 	JSR l_text
 	CLI						; make sure interrupts are enabled as will be needed for timing
-	LDA IOAie				; ...and enable in hardware too! eeeeek
 
 ; game engine
 	LDX #4					; first of all, preset all timers for instant start
@@ -214,10 +222,15 @@ release:
 ; * select between joystick and keyboard *
 ; sets stkb_tab accordingly, reads from IO9
 sel_if:
+		CLI					; enable interrupts!
 		LDA IO9in			; get port input
 		CMP #8				; is it joystick up?
 		BEQ sel_joy
-			CMP #13			; is it keyboard instead?
+;			LDA #$D0		; RETURN key column (scancode $D4)
+;			STA IO9kbd		; select matrix column
+; 			LDA IO9kbd		; check keyboard instead
+;			AND #4			; filter row signal (inverted)
+			CMP #13			; is it keyboard instead? ** supress after AND as will no longer use PASK standard **
 		BNE sel_if			; if neither, keep trying ** could check for Escape or joy down for exit **
 ; if arrived here, keyboard is selected
 	LDY dir_tab				; pointer for keyboard tables ** should add extra label for clarity
@@ -229,6 +242,9 @@ sel_joy:
 sel_ok:
 	STY stkb_tab			; prepare input pointer
 	STA stkb_tab+1
+	LDA jiffy				; this will change during selection screen, initial value irrelevant (most likely 0 if memory was tested)
+	STA seed				; randomized generator
+	SEI						; shut down interrupts for music
 	RTS
 
 ; * 20ms generic delay *
@@ -534,6 +550,7 @@ rg_z:
 ; ********************************
 
 ; * copy the intial screen to VRAM *and* the 'clean' buffer, now including dots *
+; not worth dealing with RLE as is just a mere 2 KiB
 screen:
 	LDY #<maze				; pointer to fresh maze (NOT page aligned)
 	LDA #>maze
