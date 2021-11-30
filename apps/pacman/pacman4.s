@@ -1,8 +1,11 @@
 ; PacMan for Durango-X colour computer!
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211129-1815
+; last modified 20211130-1044
 
 ; can be assembled from this folder
+
+; uncomment if using PASK standard (ASCII key on port), otherwise is decoding standard matrix
+;#define	PASK	_PASK
 
 ; variables, esp. zeropage
 #include "pacman4.h"
@@ -208,11 +211,14 @@ sel_if:
 		LDA IO9in			; get port input
 		CMP #8				; is it joystick up?
 		BEQ sel_joy
-;			LDA #$D0		; RETURN key column (scancode $D4)
-;			STA IO9kbd		; select matrix column
-; 			LDA IO9kbd		; check keyboard instead
-;			AND #4			; filter row signal (inverted)
-			CMP #13			; is it keyboard instead? ** supress after AND as will no longer use PASK standard **
+#ifdef	PASK
+			CMP #13			; is it keyboard instead? ** only if using PASK standard **
+#else
+			LDA #$C0		; RETURN key column (scancode $C1)
+			STA IO9kbd		; select matrix column
+ 			LDA IO9kbd		; check keyboard instead
+			AND #1			; filter row signal (inverted) ** could use LSR, BCS instead, saving one byte
+#endif
 		BNE sel_if			; if neither, keep trying ** could check for Escape or joy down for exit **
 ; if arrived here, keyboard is selected
 	LDY dir_tab				; pointer for keyboard tables ** should add extra label for clarity
@@ -1297,11 +1303,7 @@ sw_down:
 pm_isr:
 	PHA						; (3)
 	PHY						; (3)
-; *** I'm a bit paranoid about the interrupt being somewhat irregular, thus I'll waste some time ***
-;	LDA #%00010000			; enable column 1 from keyboard/keypad
-;	STA LTCdo				; display remains shut down, as all anodes are low
-; *** end of paranoid code *** no longer needed
-	LDY IO9in				; get input port (4)
+	LDY IO9in				; get input port (4) *** this will change with matrix keyboard, see below ***
 	LDA (stkb_tab), Y		; on keyboard, QAOP, ESDF, Spectrum and cursor keys supported! Otherwise get joystick pattern (5)
 	STA stick				; store in variable (3)
 	PLY						; (4) eeek
@@ -1313,6 +1315,14 @@ pm_isr:
 	INC jiffy+2				; (or add 2+5)
 i_end:
 	RTI						; (6, fastest case is 40, plus 7 of IRQ ack, seems OK at 47...)
+
+; ** if using matrix keyboard, insert this code somewhere **
+;	LDA #$D0				; cursor keys column (2)
+;	STA IO9kbd				; select column (4)
+;	LDA IO9kbd				; get rows (inverted) (2)
+;	AND #$F					; filter relevant bits (2)
+;	EOR #$F					; invert bits (2)
+;	TAY						; ...ready for LDA (stkb_tab), Y *** or some other indexed table! (2)
 
 ; ****************************
 ; ****************************
