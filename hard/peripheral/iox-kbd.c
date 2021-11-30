@@ -43,6 +43,13 @@ int main(void) {
 		return -1;
 	}
 
+/* ***                ***
+ * *** note new order ***
+ * ***                ***
+ * *** Bx= ...BS      ***
+ * *** Cx= ...CR      ***
+ * *** Dx=Up,Lt,Dn,Rt *** */
+
 /* unshifted but CAPS LOCK on */
 	row(rom,0xBA,0x09, '<', ' ');	/* 0x= º Tab < Space */
 	row(rom, '1', 'Q', 'A', 'Z');	/* 1x= 1 Q A Z */
