@@ -1,6 +1,6 @@
-; video stress test for Durango-X, colour mode
+; video stress test for Durango-X, colour mode (x2)
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211209-1324
+; last modified 20211209-1334
 
 ; ****************************
 ; *** standard definitions ***
@@ -10,8 +10,7 @@
 	IOBeep	= $DFB0
 ; ****************************
 	ptr		= 2				; indirect pointer
-	left	= 4
-	right	= 5
+	wrap	= 4
 
 * = $400					; downloadable start address
 
@@ -28,27 +27,20 @@ again:
 		STY ptr
 line:
 			LDA (ptr)		; first byte in line
-			STA right		; will rotate MSN in
-			LDY #63
+			STA wrap		; will be at the end
+			LDY #1
 loop:
-				LDX #4		; bits to be shifted
 				LDA (ptr), Y		; get current byte
-bits:
-					ASL right		; get this from right
-					ROL				; rotate into screen...
-					ROL left		; ...and into left LSN
-					DEX
-					BNE bits
+				DEY
 				STA (ptr), Y		; update screen
-				LDA left	; move shifted bits to the other side...
-				ASL
-				ASL
-				ASL
-				ASL
-				STA right	; ...into high nibble!
-				DEY			; go for next byte
-				BPL loop
-			LDA ptr
+				INY
+				INY
+				CPY #64
+				BNE loop
+			DEY				; back to last byte in line
+			LDA wrap		; place wrapped byte
+			STA (ptr), Y
+			LDA ptr			; next line
 			CLC
 			ADC #64			; eeeeek! colour mode
 			STA ptr
