@@ -7,8 +7,8 @@
 ; zp variables
 xflag	= 2					; only d0 for left/right pixel
 sptr	= 3					; 16-bit screen pointer
-;old_f	= 5					; old flag
-;old_p	= 6					; old pointer for updates
+old_f	= 5					; old flag
+old_p	= 6					; old pointer for updates
 dir		= 7					; sampled address
 
 ; 011yyyyy yyxxxxxx f		coordinate format (note flag)
@@ -23,6 +23,7 @@ dir		= 7					; sampled address
 	STY sptr
 	STA sptr+1
 	TYA						; all black
+lda#$88;blue
 cls:
 			STA (sptr), Y
 			INY
@@ -42,7 +43,10 @@ cls:
 loop:
 ; wait for vertical blanking
 			BIT $DF88		; video blanking register, d7=H, d6=V
-			BVC loop		; will operate during blanking
+			BVS loop		; in case we keep blanking
+wait:
+			BIT $DF88		; video blanking register, d7=H, d6=V
+			BVC wait		; will operate during blanking
 ; will arrive here every 50th of a second
 		LDA $DF9F			; full port value for directions
 		STA dir				; N is already d7
@@ -61,7 +65,7 @@ not_st:
 			INC xflag		; LSb
 			LDA xflag
 			LSR				; check d0
-			BNE not_r		; 0->1 means same byte
+			BCS not_r		; 0->1 means same byte
 				INC sptr	; +1, but may get into Y
 				LDA sptr
 				AND #%00111111		; if X = 0, wrap appropriately
@@ -89,7 +93,7 @@ not_d:
 			DEC xflag		; LSb
 			LDA xflag
 			LSR				; check d0
-			BEQ not_l		; 1->0 means same byte
+			BCC not_l		; 1->0 means same byte
 				DEC sptr	; +1, but may get into Y
 				LDA sptr
 				AND #%00111111		; if X is all ones, wrap appropriately
@@ -112,36 +116,40 @@ not_l:
 			STA sptr+1		; will draw later
 not_u:
 		LDA dir				; fire or start were pressed?
-		BNE loop			; keep new colour, then
+		BNE done			; keep new colour, then
 			LDY #$F			; otherwise draw white dot
 			JSR draw
-		BRA loop
+done:
+		JMP loop
 
 ; *** routines ***
 clear:
 	LDA #0
+lda#$88;blue
 	STA (sptr)
 	RTS
 
 draw:
-;	LDA xflag				; needed for drawing!
-;	LDX sptr
-;	CPY #$F					; white?
-;	BNE do_draw				; if not, draw even if in the same place
-;		CPX old_p
-;	BNE do_draw				; address changed, do draw
-;		CMP old_f
-;	BEQ same				; same address, do nothing
+	LDA xflag				; needed for drawing!
+	LDX sptr
+	CPY #$F					; white?
+	BNE do_draw				; if not, draw even if in the same place
+		CPX old_p
+	BNE do_draw				; address changed, do draw
+		CMP old_f
+	BEQ same				; same address, do nothing
 do_draw:
-;		STX old_p			; update these
-;		STA old_f
+		STX old_p			; update these
+		STA old_f
 		LSR					; xflag.do is in C!
 		TYA
+ORA #$80			; blue background
 		BCS nib_ok			; odd flag is right pixel, already OK
 			ASL				; otherwise is left pixel, shift pattern 
 			ASL
 			ASL
 			ASL
+ORA #$8				; blue background
 nib_ok:
 		STA (sptr)
 same:
