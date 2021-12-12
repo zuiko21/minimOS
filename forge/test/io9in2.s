@@ -75,7 +75,7 @@ not_st:
 			JSR clear
 			LDA xc
 			INC				; CMOS!
-			AND #63			; wrap properly
+			AND #127		; wrap properly
 			STA xc			; ...and we're done!
 not_r:
 		LSR dir				; C = DOWN
@@ -83,7 +83,7 @@ not_r:
 			JSR clear
 			LDA yc
 			INC				; CMOS!
-			AND #63			; wrap properly
+			AND #127		; wrap properly
 			STA yc			; ...and we're done!
 not_d:
 		LSR dir				; C = LEFT
@@ -91,7 +91,7 @@ not_d:
 			JSR clear
 			LDA xc
 			DEC				; CMOS!
-			AND #63			; wrap properly
+			AND #127		; wrap properly
 			STA xc			; ...and we're done!
 not_l:
 		LSR dir				; C = UP, no more to be saved
@@ -99,7 +99,7 @@ not_l:
 			JSR clear
 			LDA yc
 			DEC				; CMOS!
-			AND #63			; wrap properly
+			AND #127		; wrap properly
 			STA yc			; ...and we're done!
 not_u:
 		LDA dir				; fire or start were pressed?
