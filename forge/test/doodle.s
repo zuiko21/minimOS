@@ -1,6 +1,6 @@
 ; Durango IO9 jpypad Doodle!
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211212-1553
+; last modified 20211212-1635
 
 ; *** usage ***
 ; choose background colour with FIRE, then select with START
@@ -31,12 +31,11 @@ old_y	= 13
 ; Durango-X stuff
 	LDA #%00111000			; colour, non-inverse, screen 3, non grey
 	STA $DF80
+	STX $DFA0				; LED off, thus pen up for the moment
 ; *** choose background colour ***
 	LDA #0					; black by default
 ;	STA old_x				; ** unrelated init ** these are zero as we want the first pixel drawn in any case
 ;	STA old_y
-	STA pen					; pen down by default, LED is on
-	STA $DFA0				; interrupt control used as pen state indicator
 choose_bg:
 		LDX #$60
 		LDY #0				; screen 3 base and reset index
@@ -60,17 +59,25 @@ sel:
 		BPL sel				; or if FIRE is pressed...
 	CLC
 	ADC #$11				; ...next colour!
+	BCC bg_ok
+		LDA #0				; just wrapped!
+bg_ok:
 	BRA choose_bg			; and update background
 bg_set:
 	STA bg					; this is the background colour (both nibbles)
 	CLC
 	ADC #$11				; and the following one in palette for ink
+	BCC fg_ok
+		LDA #0				; just wrapped!
+fg_ok:
 	STA fg
 ; *** doodle mode ***
 ; init position
 	LDA #64
 	STA xc
 	STA yc
+	STA pen					; pen down by default, LED is on
+	STA $DFA0
 ; place initial dot
 	JSR draw				; always according to fg
 ; *** main loop ***
@@ -81,11 +88,14 @@ loop:
 			CMP dir			; same as before?
 			BEQ loop		; if so, wait for a different one
 		STA dir				; otherwise, register it
-		TAY					; not sure about N flag after CMP
+		TAX					; not sure about N flag after CMP, also store in X
 		BPL not_fire		; FIRE = switch colours
 			LDA fg			; original value
 			CLC
 			ADC #$11		; next in palette
+			BCC col_ok
+				LDA #0		; just wrapped!
+col_ok:
 			STA fg
 			JSR draw		; no need to draw previous one, as did not move
 not_fire:
@@ -132,6 +142,7 @@ not_u:
 		BNE done			; keep new colour, then
 			JSR draw
 done:
+		STX dir				; retrieve last key combo
 		JMP loop
 
 ; *** *** routines *** *** not so simple but worth it
@@ -140,8 +151,8 @@ clear:
 	LDA pen
 	LSR						; check d0, if pen is down, do not clear
 	BCC cl_end
-		LDA bg				; otherwise we need to set actual dot as background
 		JSR addr			; (C is left/right pixel)
+		LDA bg				; we need to set actual dot as background
 		BCC cl_left
 			AND #$F			; C set, clear right pixel
 			STA tmp			; temporary use!
@@ -161,15 +172,6 @@ cl_end:
 
 ; *** draw pixel in current coordinates ***
 draw:
-;	LDX xc
-;	LDY xy
-;	CPX old_x
-;		BNE do_draw			; address changed, do draw
-;	CPY old_y
-;		BEQ same			; same address, do nothing
-do_draw:
-;	STX old_x				; update these
-;	STY old_y
 	JSR addr				; X.0 is in C!
 	LDA fg					; always gets colour here
 	BCC dr_left
@@ -177,7 +179,7 @@ do_draw:
 		STA tmp				; temporary use!
 		LDA (sptr)			; older contents
 		AND #$F0			; keep other nibble
-		BCS dl_ok
+		BCS dr_ok
 dr_left:
 		AND #$F0			; C clear, draw left pixel
 		STA tmp				; temporary use!
@@ -186,7 +188,6 @@ dr_left:
 dr_ok:
 	ORA tmp					; combine new byte
 	STA (sptr)
-same:
 	RTS
 
 ; *** compute address ***
