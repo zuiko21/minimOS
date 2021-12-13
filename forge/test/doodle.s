@@ -1,6 +1,6 @@
 ; Durango IO9 jpypad Doodle!
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211212-1635
+; last modified 20211213-1800
 
 ; *** usage ***
 ; choose background colour with FIRE, then select with START
@@ -14,12 +14,10 @@ sptr	= 3					; 16-bit screen pointer
 xc		= 5					; X coordinate
 yc		= 6					; Y-coordinate
 dir		= 7					; sampled address
-bg		= 8					; background colour (both nibbles)
+bg		= 8					; background byte (no longer stores background colour)
 fg		= 9					; foreground colour (both nibbles)
 pen		= 10				; pen state (0=down, 1=up)
 tmp		= 11
-old_x	= 12				; *** do I need these?
-old_y	= 13
 
 ; 011yyyyy yyxxxxxx x		address from coordinates (note separate flag)
 ; 01110000 00100000 0		initial values for the middle of the screen
@@ -34,8 +32,6 @@ old_y	= 13
 	STX $DFA0				; LED off, thus pen up for the moment
 ; *** choose background colour ***
 	LDA #0					; black by default
-;	STA old_x				; ** unrelated init ** these are zero as we want the first pixel drawn in any case
-;	STA old_y
 choose_bg:
 		LDX #$60
 		LDY #0				; screen 3 base and reset index
@@ -64,9 +60,9 @@ sel:
 bg_ok:
 	BRA choose_bg			; and update background
 bg_set:
-	STA bg					; this is the background colour (both nibbles)
-	CLC
-	ADC #$11				; and the following one in palette for ink
+;	STA bg					; store background colour as default value under cursor
+	CLC						; A is the background colour (both nibbles)
+	ADC #$11				; get the following one in palette for ink
 	BCC fg_ok
 		LDA #0				; just wrapped!
 fg_ok:
@@ -152,28 +148,17 @@ clear:
 	LSR						; check d0, if pen is down, do not clear
 	BCC cl_end
 		JSR addr			; (C is left/right pixel)
-		LDA bg				; we need to set actual dot as background
-		BCC cl_left
-			AND #$F			; C set, clear right pixel
-			STA tmp			; temporary use!
-			LDA (sptr)		; older contents
-			AND #$F0		; keep other nibble
-			BCS cl_ok
-cl_left:
-			AND #$F0		; C clear, clear left pixel
-			STA tmp			; temporary use!
-			LDA (sptr)		; older contents
-			AND #$F			; keep other nibble
-cl_ok:
-		ORA tmp				; combine new byte
-		STA (sptr)
+		LDA bg				; we need to set actual dot as previous background
+		STA (sptr)			; and we're done!
 cl_end:
 	RTS
 
 ; *** draw pixel in current coordinates ***
 draw:
 	JSR addr				; X.0 is in C!
-	LDA fg					; always gets colour here
+	LDA (sptr)				; keep what's under the dot!
+	STA bg
+	LDA fg					; always gets ink colour here
 	BCC dr_left
 		AND #$F				; C set, draw right pixel
 		STA tmp				; temporary use!
