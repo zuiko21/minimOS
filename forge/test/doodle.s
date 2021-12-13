@@ -1,6 +1,6 @@
 ; Durango IO9 jpypad Doodle!
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211213-1828
+; last modified 20211213-1837
 
 ; *** usage ***
 ; choose background colour with FIRE, then select with START
@@ -78,11 +78,14 @@ fg_ok:
 	JSR draw				; always according to fg
 ; *** main loop ***
 loop:
-			JSR vsync
+		JSR vsync
 ; will arrive here every 50th of a second
-			LDA $DF9F		; full port value for directions
-			CMP dir			; same as before?
-			BEQ loop		; if so, wait for a different one
+		LDA $DF9F			; full port value for directions
+		CMP #16				; is it a movement?
+		BCC rpt				; movements may repeat, colour/pen cycle can't
+			CMP dir			; if command, same as before?
+			BEQ loop		; if so, wait for a different one;
+rpt:
 		STA dir				; otherwise, register it
 		TAX					; not sure about N flag after CMP, also store in X
 		BPL not_fire		; FIRE = switch colours
