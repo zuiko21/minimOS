@@ -1,6 +1,6 @@
 ; Durango IO9 jpypad Doodle!
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211213-1800
+; last modified 20211213-1828
 
 ; *** usage ***
 ; choose background colour with FIRE, then select with START
@@ -93,6 +93,7 @@ loop:
 				LDA #0		; just wrapped!
 col_ok:
 			STA fg
+			JSR clear		; must keep previous value!
 			JSR draw		; no need to draw previous one, as did not move
 not_fire:
 		BIT dir				; get fire & START from standard joystick port
@@ -109,6 +110,7 @@ not_st:
 			INC				; CMOS!
 			AND #127		; wrap properly
 			STA xc			; ...and we're done!
+			JSR draw
 not_r:
 		LSR dir				; C = DOWN
 		BCC not_d
@@ -117,6 +119,7 @@ not_r:
 			INC				; CMOS!
 			AND #127		; wrap properly
 			STA yc			; ...and we're done!
+			JSR draw
 not_d:
 		LSR dir				; C = LEFT
 		BCC not_l
@@ -125,6 +128,7 @@ not_d:
 			DEC				; CMOS!
 			AND #127		; wrap properly
 			STA xc			; ...and we're done!
+			JSR draw
 not_l:
 		LSR dir				; C = UP, no more to be saved
 		BCC not_u			; no move selected
@@ -133,11 +137,8 @@ not_l:
 			DEC				; CMOS!
 			AND #127		; wrap properly
 			STA yc			; ...and we're done!
-not_u:
-		LDA dir				; fire or start were pressed?
-		BNE done			; keep new colour, then
 			JSR draw
-done:
+not_u:
 		STX dir				; retrieve last key combo
 		JMP loop
 
