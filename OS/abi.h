@@ -1,7 +1,8 @@
-; minimOS 0.6rc22 API/ABI
+; minimOS 0.6.1a1 API/ABI
 ; *** not compatible with earlier versions ***
+; *** new firmware interface NOT compatible with 0.6 ***
 ; (c) 2012-2021 Carlos J. Santisteban
-; last modified 20190920-2248
+; last modified 20211214-1815
 
 ; *************************************************
 ; *************************************************
@@ -97,10 +98,12 @@ GESTALT		= 0				; supply hardware info
 SET_ISR		= GESTALT+2		; set interrupt service routine
 SET_NMI		= SET_ISR+2		; set NMI routine (internally handled)
 SET_DBG		= SET_NMI+2		; set debugger (BRK) routine
+CHK_SUM		= SET_DBG+2		; Fletcher-16 checksum routine *** new
 
 ; somewhat hardware specific, interrupt hardware related
-JIFFY		= SET_DBG+2		; set periodic interrupt frequency
+JIFFY		= CHK_SUM+2		; set periodic interrupt frequency
 IRQ_SRC		= JIFFY+2		; determine interrupt line
+; should I add some interrupt enabling API?
 
 ; pretty hardware specific
 POWEROFF	= IRQ_SRC+2		; shutdown, suspend etc.
@@ -111,7 +114,8 @@ INSTALL		= FREQ_GEN+2	; copy kernel jump table
 PATCH		= INSTALL+2		; change one kernel function
 ; CONTEXT no longer used, as would be just called from a *specific* Multitasking driver
 RELOC		= PATCH+2		; relocate code and/or variables ***TBD***
-CONIO		= RELOC+2		; firmware basic console, when available
+RLE_DEC		= RELOC+2		; RLE decoder *** new
+CONIO		= RLE_DEC+2		; firmware basic console, when available
 
 ; **************************
 ; ** Driver table offsets **

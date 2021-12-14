@@ -6,7 +6,7 @@
 
 #define		FIRMWARE	_FIRMWARE
 #define		DOWNLOAD	_DOWNLOAD
-
+; setting 
 #include "../usual.h"
 ; already set at FW_BASE via rom.s
 
@@ -19,6 +19,8 @@
 
 ; *** since nanoBoot will start executing from first loaded address, an empty page with a JMP is mandatory ***
 	JMP dreset					; skip up to two pages
+; think about using the BRK handler (in bootloader firmware) to do JMP ($5FFC), like a regular reset
+
 ; could put here some routines, or tables, really disposable once booted into minimOS...
 
 ; *********************************
@@ -34,19 +36,19 @@
 	.word	set_isr				; SET_ISR set IRQ vector
 	.word	set_nmi				; SET_NMI set (magic preceded) NMI routine
 	.word	set_dbg				; SET_DBG set debugger, new 20170517
-	.word	chksum				; CHKSUM ***new*** Fletcher-16 checksum
+	.word	chk_sum				; CHK_SUM *** new *** Fletcher-16 checksum
 ; pretty hardware specific
-	.word	jiffy				; JIFFY set jiffy IRQ speed
-	.word	irq_src				; IRQ_SOURCE get interrupt source in X for total ISR independence
+	.word	jiffy				; JIFFY set jiffy IRQ speed (enable hard int here)
+	.word	irq_src				; IRQ_SOURCE get interrupt source in X for total ISR independence (check for enabled irq generator)
 	.word	poweroff			; POWEROFF power-off, suspend or cold boot
 	.word	freq_gen			; *** FREQ_GEN frequency generator hardware interface, TBD
 ; not for LOWRAM systems
 	.word	install				; INSTALL copy jump table
 	.word	patch				; PATCH patch single function (renumbered)
 	.word	reloc				; RELOCate code and data (TBD)
-	.word	rledec				; RLEDEC, RLE decoder ***new***
+	.word	rle_dec				; RLE_DEC *** new *** RLE decoder
 ; basic I/O
-	.word	conio				; CONIO, basic console when available (TBD)
+	.word	conio				; CONIO, basic console with built-in video
 
 ; *** there's still some room for routines! ***
 ; ID strings unless residing on header
@@ -61,17 +63,18 @@ fw_splash:
 	.dsb	fw_start-*, $FF
 
 ; *************************************
-; *** first some ROM identification *** new 20150612
+; *** first some ROM identification *** new 20150612 *** might go first with a proper bootloader BRK handler
 ; *************************************
 fw_start:
 	.asc 0, "m", CPU_TYPE		; standard system file wrapper, new format 20161010, experimental type
 	.asc "****", CR				; flags TBD
 	.asc "boot", 0				; standard filename
 fw_splash:
-	.asc "0.6 "
+	.asc "0.6.1 "
 #ifdef	DOWNLOAD
-	.asc "DOWNLOADABLE "
-	.asc "firmware for "	; machine description as comment
+	.asc "  DOWNLOADABLE    "
+#endif
+	.asc "firmware for    "	; machine description as comment
 fw_mname:
 	.asc	"DURANGO", 0
 ; advance to end of header (may need extra fields for relocation)
@@ -107,11 +110,8 @@ dreset:
 ; *****************	.word	conio				*************
 ; 65x02 does not need to deal with native vs. emulation mode
 
-; check for VIA presence and disable all interrupts *** currently no VIA!
-; perhaps make certain that hardware interrupt is disabled?
-;#include "modules/viacheck_irq.s"
-	STA $A000				; irrelevant data, as long as the ADDRESS is EVEN
-	_STZA $B000				; ...and turn beeper off
+; perhaps make certain that hardware interrupt AND beeper is disabled?
+#include "modules/durango-irqb.s"
 
 ; *********************************
 ; *** optional firmware modules ***
@@ -120,25 +120,24 @@ dreset:
 ; optional boot selector *** makes little sense with downloaded kernel
 ;#include "modules/bootoff.s"
 
-; might check ROM integrity here
+; might check ROM integrity here *** now built-in FW feature, but set parameter appropriately
 #include "modules/romcheck8k.s"
 
 ; some systems might copy ROM-in-RAM and continue at faster speed!
 ;#include "modules/rominram.s"
 
-; startup beep *** not really using this
-;#include "modules/beep.s" 
+; startup beep *** will do after successful FW boot
 
-; SRAM test *** new code from test suite
-#include "modules/ramtest_DX.s"
+; SRAM test *** new code from test suite, may include other hardware check... and finally some nice beep
+#include "modules/durango-POST.s"
+#include "modules/durango-beep.s"
 
 ; ********************************
 ; *** hardware interrupt setup ***
 ; ********************************
 
-; VIA initialisation (and stop beeping) *** stop beeping integrated in RAMtest
-; this will enable hardware periodic interrupt
-	STA $A001				; irrelevant data, as long as the ADDRESS is ODD
+; this will enable hardware periodic interrupt *** stop beeping integrated in RAMtest
+#include "modules/durango-irq.s"
 
 ; ***********************************
 ; *** firmware parameter settings ***
@@ -163,7 +162,6 @@ dreset:
 
 ; NMI is NOT validated, and 6502 systems should set a minimal IRQ handler in order to enable PANIC (BRK) handling!
 ; perhaps mini_nmi should include the standard nmi_end?
-;#include "modules/mini_nmi.s"
 #include "modules/mini_irq.s"
 
 ; preset jiffy irq frequency *** this hardware is fixed-freq, so much with 0.5.x compatibility! might just preset that 250 Hz
@@ -176,11 +174,13 @@ dreset:
 #include "modules/rst_lastk.s"
 
 ; *** direct print splash string code comes here, when available ***
-#
+#include "modules/durango-splash.s"
 
-; *** optional network booting *** makes no sense with nanoBoot
-
-; *** possible kernel RELOCation should be done here ***
+; *** optional network booting *** makes no sense with nanoBoot, but will when not downloaded
+#ifndef	DOWNLOAD
+#include "modules/fw-nanoboot.s"
+#endif
+; *** possible kernel RELOCation and/or decompression should be done here ***
 
 ; ************************
 ; *** start the kernel ***
@@ -190,9 +190,35 @@ start_kernel:
 #include "modules/start.s"
 
 ; ********************************
-; ****** interrupt handlers ****** no longer here, these go into bootloader firmware
 ; ********************************
+; ****** interrupt handlers ****** no longer here, these go into bootloader firmware -- IF downloaded
+; ********************************
+; ********************************
+
+#ifndef	DOWNLOAD
+; **********************************************
+; *** vectored NMI handler with magic number ***
+; **********************************************
+nmi:
+#include "modules/nmi_hndl.s"
+
+; ****************************
+; *** vectored IRQ handler ***
+; ****************************
+; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
+irq:
+#include "modules/irq_hndl.s"
+
+; ****************************
+; *** vectored BRK handler ***
+; ****************************
+brk_hndl:				; label from vector list
+#include "modules/brk_hndl.s"
+
 ; *** *** 65x02 does have no use for a COP handler *** ***
+#endif
+
+
 
 
 ; ********************************
@@ -227,18 +253,18 @@ set_nmi:
 set_dbg:
 #include "modules/set_dbg.s"
 
-; *******************************
-; CHKSUM, verify with Fletcher-16
-; *******************************
-chksum:
-#include "modules/set_dbg.s"
+; ********************************
+; CHK_SUM, verify with Fletcher-16
+; ********************************
+chk_sum:
+#include "modules/chk_sum.s"
 
 ; *** interrupt related ***
 
 ; ***************************
 ; JIFFY, set jiffy IRQ period
 ; ***************************
-jiffy:							; special module, cannot set speed but at least enable 244 Hz interrupt source!
+jiffy:							; special module, cannot set speed but at least enable 250 Hz interrupt source!
 #include "modules/nv_jiffy.s"
 
 ; ****************************************
@@ -254,7 +280,7 @@ irq_src:						; special module for VIA-less system, just check whether jiffy is 
 ; POWEROFF, shutdown etc *** TBD
 ; **************************
 poweroff:
-#include "modules/poweroff.s"
+	DR_ERR(UNAVAIL)	; this system lacks power management
 
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
@@ -282,17 +308,17 @@ patch:
 reloc:
 	DR_ERR(UNAVAIL)	; not yet implemented
 
-; ***************************
-; RLEDEC, RLE decoder *** NEW
-; ***************************
-rledec:
-	DR_ERR(UNAVAIL)	; not yet implemented
+; ****************************
+; RLE_DEC, RLE decoder *** NEW
+; ****************************
+rle_dec:
+#include "modules/rle.s"
 
 ; ***********************************
 ; CONIO, basic console when available
 ; ***********************************
 conio:
-#include "modules/conio-picovdu.s"
+#include "modules/conio-durango-fast.s"
 
 ; base FW and minimOS support are...
 ; **************************************

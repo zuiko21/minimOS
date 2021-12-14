@@ -1,23 +1,25 @@
-; minimOS 0.6rc14 MACRO definitions
+; minimOS 0.6.1a1 MACRO definitions
 ; (c) 2012-2021 Carlos J. Santisteban
-; last modified 20210728-1437
+; last modified 20211214-1829
 
 ; **************************
 ; *** standard addresses ***
 ; **************************
 ; these may come into abi.h
 
+#ifndef	DOWNLOAD
 kerncall	=	$FFC0	; ending in RTS/RTI, 816 will use COP handler and a COP,RTS wrapper for 02
 adm_call	=	$FFDA	; ending in RTS, intended for kernel/drivers ONLY, revamped address
 adm_appc	=	$FFD0	; special interface for 65816 firmware call from USER software!
-; usually pointing to JSR adm_call, then RTL
-
-; unified address (will lock at $FFE2-3 anyway) for CMOS and NMOS ** new name 20161010
-; some machines will lock somewhere else, like blinking the Emulation LED!
 lock		=	$FFE0	; more-or-less 816 savvy address
-
-; redefined hard vectors *** new 20181226
 brk_02		=	$FFF6	; supposedly emulated BRK, may be 816-savvy!
+#else
+kerncall	=	$5FC0	; ending in RTS/RTI, 816 will use COP handler and a COP,RTS wrapper for 02
+adm_call	=	$5FDA	; ending in RTS, intended for kernel/drivers ONLY, revamped address
+adm_appc	=	$5FD0	; special interface for 65816 firmware call from USER software!
+lock		=	$5FE0	; standard downloaded panic entry
+brk_02		=	$5FF6	; supposedly emulated BRK
+#endif
 
 ; new NMOS definition
 nmos_ii		=	$E2		; pointer for JMPX macro
@@ -132,13 +134,17 @@ PICO_VDU	=	160		; *** PLACEHOLDER ***
 #ifdef	NMOS
 #ifdef		LOWRAM
 ; the slower, compact version, needs no memory... but not 65816-savvy!
-; this is needed for NMOS nanomon, otherwise the CONIO call will destroy A & X reg storage! *** DESTROYS A, must revise!!!
+; this is needed for NMOS nanomon, otherwise the CONIO call will destroy A & X reg storage! *** note JMPXA version DOES NOT preserve A
+; JMPX for LOWRAM cannot preserve A?
 #define		_JMPX(a)	LDA a+1, X: PHA: LDA a, X: PHA: PHP: RTI
+#define		_JMPXA(a)	LDA a+1, X: PHA: LDA a, X: PHA: PHP: RTI
 #else
 ; in case of a NMOS-binary is executed on a 65816 machine, use this faster version
 ; now keeps A, should be compatible with everything, albeit slower...
 #define		_JMPX(a)	PHA: LDA a+1, X: STA nmos_ii+1: LDA a, X: STA nmos_ii: PLA: JMP (nmos_ii)
+#define		_JMPXA(a)	LDA a+1, X: STA nmos_ii+1: LDA a, X: STA nmos_ii: JMP (nmos_ii)
 #endif
+
 #define		_PHX		TXA: PHA
 #define		_PHY		TYA: PHA
 #define		_PLX		PLA: TAX
@@ -163,6 +169,7 @@ PICO_VDU	=	160		; *** PLACEHOLDER ***
 ; standard CMOS opcodes
 ; note JMP workaround for xa bug outside bank 0!!!
 #define		_JMPX(a)	JMP (a & $FFFF, X)
+#define		_JMPXA(a)	JMP (a & $FFFF, X)
 #define		_PHX		PHX
 #define		_PHY		PHY
 #define		_PLX		PLX
