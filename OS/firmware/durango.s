@@ -1,8 +1,8 @@
 ; Durango firmware (at least for prototype version)
 ; based on generic firmware template for minimOS·65
-; v0.6b20
+; v0.6.1a1
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20210915-2222
+; last modified 20211214-1236
 
 #define		FIRMWARE	_FIRMWARE
 #define		DOWNLOAD	_DOWNLOAD
@@ -34,16 +34,17 @@
 	.word	set_isr				; SET_ISR set IRQ vector
 	.word	set_nmi				; SET_NMI set (magic preceded) NMI routine
 	.word	set_dbg				; SET_DBG set debugger, new 20170517
+	.word	chksum				; CHKSUM ***new*** Fletcher-16 checksum
+; pretty hardware specific
 	.word	jiffy				; JIFFY set jiffy IRQ speed
 	.word	irq_src				; IRQ_SOURCE get interrupt source in X for total ISR independence
-
-; pretty hardware specific
 	.word	poweroff			; POWEROFF power-off, suspend or cold boot
 	.word	freq_gen			; *** FREQ_GEN frequency generator hardware interface, TBD
 ; not for LOWRAM systems
 	.word	install				; INSTALL copy jump table
 	.word	patch				; PATCH patch single function (renumbered)
 	.word	reloc				; RELOCate code and data (TBD)
+	.word	rledec				; RLEDEC, RLE decoder ***new***
 ; basic I/O
 	.word	conio				; CONIO, basic console when available (TBD)
 
@@ -51,7 +52,7 @@
 ; ID strings unless residing on header
 #ifdef	NOHEAD
 fw_splash:
-	.asc	"DURANGO FW 0.6 ", 0
+	.asc	"DURANGO FW 0.6.1 ", 0
 #endif
 
 ; *** firmware code follows ***
@@ -103,7 +104,7 @@ dreset:
 
 ; ******************************
 ; *** minimal hardware setup ***
-; ******************************
+; *****************	.word	conio				*************
 ; 65x02 does not need to deal with native vs. emulation mode
 
 ; check for VIA presence and disable all interrupts *** currently no VIA!
@@ -226,6 +227,12 @@ set_nmi:
 set_dbg:
 #include "modules/set_dbg.s"
 
+; *******************************
+; CHKSUM, verify with Fletcher-16
+; *******************************
+chksum:
+#include "modules/set_dbg.s"
+
 ; *** interrupt related ***
 
 ; ***************************
@@ -273,6 +280,12 @@ patch:
 ; RELOC, data and code relocation *** TBD
 ; *******************************
 reloc:
+	DR_ERR(UNAVAIL)	; not yet implemented
+
+; ***************************
+; RLEDEC, RLE decoder *** NEW
+; ***************************
+rledec:
 	DR_ERR(UNAVAIL)	; not yet implemented
 
 ; ***********************************
