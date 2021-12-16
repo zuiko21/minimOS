@@ -1,8 +1,8 @@
-; minimOS 0.6.1a1 API/ABI
+; minimOS 0.6.1a2 API/ABI
 ; *** not compatible with earlier versions ***
 ; *** new firmware interface NOT compatible with 0.6 ***
 ; (c) 2012-2021 Carlos J. Santisteban
-; last modified 20211214-1815
+; last modified 20211216-1101
 
 ; *************************************************
 ; *************************************************
@@ -114,7 +114,8 @@ INSTALL		= FREQ_GEN+2	; copy kernel jump table
 PATCH		= INSTALL+2		; change one kernel function
 ; CONTEXT no longer used, as would be just called from a *specific* Multitasking driver
 RELOC		= PATCH+2		; relocate code and/or variables ***TBD***
-RLE_DEC		= RELOC+2		; RLE decoder *** new
+NANOLNK		= RELOC+2		; nanoLink *** new
+RLE_DEC		= NANOLNK+2		; RLE decoder *** new
 CONIO		= RLE_DEC+2		; firmware basic console, when available
 
 ; **************************
@@ -122,7 +123,24 @@ CONIO		= RLE_DEC+2		; firmware basic console, when available
 ; **************************
 D_ID	=  0		; driver ID
 D_AUTH	=  1		; authorization mask
-D_BLIN	=  2		; BLOCK input code
+D_BLIN	=  2		; BLOCK input cod./../usual.h"
+#endif
+
+.(
+; *** constants for 65(C)51 registers ***
+; get ACIA from options.h
+
+F_ACIA_RD	= ACIA		; receive data
+F_ACIA_TD	= ACIA		; transmit data
+F_ACIA_SR 	= ACIA + 1	; status
+F_ACIA_RES	= ACIA + 1	; reset
+F_ACIA_CMD	= ACIA + 2	; command
+F_ACIA_CTL	= ACIA + 3	; control
+
+; some labels
+fd_buf	= locals		; single byte buffer
+fd_cont	= fd_buf+1		; contents
+e
 D_BOUT	=  4		; BLOCK output code
 D_INIT	=  6		; device reset procedure
 D_POLL	=  8		; periodic interrupt task
@@ -142,7 +160,41 @@ A_BLIN	= %00100000	; D_BLIN capability
 A_BOUT	= %00010000	; D_BOUT capability
 A_CNFG	= %00001000	; D_CNFG capability
 A_STAT	= %00000100	; D_STAT capability
-A_RSVD	= %00000010	; *** no longer available, RESERVED ***
+A_RSVD	= %00000010	; *** no long./../usual.h"
+#endif
+
+.(
+; *** constants for 65(C)51 registers ***
+; get ACIA from options.h
+
+F_ACIA_RD	= ACIA		; receive data
+F_ACIA_TD	= ACIA		; transmit data
+F_ACIA_SR 	= ACIA + 1	; status
+F_ACIA_RES	= ACIA + 1	; reset
+F_ACIA_CMD	= ACIA + 2	; command
+F_ACIA_CTL	= ACIA + 3	; control./../usual.h"
+#endif
+
+.(
+; *** constants for 65(C)51 registers ***
+; get ACIA from options.h
+
+F_ACIA_RD	= ACIA		; receive data
+F_ACIA_TD	= ACIA		; transmit data
+F_ACIA_SR 	= ACIA + 1	; status
+F_ACIA_RES	= ACIA + 1	; reset
+F_ACIA_CMD	= ACIA + 2	; command
+F_ACIA_CTL	= ACIA + 3	; control
+
+; some labels
+fd_buf	= locals		; single byte buffer
+fd_cont	= fd_buf+1		; contents
+
+
+; some labels
+fd_buf	= locals		; single byte buffer
+fd_cont	= fd_buf+1		; contents
+er available, RESERVED ***
 A_MEM	= %00000001	; D_MEM dynamically linked, on-the-fly loadable driver
 
 ; ** VIA 65(C)22 registers, just for convenience **
