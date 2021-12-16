@@ -1,8 +1,8 @@
 ; Durango firmware (at least for prototype version)
 ; based on generic firmware template for minimOS·65
-; v0.6.1a1
+; v0.6.1a2
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20211214-1236
+; last modified 20211216-1103
 
 #define		FIRMWARE	_FIRMWARE
 #define		DOWNLOAD	_DOWNLOAD
@@ -46,6 +46,7 @@
 	.word	install				; INSTALL copy jump table
 	.word	patch				; PATCH patch single function (renumbered)
 	.word	reloc				; RELOCate code and data (TBD)
+	.word	nanolnk				; NANOLNK loader *** new
 	.word	rle_dec				; RLE_DEC *** new *** RLE decoder
 ; basic I/O
 	.word	conio				; CONIO, basic console with built-in video
@@ -307,6 +308,12 @@ patch:
 ; *******************************
 reloc:
 	DR_ERR(UNAVAIL)	; not yet implemented
+
+; ****************************
+; NANOLNK, nanoLink loader *** NEW
+; ****************************
+nanolnk:
+#include "modules/nanolink-fw.s"
 
 ; ****************************
 ; RLE_DEC, RLE decoder *** NEW
