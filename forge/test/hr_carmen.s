@@ -6,7 +6,7 @@
 	LDA #$F8				; set hires, inverted mode! should ignore RGB enable
 	STA $DF80				; new FLAGS port
 lock:
-	BRA lock				; must lock here as will be exectuted!
+	BNE lock				; must lock here as will be exectuted!
 
 off = * - $6000
 ; binary data from file, offset 11+2 as it's a PBM
