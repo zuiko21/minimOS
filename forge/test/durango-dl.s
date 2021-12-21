@@ -12,6 +12,7 @@
 
 ; prototype uses old I/O addresses and A0-driven interrupt control
 ;#define	PROTO	_PROTO
+#define	NMOS	_NMOS
 
 ; ****************************
 ; *** standard definitions ***

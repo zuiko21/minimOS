@@ -1,11 +1,11 @@
 ; video stress test for Durango-X
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211208-1821
+; last modified 20211221-2316
 
 ; ****************************
 ; *** standard definitions ***
 	IO8lh	= $DF80			; will become $DF80
-	IO8blk	= $DF88			; new, balnking signales
+	IO8blk	= $DF88			; new, blanking signals
 	IOAen	= $DFA0			; will become $DFA0
 	IOBeep	= $DFB0			; will become $DFB0
 ; ****************************
@@ -21,15 +21,14 @@
 	STA IO8lh				; set video mode
 	STA IOAen				; ...and interrupts
 
-	LDY #0
-	STY ptr
 again:
 		LDA #$60
 		STA ptr+1
 		LDY #0
 		STY ptr
 line:
-			LDA (ptr)
+			LDY #0			; for NMOS compatibility
+			LDA (ptr), Y	; index not needed
 			ASL
 			LDY #31
 loop:
