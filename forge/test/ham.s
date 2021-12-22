@@ -72,6 +72,6 @@ wait:
 			BVC wait		; wait for next VBL
 		LDA $DF80			; actual flags
 		EOR #%00010000		; toggle between screens 2 & 3
-		ORA #$10			; allow colour, just in case
+		ORA #8				; allow colour, just in case
 		STA $DF80			; switch screen
 		BNE flickr			; forever as per ORA
