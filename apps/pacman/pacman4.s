@@ -1,6 +1,6 @@
 ; PacMan for Durango-X colour computer!
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211130-1044
+; last modified 20211222-1228
 
 ; can be assembled from this folder
 
@@ -13,16 +13,16 @@
 ; *** addresses definition ***
 	fw_isr	= $200			; standard minimOS firmware address
 	vram	= $6000			; suitable for Durango-X
-	sc_da	= vram + $C70	; address for score display, usually $6C70 *** check
-	lv_da	= vram + $1274	; address for lives display, usually $7274 *** check
+	sc_da	= vram + $C72	; address for score display, usually $6C72 (100,49)
+	lv_da	= vram + $1275	; address for lives display, usually $7275 (106,73?)
 
 ; I/O addresses
 	IO8attr	= $DF80			; screen latch high, actually video mode flags
 	IO9in	= $DF9F			; joystick/keyboard input
 	IO9kbd	= $DF9D			; matrix keyboard port, caps lock off (write column D7...D4, read rows D3...D0)
-	IOAie	= $DFA0			; enable hardware interrupt, note status is controlled via D0
-	IOBeep	= $DFB0			; beeper address (latches D0 value)
-	LTCdo	= $FFF0			; LTC display port
+	IOAie	= $DFAF			; enable hardware interrupt, note status is controlled via D0
+	IOBeep	= $DFBF			; beeper address (latches D0 value)
+	LTCdo	= $FFFF			; LTC display port
 
 ; *** actual code starts here ***
 	.text
@@ -38,16 +38,16 @@ start:
 
 	STX LTCdo				; turn off Durango debug display, just in case
 
-	LDA #$38				; colour mode, non-inverted, screen 3, non-grey
+	LDA #$39				; colour mode, non-inverted, screen 3, non-grey, also interrupt enable
 	STA IO8attr				; Durango-X hardware init
+; this value may enable interrupts in any machine
+	STA IOAie				; hardware interrupts enabled, not yet in software!
 
 ; the pseudo-random number generator must have a proper seed...
 ; ...will time it upon joystick/keyboard selection screen!
 ; NES Tetris used $8988, but might randomise it with some EOR with zp bytes?
 	LDA #$89
 	STA seed+1
-; this value may enable interrupts in any machine
-	STA IOAie				; hardware interrupts enabled, not yet in software!
 
 ; system setup
 	LDY #<pm_isr			; set interrupt vector
