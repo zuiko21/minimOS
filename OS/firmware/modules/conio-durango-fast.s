@@ -48,8 +48,11 @@
 ;	OUTPUT
 ; C ->	no available char (if Y was 0)
 
-#include "../../usual.h"
-
+;#include "../../usual.h"
+#include "../../macros.h"
+#include "../../abi.h"
+#include "../../zeropage.h"
+.text
 ; *** zeropage variables ***
 ; cio_src.w (pointer to glyph definitions)
 ; cio_pt.w (screen pointer)
@@ -80,8 +83,8 @@
 #define	BM_ATX		8
 
 ; initial colours (combo array will be computed later)
-#define	STD_INK		$F
-#define	STD_PPR		0
+#define	STD_INK		$8
+#define	STD_PPR		$B
 
 .(
 pvdu	= $6000				; base address
@@ -90,6 +93,21 @@ IO8attr	= $DF80				; compatible IO8lh for setting attributes (d7=HIRES, d6=INVER
 IOBeep	= $DFB0				; canonical buzzer address (d0)
 
 	TYA						; is going to be needed here anyway
+/*pha
+lda$DF80
+ora#$40
+sta$df80
+inc
+sta$dfb0
+ldy#0
+ttt:inx
+bne ttt
+iny
+bne ttt
+and #$b8
+sta$df80
+sta$dfb0
+pla*/
 	LDX fw_cbin				; check whether in binary/multibyte mode
 	BEQ cio_cmd				; if not, check whether command (including INPUT) or glyph
 		CPX #BM_DLE			; just receiving what has to be printed?
@@ -476,8 +494,9 @@ cio_ff:
 ; fw_mask (for inverse/emphasis mode)
 ; fw_cbin (binary or multibyte mode)
 
-;	_STZA fw_cbin			; standard, character mode
+	_STZA fw_cbin			; standard, character mode
 	_STZA fw_mask			; true video
+
 	LDA #STD_INK			; preload standard colour combos
 	JSR set_ink				; these will clear fw_cbin
 	LDA #STD_PPR
