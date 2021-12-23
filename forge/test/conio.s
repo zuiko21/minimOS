@@ -1,6 +1,6 @@
 ; CONIO test for Durango-X
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211101-0014
+; last modified 20211223-2251
 ; assemble from ~forge/test via:
 ; xa conio.s -I ../../OS/firmware/modules/ -I ../../OS -l labels
 
@@ -54,8 +54,8 @@ exit:
 
 ; *** text to print ***
 texto:
-	.asc	" Imprimo lo que", 13, "  me sale del", 13, 10, 9, 7, 14				; CR, CR, LF, TAB, BEL, EON
-	.asc	$12, 2, 'C', $12, 5, 'O', $12, $C, 'N', $12, $E, 'I', $12, 7, 'O', 15	; INK 2, INK 5, INK 12, INK 14, INK 7, EOFF
+	.asc	" Imprimo lo que", 13, "  me sale del", 13, 9, 7, 14				; CR, CR, TAB, BEL, EON
+	.asc	$12, 2, 'C', $A, $12, 5, 'O', $A, $12, $C, 'N', $A, $12, $E, 'I', $A, $12, 7, 'O', 15	; INK 2, INK 5, INK 12, INK 14, INK 7, EOFF (with LFs)
 	.byt	0
 
 ; *** firmware module ***

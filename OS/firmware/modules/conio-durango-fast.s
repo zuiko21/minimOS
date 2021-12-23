@@ -471,7 +471,7 @@ cio_ff:
 ; we don't want a single CLS to switch modes, although a font reset is acceptable, set it again afterwards if needed
 ; * things to be initialised... *
 ; fw_ink *** NO LONGER IN USE, see fw_ccol instead
-; fw_paper *** (possibly not worth combining, see above)
+; fw_paper *** (see above)
 ; fw_fnt (new, pointer to relocatable 2KB font file)
 ; fw_mask (for inverse/emphasis mode)
 ; fw_cbin (binary or multibyte mode)
