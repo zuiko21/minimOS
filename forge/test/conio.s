@@ -1,8 +1,12 @@
 ; CONIO test for Durango-X
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211223-2251
+; last modified 20211224-1025
 ; assemble from ~forge/test via:
 ; xa conio.s -I ../../OS/firmware/modules/ -I ../../OS -l labels
+
+#include "../../macros.h"
+#include "../../abi.h"
+#include "../../zeropage.h"
 
 ; *** zeropage variables ***
 .zero
@@ -27,7 +31,8 @@ fw_ccol		.dsb	4, 0	; (no longer SPARSE array of two-pixel combos, will store ink
 fw_ciop		.word	0		; (upper scan of cursor position) $217-8
 fw_fnt		.word	0		; (new, pointer to relocatable 2KB font file) $26A-B
 fw_mask		.byt	0		; (for inverse/emphasis mode) $26C
-fw_hires	.byt	0		; (0=colour, 128=hires, may contain other flags like 64=inverse) $26D
+;fw_hires	.byt	0		; (0=colour, 128=hires, may contain other flags like 64=inverse) $26D
+fw_hires	= $DF80			; directly from video flags
 fw_cbin		.byt	0		; (binary or multibyte mode) $21D
 fw_io9		.byt	0
 
@@ -50,7 +55,7 @@ fw_io9		.byt	0
 	LDA #$38				; hi res, true video, screen 3, colour enabled
 	STA $DF80
 	STA fw_hires			; eeeeek
-	STZ fw_cbin			; eeeeeeeeeeeeeek
+	_STZA fw_cbin			; eeeeeeeeeeeeeek
 	LDY #12					; reset screen
 	JSR conio
 ; printing loop

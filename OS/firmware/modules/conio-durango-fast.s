@@ -3,7 +3,7 @@
 ; FAST colour mode, takes a full page of RAM (but just 13 sparse bytes of it)
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211101-0010
+; last modified 20211224-1104
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -49,9 +49,7 @@
 ; C ->	no available char (if Y was 0)
 
 ;#include "../../usual.h"
-#include "../../macros.h"
-#include "../../abi.h"
-#include "../../zeropage.h"
+
 .text
 ; *** zeropage variables ***
 ; cio_src.w (pointer to glyph definitions)
@@ -147,7 +145,7 @@ cio_prn:
 	STX cio_pt+1
 	LDY #0					; reset screen offset (common)
 ; *** now check for mode and jump to specific code ***
-	LDX fw_hires			; check mode, code is different, will only check d7 in case other flags get used
+	BIT fw_hires			; check mode, code is different, will only check d7 in case other flags get used
 	BPL cpc_col				; skip to colour mode, hires is smaller
 ; hires version (17b for CMOS, usually 231t, plus jump to cursor-right)
 cph_loop:
@@ -231,7 +229,7 @@ cpc_rend:					; end segment has not changed, takes 6x11 + 2x24 - 1, 113t (66+46-
 ; **********************
 cur_r:
 	LDA #1					; base character width (in bytes) for hires mode
-	LDX fw_hires			; check mode
+	BIT fw_hires			; check mode
 	BMI rcu_hr				; already OK if hires
 		LDA #4				; ...or use value for colour mode
 rcu_hr:
@@ -250,7 +248,7 @@ ck_wrap:
 ; address format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
 ; thus appropriate masks are %11100000 for hires and %11000000 in colour... but it's safer to check MSB's d0 too!
 	LDY #%11100000			; hires mask
-	LDX fw_hires			; check mode
+	BIT fw_hires			; check mode
 	BMI wr_hr				; OK if we're in hires
 #ifdef	SAFE
 		LDA fw_ciop+1		; check MSB
@@ -278,7 +276,7 @@ cur_l:
 ; only if LSB is not zero, assuming non-corrupted scanline bits
 ; could use N flag after subtraction, as clear scanline bits guarantee its value
 	LDA #1					; hires decrement
-	LDX fw_hires
+	BIT fw_hires
 	BPL cl_hr				; right mode for the decrement
 		LDA #4				; otherwise use colour value
 cl_hr:
@@ -301,7 +299,7 @@ cn_begin:
 ; in colour mode, the highest scanline bit is in MSB, usually (TABs, wrap) not worth clearing
 ; ...but might help with unexpected mode change
 #ifdef	SAFE
-	LDX fw_hires			; was it in hires mode?
+	BIT fw_hires			; was it in hires mode?
 	BMI cn_lmok
 #ifdef	NMOS
 		LDA fw_ciop+1		; clear MSB lowest bit (8b/10t)
@@ -322,25 +320,33 @@ cn_lf:
 ; even simpler, INCrement MSB once... or two if in colour mode
 ; hopefully highest scan bit is intact!!!
 	INC fw_ciop+1			; increment MSB accordingly, this is OK for hires
-	LDX fw_hires			; was it in hires mode?
+	BIT fw_hires			; was it in hires mode?
 	BMI cn_hmok
 		INC fw_ciop+1		; once again if in colour mode... 
 cn_hmok:
 ; must check for possible scrolling!!! simply check sign ;-)
-	BPL cn_ok				; positive means no scroll
+	BPL cn_ok				; positive means no scroll *** SOMETHING SEEMS WRONG
 ; ** scroll routine **
 ; rows are 256 bytes apart in hires mode, but 512 in colour mode
 	LDY #<pvdu				; LSB *must* be zero, anyway
-	LDX #>pvdu				; MSB is actually OK for destination
+	LDX #>pvdu				; MSB is actually OK for destination *** from start variable or hardware
+;	LDA fw_hires
+;	AND #%00110000
+;	ASL
+;	TAX
+; might prepare the top value here, 011>100
+;	ADC #%00100000			; C was clear
+;	STA vram_top			; some temporary var? ...or save in X afterwards 
 	STY cio_pt				; set both LSBs
 	STY cio_src
 	STX cio_pt+1			; destination is set
 	INX						; note trick for NMOS-savvyness
-	LDA fw_hires			; check mode anyway
+	BIT fw_hires			; check mode anyway
 	BMI sc_hr				; +256 is OK for hires
 		INX					; make it +512 for colour
 sc_hr:
 	STX cio_src+1			; we're set
+;	TAX						; ...if not using vram_top variable
 ;	LDY #0					; in case pvdu is not page-aligned!
 sc_loop:
 		LDA (cio_src), Y	; move screen data ASAP
@@ -349,7 +355,11 @@ sc_loop:
 		BNE sc_loop
 			INC cio_pt+1	; both MSBs are incremented at once...
 			INC cio_src+1	; ...but only source will enter high-32K at the end
-		BPL sc_loop
+;			LDA cio_src+1
+;			CMP vram_top	; ...and then BCC *** OR... ***
+;			CPX cio_src+1	; ...and then BCS?
+		BPL sc_loop			; *** must check instead against screen end variable
+
 ; data has been transferred, now should clear the last line
 	JSR cio_clear			; cannot be inlined!
 ; important, cursor pointer must get back one row up! that means subtracting one (or two) from MSB
@@ -368,7 +378,7 @@ cn_tab:
 	LDA #%11111000			; hires mask first
 	STA fw_ctmp				; store temporarily
 	LDA #8					; lesser value in hires mode
-	LDX fw_hires			; check mode
+	BIT fw_hires			; check mode
 	BMI hr_tab				; if in hires, A is already correct
 		ASL fw_ctmp
 		ASL fw_ctmp			; shift mask too, will set C
@@ -478,7 +488,7 @@ cio_up:
 	AND fw_ciop+1			; current row is now 000rrrrR, R for hires only
 	BEQ cu_end				; if at top of screen, ignore cursor
 		SBC #1				; this will subtract 1 if C is set, and 2 if clear! YEAH!!!
-		ORA #%01100000		; EEEEEEK must complete pointer address (5b, 6t)
+		ORA #%01100000		; EEEEEEK must complete pointer address (5b, 6t) *** must compute actual address
 		STA fw_ciop+1
 cu_end:
 	_DR_OK					; ending this with C set is a minor nitpick, must reset anyway
@@ -517,7 +527,7 @@ cio_clear:
 ; otherwise would be best keeping pointer LSB @ 0 and setting initial offset in Y, plus LDA #0
 ; anyway, it is intended to clear whole rows
 	TYA						; A should be zero in hires...
-	LDX fw_hires
+	BIT fw_hires
 	BMI sc_clr				; eeeeeeeeek
 		LDA fw_ccol			; EEEEEEEEK, this should work in the slowish version as well
 ;		LDA fw_ppr			; but the paper colour otherwise *** NOPE
@@ -531,7 +541,7 @@ sc_clr:
 		INY
 		BNE sc_clr
 			INC cio_pt+1
-		BPL sc_clr			; colour mode needs an extra page to clear
+		BPL sc_clr			; colour mode needs an extra page to clear *** should it check against vram top var?
 	RTS
 
 ; SO, set inverse mode
@@ -558,7 +568,7 @@ cio_cur:
 	LDX fw_ciop+1
 	STY cio_pt
 	LDY #224				; offset for last scanline at cursor position... in hires
-	LDA fw_hires			; are we in colour mode? that offset won't be valid!
+	BIT fw_hires			; are we in colour mode? that offset won't be valid!
 	BMI ccur_ok				; hires mode, all OK
 		INX					; otherwise, must advance pointer MSB
 		LDY #192			; new LSB offset
@@ -595,7 +605,7 @@ md_ppr:
 cio_home:
 ; just reset cursor pointer, to be done after (or before!) CLS
 	LDY #<pvdu				; base address for all modes, actually 0
-	LDA #>pvdu
+	LDA #>pvdu				; *** this from variable, or compute from hardware
 	STY fw_ciop				; just set pointer
 	STA fw_ciop+1
 	RTS						; C is clear, right?
@@ -683,7 +693,7 @@ coord_ok:
 		BCC not_px			; must be at least 32, remember stack balance!
 #endif
 	AND #31					; filter coordinates, note +32 offset is deleted as well
-	LDX fw_hires			; if in colour mode, further filtering
+	BIT fw_hires			; if in colour mode, further filtering ***
 	BMI do_set
 		AND #15				; max colour coordinate
 do_set:
@@ -699,7 +709,7 @@ not_px:
 
 cn_atyx:					; 8= X to be set and return to normal
 	JSR coord_ok
-	LDX fw_hires			; if in colour mode, each X is 4 bytes ahead
+	BIT fw_hires			; if in colour mode, each X is 4 bytes ahead ***
 	BMI do_atx
 		ASL
 		ASL
@@ -709,8 +719,14 @@ do_atx:
 	STA fw_ciop				; THIS IS BAD *** KLUDGE
 	LDA fw_ciop+1			; add to recomputed offset the VRAM base address
 ;	CLC
-	ADC #>pvdu
+	ADC #>pvdu				; *** from variable or hardware (if switching sumands)
+; alternate code for the addition above
+;	LDA io8_attr			; get video mode
+;	AND #%00110000			; filter screen address bits
+;	ASL						; right position, C is clear... or just read the variable
+;	ADC fw_ciop+1
 	STA fw_ciop+1
+
 	_BRA md_std
 
 ; **********************
