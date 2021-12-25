@@ -1,6 +1,6 @@
 ; CONIO test for Durango-X
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211224-1025
+; last modified 20211225-2157
 ; assemble from ~forge/test via:
 ; xa conio.s -I ../../OS/firmware/modules/ -I ../../OS -l labels
 
@@ -51,10 +51,15 @@ fw_io9		.byt	0
 .text
 *	= $400					; safe download address
 
+; usual stuff
+	SEI
+	CLD
+	LDX #$FF
+	TXS
 ; minimal hardware init
-	LDA #$38				; hi res, true video, screen 3, colour enabled
-	STA $DF80
-	STA fw_hires			; eeeeek
+	LDA #$B8				; hi res, true video, screen 3, colour enabled
+	LDA #$38				; low res, true video, screen 3, colour enabled
+	STA fw_hires			; now directly on hardware register!
 	_STZA fw_cbin			; eeeeeeeeeeeeeek
 	LDY #12					; reset screen
 	JSR conio
@@ -69,7 +74,21 @@ loop:
 		INX
 		BNE loop
 exit:
-	BEQ exit				; final lock
+; flash screen for a moment
+	LDA $DF80
+	ORA #$40				; inverse for a moment
+	STA $DF80
+	LDY #0					; delay loop ~0.2s
+ttt:
+			INX
+			BNE ttt
+		INY
+		STY $DFB0			; beep in the meanwhile
+		BNE ttt
+	AND #$B8				; back to non-inverted
+	STA $DF80
+lock:
+	JMP lock				; final lock
 
 ; *** text to print ***
 texto:
