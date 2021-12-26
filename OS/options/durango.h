@@ -2,7 +2,7 @@
 ; suitable for Durango (al least in proto version)
 ; copy or link as options.h in root dir
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210409-1328
+; last modified 20211226-1649
 
 ; *** set conditional assembly ***
 
@@ -32,7 +32,7 @@
 ; Machine-specific ID strings, new 20150122, renamed 20150128, 20160120, 20160308
 
 #define		MACHINE_NAME	"Durango"
-#define		MACHINE_ID		"2M5"
+#define		MACHINE_ID		"DX"
 
 ; Firmware selection, new 20160310, will pick up suitable template from firmware/
 #define		ARCH_h			"firmware/durango.h"
@@ -51,17 +51,21 @@
 
 ; default NMI, BRK etc TBD ***********
 
+
+#ifdef	DOWNLOAD
 ; ** start of ROM **
-ROM_BASE	=	$C000	; Durango 16 kiB ROM
-
+ROM_BASE	=	$4000	; ** placeholder **
 ; ** position of firmware, usually skipping I/O area **
-FW_BASE		=	$F000	; standard value ***testing
-
+FW_BASE		=	$4000	; just before VRAM
+#else
+ROM_BASE	=	$8000	; Durango 32 kiB ROM
+FW_BASE		=	$E000	; new value
+#endif
 
 ; ** I/O definitions **
 
 ; I/O base address, usually one page, new 20160308
-IO_BASE	=	$8000			; new Durango
+IO_BASE	=	$DF80			; new Durango
 
 ; * VIA 65(C)22 Base address, machine dependent *
 ; generic address declaration
@@ -73,8 +77,15 @@ IO_BASE	=	$8000			; new Durango
 ; VIA_SS is the one for SS-22 interface
 ; VIA_U is the user interface (VIAport)
 
+; *** hardware-dependent device addresses ***
+IO8attr	= $DF80					; video mode flags (R/W)
+IO8blk	= $DF88					; video blanking signals (R only)
+IO9di	= $DF9A					; data input (PASK-like)
+IOAie	= $DFAF					; d0 enables hardware interrupt
+IOBeep	= $DFBF					; d0 goes to beeper output
+
 ; *** set standard device *** new 20160331 
-DEVICE	=	PICO_VDU		; standard I/O device
+DEVICE	=	DX_VDU		; standard I/O device
 
 ; *** memory size ***
 ; * some pointers and addresses * renamed 20150220
@@ -91,10 +102,10 @@ ZP_AVAIL	=	$E1		; as long as locals start at $E4, not counting used_zp
 ; *** speed definitions ***
 
 ; ** master Phi-2 clock speed, used to compute remaining values! **
-PHI2	=	1000000		; clock speed in Hz (may become 1536000 in definitive version)
+PHI2	=	1536000		; clock speed in Hz (may become 1536000 in definitive version)
 
 ; ** jiffy interrupt frequency **
-IRQ_FREQ =	244			; approximate, may become 250 in definitive version
+IRQ_FREQ =	250			; approximate, may become 250 in definitive version
 ; T1_DIV no longer specified, should be computed elsewhere
 ; could be PHI2/IRQ_FREQ-2
 
@@ -103,5 +114,5 @@ IRQ_FREQ =	244			; approximate, may become 250 in definitive version
 ; could be PHI2/31250-2
 
 ; speed code in fixed-point format, new 20150129
-SPD_CODE =	$10		; 1 MHz system, $18 for 1.536
+SPD_CODE =	$18		; 1.536 MHz system
 ; could be computed as PHI2*16/1000000

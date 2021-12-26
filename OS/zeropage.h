@@ -1,6 +1,6 @@
-; minimOS 0.6rc11 zero-page system variables
+; minimOS 0.6.1a1 zero-page system variables
 ; (c) 2012-2021 Carlos J. Santisteban
-; last modified 20210409-0909
+; last modified 20211226-1637
 
 .zero
 * = 0
@@ -43,6 +43,9 @@ tmp_ktab: rl_mask:					; 16 bit (v_src seems of no use!)
 
 local1: locpt1	.dsb	4			; variables for kernel functions @ $E4
 
+st_pg	= dr_aut					; 8b for firmware Fletcher-16
+af_pg	= dr_aut+1
+skipg	= dr_aut+2
 dq_off	= dr_aut+1					; 8b
 dq_ptr	= dr_aut+2					; 16b
 cio_pt	= dr_aut+2					; 16b for 6502-firmware CONIO
@@ -56,6 +59,8 @@ bn_tab:								; 16/24 bit ***parameter***
 
 local2: locpt2	.dsb	4			; variables for kernel functions @ $E8
 
+f16sum	= exec_p					; 8b for firmware Fletcher-16
+f16chk	= exec_p+1
 rl_dev	= pfa_ptr+2					; 8b
 dr_id	= rl_dev					; 8b
 ; dr_iid no longer used

@@ -1,6 +1,6 @@
-; minimOS 0.6.1a1 MACRO definitions
+; minimOS 0.6.1a2 MACRO definitions
 ; (c) 2012-2021 Carlos J. Santisteban
-; last modified 20211214-1829
+; last modified 20211226-1551
 
 ; **************************
 ; *** standard addresses ***
@@ -29,6 +29,7 @@ TASK_DEV	=	136		; back again as ft0 (standard feature)
 WIND_DEV	=	137		; new name 20161017, might become ft1
 FILE_DEV	=	138		; *** this will be sticked somewhere as non patchable API entries for it! Perhaps as ft2?
 PICO_VDU	=	160		; *** PLACEHOLDER ***
+DX_VDU		=	160
 
 ; *************************************
 ; *** considerations for minimOS·16 ***

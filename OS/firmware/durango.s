@@ -1,21 +1,25 @@
 ; Durango firmware (at least for prototype version)
 ; based on generic firmware template for minimOS·65
-; v0.6.1a2
+; v0.6.1a3
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20211216-1103
+; last modified 20211226-1521
 
 #define		FIRMWARE	_FIRMWARE
 #define		DOWNLOAD	_DOWNLOAD
 ; setting 
-#include "../usual.h"
 ; already set at FW_BASE via rom.s
 
 .(
 #ifdef	DOWNLOAD
-	* = $4000					; *** *** standard downloadable firmware address *** ***
+#include "../options/durango.h"
+#include "../macros.h"
+#include "../abi.h"
+#include "../zeropage.h"
+.text
 #else
-	* = $E000					; 8 KiB ROM, otherwise at $4000-$5FFF
+#include "../usual.h"
 #endif
+	* = FW_BASE					; 8 KiB ROM at $E000, otherwise at $4000-$5FFF
 
 ; *** since nanoBoot will start executing from first loaded address, an empty page with a JMP is mandatory ***
 	JMP dreset					; skip up to two pages
@@ -55,7 +59,7 @@
 ; ID strings unless residing on header
 #ifdef	NOHEAD
 fw_splash:
-	.asc	"DURANGO FW 0.6.1 ", 0
+	.asc	"DURANGO FW 0.6.1", 0
 #endif
 
 ; *** firmware code follows ***
@@ -71,11 +75,10 @@ fw_start:
 	.asc "****", CR				; flags TBD
 	.asc "boot", 0				; standard filename
 fw_splash:
-	.asc "0.6.1 "
 #ifdef	DOWNLOAD
-	.asc "  DOWNLOADABLE    "
+	.asc "  DOWNLOADABLE  "
 #endif
-	.asc "firmware for    "	; machine description as comment
+	.asc "0.6.1  firmware for "	; machine description as comment
 fw_mname:
 	.asc	"DURANGO", 0
 ; advance to end of header (may need extra fields for relocation)
@@ -108,7 +111,7 @@ dreset:
 
 ; ******************************
 ; *** minimal hardware setup ***
-; *****************	.word	conio				*************
+; ******************************
 ; 65x02 does not need to deal with native vs. emulation mode
 
 ; perhaps make certain that hardware interrupt AND beeper is disabled?
@@ -122,7 +125,7 @@ dreset:
 ;#include "modules/bootoff.s"
 
 ; might check ROM integrity here *** now built-in FW feature, but set parameter appropriately
-#include "modules/romcheck8k.s"
+#include "modules/romcheck-dx.s"
 
 ; some systems might copy ROM-in-RAM and continue at faster speed!
 ;#include "modules/rominram.s"

@@ -86,10 +86,10 @@
 
 .(
 pvdu	= $6000				; base address
-IO9di	= $DF9A				; data input (TBD)
-IO8attr	= $DF80				; compatible IO8lh for setting attributes (d7=HIRES, d6=INVERSE, now d5-d4 include screen block)
-IO8blk	= $DF88				; video blanking signals
-IOBeep	= $DFBF				; canonical buzzer address (d0)
+-IO8attr= $DF80				; compatible IO8lh for setting attributes (d7=HIRES, d6=INVERSE, now d5-d4 include screen block)
+-IO8blk	= $DF88				; video blanking signals
+-IO9di	= $DF9A				; data input (TBD)
+-IOBeep	= $DFBF				; canonical buzzer address (d0)
 
 	TYA						; is going to be needed here anyway
 	LDX fw_cbin				; check whether in binary/multibyte mode
