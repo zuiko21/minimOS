@@ -1,7 +1,7 @@
 ; CONIO test for Durango-X
 ; (c) 2021 Carlos J. Santisteban
 ; last modified 20211226-1224
-; assemble from ~forge/test via:
+; assemble from ~forge/nanoboot via:
 ; xa conio.s -I ../../OS/firmware/modules/ -I ../../OS -l labels
 
 #include "../../macros.h"
@@ -74,23 +74,8 @@ loop:
 		INX
 		BNE loop
 exit:
-; flash screen for a moment
-/*	LDA $DF80
-	ORA #$40				; inverse for a moment
-	STA $DF80
-	LDY #0					; delay loop ~0.2s
-ttt:
-			INX
-			BNE ttt
-		INY
-		STY $DFB0			; beep in the meanwhile
-		BNE ttt
-	AND #$B8				; back to non-inverted
-	STA $DF80*/
-block:
-;	JMP block				; final lock
 	BIT $DF9F				; check joystick
-	BPL block
+	BPL exit
 release:
 	BIT $DF9F				; check joystick
 	BMI release				; wait for keyup
@@ -114,7 +99,7 @@ texto:
 	.asc	8,8,8,8,8,8,8,"e",15		; backspace
 	.asc	10,16,10,2,6,16,6,2			; cursors & DLE
 	.asc	11,16,11,2,2,16,2
-	.asc	23,37,36,"@",1,14,"D",15	; ATYX, start-of-line
+	.asc	23,37,36,"@",1,14,"T",15	; ATYX, start-of-line
 	.asc	17,7,17,7,17,7				; XON & BEL
 	.byt	23,40,39,18,2,16,16,18,3,16,7,	0
 
