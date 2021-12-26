@@ -65,7 +65,7 @@ fw_splash:
 ; *** firmware code follows ***
 #ifndef	NOHEAD
 ; header is expected to be page-aligned
-	.dsb	fw_start-*, $FF
+	.dsb	FW_BASE+256-*, $FF
 
 ; *************************************
 ; *** first some ROM identification *** new 20150612 *** might go first with a proper bootloader BRK handler
@@ -140,8 +140,8 @@ dreset:
 ; *** hardware interrupt setup ***
 ; ********************************
 
-; this will enable hardware periodic interrupt *** stop beeping integrated in RAMtest
-#include "modules/durango-irq.s"
+; this will enable hardware periodic interrupt *** already enabled in POST
+;#include "modules/durango-irq.s"
 
 ; ***********************************
 ; *** firmware parameter settings ***

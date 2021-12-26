@@ -1,6 +1,6 @@
-; minimOS 0.6.1a1 zero-page system variables
+; minimOS 0.6.1a2 zero-page system variables
 ; (c) 2012-2021 Carlos J. Santisteban
-; last modified 20211226-1637
+; last modified 20211227-0003
 
 .zero
 * = 0
@@ -92,6 +92,7 @@ zpar3: zaddr3	.dsb	4			; up to 4 bytes, including older names @ $F0
 k_ram	= b_sig+1					; 8b, Kernel RAM pages (0 = 128 byte system) changed for virtua6502 compatibility
 b_ram	= b_sig+3					; 8b, Banks of "high" memory (65816 only)
 da_ptr	= b_sig+2					; 16b, had conflict within LOWRAM I/O!
+rle_src	= ex_pt						; 16b, FW RLE decoder origin
 ; *********************************************
 
 ; *** include aliases here for zpar2/zaddr2 ***
@@ -104,6 +105,7 @@ zpar2: zaddr2	.dsb	4			; up to 4 bytes, including older names @ $F4
 
 bl_siz	= str_pt+2					; 16b *** was here
 bnk_rl	= ex_rlc+2					; 8b, bank for relocation, part of the full address
+rle_ptr	= ma_pt						; 16b, FW RLE decoder destination 
 ; *********************************************
 
 ; *** include aliases here for zpar/zaddr ***

@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; system checker routine 0.9.6a2
+; system checker routine 0.9.6a3
 ; for Durango-X, both ROMmable and DOWNLOADable
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211226-1749
+; last modified 20211227-0018
 
 .(
 ; *** special zeropage definitions ***
@@ -10,7 +10,9 @@
 	posi	= $FB			; safe locations during tests
 	himem	= $FF
 
-; *** *** *** *** *** ***
+; ******************
+; *** test suite ***
+; ******************
 
 ; * zeropage test *
 ; make high pitched chirp during test
@@ -45,7 +47,7 @@ zp_ok:
 
 ; * simple mirroring test *
 ; probe responding size first
-	LDY #(>ROM_BASE)-1		; DOWNLOAD-savvy, also a fairly good offset
+	LDY #>ROM_BASE-1		; DOWNLOAD-savvy, also a fairly good offset
 	STY test+1				; pointer set (test.LSB known to be zero)
 mt_1:
 		LDA #$AA			; first test value
@@ -214,19 +216,16 @@ ram_ok:
 
 ; * ROM test is already done *
 
-; show banner if ROM checked OK *** from RLE decoder!
-	LDX #0					; reset index
-ro_4:
-		LDA banner, X		; put data...
-		STA $6000, X		; ...on screen
-		LDA banner+256, X
-		STA $6100, X
-		LDA banner+512, X	; it's 1K EEEEEEEK
-		STA $6200, X
-		LDA banner+768, X
-		STA $6300, X
-		INX
-		BNE ro_4			; 1K-byte banner as 4x256!
+; * show banner if ROM checked OK *** from RLE decoder!
+	LDY #<banner			; get compressed banner address
+	LDA #>banner
+	STY rle_src				; store pointer
+	STA rle_src+1
+	LDY #0					; get screen address
+	LDA #$60				; *** maybe from hardware?
+	STY rle_ptr				; store pointer
+	STA rle_ptr+1
+	JSR rle_dec				; direct firmware call, don't care about errors
 
 ; * NMI test in nonsense *
 
@@ -242,7 +241,8 @@ irq_test:
 	LDY #0					; initial value and inner counter reset
 	STY test
 ; must enable interrupts!
-	STA IOAen+1				; hardware interrupt enable (LED goes off) suitable for all
+	INY
+	STY IOAie				; hardware interrupt enable (LED goes off) suitable for all
 	LDX #154				; about 129 ms, time for 32 interrupts
 	CLI						; start counting!
 ; this provides timeout
@@ -275,7 +275,7 @@ it_ok:
 ; *** miscelaneous stuff, may be elsewhere ***
 ; ********************************************
 
-; interrupt routine (for both IRQ and NMI test) *** could be elsewhere
+; *** interrupt routine (for both IRQ and NMI test) *** could be elsewhere
 t_isr:
 	INC test				; increment standard zeropage address (no longer DEC)
 exit:
@@ -292,5 +292,12 @@ bit_l:
 	.byt	$00, $01, $02, $04, $08, $10, $20, $40, $80, $00, $00, $00, $00, $00, $00, $00
 ;            -    A0   A1   A2   A3   A4   A5   A6   A7   A8   A9   AA   AB   AC   AD   AE (A14)
 
+; *** RLE-compressed banner ***
+banner:
+	.bin	0, 536, "../../other/data/durango-x.rle"
+
+; ***************************
 ; *** all OK, end of test ***
+; ***************************
 test_end: 
+.)
