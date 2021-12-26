@@ -1,6 +1,6 @@
 ; CONIO test for Durango-X
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211226-0111
+; last modified 20211226-1224
 ; assemble from ~forge/test via:
 ; xa conio.s -I ../../OS/firmware/modules/ -I ../../OS -l labels
 
@@ -100,23 +100,23 @@ release:
 
 ; *** text to print ***
 texto:
-	.asc	" Imprimo lo que ", "  me sale del   ", 9, 7, 14				; CR, CR, TAB, BEL, EON
-	.asc	$12, 2, 'C', $A, $12, 5, 'O', 7,$A
-	.asc	$12, $C, 'N', $A, $12, $E, 'I', $A, $12, 7, 'O', 15	; INK 2, INK 5, INK 12, INK 14, INK 7, EOFF (with LFs)
+	.asc	" Imprimo lo que   me sale del   ", 9, 7, 14		; TAB, BEL, EON
+	.asc	$12, 2, 'C', $A, $12, 5, 'O', 7, $A					; INK, LF, BEL
+	.asc	$12, $C, 'N', $A, $12, $E, 'I', $A, $12, 7, 'O', 15	; INK, EOFF (with LFs)
 
-	.asc	13,13, "Hola, 1234"
-	.asc 13,13,13,13,13,"uno",13,"dos",13,"tres",13,"cuatro"	; scroll
-	.asc 13,13,13,13,13,"UNO",13,"DOS",13,"TRES",13,"CUATRO"
-	.asc 13,13,13,13,13,"uno",13,"dos",13,"tres",13,"cuatro"
-	.asc 13,13,13,13,13,"UNO",13,"DOS",13,"TRES",13,"CUATRO"
+	.asc	13,13, "Hola, 1234"									; CR
+	.asc	13,13,13,13,13,"uno",13,"dos",13,"tres",13,"cuatro"	; scroll
+	.asc	13,13,13,13,13,"UNO",13,"DOS",13,"TRES",13,"CUATRO"
+	.asc	13,13,13,13,13,"one",13,"two",13,"three",13,"four"
+	.asc	13,13,13,13,13,"ONE",13,"TWO",13,"THREE",13,"FOUR"
 	
 	.asc	21,14,18,11,"Hom*******"	; home
 	.asc	8,8,8,8,8,8,8,"e",15		; backspace
-	.asc	10,16,10,2,6,16,6,2			; cursors
+	.asc	10,16,10,2,6,16,6,2			; cursors & DLE
 	.asc	11,16,11,2,2,16,2
-	.asc	23,5,4,"@",1,14,"D",15		; ATYX, start-of-line
+	.asc	23,37,36,"@",1,14,"D",15	; ATYX, start-of-line
 	.asc	17,7,17,7,17,7				; XON & BEL
-	.byt	23,8,7,18,2,16,16,18,3,16,7, 0
+	.byt	23,40,39,18,2,16,16,18,3,16,7,	0
 
 ; *** firmware module ***
 conio:
