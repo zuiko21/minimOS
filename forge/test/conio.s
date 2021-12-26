@@ -1,6 +1,6 @@
 ; CONIO test for Durango-X
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211225-2157
+; last modified 20211226-0111
 ; assemble from ~forge/test via:
 ; xa conio.s -I ../../OS/firmware/modules/ -I ../../OS -l labels
 
@@ -58,7 +58,7 @@ fw_io9		.byt	0
 	TXS
 ; minimal hardware init
 	LDA #$B8				; hi res, true video, screen 3, colour enabled
-	LDA #$38				; low res, true video, screen 3, colour enabled
+repeat:
 	STA fw_hires			; now directly on hardware register!
 	_STZA fw_cbin			; eeeeeeeeeeeeeek
 	LDY #12					; reset screen
@@ -75,7 +75,7 @@ loop:
 		BNE loop
 exit:
 ; flash screen for a moment
-	LDA $DF80
+/*	LDA $DF80
 	ORA #$40				; inverse for a moment
 	STA $DF80
 	LDY #0					; delay loop ~0.2s
@@ -86,15 +86,37 @@ ttt:
 		STY $DFB0			; beep in the meanwhile
 		BNE ttt
 	AND #$B8				; back to non-inverted
-	STA $DF80
-lock:
-	JMP lock				; final lock
+	STA $DF80*/
+block:
+;	JMP block				; final lock
+	BIT $DF9F				; check joystick
+	BPL block
+release:
+	BIT $DF9F				; check joystick
+	BMI release				; wait for keyup
+	LDA fw_hires
+	EOR #$80				; switch resolution
+	JMP repeat
 
 ; *** text to print ***
 texto:
-	.asc	" Imprimo lo que", 13, "  me sale del", 13, 9, 7, 14				; CR, CR, TAB, BEL, EON
-	.asc	$12, 2, 'C', $A, $12, 5, 'O', 7,$A, $12, $C, 'N', $A, $12, $E, 'I', $A, $12, 7, 'O', 15	; INK 2, INK 5, INK 12, INK 14, INK 7, EOFF (with LFs)
-	.byt	7, 0
+	.asc	" Imprimo lo que ", "  me sale del   ", 9, 7, 14				; CR, CR, TAB, BEL, EON
+	.asc	$12, 2, 'C', $A, $12, 5, 'O', 7,$A
+	.asc	$12, $C, 'N', $A, $12, $E, 'I', $A, $12, 7, 'O', 15	; INK 2, INK 5, INK 12, INK 14, INK 7, EOFF (with LFs)
+
+	.asc	13,13, "Hola, 1234"
+	.asc 13,13,13,13,13,"uno",13,"dos",13,"tres",13,"cuatro"	; scroll
+	.asc 13,13,13,13,13,"UNO",13,"DOS",13,"TRES",13,"CUATRO"
+	.asc 13,13,13,13,13,"uno",13,"dos",13,"tres",13,"cuatro"
+	.asc 13,13,13,13,13,"UNO",13,"DOS",13,"TRES",13,"CUATRO"
+	
+	.asc	21,14,18,11,"Hom*******"	; home
+	.asc	8,8,8,8,8,8,8,"e",15		; backspace
+	.asc	10,16,10,2,6,16,6,2			; cursors
+	.asc	11,16,11,2,2,16,2
+	.asc	23,5,4,"@",1,14,"D",15		; ATYX, start-of-line
+	.asc	17,7,17,7,17,7				; XON & BEL
+	.byt	23,8,7,18,2,16,16,18,3,16,7, 0
 
 ; *** firmware module ***
 conio:
