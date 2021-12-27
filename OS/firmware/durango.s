@@ -17,7 +17,7 @@
 #include "../zeropage.h"
 .text
 #else
-#include "../usual.h"
+;#include "../usual.h"
 #endif
 	* = FW_BASE					; 8 KiB ROM at $E000, otherwise at $4000-$5FFF
 

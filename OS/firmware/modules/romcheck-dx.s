@@ -6,9 +6,9 @@
 .(
 	LDX #>ROM_BASE			; begin of test
 #ifndef	DOWNLOAD
-	LDY #0
+	LDY #0					; test usually until the end of map, or...
 #else
-	LDY #$60				; VRAM start
+	LDY #$60				; ...VRAM start
 #endif
 	LDA #>IO_BASE			; page to be skipped (if in ROM)
 	STX st_pg

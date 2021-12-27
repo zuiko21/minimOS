@@ -1,14 +1,31 @@
 ; firmware module for minimOS
-; system checker routine 0.9.6a3
+; system checker routine 0.9.6a4
 ; for Durango-X, both ROMmable and DOWNLOADable
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211227-0018
+; last modified 20211227-1151
+
+#ifdef	TESTING
+#include "../../macros.h"
+#include "../../abi.h"
+#include "../../zeropage.h"
+#include "../../options/durango.h"
+*=$200
+#include "../durango.h"
+.text
+*=$3ff6
+sei
+cld
+ldx#$ff
+txs
+lda#$38
+sta$df80
+#endif
 
 .(
 ; *** special zeropage definitions ***
 	test	= 0				; temporary storage and pointer
 	posi	= $FB			; safe locations during tests
-	himem	= $FF
+	mxmem	= $FF
 
 ; ******************
 ; *** test suite ***
@@ -62,7 +79,7 @@ mt_3:
 		LSR test+1			; if failed, try half the amount
 	BNE mt_1
 		LDA #%11111			; long blink (33%, C is set?) 
-		JMP lock			; if arrived here, there is no more than 256 bytes of RAM, which is a BAD thing
+;		JMP lock			; if arrived here, there is no more than 256 bytes of RAM, which is a BAD thing
 mt_4:
 ; size is probed, let's check for mirroring
 	LDX test+1				; keep highest responding page number
@@ -73,8 +90,8 @@ mt_5:
 		BNE mt_5
 	STX test+1				; recompute highest address tested
 	LDA (test), Y			; this is highest non-mirrored page
-	STA himem				; store in a safe place (needed afterwards)
-; the address test needs himem in a bit-position format (An+1)
+	STA mxmem				; store in a safe place (needed afterwards)
+; the address test needs mxmem in a bit-position format (An+1)
 	LDY #8					; limit in case of a 256-byte RAM!
 #ifdef	NMOS
 	INC						; CMOS only
@@ -195,7 +212,7 @@ rt_2:
 			BNE rt_2
 				INX			; next page
 				STX test+1
-				CPX himem	; should check against actual RAMtop
+				CPX mxmem	; should check against actual RAMtop
 			BCC rt_2		; ends at whatever detected RAMtop...
 			BEQ rt_2
 				CPX #$60	; already at screen
@@ -225,7 +242,7 @@ ram_ok:
 	LDA #$60				; *** maybe from hardware?
 	STY rle_ptr				; store pointer
 	STA rle_ptr+1
-	JSR rle_dec				; direct firmware call, don't care about errors
+;test	JSR rle_dec				; direct firmware call, don't care about errors
 
 ; * NMI test in nonsense *
 
@@ -259,7 +276,7 @@ it_1:
 	BCS it_3				; <31 is slow 
 it_slow:
 		LDA #%11111			; long off (4/9 as C is clear)
-		JMP slow_irq
+		JMP lock
 it_3:
 	CMP #34					; up to 33 is fine
 	BCC it_ok				; 31-33 accepted
@@ -294,10 +311,14 @@ bit_l:
 
 ; *** RLE-compressed banner ***
 banner:
-	.bin	0, 536, "../../other/data/durango-x.rle"
+	.bin	0, 536, "../../../other/data/durango-x.rle"
 
 ; ***************************
 ; *** all OK, end of test ***
 ; ***************************
-test_end: 
+test_end:
+
+#ifdef	TESTING
+#include "streaks.s"
+#endif
 .)
