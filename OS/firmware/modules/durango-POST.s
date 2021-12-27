@@ -2,23 +2,23 @@
 ; system checker routine 0.9.6a4
 ; for Durango-X, both ROMmable and DOWNLOADable
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211227-1151
+; last modified 20211227-1738
 
 #ifdef	TESTING
 #include "../../macros.h"
 #include "../../abi.h"
 #include "../../zeropage.h"
 #include "../../options/durango.h"
-*=$200
+	*=	$200
 #include "../durango.h"
 .text
-*=$3ff6
-sei
-cld
-ldx#$ff
-txs
-lda#$38
-sta$df80
+	*=	$3FF6	; *** note special testing load address! ***
+	SEI
+	CLD
+	LDX #$FF
+	TXS
+	LDA #$38	; colour mode
+	STA $DF80
 #endif
 
 .(
@@ -242,7 +242,9 @@ ram_ok:
 	LDA #$60				; *** maybe from hardware?
 	STY rle_ptr				; store pointer
 	STA rle_ptr+1
-;test	JSR rle_dec				; direct firmware call, don't care about errors
+#ifndef	TESTING
+	JSR rle_dec				; direct firmware call, don't care about errors
+#endif
 
 ; * NMI test in nonsense *
 
@@ -311,7 +313,7 @@ bit_l:
 
 ; *** RLE-compressed banner ***
 banner:
-	.bin	0, 536, "../../../other/data/durango-x.rle"
+	.bin	0, 536, "../../other/data/durango-x.rle"	; check path ***
 
 ; ***************************
 ; *** all OK, end of test ***

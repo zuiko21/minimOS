@@ -24,7 +24,7 @@
 ; dd/		set SP (new)
 ; NEW exit command via the 'colon' character
 
-#ifndef	HEADERS
+#ifdef	TESTING
 #include "../OS/macros.h"
 #include "../OS/abi.h"
 .text

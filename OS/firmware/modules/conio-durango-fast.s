@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a5
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211226-1225
+; last modified 20211227-1821
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -90,6 +90,8 @@ pvdu	= $6000				; base address
 -IO8blk	= $DF88				; video blanking signals
 -IO9di	= $DF9A				; data input (TBD)
 -IOBeep	= $DFBF				; canonical buzzer address (d0)
+
+fw_hires = IO8attr			; direct hardware read
 
 	TYA						; is going to be needed here anyway
 	LDX fw_cbin				; check whether in binary/multibyte mode

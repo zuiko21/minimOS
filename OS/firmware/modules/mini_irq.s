@@ -1,12 +1,10 @@
 ; minimal ISR for minimOS
-; v0.6.1a1, should match kernel.s
+; v0.6.1a2, should match kernel.s
 ; (c) 2019-2021 Carlos J. Santisteban
-; last modified 20190402-1227
+; last modified 20211227-1735
 
-#ifndef	HEADERS
-#include "../usual.h"
-#endif
 
+.(
 ; *** this will set the IRQ vector and skip the actual routine! ***
 	LDY #<mini_irq		; get supplied routine
 	LDA #>mini_irq
@@ -49,3 +47,4 @@ non_brk:
 ; *** resume normal installation ***
 ; **********************************
 mirq_end:
+.)

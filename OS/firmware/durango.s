@@ -2,7 +2,7 @@
 ; based on generic firmware template for minimOS·65
 ; v0.6.1a3
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20211226-1521
+; last modified 20211227-1834
 
 #define		FIRMWARE	_FIRMWARE
 #define		DOWNLOAD	_DOWNLOAD
@@ -15,6 +15,7 @@
 #include "../macros.h"
 #include "../abi.h"
 #include "../zeropage.h"
+#include "durango.h"
 .text
 #else
 ;#include "../usual.h"
@@ -54,6 +55,7 @@
 	.word	rle_dec				; RLE_DEC *** new *** RLE decoder
 ; basic I/O
 	.word	conio				; CONIO, basic console with built-in video
+#endif
 
 ; *** there's still some room for routines! ***
 ; ID strings unless residing on header
@@ -159,7 +161,7 @@ dreset:
 
 ; *** continue parameter setting ***
 ; preset kernel start address
-#include "modules/kern_addr.s"
+;test	#include "modules/kern_addr.s"
 
 ; preset default BRK handler
 #include "modules/brk_addr.s"
@@ -178,7 +180,7 @@ dreset:
 #include "modules/rst_lastk.s"
 
 ; *** direct print splash string code comes here, when available ***
-#include "modules/durango-splash.s"
+;#include "modules/durango-splash.s"
 
 ; *** optional network booting *** makes no sense with nanoBoot, but will when not downloaded
 #ifndef	DOWNLOAD
@@ -191,7 +193,8 @@ dreset:
 ; ************************
 start_kernel:
 
-#include "modules/start.s"
+;test	#include "modules/start.s"
+JMP std_nmi	; test
 
 ; ********************************
 ; ********************************
@@ -284,13 +287,13 @@ irq_src:						; special module for VIA-less system, just check whether jiffy is 
 ; POWEROFF, shutdown etc *** TBD
 ; **************************
 poweroff:
-	DR_ERR(UNAVAIL)	; this system lacks power management
+	_DR_ERR(UNAVAIL)	; this system lacks power management
 
 ; ***********************************
 ; FREQ_GEN, generate frequency at PB7 *** TBD
 ; ***********************************
 freq_gen:
-	DR_ERR(UNAVAIL)	; this system lacks hardware oscillator
+	_DR_ERR(UNAVAIL)	; this system lacks hardware oscillator
 
 ; *** other functions for systems with RAM enough ***
 
@@ -310,7 +313,7 @@ patch:
 ; RELOC, data and code relocation *** TBD
 ; *******************************
 reloc:
-	DR_ERR(UNAVAIL)	; not yet implemented
+	_DR_ERR(UNAVAIL)	; not yet implemented
 
 ; ****************************
 ; NANOLNK, nanoLink loader *** NEW
@@ -337,4 +340,11 @@ conio:
 ; see bootloader.s
 
 fw_end:					; for size computation
+
+; extra bits for testing
+#ifdef	DOWNLOAD
+std_nmi:
+#include "../shell/nanomon.s"
+fw_map:					; random crap
+#endif
 .)

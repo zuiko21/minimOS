@@ -1,6 +1,6 @@
 ; firmware module for minimOS
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211226-1636
+; last modified 20211227-1741
 
 ; *******************************
 ; CHK_SUM, verify Fletcher-16 sum v0.9.6a4
@@ -52,7 +52,6 @@ loop:
 f16_noio:
 		STX ptr+1			; update pointer (3)
 		CPX af_pg			; VRAM is the limit for downloaded modules, otherwise 0
-#endif
 		BNE loop			; will end at last address! (3...)
 ; *** now compare computed checksum with ZERO *** 4b
 ;	LDA chk					; this is the stored value in A, saves two bytes
@@ -62,3 +61,4 @@ f16_noio:
 		_DR_ERR(CORRUPT)
 good:
 	_DR_OK					; no errors
+.)
