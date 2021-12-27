@@ -1,9 +1,9 @@
 ; RLE decoder for minimOS
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211226-2349
+; last modified 20211227-2332
 
 ; *************************
-; RLE_DEC, RLE decompressor v0.9.6a1
+; RLE_DEC, RLE decompressor v0.9.6b1
 ; *************************
 ;		INPUT
 ; rle_src.w	= compressed data pointer
@@ -66,12 +66,16 @@ rle_next:
 		BCC rle_loop		; check possible carry
 			INC ptr+1
 #ifdef	SAFE
+#ifndef	DOWNLOAD
 			LDA ptr+1		; which is the new page?
 			CMP #>ROM_BASE	; is it beyond available RAM?
 			BCC rle_loop	; not yet, keep on
+#else
+			BPL rle_loop	; includes VRAM
+#endif
 		_DR_ERR(FULL)		; yes, no room for it!
 #else
-		BNE rle_loop		; no need for BRA
+		BPL rle_loop		; no need for BRA
 #endif
 ; *** end of code ***
 rle_exit:

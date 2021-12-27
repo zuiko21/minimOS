@@ -15,6 +15,7 @@
 #include "../macros.h"
 #include "../abi.h"
 #include "../zeropage.h"
+* = $200
 #include "durango.h"
 .text
 #else
@@ -148,6 +149,9 @@ dreset:
 ; ***********************************
 ; *** firmware parameter settings ***
 ; ***********************************
+stz fw_cbin
+ldy#12
+jsr conio
 
 ; *** set default CPU type ***
 ; just set expected default type as defined in options.h...

@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.3a1
+; v0.3a2
 ; (c) 2018-2021 Carlos J. Santisteban
-; last modified 20200214-1409
+; last modified 20201227-2349
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -24,20 +24,13 @@
 ; dd/		set SP (new)
 ; NEW exit command via the 'colon' character
 
-#ifdef	TESTING
-#include "../OS/macros.h"
-#include "../OS/abi.h"
-.text
-* = $8000
-#endif
-
 .(
 ; ***************
 ; *** options ***
 ; ***************
 ;#define	SAFE	_SAFE
 ; option to pick full status from standard stack frame, comment if handler not available
-#define	NMI_SF	_NMI_SF
+;#define	NMI_SF	_NMI_SF
 
 BUFFER	= 9				; enough for a single command, even one for a byte and another for a word
 STKSIZ	= 4				; in order not to get into return stack space! writes use up to three
@@ -48,7 +41,7 @@ STKSIZ	= 4				; in order not to get into return stack space! writes use up to th
 ; **********************
 ; 6502 registers
 ; S is never stacked, but must be stored anyway!
-	z_s		= $E0		; try to use kernel parameter space
+	z_s		= $C0		; CANNOT use kernel parameter space
 ; stacked registers
 	z_y		= z_s+1
 	z_x		= z_y+1		; must respect register order, now matching stacked order!
@@ -493,7 +486,7 @@ nm_out:
 ; *** standard output ***
 	TAY					; set CONIO parameter
 	_PHX				; CONIO savviness
-	_ADMIN(CONIO)
+	JSR conio ; test
 	_PLX				; restore X as was destroyed by the call parameter
 	RTS
 
@@ -502,7 +495,7 @@ nm_in:
 	_PHX				; CONIO savviness
 nm_in2:
 		LDY #0				; CONIO as input
-		_ADMIN(CONIO)
+		JSR conio ; test
 		BCS nm_in2			; it is locking input
 	_PLX				; may destroy A in NMOS!
 	TYA					; otherwise, get read char
