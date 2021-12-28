@@ -1,8 +1,8 @@
 ; Durango firmware (at least for prototype version)
 ; based on generic firmware template for minimOS·65
-; v0.6.1a3
+; v0.6.1a4
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20211227-1834
+; last modified 20211228-2110
 
 #define		FIRMWARE	_FIRMWARE
 #define		DOWNLOAD	_DOWNLOAD
@@ -21,7 +21,7 @@
 #else
 ;#include "../usual.h"
 #endif
-	* = FW_BASE					; 8 KiB ROM at $E000, otherwise at $4000-$5FFF
+	* = FW_BASE					; 16 KiB ROM at $C000, otherwise at $2000-$5FFF
 
 ; *** since nanoBoot will start executing from first loaded address, an empty page with a JMP is mandatory ***
 	JMP dreset					; skip up to two pages
@@ -143,15 +143,12 @@ dreset:
 ; *** hardware interrupt setup ***
 ; ********************************
 
-; this will enable hardware periodic interrupt *** already enabled in POST
-;#include "modules/durango-irq.s"
+; this will enable hardware periodic interrupt *** actually will set up CONIO
+#include "modules/durango-init.s"
 
 ; ***********************************
 ; *** firmware parameter settings ***
 ; ***********************************
-stz fw_cbin
-ldy#12
-jsr conio
 
 ; *** set default CPU type ***
 ; just set expected default type as defined in options.h...
@@ -184,7 +181,7 @@ jsr conio
 #include "modules/rst_lastk.s"
 
 ; *** direct print splash string code comes here, when available ***
-;#include "modules/durango-splash.s"
+#include "modules/durango-splash.s"
 
 ; *** optional network booting *** makes no sense with nanoBoot, but will when not downloaded
 #ifndef	DOWNLOAD

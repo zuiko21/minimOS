@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; system checker routine 0.9.6a4
+; system checker routine 0.9.6a5
 ; for Durango-X, both ROMmable and DOWNLOADable
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211227-1738
+; last modified 20211228-2258
 
 #ifdef	TESTING
 #include "../../macros.h"
@@ -79,7 +79,7 @@ mt_3:
 		LSR test+1			; if failed, try half the amount
 	BNE mt_1
 		LDA #%11111			; long blink (33%, C is set?) 
-;		JMP lock			; if arrived here, there is no more than 256 bytes of RAM, which is a BAD thing
+		JMP lock			; if arrived here, there is no more than 256 bytes of RAM, which is a BAD thing
 mt_4:
 ; size is probed, let's check for mirroring
 	LDX test+1				; keep highest responding page number
@@ -195,6 +195,12 @@ addr_ok:
 
 ; * RAM test *
 ; silent but will show up on screen
+; 8 K systems cannot add the usual screen test, but cannot download either
+	INC mxmem				; worth it, now is the first non-RAM page
+	LDA mxmem
+	SEC
+	SBC #$20				; subtract screen size
+	STA posi				; will indicate first page of screen (0 if 8K)
 	LDA #$F0				; initial value
 	LDY #0
 	STY test				; standard pointer address
@@ -202,7 +208,7 @@ rt_1:
 		LDX #1				; skip zeropage
 		BNE rt_2
 rt_1s:
-		LDX #$60			; skip to begin of screen (if only 8 KiB, start at $62!!!)
+		LDX posi			; skip to begin of screen (not used on 8K)
 rt_2:
 			STX test+1		; update pointer
 			STA (test), Y	; store...
@@ -214,10 +220,10 @@ rt_2:
 				STX test+1
 				CPX mxmem	; should check against actual RAMtop
 			BCC rt_2		; ends at whatever detected RAMtop...
-			BEQ rt_2
-				CPX #$60	; already at screen
+;			BEQ rt_2		; not needed as mxmem was incremented
+				CPX posi	; already at screen...
 				BCC rt_1s	; ...or continue with screen
-			CPX #$80		; end of screen?
+			CPX mxmem		; end of screen?
 			BNE rt_2
 		LSR					; create new value, either $0F or 0
 		LSR
@@ -239,7 +245,12 @@ ram_ok:
 	STY rle_src				; store pointer
 	STA rle_src+1
 	LDY #0					; get screen address
-	LDA #$60				; *** maybe from hardware?
+	LDA posi				; computed screen address
+#ifdef	SAFE
+	BNE vr_ok				; posi was invalid on 8K
+		LDA #$10			; 8K system has smaller screen
+vr_ok:
+#endif
 	STY rle_ptr				; store pointer
 	STA rle_ptr+1
 #ifndef	TESTING

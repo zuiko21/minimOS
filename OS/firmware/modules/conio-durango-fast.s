@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; Durango-X firmware console 0.9.6a5
+; Durango-X firmware console 0.9.6a6
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211227-1821
+; last modified 20211229-0012
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -48,9 +48,6 @@
 ; C ->	no available char (if Y was 0)
 ; Y -> input char (if Y was 0)
 
-;#include "../../usual.h"
-
-.text
 ; *** zeropage variables *** standard OS
 ; cio_src.w (pointer to glyph definitions)
 ; cio_pt.w (screen pointer)
@@ -68,8 +65,9 @@
 ; fw_ciop.w (upper scan of cursor position)
 ; fw_fnt.w (new, pointer to relocatable 2KB font file)
 ; fw_mask (for inverse/emphasis mode)
-; fw_hires (0=colour, 128=hires, actually from hardware)
 ; fw_cbin (binary or multibyte mode)
+; fw_vbot (new, first VRAM page, allows screen switching upon FF)
+; fw_vtop (new, first non-VRAM page, allows screen switching upon FF)
 
 ; first two modes are directly processed, note BM_DLE is the shifted X
 #define	BM_CMD		0
@@ -80,18 +78,14 @@
 #define	BM_ATY		6
 #define	BM_ATX		8
 
-; initial colours (combo array will be computed later)
-#define	STD_INK		$F
-#define	STD_PPR		$0
-
+; initial colours already defined in init file
 .(
-pvdu	= $6000				; base address
+#ifdef	TESTING
 -IO8attr= $DF80				; compatible IO8lh for setting attributes (d7=HIRES, d6=INVERSE, now d5-d4 include screen block)
 -IO8blk	= $DF88				; video blanking signals
 -IO9di	= $DF9A				; data input (TBD)
 -IOBeep	= $DFBF				; canonical buzzer address (d0)
-
-fw_hires = IO8attr			; direct hardware read
+#endif
 
 	TYA						; is going to be needed here anyway
 	LDX fw_cbin				; check whether in binary/multibyte mode
@@ -131,7 +125,7 @@ cio_prn:
 	STA cio_pt+1
 	LDY #0					; reset screen offset (common)
 ; *** now check for mode and jump to specific code ***
-	BIT fw_hires			; check mode, code is different, will only check d7
+	BIT IO8attr				; check mode, code is different, will only check d7
 	BPL cpc_col				; skip to colour mode, hires is smaller
 ; hires version (17b for CMOS, usually 231t, plus jump to cursor-right)
 cph_loop:
@@ -210,7 +204,7 @@ cpc_rend:					; end segment has not changed, takes 6x11 + 2x24 - 1, 113t (66+46-
 ; **********************
 cur_r:
 	LDA #1					; base character width (in bytes) for hires mode
-	BIT fw_hires			; check mode
+	BIT IO8attr				; check mode
 	BMI rcu_hr				; already OK if hires
 		LDA #4				; ...or use value for colour mode
 rcu_hr:
@@ -229,7 +223,7 @@ ck_wrap:
 ; address format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
 ; thus appropriate masks are %11100000 for hires and %11000000 in colour... but it's safer to check MSB's d0 too!
 	LDY #%11100000			; hires mask
-	BIT fw_hires			; check mode
+	BIT IO8attr				; check mode
 	BMI wr_hr				; OK if we're in hires
 #ifdef	SAFE
 		LDA fw_ciop+1		; check MSB
@@ -257,7 +251,7 @@ cur_l:
 ; only if LSB is not zero, assuming non-corrupted scanline bits
 ; could use N flag after subtraction, as clear scanline bits guarantee its value
 	LDA #1					; hires decrement (these 9 bytes are the same as cur_r)
-	BIT fw_hires
+	BIT IO8attr
 	BMI cl_hr				; right mode for the decrement EEEEEK
 		LDA #4				; otherwise use colour value
 cl_hr:
@@ -281,7 +275,7 @@ cn_begin:
 ; in colour mode, the highest scanline bit is in MSB, usually (TABs, wrap) not worth clearing
 ; ...but might help with unexpected mode change
 #ifdef	SAFE
-	BIT fw_hires			; was it in hires mode?
+	BIT IO8attr			; was it in hires mode?
 	BMI cn_lmok
 #ifdef	NMOS
 		LDA fw_ciop+1		; clear MSB lowest bit (8b/10t)
@@ -302,7 +296,7 @@ cn_lf:
 ; even simpler, INCrement MSB once... or two if in colour mode
 ; hopefully highest scan bit is intact!!!
 	INC fw_ciop+1			; increment MSB accordingly, this is OK for hires
-	BIT fw_hires			; was it in hires mode?
+	BIT IO8attr			; was it in hires mode?
 	BMI cn_hmok
 		INC fw_ciop+1		; once again if in colour mode... 
 cn_hmok:
@@ -312,41 +306,33 @@ cn_hmok:
 ; ** scroll routine **
 ; rows are 256 bytes apart in hires mode, but 512 in colour mode
 	LDY #<pvdu				; LSB *must* be zero, anyway
-	LDX #>pvdu				; MSB is actually OK for destination *** from start variable or hardware
-;	LDA fw_hires
-;	AND #%00110000
-;	ASL
-;	TAX
-; might prepare the top value here, 011>100
-;	ADC #%00100000			; C was clear
-;	STA vram_top			; some temporary var? ...or save in X afterwards 
+; MSB is actually OK for destination, but take from current value
+	LDX fw_vbot
 	STY cio_pt				; set both LSBs
 	STY cio_src
 	STX cio_pt+1			; destination is set
 	INX						; note trick for NMOS-savvyness
-	BIT fw_hires			; check mode anyway
+	BIT IO8attr			; check mode anyway
 	BMI sc_hr				; +256 is OK for hires
 		INX					; make it +512 for colour
 sc_hr:
-	STX cio_src+1			; we're set
-;	TAX						; ...if not using vram_top variable
+	STX cio_src+1			; we're set, worth keep incrementing this
 ;	LDY #0					; in case pvdu is not page-aligned!
 sc_loop:
 		LDA (cio_src), Y	; move screen data ASAP
 		STA (cio_pt), Y
 		INY					; do a whole page
 		BNE sc_loop
-			INC cio_pt+1	; both MSBs are incremented at once...
-			INC cio_src+1	; ...but only source will enter high-32K at the end
-;			LDA cio_src+1
-;			CMP vram_top	; ...and then BCC *** OR... ***
-;			CPX cio_src+1	; ...and then BCS?
-		BPL sc_loop			; *** must check instead against screen end variable
+	INC cio_pt+1			; both MSBs are incremented at once...
+	INX
+	STX cio_src+1			; ...but only source will enter high-32K at the end
+	CPX fw_vtop				; ...or whatever the current limit is
+		BNE sc_loop
 
 ; data has been transferred, now should clear the last line
 	JSR cio_clear			; cannot be inlined! Y is 0
 ; important, cursor pointer must get back one row up! that means subtracting one (or two) from MSB
-	LDA fw_hires			; eeeeeek
+	LDA IO8attr				; eeeeeek
 	ASL						; now C is set for hires
 	LDA fw_ciop+1			; cursor MSB
 	SBC #1					; with C set (hires) this subtracts 1, but 2 if C is clear! (colour)
@@ -361,7 +347,7 @@ cn_tab:
 	LDA #%11111000			; hires mask first
 	STA fw_ctmp				; store temporarily
 	LDA #8					; lesser value in hires mode
-	BIT fw_hires			; check mode
+	BIT IO8attr				; check mode
 	BMI hr_tab				; if in hires, A is already correct
 		ASL fw_ctmp
 		ASL fw_ctmp			; shift mask too, will set C
@@ -404,7 +390,7 @@ cio_bs:
 	LDX #0					; last index offset should be 0 for hires!
 	TXA						; hires takes no account of paper colour
 	LDY #31					; this is what must be added to Y each scanline, in hires
-	BIT fw_hires			; check mode
+	BIT IO8attr			; check mode
 	BMI bs_hr
 		LDA fw_ccol			; this is two pixels of paper colour
 		LDX #3				; last index offset per scan (colour)
@@ -434,23 +420,23 @@ bs_scw:
 
 cio_up:
 ; cursor up, no big deal, will stop at top row (NMOS savvy, always 23b and 39t)
-	LDA fw_hires			; check mode
+	LDA IO8attr				; check mode
 	ROL						; now C is set in hires!
 	PHP						; keep for later?
-	LDA #%00001111			; incomplete mask...
+	LDA #%00001111			; incomplete mask, just for the offset, independent of screen-block
 	ROL						; but now is perfect! C is clear
 	PLP						; hires mode will set C again but do it always! eeeeeeeeeeek
 	AND fw_ciop+1			; current row is now 000rrrrR, R for hires only
 	BEQ cu_end				; if at top of screen, ignore cursor
 		SBC #1				; this will subtract 1 if C is set, and 2 if clear! YEAH!!!
-		ORA #%01100000		; EEEEEEK must complete pointer address (5b, 6t) *** must compute actual address
+		ORA fw_cbot			; EEEEEEK must complete pointer address (5b, 6t)
 		STA fw_ciop+1
 cu_end:
 	_DR_OK					; ending this with C set is a minor nitpick, must reset anyway
 
 ; FF, clear screen AND intialise values!
 cio_ff:
-; note that firmware must set fw_hires hardware register appropriately at boot!
+; note that firmware must set IO8attr hardware register appropriately at boot!
 ; we don't want a single CLS to switch modes, although a font reset is acceptable, set it again afterwards if needed
 ; * things to be initialised... *
 ; fw_ccol, note it's an array now
@@ -465,30 +451,43 @@ cio_ff:
 	JSR set_ink				; these will clear fw_cbin
 	LDA #STD_PPR
 	JSR set_paper
-	LDY #<font				; standard font address
-	LDA #>font
+	LDY #<cio_fnt			; supplied font address
+	LDA #>cio_fnt
 	STY fw_fnt				; set firmware pointer (will need that again after FF)
 	STA fw_fnt+1
 ; standard CLS, reset cursor and clear screen
 	JSR cio_home			; reset cursor and load appropriate address
+; recompute MSB in A according to hardware
+	LDA IO8attr
+	AND #%00110000
+	ASL
+#ifdef	SAFE
+	BNE ff_ok
+		LDA #%00010000		; base address for 8K systems is 4K
+ff_ok:
+#endif
+	STA fw_vbot				; store new variable
+	STA fw_ciop+1			; must correct this one too
 	STY cio_pt				; set pointer (LSB=0)...
 	STA cio_pt+1
-;	LDY #0					; usually not needed if screen is page-aligned! ...and clear whole screen, will return to caller
+;	LDY #0					; usually not needed as screen is page-aligned! ...and clear whole screen, will return to caller
 cio_clear:
 ; ** generic screen clear-to-end routine, just set cio_pt with initial address and Y to zero **
 ; this works because all character rows are page-aligned
 ; otherwise would be best keeping pointer LSB @ 0 and setting initial offset in Y, plus LDA #0
 ; anyway, it is intended to clear whole rows
 	TYA						; A should be zero in hires, and Y is known to have that
-	BIT fw_hires
+	BIT IO8attr
 	BMI sc_clr				; eeeeeeeeek
 		LDA fw_ccol			; EEEEEEEEK, this gets paper colour byte
 sc_clr:
 		STA (cio_pt), Y		; clear all remaining bytes
 		INY
 		BNE sc_clr
-			INC cio_pt+1
-		BPL sc_clr			; colour mode needs an extra page to clear *** should it check against vram top var?
+	INC cio_pt+1			; next page
+	LDX cio_pt+1			; but must check variable limits!
+	CPX fw_vtop
+		BNE sc_clr
 	RTS
 
 ; SO, set inverse mode
@@ -514,7 +513,7 @@ cio_cur:
 	LDX fw_ciop+1
 	STY cio_pt
 	LDY #224				; offset for last scanline at cursor position... in hires
-	BIT fw_hires			; are we in colour mode? that offset won't be valid!
+	BIT IO8attr				; are we in colour mode? that offset won't be valid!
 	BMI ccur_ok				; hires mode, all OK
 		INX					; otherwise, must advance pointer MSB
 		LDY #192			; new LSB offset
@@ -552,10 +551,7 @@ md_ppr:
 cio_home:
 ; just reset cursor pointer, to be done after (or before!) CLS
 	LDY #<pvdu				; base address for all modes, actually 0
-	LDA #>pvdu				; *** this from variable, or compute from hardware
-;	LDA fw_hires
-;	AND #%00110000
-;	ASL						; alternate setting from hardware
+	LDA fw_vbot				; current screen setting!
 	STY fw_ciop				; just set pointer
 	STA fw_ciop+1
 	RTS						; C is clear, right?
@@ -615,7 +611,17 @@ set_paper:
 
 cn_sety:					; 6= Y to be set, advance mode to 8
 	JSR coord_ok			; common coordinate check as is a square screen
-	STA fw_ciop+1			; note temporary use of MSB as Y coordinate
+#ifdef	SAFE
+	LDX fw_vbot
+	CPX #$10				; is base address $1000? (8K system)
+	BNE y_noth
+		AND #15				; max lines for hires mode in 8K RAM
+		BIT IO8attr			; check mode again
+		BPL y_noth
+			AND #7			; even further filtering in colour!
+y_noth:
+#endif
+	STA fw_ciop+1			; *** note temporary use of MSB as Y coordinate ***
 	LDX #BM_ATX
 	STX fw_cbin				; go into X-expecting mode EEEEEEK
 	RTS
@@ -626,11 +632,10 @@ coord_ok:
 		BCC not_px			; must be at least 32, remember stack balance!
 #endif
 	AND #31					; filter coordinates, note +32 offset is deleted as well
-	BIT fw_hires			; if in colour mode, further filtering ***
+	BIT IO8attr				; if in colour mode, further filtering
 	BMI do_set
 		AND #15				; max colour coordinate
 do_set:
-; note that if screen 0 is selected, Y coordinate cannot reach 8! *** TBD
 	RTS						; if both coordinates setting is combined, could be inlined
 
 #ifdef	SAFE
@@ -643,21 +648,16 @@ not_px:
 
 cn_atyx:					; 8= X to be set and return to normal
 	JSR coord_ok
-	BIT fw_hires			; if in colour mode, each X is 4 bytes ahead ***
+	BIT IO8attr				; if in colour mode, each X is 4 bytes ahead ***
 	BMI do_atx
 		ASL
 		ASL
 		ASL fw_ciop+1		; THIS IS BAD *** KLUDGE but seems to work (had one extra)
 do_atx:
 	STA fw_ciop				; THIS IS BAD *** KLUDGE but seems to work
-	LDA fw_ciop+1			; add to recomputed offset the VRAM base address
+	LDA fw_ciop+1			; add to recomputed offset the VRAM base address, this was temporarily Y offset
 	CLC						; not necessarily clear in hires?
-	ADC #>pvdu				; *** from variable or hardware (if switching sumands)
-; alternate code for the addition above
-;	LDA io8_attr			; get video mode
-;	AND #%00110000			; filter screen address bits
-;	ASL						; right position, C is clear... or just read the variable
-;	ADC fw_ciop+1
+	ADC fw_vbot
 	STA fw_ciop+1
 	_BRA md_std
 
@@ -724,6 +724,6 @@ cio_mbm:
 	.word	cn_sety			; 6= Y to be set, advance mode to 8
 	.word	cn_atyx			; 8= X to be set and return to normal
 
-font:
++cio_fnt:					; *** export label for init! ***
 #include "../../drivers/fonts/8x8.s"
 .)

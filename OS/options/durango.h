@@ -2,7 +2,7 @@
 ; suitable for Durango (al least in proto version)
 ; copy or link as options.h in root dir
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211226-1649
+; last modified 20211228-2334
 
 ; *** set conditional assembly ***
 
@@ -54,9 +54,9 @@
 
 #ifdef	DOWNLOAD
 ; ** start of ROM **
-ROM_BASE	=	$4000	; ** placeholder **
+ROM_BASE	=	$2000	; ** placeholder **
 ; ** position of firmware, usually skipping I/O area **
-FW_BASE		=	$4000	; just before VRAM
+FW_BASE		=	$2000	; just before VRAM, now 16 kiB
 #else
 ROM_BASE	=	$8000	; Durango 32 kiB ROM
 FW_BASE		=	$E000	; new value
@@ -78,6 +78,7 @@ IO_BASE	=	$DF80			; new Durango
 ; VIA_U is the user interface (VIAport)
 
 ; *** hardware-dependent device addresses ***
+pvdu	= $6000					; standard screen address
 IO8attr	= $DF80					; video mode flags (R/W)
 IO8blk	= $DF88					; video blanking signals (R only)
 IO9di	= $DF9A					; data input (PASK-like)
