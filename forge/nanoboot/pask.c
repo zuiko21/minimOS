@@ -79,7 +79,7 @@ void salida(int x) {
 	digitalWrite(D5, x&32);
 	digitalWrite(D6, x&64);
 	digitalWrite(D7, x&128);
-	delay(20);					/* 20 ms wait should be enough */
+	delay(1);					/* 20 ms wait should be enough */
 	digitalWrite(D0, 0);		/* reset port to allow repeated keys */
 	digitalWrite(D1, 0);
 	digitalWrite(D2, 0);
@@ -88,7 +88,7 @@ void salida(int x) {
 	digitalWrite(D5, 0);
 	digitalWrite(D6, 0);
 	digitalWrite(D7, 0);
-	delay(10);
+	delay(1);
 }
 
 void modi() {

@@ -32,7 +32,7 @@ fw_ciop		.word	0		; (upper scan of cursor position) $24A-B
 fw_fnt		.word	0		; (new, pointer to relocatable 2KB font file) $24C-D
 fw_mask		.byt	0		; (for inverse/emphasis mode) $24E
 ;fw_hires	.byt	0		; (0=colour, 128=hires, may contain other flags like 64=inverse)
-fw_hires	= $DF80			; directly from video flags
+;fw_hires	= $DF80			; directly from video flags
 fw_cbin		.byt	0		; (binary or multibyte mode) $24F
 fw_io9		.byt	0		; input buffer $250
 
@@ -56,9 +56,9 @@ fw_io9		.byt	0		; input buffer $250
 	LDX #$FF
 	TXS
 ; minimal hardware init
-	LDA #$38				; lo res, true video, screen 3, colour enabled
+	LDA #$b8				; lo res, true video, screen 3, colour enabled
 repeat:
-	STA fw_hires			; now directly on hardware register!
+	STA $DF80				; now directly on hardware register!
 	_STZA fw_cbin			; eeeeeeeeeeeeeek
 	LDY #12					; reset screen
 	JSR conio
@@ -72,7 +72,7 @@ loop:
 		JSR conio			; otherwise, print it right now!
 		BCC loop			; no need for BRA, hopefully
 switch:
-	LDA fw_hires
+	LDA $DF80
 	EOR #$80				; switch resolution
 	JMP repeat
 
