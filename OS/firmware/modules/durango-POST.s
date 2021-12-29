@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; system checker routine 0.9.6a5
+; system checker routine 0.9.6a6
 ; for Durango-X, both ROMmable and DOWNLOADable
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211228-2258
+; last modified 20211229-2352
 
 #ifdef	TESTING
 #include "../../macros.h"
@@ -236,6 +236,9 @@ rt_3:
 		LDA #%11111010		; blinks twice (C is set here)
 		JMP lock			; panic if failed
 ram_ok:
+
+	LDA mxmem				; we now for sure RAM size, let's store it definitely
+	STA himem				; standard firmware variable
 
 ; * ROM test is already done *
 

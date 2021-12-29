@@ -1,6 +1,6 @@
-; minimOS 0.6.1a2 zero-page system variables
+; minimOS 0.6.1a3 zero-page system variables
 ; (c) 2012-2021 Carlos J. Santisteban
-; last modified 20211227-0003
+; last modified 20211229-2330
 
 .zero
 * = 0
@@ -43,9 +43,6 @@ tmp_ktab: rl_mask:					; 16 bit (v_src seems of no use!)
 
 local1: locpt1	.dsb	4			; variables for kernel functions @ $E4
 
-st_pg	= dr_aut					; 8b for firmware Fletcher-16
-af_pg	= dr_aut+1
-skipg	= dr_aut+2
 dq_off	= dr_aut+1					; 8b
 dq_ptr	= dr_aut+2					; 16b
 cio_pt	= dr_aut+2					; 16b for 6502-firmware CONIO
@@ -92,7 +89,6 @@ zpar3: zaddr3	.dsb	4			; up to 4 bytes, including older names @ $F0
 k_ram	= b_sig+1					; 8b, Kernel RAM pages (0 = 128 byte system) changed for virtua6502 compatibility
 b_ram	= b_sig+3					; 8b, Banks of "high" memory (65816 only)
 da_ptr	= b_sig+2					; 16b, had conflict within LOWRAM I/O!
-rle_src	= ex_pt						; 16b, FW RLE decoder origin
 ; *********************************************
 
 ; *** include aliases here for zpar2/zaddr2 ***
@@ -105,7 +101,8 @@ zpar2: zaddr2	.dsb	4			; up to 4 bytes, including older names @ $F4
 
 bl_siz	= str_pt+2					; 16b *** was here
 bnk_rl	= ex_rlc+2					; 8b, bank for relocation, part of the full address
-rle_ptr	= ma_pt						; 16b, FW RLE decoder destination 
+rle_ptr	= str_pt+2					; 16b, FW RLE decoder destination 
+rle_src	= str_pt					; 16b, FW RLE decoder origin
 ; *********************************************
 
 ; *** include aliases here for zpar/zaddr ***
@@ -121,6 +118,9 @@ c_speed		= cpu_ll+1				; 16b ***might recheck alignment***
 up_sec		= up_ticks+1			; 24b, new source-compatible format
 ma_align	= ma_rs+3				; 8b, moved for virtua6502 compatibility
 ln_siz		= io_c+3				; 8b, maximum READLN input! moved for LOWRAM eeeeeeeeeeeek
+st_pg		= io_c					; 8b for firmware Fletcher-16
+af_pg		= io_c+1
+skipg		= io_c+2
 
 ; *******************************************
 
