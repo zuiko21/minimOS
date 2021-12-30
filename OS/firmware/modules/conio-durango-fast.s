@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a6
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211230-0020
+; last modified 20211230-1386
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -461,6 +461,10 @@ cio_ff:
 	LDA IO8attr
 	AND #%00110000
 	ASL
+	TAX						; keep bottom of VRAM
+	ADC #$20				; C was clear b/c ASL
+	STA vtop				; eeeeek
+	TXA
 #ifdef	SAFE
 	BNE ff_ok
 		LDA #%00010000		; base address for 8K systems is 4K
