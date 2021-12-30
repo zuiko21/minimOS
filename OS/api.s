@@ -1,7 +1,8 @@
 ; minimOS generic Kernel API
-; v0.6rc27, must match kernel.s
+; v0.6.1b1, must match kernel.s
+; essentially the same as 0.6 for 0.6.1 compatibility
 ; (c) 2012-2021 Carlos J. Santisteban
-; last modified 20190830-2305
+; last modified 20211231-0032
 ; no way for standalone assembly...
 
 ; **************************************************
@@ -871,7 +872,7 @@ ll_reset:
 ; get initial address! beacuse of the above, no longer adds filename offset!
 	LDA #<ROM_BASE		; begin of ROM contents LSB, most likely zero
 	STA	rh_scan			; set local pointer
-	LDA #>ROM_BASE		; same for MSB
+	LDA #>ROM_BASE+1	; same for MSB, but skip volume header!!!
 	STA rh_scan+1		; internal pointer set
 ll_geth:
 ; ** check whether we are on a valid header!!! **

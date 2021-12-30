@@ -1,6 +1,6 @@
 ; ROM header listing for minimOS!
-; v0.5rc1
-; last modified 20180404-1423
+; v0.5.1b1
+; last modified 20211231-0027
 ; (c) 2016-2021 Carlos J. Santisteban
 
 #include "../OS/usual.h"
@@ -23,7 +23,7 @@ lsHead:
 
 ; *** filename and optional comment ***
 	.asc	"ls", 0			; file name (mandatory)
-	.asc	"Lists ROM contents, v0.5", 0		; comment
+	.asc	"Lists ROM contents, v0.5.1", 0		; comment
 
 ; advance to end of header
 	.dsb	lsHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
@@ -67,7 +67,7 @@ go_ls:
 
 ; get initial address
 	LDY #<ROM_BASE		; begin of ROM contents LSB
-	LDA #>ROM_BASE		; same for MSB, will read volume header (zero size!)
+	LDA #>ROM_BASE+1	; same for MSB, will NOT read volume header (zero size!)
 	STY rompt			; set local pointer
 	STA rompt+1			; internal pointer set
 #ifdef	C816
@@ -327,7 +327,7 @@ banner:
 ; $F800 picture     --  1K
 
 ls_cpus:
-	.asc	"N", "MOS", 0	; macro alert!!!
+	.asc	"6502", 0	; macro alert!!!
 	.asc	"'C02", 0
 	.asc	"R65C", 0
 	.asc	"'816", 0

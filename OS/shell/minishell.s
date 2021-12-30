@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
-; v0.5.2rc2
-; like 0.5.1 for 0.6 ABI/API!
-; last modified 20190129-0958
+; v0.5.3b1
+; like 0.5.1 for 0.6 ABI/API, plus 0.6.1 compatible!
+; last modified 20211231-0028
 ; (c) 2016-2021 Carlos J. Santisteban
 
 #ifndef	HEADERS

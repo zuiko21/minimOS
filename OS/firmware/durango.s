@@ -1,8 +1,8 @@
 ; Durango firmware (at least for prototype version)
 ; based on generic firmware template for minimOS·65
-; v0.6.1a5
+; v0.6.1b1
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20211228-2203
+; last modified 20211231-0040
 
 #define		ROM			_ROM
 #define		FIRMWARE	_FIRMWARE
@@ -33,10 +33,10 @@
 ; *********************************
 ; *********************************
 ; *** administrative jump table *** this has been safely moved backwards, thanks to the mandatory jump instruction
-; ********************************* note STANDARD $4003 location
+; *********************************
 ; *********************************
 
--fw_admin:						; *** now at $4003 as standard for downloadable firmware ***
+-fw_admin:
 #ifndef		FAST_FW
 ; generic functions, esp. interrupt related
 	.word	gestalt				; GESTALT get system info (renumbered)
@@ -163,7 +163,7 @@ dreset:
 
 ; *** continue parameter setting ***
 ; preset kernel start address
-;test	#include "modules/kern_addr.s"
+#include "modules/kern_addr.s"
 
 ; preset default BRK handler
 #include "modules/brk_addr.s"
@@ -198,8 +198,8 @@ dreset:
 ; ************************
 start_kernel:
 
-;test	#include "modules/start.s"
-JMP nanomon	; test
+#include "modules/start.s"
+;JMP nanomon	; test
 
 ; ********************************
 ; ********************************
@@ -338,10 +338,6 @@ rle_dec:
 conio:
 #include "modules/conio-durango-fast.s"
 
-; extra bits for testing
-#ifdef	DOWNLOAD
-;#include "../shell/nanomon.s"
-#endif
 ; ***********************************
 ; ***********************************
 ; *** some firmware odds and ends ***
@@ -389,6 +385,19 @@ brk_hndl:				; label from vector list
 #include "modules/brk_hndl.s"
 
 ; *** *** 65x02 does have no use for a COP handler *** ***
+
+; ****************************************************************
+; ****************************************************************
+; ****** firmware end, here comes the kernel and some apps *******
+; ****************************************************************
+; ****************************************************************
+
+#include "../kernel.s"
+; kernel includes suitable shell (options.h)
+#include "../apps/ls.s"
+#include "../apps/miniMoDA.s"
+; what will happen?
+
 
 ; ------------ only fixed addresses block remain ------------
 ; filling for ready-to-blow ROM

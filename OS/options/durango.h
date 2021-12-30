@@ -2,7 +2,7 @@
 ; suitable for Durango (al least in proto version)
 ; copy or link as options.h in root dir
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211228-2334
+; last modified 20211231-0039
 
 ; *** set conditional assembly ***
 
@@ -40,8 +40,9 @@
 
 ; Suitable driver package (add .h or .s as needed) in drivers/config/ folder, new 20160308
 ; may suit different configurations on a machine
-#define		DRIVER_PACK_h		"drivers/config/durango_std.h"
-#define		DRIVER_PACK_s		"drivers/config/durango_std.s"
+; *** try these direct files instead of configuration packs
+#define		DRIVER_PACK_h		"drivers/conio.h"
+#define		DRIVER_PACK_s		"drivers/conio.s"
 
 ; *** Default files ***
 ; default shell
