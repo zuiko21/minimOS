@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; Durango-X firmware console 0.9.6a6
+; Durango-X firmware console 0.9.6b1
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211230-1386
+; last modified 20211230-1841
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -463,7 +463,7 @@ cio_ff:
 	ASL
 	TAX						; keep bottom of VRAM
 	ADC #$20				; C was clear b/c ASL
-	STA vtop				; eeeeek
+	STA fw_vtop				; eeeeek
 	TXA
 #ifdef	SAFE
 	BNE ff_ok

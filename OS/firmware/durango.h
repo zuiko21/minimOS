@@ -1,8 +1,8 @@
 ; generic firmware variables for minimOS·65
 ; including Durango specifics
-; v0.6.1a3
+; v0.6.1a4
 ; (c) 2015-2021 Carlos J. Santisteban
-; last modified 20211228-2341
+; last modified 20211230-1840
 
 -sysram:
 fw_isr
@@ -31,6 +31,6 @@ fw_ctmp
 fw_cbyt		.byt	0				; (temporary glyph storage) other tmp
 fw_ccnt		.byt	0				; (bytes per raster counter, no longer X) other tmp
 fw_ciop		.word	$6000			; cursor position
-fw_vbot		.word	$60				; start of screen at current hardware setting (updated upon FF)
+fw_vbot		.byt	$60				; page start of screen at current hardware setting (updated upon FF)
 fw_vtop		.byt	$80				; first non-VRAM page (new)
 fw_io9		.byt	0				; received keypress
