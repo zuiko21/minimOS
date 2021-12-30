@@ -2,7 +2,7 @@
 ; based on generic firmware template for minimOS·65
 ; v0.6.1a4
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20211228-2110
+; last modified 20211228-2149
 
 #define		FIRMWARE	_FIRMWARE
 #define		DOWNLOAD	_DOWNLOAD
@@ -337,18 +337,142 @@ rle_dec:
 conio:
 #include "modules/conio-durango-fast.s"
 
-; base FW and minimOS support are...
-; **************************************
-; *** *** *** NO LONGER HERE *** *** ***
-; **************************************
-; see bootloader.s
-
-fw_end:					; for size computation
-
 ; extra bits for testing
 #ifdef	DOWNLOAD
 std_nmi:
 #include "../shell/nanomon.s"
-fw_map:					; random crap
 #endif
+; ***********************************
+; ***********************************
+; *** some firmware odds and ends ***
+; ***********************************
+; ***********************************
+
+; *** memory map, as used by gestalt, not sure what to do with it ***
+fw_map:					; TO BE DONE
+
+; *** NMOS version needs large ADMIN call back here! ***
+#ifndef	FAST_FW
+#ifdef	NMOS
+nmos_adc:
+	_JMPXA(fw_admin)	; takes a lot of clocks, no need to preserve A
+#endif
+#endif
+
+; *** Durango-X special panic handler ****
+dx_lock:
+#include "modules/durango-panic.s"
+
+#ifndef	DOWNLOAD
+; ********************************
+; ********************************
+; ****** interrupt handlers ******
+; ********************************
+; ********************************
+
+; **********************************************
+; *** vectored NMI handler with magic number ***
+; **********************************************
+nmi:
+#include "modules/nmi_hndl.s"
+
+; ****************************
+; *** vectored IRQ handler ***
+; ****************************
+; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
+irq:
+#include "modules/irq_hndl.s"
+
+; ****************************
+; *** vectored BRK handler ***
+; ****************************
+brk_hndl:				; label from vector list
+#include "modules/brk_hndl.s"
+
+; *** *** 65x02 does have no use for a COP handler *** ***
+#endif
+
+; ------------ only fixed addresses block remain ------------
+; filling for ready-to-blow ROM
+#ifdef		ROM
+	.dsb	kerncall-*, $FF
+#endif
+
+; ******************************************************************
+; ****** the following will come ALWAYS at standard addresses ****** last 64 bytes
+; ******************************************************************
+
+; *** minimOS function call primitive ($FFC0) *** or $5FC0 if DOWNLOADed
+* = kerncall
+#ifndef	FAST_API
+	_JMPXA(fw_table)	; macro for NMOS compatibility (6) this will be a wrapper on 816 firmware!
+#endif
+
+
+
+
+
+
+; filling for ready-to-blow ROM
+#ifdef	ROM
+	.dsb	adm_appc-*, $FF	; eeeeeeeeeeeeeeeeeeeek
+#endif
+
+; *** administrative meta-kernel call primitive for apps ($FFD0) ***
+; not really needed on 6502 systems, but kept for the sake of binary compatibility
+; pretty much the same code at $FFDA, not worth more overhead
+* = adm_appc
+#ifndef	FAST_FW
+#ifndef	NMOS
+	_JMPX(fw_admin)		; takes 6 clocks with CMOS
+#else
+	JMP nmos_adc		; needed overhead as takes 10 bytes!
+#endif
+#endif
+; 65816 need to do some extra stuff, but this must check anyway NMOS option, as may not have room enough!
+
+; filling for ready-to-blow ROM
+#ifdef		ROM
+	.dsb	adm_call-*, $FF
+#endif
+
+; *** administrative meta-kernel call primitive ($FFDA) ***
+* = adm_call
+#ifndef	FAST_FW
+#ifndef	NMOS
+	_JMPXA(fw_admin)	; takes 6 clocks with CMOS
+#else
+	JMP nmos_adc		; needed overhead as takes 10 bytes!
+#endif
+#endif
+; filling for ready-to-blow ROM
+#ifdef	ROM
+	.dsb	lock-*, $FF
+#endif
+; note ROM signature is at $FFDE-$FFDF, but no need for a label
+
+; *** panic routine, locks at very obvious address ($FFE2-$FFE3) ***
+; may be suited to any particular machine after disabling interrupts
+* = lock
+	SEI					; reunified procedure 20181101
+; *** jump to a suitable lock routine if needed ***
+	JMP dx_lock
+
+#ifndef	DOWNLOAD
+vectors	= $FFF6
+#else
+vectors	= $5FF6
+#endif
+
+	.dsb	vectors-*, $FF
+
+vectors:
+	.word	brk_hndl	; new eBRK			@ $FFF6
+	.word	nmi			; emulated ABORT 	@ $FFF8
+; *** 65(C)02 ROM vectors ***
+	.word	nmi			; NMI	@ $FFFA
+	.word	reset		; RST	@ $FFFC
+	.word	irq			; IRQ	@ $FFFE
+
+fw_end:					; for size computation
 .)
