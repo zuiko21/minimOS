@@ -14,7 +14,7 @@
 ; NMOS (with macros) and 65816 savvy
 
 ; *** default colours *** globally defined
-#define		STD_PPR		0
+#define		STD_PPR		8
 #define		STD_INK		15
 
 .(

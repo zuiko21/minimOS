@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; Durango-X firmware console 0.9.6b1
+; Durango-X firmware console 0.9.6b2
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211230-1841
+; last modified 20211230-2054
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -301,8 +301,9 @@ cn_lf:
 		INC fw_ciop+1		; once again if in colour mode... 
 cn_hmok:
 ; must check for possible scrolling!!! simply check sign ;-) ...or compare against dynamic limit
-	BIT fw_ciop+1			; EEEEEK
-	BPL cn_ok				; positive means no scroll
+	LDA fw_ciop+1			; EEEEEK
+	CMP fw_vtop
+	BNE cn_ok				; below limit means no scroll
 ; ** scroll routine **
 ; rows are 256 bytes apart in hires mode, but 512 in colour mode
 	LDY #<pvdu				; LSB *must* be zero, anyway
