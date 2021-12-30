@@ -1,9 +1,10 @@
 ; Durango firmware (at least for prototype version)
 ; based on generic firmware template for minimOS·65
-; v0.6.1a4
+; v0.6.1a5
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20211228-2149
+; last modified 20211228-2203
 
+#define		ROM			_ROM
 #define		FIRMWARE	_FIRMWARE
 #define		DOWNLOAD	_DOWNLOAD
 ; setting 
@@ -198,7 +199,7 @@ dreset:
 start_kernel:
 
 ;test	#include "modules/start.s"
-JMP std_nmi	; test
+JMP nanomon	; test
 
 ; ********************************
 ; ********************************
@@ -339,8 +340,7 @@ conio:
 
 ; extra bits for testing
 #ifdef	DOWNLOAD
-std_nmi:
-#include "../shell/nanomon.s"
+;#include "../shell/nanomon.s"
 #endif
 ; ***********************************
 ; ***********************************
@@ -363,7 +363,6 @@ nmos_adc:
 dx_lock:
 #include "modules/durango-panic.s"
 
-#ifndef	DOWNLOAD
 ; ********************************
 ; ********************************
 ; ****** interrupt handlers ******
@@ -390,7 +389,6 @@ brk_hndl:				; label from vector list
 #include "modules/brk_hndl.s"
 
 ; *** *** 65x02 does have no use for a COP handler *** ***
-#endif
 
 ; ------------ only fixed addresses block remain ------------
 ; filling for ready-to-blow ROM
@@ -466,13 +464,12 @@ vectors	= $5FF6
 
 	.dsb	vectors-*, $FF
 
-vectors:
+* = vectors
 	.word	brk_hndl	; new eBRK			@ $FFF6
 	.word	nmi			; emulated ABORT 	@ $FFF8
 ; *** 65(C)02 ROM vectors ***
 	.word	nmi			; NMI	@ $FFFA
 	.word	reset		; RST	@ $FFFC
 	.word	irq			; IRQ	@ $FFFE
-
 fw_end:					; for size computation
 .)

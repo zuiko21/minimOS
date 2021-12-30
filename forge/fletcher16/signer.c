@@ -1,6 +1,6 @@
 /* ROM signer with Fletcher-16 checksum *
  * (c) 2021 Carlos J. Santisteban       *
- * last modified 20211230-1638          */
+ * last modified 20211230-2218          */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,14 +10,14 @@ int main(int argc, char* argv[]) {
 	int sum, check;				/* computed sums    */
 	int sig_s, sig_c;			/* signature values at $FFDE-$FFDF (in 6502 space) */
 	int size;					/* ROM size         */
-	int offset					/* position of signature (default $7FDE for 32K)   */
+	int offset;					/* position of signature (default $7FDE for 32K)   */
 	int target;					/* preliminary sum */
 	int i, j;
 	FILE* f;
 
 	if (argc == 1) {			/* no arguments, asking for help */
 		printf("Fletcher-16 signer for minimOS ROM files\n");
-		printf("USAGE: %s file [offset]\n", argc[0]);
+		printf("USAGE: %s file [offset]\n", argv[0]);
 		printf("\tfile   = filename (duh), max. 32 kiB\n");
 		printf("\toffset = position of signature (default: $7FDE for 32K)\n");
 		return -1;				/* did nothing */
@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
 		fclose(f);
 		return -3;				/* too large       */
 	}
-	printf("ROM size: %d (%04X) bytes\n", size, size);
+	printf("ROM size: %d ($%04X) bytes\n", size, size);
 	target=0;
 	for (i=0; i<size; i++) {
 		rom[i]=fgetc(f);		/* get contents    */
@@ -62,20 +62,20 @@ int main(int argc, char* argv[]) {
 	rom[offset+1]	=0;			/* clear them too  */
 
 	check=sum=0;				/* precheck values */
-	for(i=0;i<size;i++) {
+/*	for(i=0;i<size;i++) {
 		sum += rom[i];
 		sum &= 255;
 		check += sum;
 		check &= 255;
 	}
-	printf("ORIGINAL: %d, %d ($%02x%02x)\n", sum, check, check, sum);
+	printf("ORIGINAL: %d, %d ($%02x%02x)\n", sum, check, check, sum);*/
 	printf("TARGET: %d\n", target);
 
 	check = 256;
 	j=0;
 	while (j<256 && check!=0) {
-		rom[offset]=j;			/* preload candidates */
-		rom[offset]=(target-j) & 255;	/* as defined from preliminary sum */
+		rom[offset]=j;					/* preload candidates */
+		rom[offset+1]=(target-j) & 255;	/* as defined from preliminary sum */
 		check=sum=0;
 		for(i=0;i<size;i++) {
 			sum += rom[i];
@@ -83,10 +83,21 @@ int main(int argc, char* argv[]) {
 			check += sum;
 			check &= 255;
 		}
-		if(check==0)	printf("%d.%d: SUM=%d, CHECK=%d\n", j, rom[0x3FDF], sum, check);
+//		if(check==0)	printf("%d.%d: SUM=%d, CHECK=%d\n", j, rom[offset+1], sum, check);
 		j++;
 	}
-	if (check)		printf("\n*** No way! ***\n");
+	if (check) {
+		printf("\n*** No way! Try another offset ***\n\n");
+		return -5;
+	}
+	printf("%d attempts\n", j);
+	printf("ROM signature: $%02X%02X\n", rom[offset], rom[offset+1]);
+//.......update values in disk
+	fseek(f, offset, SEEK_SET);
+	fputc(rom[offset],   f);
+	fputc(rom[offset+1], f);
+	fclose(f);
+	printf("Done!\n\n");
 	
 	return 0;
 }

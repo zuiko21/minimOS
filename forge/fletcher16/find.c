@@ -26,14 +26,14 @@ int main(void) {
 	rom[0x3FDE]=rom[0x3FDF]=0;	/* clear them as well */
 
 	check=sum=0;				/* precheck values */
-	for(i=0;i<16384;i++) {
+/*	for(i=0;i<16384;i++) {
 		sum += rom[i];
 		sum &= 255;
 		check += sum;
 		check &= 255;
 	}
 	printf("ORIGINAL: %d, %d ($%02x%02x)\n", sum, check, check, sum);
-	printf("TARGET: %d\n", target);
+*/	printf("TARGET: %d\n", target);
 
 	check = 256;
 	j=0;
@@ -47,7 +47,8 @@ int main(void) {
 			check += sum;
 			check &= 255;
 		}
-		if(check==0)	printf("%d.%d: SUM=%d, CHECK=%d\n", j, rom[0x3FDF], sum, check);
+		//if(check==0)
+			printf("%d.%d: SUM=%d, CHECK=%d\n", j, rom[0x3FDF], sum, check);
 		j++;
 	}
 	if (check)		printf("\n*** No way! ***\n");
