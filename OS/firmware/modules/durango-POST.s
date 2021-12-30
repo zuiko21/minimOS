@@ -2,7 +2,7 @@
 ; system checker routine 0.9.6a6
 ; for Durango-X, both ROMmable and DOWNLOADable
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211229-2352
+; last modified 20211230-0045
 
 #ifdef	TESTING
 #include "../../macros.h"
@@ -197,9 +197,13 @@ addr_ok:
 ; silent but will show up on screen
 ; 8 K systems cannot add the usual screen test, but cannot download either
 	INC mxmem				; worth it, now is the first non-RAM page
+#ifndef	DOWNLOAD
 	LDA mxmem
 	SEC
 	SBC #$20				; subtract screen size
+#else
+	LDA #$60				; hopefully correct address!
+#endif
 	STA posi				; will indicate first page of screen (0 if 8K)
 	LDA #$F0				; initial value
 	LDY #0
@@ -223,7 +227,7 @@ rt_2:
 ;			BEQ rt_2		; not needed as mxmem was incremented
 				CPX posi	; already at screen...
 				BCC rt_1s	; ...or continue with screen
-			CPX mxmem		; end of screen?
+			CPX #$80		; end of screen?
 			BNE rt_2
 		LSR					; create new value, either $0F or 0
 		LSR

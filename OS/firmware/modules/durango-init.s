@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211229-0004
+; last modified 20211230-0020
 
 ; *** init CONIO in durango, as interrupts are already set up ***
 ; *** firmware variables to be reset upon FF ***
@@ -38,7 +38,7 @@
 	_STZA fw_cbin			; allow normal mode at startup
 	_STZA fw_mask			; non-inverted
 ; compute actual video address for cursor
-	LDA #IO8attr			; get video flags
+	LDA IO8attr				; get video flags
 	AND #%00110000			; filter screen-block bits
 	ASL						; times two, 8 kiB blocks
 	TAX						; save base for later

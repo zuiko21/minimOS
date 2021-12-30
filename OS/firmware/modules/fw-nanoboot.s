@@ -25,7 +25,15 @@ loop:
 	BNE loop
 	LDY #2					; cursor left
 	JSR conio
+	LDY #18					; set colour...
+	JSR conio
+	LDY #2					; ...red
+	JSR conio
 	LDY #'*'				; delete question mark
+	JSR conio
+	LDY #18					; set colour...
+	JSR conio
+	LDY #STD_INK			; ...white?
 	JSR conio
 	LDY #13
 	JSR conio

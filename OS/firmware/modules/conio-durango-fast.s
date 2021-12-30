@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6a6
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211229-0012
+; last modified 20211230-0020
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -429,7 +429,7 @@ cio_up:
 	AND fw_ciop+1			; current row is now 000rrrrR, R for hires only
 	BEQ cu_end				; if at top of screen, ignore cursor
 		SBC #1				; this will subtract 1 if C is set, and 2 if clear! YEAH!!!
-		ORA fw_cbot			; EEEEEEK must complete pointer address (5b, 6t)
+		ORA fw_vbot			; EEEEEEK must complete pointer address (5b, 6t)
 		STA fw_ciop+1
 cu_end:
 	_DR_OK					; ending this with C set is a minor nitpick, must reset anyway

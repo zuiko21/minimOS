@@ -186,6 +186,9 @@ dreset:
 ; *** optional network booting *** makes no sense with nanoBoot, but will when not downloaded
 #ifndef	DOWNLOAD
 #include "modules/fw-nanoboot.s"
+#else
+; testing
+#include "modules/fw-nanoboot.s"
 #endif
 ; *** possible kernel RELOCation and/or decompression should be done here ***
 

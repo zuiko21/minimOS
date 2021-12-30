@@ -1,7 +1,7 @@
 ; firmware module for minimOS
 ; Durango-X splash screen after POST
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211230-0006
+; last modified 20211230-0052
 
 #ifdef	TESTING
 fw_cpu=$222
@@ -16,6 +16,19 @@ himem=$211
 #define	STD_PPR 0
 #endif
 .(
+splash:
+	LDX #0					; reset index
+message:
+		LDA fw_splash, X	; get char
+	BEQ tell_cpu
+		_PHX
+		TAY					; print char from string
+		JSR conio
+		_PLX
+		INX
+		BNE message
+tell_cpu:
+	JSR newline
 ; report CPU type
 	LDX #0					; base index into multiple strings
 	LDA fw_cpu
@@ -52,10 +65,15 @@ unk:
 	.asc	18, 2, "CPU?", 18, STD_INK, 0
 end_cpu:
 	JSR newline
-; report ROM size, from checksum!
-	LDA af_pg				; end page of ROM
+; report ROM size
+; currently from build, the ROMcheck should determine size and store it somewhere
+#ifndef	DOWNLOAD
+	LDA #0					; test usually until the end of map, or...
+#else
+	LDA #$60				; ...VRAM start
+#endif
 	SEC
-	SBC st_pg				; start page of ROM
+	SBC #>ROM_BASE			; start page of ROM
 	LSR
 	LSR						; was pages, now KiB
 	JSR by10				; let's print two ciphers from A
@@ -63,6 +81,8 @@ end_cpu:
 	JSR memsiz_p
 ; report RAM size
 	LDA himem				; RAM size
+	LSR
+	LSR						; was pages, now KiB eeeeek
 	JSR by10				; print in decimal
 	LDA #'A'				; will add 'K RAM'
 	JSR memsiz_p
