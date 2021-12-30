@@ -1,7 +1,7 @@
 ; firmware module for minimOS
 ; nanoBoot loader
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211230-0014
+; last modified 20211230-1656
 
 .(
 	LDX #0					; reset index
@@ -23,22 +23,19 @@ loop:
 		BNE loop
 	_DEC
 	BNE loop
-	LDY #2					; cursor left
-	JSR conio
-	LDY #18					; set colour...
-	JSR conio
-	LDY #2					; ...red
-	JSR conio
-	LDY #'*'				; delete question mark
-	JSR conio
-	LDY #18					; set colour...
-	JSR conio
-	LDY #STD_INK			; ...white?
-	JSR conio
-	LDY #13
-	JSR conio
-	JMP continue
+	LDX #0					; reset index
+to_prn:
+		LDA delete, X
+	BEQ continue			; end of string
+		_PHX
+		TAY					; print A
+		JSR conio
+		_PLX
+		INX
+		BNE to_prn			; no need for BRA
 text:
 	.asc	"nanoBoot?", 0
+delete:
+	.asc	2, 18, 2, '*', 18, STD_INK, 13, 0
 continue:
 .)

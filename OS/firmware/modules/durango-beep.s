@@ -1,9 +1,9 @@
 ; Durango-X startup sound
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211226-1751
+; last modified 20211230-1658
 
 .(
-	test	= 0				; temporary storage, no 6510 in sight
+	test	= sys_sp		; temporary storage
 
 	LDA #0
 	STA test				; sweep counter
