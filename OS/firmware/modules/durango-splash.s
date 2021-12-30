@@ -1,7 +1,7 @@
 ; firmware module for minimOS
 ; Durango-X splash screen after POST
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211230-1708
+; last modified 20211230-1739
 
 #ifdef	TESTING
 fw_cpu=$222
@@ -91,6 +91,7 @@ sigloop:
 		_PLX
 		INX
 		BNE sigloop			; no need for BRA
+dollar:
 	LDA $FFDE				; signature low
 	JSR by16				; print in hex
 	LDA $FFDF				; ditto for signature high
