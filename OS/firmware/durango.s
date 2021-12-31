@@ -2,9 +2,10 @@
 ; based on generic firmware template for minimOS·65
 ; v0.6.1b1
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20211231-0040
+; last modified 20211231-0100
 
 #define		ROM			_ROM
+#define		HEADERS		_HEADERS
 #define		FIRMWARE	_FIRMWARE
 #define		DOWNLOAD	_DOWNLOAD
 ; setting 
@@ -395,7 +396,7 @@ brk_hndl:				; label from vector list
 #include "../kernel.s"
 ; kernel includes suitable shell (options.h)
 #include "../apps/ls.s"
-#include "../apps/miniMoDA.s"
+#include "../shell/miniMoDA.s"
 ; what will happen?
 
 

@@ -6,10 +6,10 @@
 ; ***********************
 ; *** minimOS headers ***
 ; ***********************
-#include "../usual.h"
+;#include "../usual.h"
 
 ; *** begins with sub-function addresses table ***
-	.byt	176			; physical driver number D_ID (TBD)
+	.byt	144			; physical driver number D_ID (TBD)
 	.byt	A_BOUT|A_BLIN	; basic I/O driver, non-interrupt-driven
 	.word	gfc_i		; read N bytes from 'serial'
 	.word	gfc_o		; output N bytes to 'serial'

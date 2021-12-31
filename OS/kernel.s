@@ -17,7 +17,7 @@
 #ifndef	HEADERS
 #include "usual.h"
 #ifdef		DOWNLOAD
-* = $0400				; safe address for patchable 2 kiB systems, change if required
+;* = $0400				; safe address for patchable 2 kiB systems, change if required
 #else
 ; standalone kernels need to keep track of drivers_ad label!
 .data
@@ -329,7 +329,7 @@ sysvars:
 #include "sysvars.h"
 ; driver-specific system variables, located here 20170207
 dr_vars:
-#include DRIVER_PACK_h
+;#include DRIVER_PACK_h
 .text					; eeeeeek
 -user_ram = *			; the rest of available SRAM
 #endif
