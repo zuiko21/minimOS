@@ -31,7 +31,7 @@
 ; *** machine hardware definitions ***
 ; Machine-specific ID strings, new 20150122, renamed 20150128, 20160120, 20160308
 
-#define		MACHINE_NAME	"Durango"
+#define		MACHINE_NAME	"Durango-X"
 #define		MACHINE_ID		"DX"
 
 ; Firmware selection, new 20160310, will pick up suitable template from firmware/

@@ -2,7 +2,7 @@
 ; based on generic firmware template for minimOS·65
 ; v0.6.1b1
 ; (c)2015-2021 Carlos J. Santisteban
-; last modified 20211231-0100
+; last modified 20211231-1541
 
 #define		ROM			_ROM
 #define		HEADERS		_HEADERS
@@ -85,7 +85,7 @@ fw_splash:
 #endif
 	.asc "0.6.1  firmware for "	; machine description as comment
 fw_mname:
-	.asc	"DURANGO", 0
+	.asc	MACHINE_NAME, 0
 ; advance to end of header (may need extra fields for relocation)
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 

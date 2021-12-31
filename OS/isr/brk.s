@@ -1,7 +1,7 @@
 ; minimOS BRK panic handler
-; v0.6.1a1
+; v0.6.1a2
 ; (c) 2016-2021 Carlos J. Santisteban
-; last modified 20190213-0848
+; last modified 2021123-1550
 
 #include "../usual.h"
 
@@ -10,6 +10,9 @@
 
 ; first of all, send a CR to default device
 	JSR brk_cr			; worth it
+ldy#'b':jsr conio
+ldy#'r':jsr conio
+ldy#'k':jsr conio
 ; let us get the original return address, where the panic string begins
 	TSX					; current stack pointer
 	LDY $010B, X		; get MSB (note offset below)
@@ -22,6 +25,7 @@ brk_nw:
 	STY sysptr+1		; prepare internal pointer, should it be saved for reentrancy?
 	STA sysptr
 	LDY #0				; eeeeeeeeeeeeeeeeeek
+#include "../firmware/modules/streaks.s"
 brk_ploop:
 		_PHY				; save cursor
 		LDA (sysptr), Y		; get current char
@@ -54,10 +58,10 @@ brk_term:
 
 ; send a newline to default device
 brk_cr:
-	LDA #10;CR
+	LDA #CR
 brk_out:
-jsr$c0c2
-rts
+	TAY
+	JMP conio
 ;	LDY #0				; default
 ;	STA io_c			; kernel parameter
 ;	KERNEL(COUT)		; system call

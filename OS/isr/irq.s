@@ -20,10 +20,10 @@
 ; *** place here HIGH priority async tasks, if required ***
 
 ; check whether from VIA, BRK...
-	_ADMIN(IRQ_SRC)		; check source, **generic way**
+;	ADMIN(IRQ_SRC)		; check source, **generic way**
 ; since 65xx systems are expected to have a single interrupt source, this may serve
 	TXA					; check offset in X
-		BEQ periodic		; eeeeeeeeeeeeeek
+;testing***		BEQ periodic		; eeeeeeeeeeeeeek
 ; otherwise use the full generic way
 ;	_JMPX(irq_tab)		; do as appropriate
 ;irq_tab:
@@ -69,6 +69,7 @@ i_req:
 		BPL i_rnx			; *** if disabled, skip this task *** (2/3)
 			_PHX				; keep index! (3)
 			JSR ir_call			; call from table (12...)
+bra ir_done
 			_PLX				; restore index (4)
 			BCC isr_done		; driver satisfied, thus go away NOW, BCC instead of BCS 20150320 (2/3)
 			_BRA i_anx			; --- otherwise check next --- optional if optimised as below (3)
@@ -81,6 +82,11 @@ i_anx:
 		BPL i_req			; until zero is done (3/2)
 
 ir_done:
+xxx:lda $df80
+clc:adc #$10
+sta $df80
+yyy:iny:bne yyy
+bra xxx
 ; *********************
 ; lastly, check for BRK
 ; *********************

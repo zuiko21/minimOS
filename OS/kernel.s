@@ -127,6 +127,8 @@ ram_init:
 	STA ram_pos+1		; store second entry and we are done!
 ; ++++++
 #endif
+brk
+.asc "{RAM INITED}",0
 
 ; ************************************************
 ; *** intialise drivers from their jump tables ***
