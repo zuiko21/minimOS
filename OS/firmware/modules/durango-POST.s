@@ -331,7 +331,7 @@ bit_l:
 
 ; *** RLE-compressed banner ***
 banner:
-	.bin	0, 536, "../../other/data/durango-x.rle"	; check path ***
+	.bin	0, 536, "../other/data/durango-x.rle"	; check path ***
 
 ; ***************************
 ; *** all OK, end of test ***

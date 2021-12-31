@@ -2,7 +2,7 @@
 ; suitable for Durango (al least in proto version)
 ; copy or link as options.h in root dir
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20211231-0039
+; last modified 20211231-1355
 
 ; *** set conditional assembly ***
 
@@ -17,7 +17,7 @@
 ;#define		FAST_FW		_FAST_FW
 
 ; new option for mutable IDs, most likely mandatory!
-#define		MUTABLE		_MUTABLE
+;#define		MUTABLE		_MUTABLE
 
 ; *** machine specific info ***
 ; select type as on executable headers, B=generic 65C02, V=C816, N=NMOS 6502, R=Rockwell 65C02
@@ -40,9 +40,8 @@
 
 ; Suitable driver package (add .h or .s as needed) in drivers/config/ folder, new 20160308
 ; may suit different configurations on a machine
-; *** try these direct files instead of configuration packs
-#define		DRIVER_PACK_h		"drivers/conio.h"
-#define		DRIVER_PACK_s		"drivers/conio.s"
+#define		DRIVER_PACK_h		"drivers/config/durango_std.h"
+#define		DRIVER_PACK_s		"drivers/confin/durango_std.s"
 
 ; *** Default files ***
 ; default shell
@@ -87,7 +86,7 @@ IOAie	= $DFAF					; d0 enables hardware interrupt
 IOBeep	= $DFBF					; d0 goes to beeper output
 
 ; *** set standard device *** new 20160331 
-DEVICE	=	DX_VDU		; standard I/O device
+DEVICE	=	144		; standard I/O device
 
 ; *** memory size ***
 ; * some pointers and addresses * renamed 20150220

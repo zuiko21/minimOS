@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.6.1a3, should match kernel.s
+; v0.6.1a4, should match kernel.s
 ; features TBD
 ; (c) 2015-2021 Carlos J. Santisteban
-; last modified 20200929-1345
+; last modified 20211231-1247
 
 #define		ISR		_ISR
 
@@ -117,8 +117,8 @@ ip_call:
 
 ; *** here goes the periodic interrupt code *** (4)
 periodic:
-	LDA VIA+T1CL		; acknowledge periodic interrupt!!! (4)
-
+;	LDA VIA+T1CL		; acknowledge periodic interrupt!!! (4)
+; that was only for VIA-equipped systems!
 ; *** scheduler no longer here, just an optional driver! But could be placed here for maximum performance ***
 
 ; execute D_POLL code in drivers
@@ -177,10 +177,10 @@ i_pnx:
 ip_done:
 ; **********************************************
 ; *** STUB for procrastinated task execution ***
-	LDA i_delay			; something pending? (4) might use an array of several tasks!
+/*	LDA i_delay			; something pending? (4) might use an array of several tasks!
 	BNE i_wait			; if not, just continue (2/3) usually minimal latency this way
 ; *** see below for continuation ***
-; **********************************
+; **********************************/
 ; update uptime, much faster new format
 ip_tick:
 	INC ticks			; increment uptime count (6)
@@ -193,7 +193,7 @@ ip_tick:
 	_BRA isr_done		; go away (3)
 ; *******************************************************
 ; *** continue STUB for procrastinated task execution ***
-i_wait:
+/*i_wait:
 	DEC i_delay			; decrement counter (6) could be an array
 		BNE ip_tick			; still not expired (3/2)
 	JSR i_dcall			; or call supplied routine (6) perhaps indexed thru X
@@ -201,7 +201,7 @@ i_wait:
 i_dcall:
 	JMP (i_dptr)		; call supplied routine (6) could be an array
 ; *** note an API is needed to set this pointer, only if the counter is zero! ***
-; *******************************************************************************
+; *******************************************************************************/
 
 ; *******************
 ; *** BRK handler ***

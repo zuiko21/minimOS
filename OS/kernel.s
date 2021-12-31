@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6.1a1
+; v0.6.1a2
 ; (c) 2012-2021 Carlos J. Santisteban
-; last modified 20190215-0951
+; last modified 20211231-1356
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -50,7 +50,7 @@ kern_siz = kern_end - kern_head - $100
 ; **************************************************
 ; *** kernel begins here, much like a warm reset ***
 ; **************************************************
-
+-kernel:
 warm:
 	SEI				; interrupts off, just in case (2)
 	CLD				; just in case, a must for NMOS (2)
@@ -322,7 +322,7 @@ shell	= * + 256		; skip header
 ; ****** Downloaded kernels add driver stuff at the end ******
 ; ************************************************************
 #ifdef	DOWNLOAD
-#include DRIVER_PACK_s	; this package will be included with downloadable kernels
+#include	"drivers/config/durango_std.s"	; this package will be included with downloadable kernels
 .data
 ; downloadable system have ALL system & driver variables AFTER the kernel/API
 sysvars:

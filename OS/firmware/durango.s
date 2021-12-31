@@ -13,12 +13,12 @@
 
 .(
 #ifdef	DOWNLOAD
-#include "../options/durango.h"
-#include "../macros.h"
-#include "../abi.h"
-#include "../zeropage.h"
+#include "options/durango.h"
+#include "macros.h"
+#include "abi.h"
+#include "zeropage.h"
 * = $200
-#include "durango.h"
+#include "firmware/durango.h"
 .text
 #else
 ;#include "../usual.h"

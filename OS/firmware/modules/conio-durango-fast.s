@@ -730,5 +730,5 @@ cio_mbm:
 	.word	cn_atyx			; 8= X to be set and return to normal
 
 +cio_fnt:					; *** export label for init! ***
-#include "../../drivers/fonts/8x8.s"
+#include "../drivers/fonts/8x8.s"
 .)

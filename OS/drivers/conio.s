@@ -1,7 +1,7 @@
 ; generic, UNIVERSAL firmware console support for minimOS!
-; v0.6b1
+; v0.6b2
 ; (c) 2021 Carlos J. Santisteban
-; last modified 20210409-1427
+; last modified 20211231-1250
 
 ; ***********************
 ; *** minimOS headers ***
@@ -13,7 +13,7 @@
 	.byt	A_BOUT|A_BLIN	; basic I/O driver, non-interrupt-driven
 	.word	gfc_i		; read N bytes from 'serial'
 	.word	gfc_o		; output N bytes to 'serial'
-	.word	gfc_init	; initialise 'device', called by POST only
+	.word	fwc_init	; initialise 'device', called by POST only
 	.word	fwc_nul		; no periodic interrupt
 	.word	0			; frequency makes no sense
 	.word	gfc_nreq	; D_ASYN does nothing
