@@ -1,6 +1,6 @@
 ; minimOS BRK panic handler
 ; v0.6.1a2
-; (c) 2016-2021 Carlos J. Santisteban
+; (c) 2016-2022 Carlos J. Santisteban
 ; last modified 2021123-1550
 
 #include "../usual.h"

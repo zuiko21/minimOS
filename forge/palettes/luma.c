@@ -1,4 +1,4 @@
-/* (C) 2019-2021 Carlos J. Santisteban */
+/* (C) 2019-2022 Carlos J. Santisteban */
 #include <stdio.h>
 
 int main(void) {

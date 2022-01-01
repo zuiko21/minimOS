@@ -1,7 +1,7 @@
 /*
  * PPM font viewer for minimOS bitmaps *
  * when converted to 4px width         *
- * (C) 2020-2021 Carlos J. Santisteban *
+ * (C) 2020-2022 Carlos J. Santisteban *
  * Last modified: 20201030-1317        *
  */
 

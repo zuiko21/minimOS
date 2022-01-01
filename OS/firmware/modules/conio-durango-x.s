@@ -1,5 +1,5 @@
 ; firmware module for minimOS
-; Durango-X firmware console 0.9.6a3
+; Durango-X firmware console 0.9.6a3 -- OBSOLETE as the fast version is fine
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021 Carlos J. Santisteban
 ; last modified 20210924-0037

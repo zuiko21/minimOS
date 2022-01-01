@@ -1,5 +1,5 @@
 ; initial map for Pacman
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20210318-1350
 
 /*

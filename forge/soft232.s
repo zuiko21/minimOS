@@ -1,6 +1,6 @@
 ; software serial port emulator for minimOS!
 ; v0.5b3, for generic 65C02 (65816-savvy)
-; (c) 2016-2021 Carlos J. Santisteban
+; (c) 2016-2022 Carlos J. Santisteban
 ; last modified 20161114-2140
 
 ; VIA bit functions

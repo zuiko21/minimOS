@@ -2,6 +2,7 @@
 ; separate LO and HI bytes
 ; intended for Pacman, only up to 28 needed!
 ; ...but doing up to 31, anyway
+; (c) 2021-2022 Carlo J. Santisteban
 
 ; old format, LSB.8, then MSB.2
 ; * LSBs of squares table *

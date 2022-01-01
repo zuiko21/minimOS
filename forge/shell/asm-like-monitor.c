@@ -1,6 +1,6 @@
 /*
  * M/L for minimOS simulator
- * (c) 2015-2021 Carlos J. Santisteban
+ * (c) 2015-2022 Carlos J. Santisteban
  * last modified 20151009-0901
  */
 

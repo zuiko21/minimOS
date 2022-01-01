@@ -1,6 +1,6 @@
 ; 2 kiB pico-VDU (direct bus version)
 ; v0.1a1
-; (c) 2021 Carlos J. Santisteban
+; (c) 2022 Carlos J. Santisteban
 ; last modified 20210126-0955
 
 ; *** stub with TONS of things to do ***

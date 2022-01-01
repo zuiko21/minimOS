@@ -1,6 +1,6 @@
 ; stub for VDU access via VIA latched interface
 ; 32K 4-bit version
-; (c) 2017-2021 Carlos J. Santisteban
+; (c) 2017-2022 Carlos J. Santisteban
 ; last modified 20170415
 
 ; *** direct access 6502 version *** ~0.82s @ 1 MHz

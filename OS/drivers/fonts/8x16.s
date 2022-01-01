@@ -1,5 +1,5 @@
 ; Automatic font definition for minimOS
-; (c) 2019-2021 Carlos J. Santisteban
+; (c) 2019-2022 Carlos J. Santisteban
 
 ; ASCII $0
 	.byt	%11111111

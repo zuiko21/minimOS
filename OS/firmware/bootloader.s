@@ -1,7 +1,7 @@
 ; breadboard nanoBoot-loader ROM
 ; minimal support for minimOS·65
 ; v0.6b21
-; (c)2015-2021 Carlos J. Santisteban
+; (c)2015-2022 Carlos J. Santisteban
 ; last modified 20210225-1153
 
 #define	TIMEBOOT	_TIMEBOOT

@@ -1,6 +1,6 @@
 ; *** convert raster in A into a 4px mask ***
 ; *** for Tampico's optional colour mode ***
-; (c) 2020-2021 Carlos J. Santisteban
+; (c) 2020-2022 Carlos J. Santisteban
 ; last modified 20201023-1307
 
 ; first approach, outside ZP takes 20b, 31t, otherwise saves 4 bytes and 4 cycles (16/27)

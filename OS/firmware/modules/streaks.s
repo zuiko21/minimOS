@@ -1,6 +1,6 @@
 ; debug module
 ; streaks on Durango-X screen
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 
 .(
 streaks:

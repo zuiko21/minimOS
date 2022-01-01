@@ -1,7 +1,7 @@
 ; ********************************
 ; *** scancode to ASCII tables *** for 64-key ASCII keyboard
 ; ********************************
-; (c) 2012-2021 Carlos J. Santisteban
+; (c) 2012-2022 Carlos J. Santisteban
 ; last modified 20200315-2051
 
 ; cols 0...14, and inside rows 0...3

@@ -1,7 +1,7 @@
 ; firmware module for minimOS
 ; IO9 keyboard access 0.9.6a1
 ; suitable for anything with a single R/W address
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20210815-0014
 
 .(

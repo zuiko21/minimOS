@@ -1,7 +1,7 @@
 ;
 ; 6 5 0 2		F U N C T I O N A L		T E S T
 ;
-; Copyright (C) 2012-2021	Klaus Dormann
+; Copyright (C) 2012-2022	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** last modified 20201216-1858 ***

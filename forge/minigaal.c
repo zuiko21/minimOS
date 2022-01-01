@@ -1,6 +1,6 @@
 /*
  * miniGaal, VERY elementary HTML browser for minimOS
- * (c) 2018-2021 Carlos J. Santisteban
+ * (c) 2018-2022 Carlos J. Santisteban
  * last modified 20180416-1056
  * */
 

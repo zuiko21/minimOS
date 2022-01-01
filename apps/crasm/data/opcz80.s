@@ -1,5 +1,5 @@
 ; minimOS opcode list for (dis)assembler modules
-; (c) 2015-2021 Carlos J. Santisteban
+; (c) 2015-2022 Carlos J. Santisteban
 ; last modified 20200226-1453
 
 ; ***** for z80asm Z80 cross assembler *****

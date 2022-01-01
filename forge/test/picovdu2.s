@@ -1,6 +1,6 @@
 ; test code for picoVDU in Tommy2 computer
 ; IO-channel 8 connection
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20210427-1722
 
 	* = $400				; standard download address

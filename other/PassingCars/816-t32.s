@@ -1,6 +1,6 @@
 ; 65816 code for the Passing Cars exercise
 ; https://app.codility.com/programmers/lessons/5-prefix_sums/passing_cars
-; (c) 2020-2021 Carlos J. Santisteban
+; (c) 2020-2022 Carlos J. Santisteban
 
 ; *** CAVEATS ***
 ; Array up to about 65536 elements

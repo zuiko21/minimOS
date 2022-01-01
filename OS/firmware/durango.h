@@ -1,7 +1,7 @@
 ; generic firmware variables for minimOS·65
 ; including Durango specifics
 ; v0.6.1a4
-; (c) 2015-2021 Carlos J. Santisteban
+; (c) 2015-2022 Carlos J. Santisteban
 ; last modified 20211230-1840
 
 -sysram:

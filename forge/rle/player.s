@@ -1,5 +1,5 @@
 ; RLE-encoded video playback POC
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211110-1334
 
 ; *** zeropage variables ***

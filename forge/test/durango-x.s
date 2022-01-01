@@ -1,5 +1,5 @@
-; FULL test of Durango-X
-; (c) 2021 Carlos J. Santisteban
+; FULL test of Durango-X *** OBSOLETE, adapt from current durango-dl.s
+; (c) 2021-2022 Carlos J. Santisteban
 ; began 20210831-0212
 ; last modified 20210901-2330
 

@@ -1,6 +1,6 @@
 ; firmware module for minimOS
 ; Durango-X ROMcheck interface
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211227-0037
 
 .(

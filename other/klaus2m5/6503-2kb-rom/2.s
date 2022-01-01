@@ -1,7 +1,7 @@
 ;
 ; 6 5 0 2		F U N C T I O N A L		T E S T		P A R T		2
 ;
-; Copyright (C) 2012-2021	Klaus Dormann
+; Copyright (C) 2012-2022	Klaus Dormann
 ; *** this version ROM-adapted by Carlos J. Santisteban ***
 ; *** for xa65 assembler, previously processed by cpp ***
 ; *** partial test to fit into 2 kiB ROM for 6503 etc ***

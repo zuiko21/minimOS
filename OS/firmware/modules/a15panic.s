@@ -1,5 +1,5 @@
 ; A15 PANIC firmware module
-; (c) 2020-2021 Carlos J. Santisteban
+; (c) 2020-2022 Carlos J. Santisteban
 ; last modified 20200509-1251
 
 ; ***********************************************************************************

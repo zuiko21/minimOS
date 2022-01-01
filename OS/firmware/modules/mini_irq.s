@@ -1,6 +1,6 @@
 ; minimal ISR for minimOS
 ; v0.6.1a2, should match kernel.s
-; (c) 2019-2021 Carlos J. Santisteban
+; (c) 2019-2022 Carlos J. Santisteban
 ; last modified 20211227-1735
 
 

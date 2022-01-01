@@ -2,7 +2,7 @@
 ; SDd with emulated serial specific configuration!
 ; ***** Jornada HackLabAlmería en El Ejido 2017 *****
 ; v0.6b1
-; (c) 2015-2021 Carlos J. Santisteban
+; (c) 2015-2022 Carlos J. Santisteban
 ; last modified 20180404-1344
 
 #define		DRIVERS		1

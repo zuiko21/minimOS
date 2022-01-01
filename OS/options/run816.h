@@ -1,7 +1,7 @@
 ; default options for minimOS and other modules
 ; suitable for run816 BBC simulator
 ; copy or link as options.h in root dir
-; (c) 2017-2021 Carlos J. Santisteban
+; (c) 2017-2022 Carlos J. Santisteban
 ; last modified 20200301-1010
 
 ; *** set conditional assembly ***

@@ -1,7 +1,7 @@
-/* 4 bpp PPM image converter      *
- * assume GRgB (d0...d3) 128x128  *
- * (c) 2021 Carlos J. Santisteban *
- * last modified 20210401-1157    *
+/* 4 bpp PPM image converter           *
+ * assume GRgB (d0...d3) 128x128       *
+ * (c) 2021-2022 Carlos J. Santisteban *
+ * last modified 20210401-1157         *
  */
 
 #include <stdio.h>

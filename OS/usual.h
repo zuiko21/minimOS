@@ -1,6 +1,6 @@
 ; usual header includes for minimOS
 ; last modified 20180405-1339
-; (c) 2012-2021 Carlos J. Santisteban
+; (c) 2012-2022 Carlos J. Santisteban
 
 #ifndef	HEADERS
 ; avoid further redefinitions

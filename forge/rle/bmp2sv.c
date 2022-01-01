@@ -1,6 +1,6 @@
-/* BMP decoder to SV format       *
- * (c) 2021 Carlos J. Santisteban *
- * last modified 20211109-1235    */
+/* BMP decoder to SV format            *
+ * (c) 2021-2022 Carlos J. Santisteban *
+ * last modified 20211109-1235         */
 
 #include <stdio.h>
 #include <string.h>

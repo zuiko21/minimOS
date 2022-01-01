@@ -1,5 +1,5 @@
 ; firmware module for minimOS
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211227-1749
 
 ; **************************

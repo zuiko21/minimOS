@@ -1,5 +1,5 @@
 ; Space Invaders sound test for Durango
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 
 ; must play 494, 440, 392 and 370 Hz brief notes
 ; that's semicycles of 1555t, 1745t, 1959t and 2076t

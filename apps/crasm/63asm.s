@@ -2,7 +2,7 @@
 ; based on miniMoDA engine!
 ; v0.5.2b2 like 0.5.1 but 65816-savvy
 ; last modified 20181221-0958
-; (c) 2017-2021 Carlos J. Santisteban
+; (c) 2017-2022 Carlos J. Santisteban
 
 #include "../../OS/usual.h"
 

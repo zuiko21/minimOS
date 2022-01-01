@@ -1,6 +1,6 @@
 /* compute VIA T2CL value for
  * SS22 speed adjustment
- * (c) 2015-2021 Carlos J. Santisteban
+ * (c) 2015-2022 Carlos J. Santisteban
  * last modified 20150219-1032 */
 
 #include <tgmath.h>

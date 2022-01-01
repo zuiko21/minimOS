@@ -1,7 +1,7 @@
 /* IOx keyboard interface
  * for VIAport2 keyboard
  * includes two EPROMS, one for ASCII codes, one for control signals
- * (c) 2021 Carlos J. Santisteban
+ * (c) 2021-2022 Carlos J. Santisteban
  * THIS CODE GENERATES THE EPROM CONTENTS
  */
 

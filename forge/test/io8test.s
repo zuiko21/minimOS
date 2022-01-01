@@ -1,5 +1,5 @@
 ; test of preliminary connection
-; (c) 2021 Carlos J. Santisteban 
+; (c) 2021-2022 Carlos J. Santisteban 
 
 	* =	$400
 	LDA #0

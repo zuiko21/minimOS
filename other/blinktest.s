@@ -1,5 +1,5 @@
 ; *** A15 blinking LED mini-test          ***
-; *** (c) 2020-2021 Carlos J. Santisteban ***
+; *** (c) 2020-2022 Carlos J. Santisteban ***
 ; *** last modified 20201211-1339         ***
 
 		.bss

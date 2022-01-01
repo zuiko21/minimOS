@@ -1,7 +1,7 @@
 ; *** *** O B S O L E T E *** *** look for jalapa2 instead
 ; firmware for minimOS on SDm/Jalapa (and maybe others)
 ; generic template v0.5.3a1, unrelated to LATER generic template 0.5.1
-; (c)2015-2021 Carlos J. Santisteban
+; (c)2015-2022 Carlos J. Santisteban
 ; last modified 20180404-1352
 
 #define		FIRMWARE	_FIRMWARE

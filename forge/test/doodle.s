@@ -1,5 +1,5 @@
-; Durango IO9 jpypad Doodle!
-; (c) 2021 Carlos J. Santisteban
+; Durango IO9 joypad Doodle!
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211213-1837
 
 ; *** usage ***

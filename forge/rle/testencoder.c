@@ -1,7 +1,7 @@
-/* RLE encoder for minimOS        *
- * investigates optimum threshold *
- * (c) 2021 Carlos J. Santisteban *
- * last modified 20211031-1752    */
+/* RLE encoder for minimOS             *
+ * investigates optimum threshold      *
+ * (c) 2021-2022 Carlos J. Santisteban *
+ * last modified 20211031-1752         */
 
 #include <stdio.h>
 

@@ -1,7 +1,7 @@
 ; firmware module for minimOS
 ; 32 KiB RAM checker routine 0.9.6a1
 ; suitable for most!
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20210818-1339
 
 .(

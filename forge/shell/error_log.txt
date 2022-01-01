@@ -1,5 +1,5 @@
 minimOS 0.5b1 Symbolic 65C02 Assembler/Monitor
-(c)2015 Carlos J. Santisteban
+(c)2015-2022 Carlos J. Santisteban
 0400: lda12
 > LDA $12 [ a5 12 ]
 0402: _loop

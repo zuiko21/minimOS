@@ -5,7 +5,7 @@
 ; port bits 0...3 = pins 9...6 on LEDs (anodes) -- NOTE ORDER!
 ; NO access to pin 1 on LEDs (leading "1" cathode, NOT currently used)
 ; bitmap format is now abc*defg, simplifying both hard and soft
-; (c) 2020-2021 Carlos J. Santisteban
+; (c) 2020-2022 Carlos J. Santisteban
 ; last modified 20201225-2031
 
 	.zero

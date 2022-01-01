@@ -1,5 +1,5 @@
 ; CONIO echo server for Durango-X
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211226-1134
 ; assemble from ~forge/nanoboot via:
 ; xa echo.s -I ../../OS/firmware/modules/ -I ../../OS -l labels

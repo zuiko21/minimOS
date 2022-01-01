@@ -4,7 +4,7 @@
 ; expects signature value at $FFDE-$FFDF for a final checksum of 0
 ; relocate down $A000 bytes in case of DOWNLOADable module
 ; designed for Durango, suitable for most!
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20210915-2234
 
 ; *** note computed checksum is expected to be ZERO thanks to the word stored at $FFDE (sum)-$FFDF (chk)

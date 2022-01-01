@@ -1,5 +1,5 @@
 ; SDd SRAM-tester (up to 512Kx8)
-; (c) 2013-2021 Carlos J. Santisteban
+; (c) 2013-2022 Carlos J. Santisteban
 ; version 1.0b2, 65C02
 ; last modified 20130205
 

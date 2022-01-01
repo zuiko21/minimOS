@@ -1,7 +1,7 @@
 ; minimOS basic I/O driver for run65816 BBC simulator
 ; v0.9.6b5
 ; *** new format for mOS 0.6 compatibility *** 8-bit version
-; (c) 2017-2021 Carlos J. Santisteban
+; (c) 2017-2022 Carlos J. Santisteban
 ; last modified 20200118-2250
 
 #ifndef		HEADERS

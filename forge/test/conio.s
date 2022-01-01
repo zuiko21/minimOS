@@ -1,5 +1,5 @@
 ; CONIO test for Durango-X
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211226-1224
 ; assemble from ~forge/nanoboot via:
 ; xa conio.s -I ../../OS/firmware/modules/ -I ../../OS -l labels

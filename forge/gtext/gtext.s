@@ -1,6 +1,6 @@
 ; print text on arbitrary pixel boundaries
 ; 65(C)02-version
-; (c) 2020-2021 Carlos J. Santisteban
+; (c) 2020-2022 Carlos J. Santisteban
 ; last modified 20210118-1102
 
 ; assume MAXIMUM 32x32 pixel font, bitmap VRAM layout (might be adapted to planar as well)

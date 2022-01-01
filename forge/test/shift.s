@@ -1,5 +1,5 @@
 ; video stress test for Durango-X
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211221-2316
 
 ; ****************************

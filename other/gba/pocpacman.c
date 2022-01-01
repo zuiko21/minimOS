@@ -1,3 +1,4 @@
+// (c) 2021-2022 Carlos J. Santisteban
 // píxeles por unidad de mapa
 #define	PASO	4
 // anchura del sprite en unidades de mapa (actualmente 8 pixels) *** NO USADO?

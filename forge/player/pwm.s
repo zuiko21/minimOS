@@ -1,5 +1,5 @@
 ; PWM player for Durango-X!
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211007-1708
 
 ; *** required variables (not necessarily in ZP) ***

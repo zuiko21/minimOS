@@ -3,7 +3,7 @@
 ; based on Fletcher-16 algorithm
 ; expects signature value at $FFDE-$FFDF for a final checksum of 0
 ; suitable for most!
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211109-1210
 
 ; *** note computed checksum is expected to be ZERO thanks to the word stored at $FFDE (sum)-$FFDF (chk)

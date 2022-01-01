@@ -1,5 +1,5 @@
 ; I/O test of Durango-X (downloadable version)
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20210928-1231
 
 ; ****************************

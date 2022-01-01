@@ -1,7 +1,7 @@
 /* ********************************************************
  * ** Verificación de memoria en minimOS 0.4 (sobre SDd) **
  * ********** última modificación: 20171212-0952 **********
- * ********* (c) 2017-2021 Carlos J. Santisteban  *********
+ * ********* (c) 2017-2022 Carlos J. Santisteban  *********
  * ******************************************************** */
 
 /* ***** declaración de constantes ***** */

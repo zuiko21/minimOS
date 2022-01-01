@@ -1,5 +1,5 @@
 /* ROM signer with Fletcher-16 checksum *
- * (c) 2021 Carlos J. Santisteban       *
+ * (c) 2021-2022 Carlos J. Santisteban  *
  * last modified 20211230-2218          */
 
 #include <stdio.h>

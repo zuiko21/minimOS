@@ -1,6 +1,6 @@
 ; firmware module for minimOS
 ; Durango-X interrupt & beeper shutoff
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211228-2231
 
 .(

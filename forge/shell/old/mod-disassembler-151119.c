@@ -1,6 +1,6 @@
 /* 65C02 disassembler module for minimOS
  * last modified 20151119-1328
- * (c) 2015-2021 Carlos J. Santisteban
+ * (c) 2015-2022 Carlos J. Santisteban
  * */
 
 /* for standalone compilation */

@@ -1,7 +1,7 @@
 ; minimOS 0.6.1a3 API/ABI
 ; *** not compatible with earlier versions ***
 ; *** new firmware interface NOT compatible with 0.6 ***
-; (c) 2012-2021 Carlos J. Santisteban
+; (c) 2012-2022 Carlos J. Santisteban
 ; last modified 20211223-2305
 
 ; *************************************************

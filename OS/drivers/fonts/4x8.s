@@ -1,5 +1,5 @@
 ; 4x8 font definition for minimOS picoVDU
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20210507-1430
 
 ; for space saving, even glyps are stored as MSN, and odd glyphs as LSN

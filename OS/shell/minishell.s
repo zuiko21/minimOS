@@ -2,7 +2,7 @@
 ; v0.5.3b1
 ; like 0.5.1 for 0.6 ABI/API, plus 0.6.1 compatible!
 ; last modified 20211231-0028
-; (c) 2016-2021 Carlos J. Santisteban
+; (c) 2016-2022 Carlos J. Santisteban
 
 #ifndef	HEADERS
 #include "../usual.h"

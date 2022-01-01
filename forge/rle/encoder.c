@@ -1,6 +1,6 @@
-/* RLE encoder for minimOS        *
- * (c) 2021 Carlos J. Santisteban *
- * last modified 20211031-1756    */
+/* RLE encoder for minimOS             *
+ * (c) 2021-2022 Carlos J. Santisteban *
+ * last modified 20211031-1756         */
 
 #include <stdio.h>
 

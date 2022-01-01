@@ -1,6 +1,6 @@
 /* non-symbolic assembler for minimOS
  * last modified 20151204-1407
- * (c) 2015-2021 Carlos J. Santisteban
+ * (c) 2015-2022 Carlos J. Santisteban
  * */
 
 #include <stdio.h>

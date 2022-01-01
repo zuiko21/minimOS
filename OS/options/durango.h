@@ -1,7 +1,7 @@
 ; default options for minimOS and other modules
 ; suitable for Durango (al least in proto version)
 ; copy or link as options.h in root dir
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211231-1355
 
 ; *** set conditional assembly ***

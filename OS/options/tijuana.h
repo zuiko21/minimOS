@@ -1,7 +1,7 @@
 ; default options for minimOS and other modules
 ; suitable for Tijuana with built-in VGA-compatible output
 ; copy or link as options.h in root dir
-; (c) 2015-2021 Carlos J. Santisteban
+; (c) 2015-2022 Carlos J. Santisteban
 ; last modified 20180801-2042
 
 ; *** set conditional assembly ***

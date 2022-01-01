@@ -1,7 +1,7 @@
 ; firmware module for minimOS
 ; RAMtest 0.6a3
 ; modified for integrated IOB beep
-; (c) 2015-2021 Carlos J. Santisteban
+; (c) 2015-2022 Carlos J. Santisteban
 ; last modified 20210226-1435
 
 ; *** RAMtest, 6510-savvy ***

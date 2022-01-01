@@ -1,6 +1,6 @@
 ; firmware for minimOS on Acapulco
 ; v0.9.6b7
-; (c) 2019-2021 Carlos J. Santisteban
+; (c) 2019-2022 Carlos J. Santisteban
 ; last modified 20190402-1402
 
 #define		FIRMWARE 	_FIRMWARE

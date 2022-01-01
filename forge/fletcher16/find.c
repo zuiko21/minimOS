@@ -1,5 +1,5 @@
 /* solution seeker for Fletcher-16 checksum *
- * (c) 2021 Carlos J. Santisteban           *
+ * (c) 2021-2022 Carlos J. Santisteban      *
  * last modified 20210907-1515              */
 
 #include <stdio.h>

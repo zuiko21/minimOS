@@ -1,5 +1,5 @@
 ; LTC4622 display test
-; (c) 2020-2021 Carlos J. Santisteban
+; (c) 2020-2022 Carlos J. Santisteban
 ; last modified 20201213-1520
 
 	.zero

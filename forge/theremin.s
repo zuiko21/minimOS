@@ -1,5 +1,5 @@
 ; optical Theremin (standalone ROM version)
-; (c) 2018-2021 Carlos J. Santisteban
+; (c) 2018-2022 Carlos J. Santisteban
 ; v0.4
 ; last modified 20180319-0915
 

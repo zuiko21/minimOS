@@ -1,6 +1,6 @@
-/* minimOS disk imager v0.3       *
- * (c) 2021 Carlos J. Santisteban *
- * last modified 20210129-1428    *
+/* minimOS disk imager v0.3            *
+ * (c) 2021-2022 Carlos J. Santisteban *
+ * last modified 20210129-1428         *
  */
 
 #include <stdio.h>

@@ -1,7 +1,7 @@
-/* PPM to SV image converter     */
-/* assume 128x128 4bpp GRgB D0-3 */
-/* (C)2021 Carlos J. Santisteban */
-/* last modified 20210903-0031   */
+/* PPM to SV image converter          */
+/* assume 128x128 4bpp GRgB D0-3      */
+/* (C)2021-2022 Carlos J. Santisteban */
+/* last modified 20210903-0031        */
 
 #include <stdio.h>
 

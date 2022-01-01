@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * HACKED version (much slower)        *
- * (c) 2020-2021 Carlos J. Santisteban *
+ * (c) 2020-2022 Carlos J. Santisteban *
  * last modified 20210216-2231         */
 
 #include <stdio.h>

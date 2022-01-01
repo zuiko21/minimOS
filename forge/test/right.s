@@ -1,5 +1,5 @@
 ; test of colour Durango-X screen
-; (c) 2021 Carlos J. Santisteban 
+; (c) 2021-2022 Carlos J. Santisteban 
 
 	* =	$400
 

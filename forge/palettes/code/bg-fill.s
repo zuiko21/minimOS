@@ -1,5 +1,5 @@
 ; SIXtation FW background fill
-; (c) 2020-2021 Carlos J. Santisteban
+; (c) 2020-2022 Carlos J. Santisteban
 ; last modified 20200410-2227
 
 ; *** hardware definitions ***

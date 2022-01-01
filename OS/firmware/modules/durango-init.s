@@ -1,5 +1,5 @@
 ; firmware module for minimOS·65
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211230-0020
 
 ; *** init CONIO in durango, as interrupts are already set up ***

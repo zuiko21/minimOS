@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 /* luma palette generator
- * (c) 2019-2021 Carlos J. Santisteban
+ * (c) 2019-2022 Carlos J. Santisteban
  * last modified 20191004-0928
  */
 

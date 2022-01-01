@@ -1,7 +1,7 @@
 ; Durango firmware (at least for prototype version)
 ; based on generic firmware template for minimOS·65
 ; v0.6.1b1
-; (c)2015-2021 Carlos J. Santisteban
+; (c)2015-2022 Carlos J. Santisteban
 ; last modified 20211231-1541
 
 #define		ROM			_ROM

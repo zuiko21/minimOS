@@ -1,5 +1,5 @@
 minimOS version history
-(c) 2012-2013 Carlos J. Santisteban
+(c) 2012-2021 Carlos J. Santisteban
 
 0.1a1 (2007-02-03):
 	-ran (rather buggy!) on a 6502 emulator written in C.
@@ -101,7 +101,7 @@ minimOS version history
 =================================================
 0.5 to do:
 
-All of the obove plus:
+All of the above plus:
 	-software multitasking (4 jobs)
 	-separate firmware and modules
 	-possible "netbooting" via ACIA instead of SS-22 (separate, simplified FW drivers)

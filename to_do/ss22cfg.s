@@ -1,5 +1,5 @@
 ; SS-22 auto-configuration protocol
-; (c) 2020-2021 Carlos J. Santisteban
+; (c) 2020-2022 Carlos J. Santisteban
 ; last modified 20200428-2055
 
 /*

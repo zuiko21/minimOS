@@ -1,6 +1,6 @@
 ; firmware module for minimOS
 ; Durango-X splash screen after POST
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211230-2244
 
 #ifdef	TESTING

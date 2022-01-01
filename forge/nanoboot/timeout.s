@@ -1,5 +1,5 @@
 ; nanoboot timeout mods
-; (c) 2019-2021 Carlos J. Santisteban
+; (c) 2019-2022 Carlos J. Santisteban
 
 	LDX #4				; initial value
 	STX timeout			; fill 16b timeout counter

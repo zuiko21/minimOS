@@ -1,7 +1,7 @@
 ; Durango IO9 test (input)
 ; revised version for 'joystick'
 ; optimised version
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 
 *		= $400				; standard download
 

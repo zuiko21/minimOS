@@ -1,6 +1,6 @@
 ; firmware module for minimOS
 ; nanoBoot loader
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211230-1656
 
 .(

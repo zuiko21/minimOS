@@ -1,7 +1,7 @@
 ; firmware module for minimOS
 ; Durango-X panic handler!
 ; make IRQ LED flash according to pattern in A
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211230-2207
 
 .(

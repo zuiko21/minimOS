@@ -1,6 +1,6 @@
 ; Pi-day demo
 ; for DURANGO 65c02 computer
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20210314-1504
 
 ; ZP use

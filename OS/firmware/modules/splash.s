@@ -1,5 +1,5 @@
 ; firmware module for minimOS on run65816
-; (c) 2018-2021 Carlos J. Santisteban
+; (c) 2018-2022 Carlos J. Santisteban
 ; last modified 20190222-1218
 
 ; *** direct print splash string ***

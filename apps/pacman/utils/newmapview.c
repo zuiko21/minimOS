@@ -1,6 +1,6 @@
 /* Pacman map viewer */
 /* new compact format */
-/* (c) 2021 Carlos J. Santisteban */
+/* (c) 2021-2022 Carlos J. Santisteban */
 
 #include <stdio.h>
 

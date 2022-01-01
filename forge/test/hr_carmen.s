@@ -1,5 +1,5 @@
 ; test of Durango-X video output (hires mode)
-; (c) 2021 Carlos J. Santisteban 
+; (c) 2021-2022 Carlos J. Santisteban 
 
 * = $6000					; VRAM start
 

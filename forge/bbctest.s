@@ -1,3 +1,4 @@
+; (c) 2015-2022 Carlos J. Santisteban
 * = $ff00
 boot:
 	SEI

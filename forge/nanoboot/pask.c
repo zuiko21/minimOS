@@ -1,5 +1,5 @@
 /* IO9 keyboard emulation              *
- * (c) 2021      Carlos J. Santisteban *
+ * (c) 2021-2022 Carlos J. Santisteban *
  * last modified 20211228-1211         */
 
 #include <stdio.h>

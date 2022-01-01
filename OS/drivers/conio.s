@@ -1,6 +1,6 @@
 ; generic, UNIVERSAL firmware console support for minimOS!
 ; v0.6b2
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211231-1250
 
 ; ***********************

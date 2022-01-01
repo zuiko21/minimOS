@@ -1,5 +1,5 @@
 ; firmware module for minimOS·16
-; (c) 2018-2021 Carlos J. Santisteban
+; (c) 2018-2022 Carlos J. Santisteban
 ; last modified 20180116-1057
 
 ; reset last installed kernel pointer!

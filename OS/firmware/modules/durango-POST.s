@@ -1,7 +1,7 @@
 ; firmware module for minimOS
 ; system checker routine 0.9.6a6
 ; for Durango-X, both ROMmable and DOWNLOADable
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211230-0045
 
 #ifdef	TESTING

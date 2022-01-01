@@ -1,5 +1,5 @@
 ; nanomon16 scratch file
-; (c) 2019-2021 Carlos J. Santisteban
+; (c) 2019-2022 Carlos J. Santisteban
 
 ; *** original code is 12b *** GRAND TOTAL 30 bytes
 	LDA 8, S			; stacked Y

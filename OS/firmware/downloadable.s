@@ -1,7 +1,7 @@
 ; breadboard nanoBoot-loaded firmware
 ; based on generic firmware template for minimOS·65
 ; v0.6b20
-; (c)2015-2021 Carlos J. Santisteban
+; (c)2015-2022 Carlos J. Santisteban
 ; last modified 20210225-1224
 
 #define		FIRMWARE	_FIRMWARE

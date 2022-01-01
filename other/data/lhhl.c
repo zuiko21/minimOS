@@ -1,7 +1,7 @@
-/* LHHL test file creator        */
-/* full 64K, trim as needed      */
-/* (C)2021 Carlos J. Santisteban */
-/* last modified 20210902-2305   */
+/* LHHL test file creator             */
+/* full 64K, trim as needed           */
+/* (C)2021-2022 Carlos J. Santisteban */
+/* last modified 20210902-2305        */
 
 #include <stdio.h>
 

@@ -1,6 +1,6 @@
 ; SS-22 *asynchronous* driver for minimOS
 ; v0.5a2, seems OBSOLETE since 2016
-; (c) 2012-2021 Carlos J. Santisteban
+; (c) 2012-2022 Carlos J. Santisteban
 ; last modified 20200121-1414
 ; revised 20160928
 

@@ -1,4 +1,4 @@
-; (c) 2020-2021 Carlos J. Santisteban
+; (c) 2020-2022 Carlos J. Santisteban
 #define	VIA	$6FF0
 #include <via.h>
 

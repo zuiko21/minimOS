@@ -1,6 +1,6 @@
 ; BCD-pair glyph table
 ; 4x5 font, intended for Pacman
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20210304-1323
 
 ; format is scanline (5), then MSB (10), then LSB (16)

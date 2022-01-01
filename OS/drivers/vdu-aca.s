@@ -1,6 +1,6 @@
 ; Acapulco built-in 8 KiB VDU for minimOS!
 ; v0.6a16
-; (c) 2019-2021 Carlos J. Santisteban
+; (c) 2019-2022 Carlos J. Santisteban
 ; last modified 20210107-0957
 
 #ifndef		HEADERS

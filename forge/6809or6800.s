@@ -1,5 +1,5 @@
 ; 6809 code snippet in order to tell a 6800 CPU!
-; (C) 2017-2021 Carlos J. Santisteban
+; (C) 2017-2022 Carlos J. Santisteban
 ; last modified 20170506-1030
 
 	LDA A #2			; clears V

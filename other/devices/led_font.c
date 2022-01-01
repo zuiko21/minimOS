@@ -1,4 +1,4 @@
-/* (c) 2013-2021 Carlos J. Santisteban */
+/* (c) 2013-2022 Carlos J. Santisteban */
 #include <stdio.h>
 
 typedef		unsigned char	byt;

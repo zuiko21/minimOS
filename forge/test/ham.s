@@ -1,5 +1,5 @@
 ; HAM-like interlaced colour palette for Durango-X
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211222-2347
 
 	* = $400				; standard download

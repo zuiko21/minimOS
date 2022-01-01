@@ -2,7 +2,7 @@
  * converts BitFontMaker exported fonts *
  * into xa65 assembly files             *
  *
- * (c) 2019-2021 Carlos J. Santisteban  *
+ * (c) 2019-2022 Carlos J. Santisteban  *
  * last modified 20200101-1705          *
  */
 

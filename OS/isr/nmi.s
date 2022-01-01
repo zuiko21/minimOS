@@ -2,7 +2,7 @@
 
 ; NMI module for minimOS
 ; v0.5a3, obsolete since 2016
-; (c) 2015-2021 Carlos J. Santisteban
+; (c) 2015-2022 Carlos J. Santisteban
 ; originally issued 20130512 ???
 ; last modified 20160310
 

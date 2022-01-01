@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+/* (c) Carlos J. Santisteban 2022 */
 int main(void) {
 	int x,y,x1,y1,x2,y2,s1,s2,q1,q2,dir;
 	int dx[4]={1,0,-1,0};

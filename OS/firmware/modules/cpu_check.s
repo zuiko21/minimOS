@@ -1,5 +1,5 @@
 ; firmware module for minimOS·65
-; (c) 2015-2021 Carlos J. Santisteban
+; (c) 2015-2022 Carlos J. Santisteban
 ; last modified 20171221-1317
 
 ; *** CPU determining code *** 0.9.6b2

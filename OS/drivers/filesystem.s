@@ -1,6 +1,6 @@
 ; filesystem pseudo-driver module for minimOS
 ; v0.5a1, seems *OBSOLETE* since 2016
-; (c) 2015-2021 Carlos J. Santisteban
+; (c) 2015-2022 Carlos J. Santisteban
 ; last modified 20150323-1104
 ; revised 20160928
 

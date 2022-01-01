@@ -3,7 +3,7 @@
 ; suitable for Durango-proto (not Durango-X/SV) computer
 ; also for any other computer with picoVDU connected via IOSCREEN option
 ; new version based on Durango-X code
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20210803-1948
 
 ; ****************************************

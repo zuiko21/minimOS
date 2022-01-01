@@ -1,5 +1,5 @@
 ; SNES SPC-700 boot in 65C02 syntax!
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 
 RESET:
 	LDX #$EF				; MOV X, #$EF

@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; extensive RAM test (like test suite) for Durango-X
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20210915-2259
 
 .(

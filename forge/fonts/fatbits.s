@@ -1,6 +1,6 @@
 ; *** convert raster in A into a 16bit raster ***
 ; *** for Tampico's optional colour mode ***
-; (c) 2020-2021 Carlos J. Santisteban
+; (c) 2020-2022 Carlos J. Santisteban
 ; last modified 20201023-2003
 
 ; first approach, outside ZP takes 20b, 305t (using ZP goes down to 16b, 273t)

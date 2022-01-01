@@ -1,6 +1,6 @@
 ; minimOS driver for Hitachi-compatible LCD
 ; variables for v0.6
-; (c) 2018-2021 Carlos J. Santisteban, just in case.
+; (c) 2018-2022 Carlos J. Santisteban, just in case.
 ; last modified 20180801-2008
 
 lcd_x:		.byt	0	; current column

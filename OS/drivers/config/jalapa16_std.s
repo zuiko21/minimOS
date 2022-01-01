@@ -1,7 +1,7 @@
 ; includes for minimOS drivers
 ; Jalapa16-specific configuration!
 ; v0.5a6
-; (c) 2015-2021 Carlos J. Santisteban
+; (c) 2015-2022 Carlos J. Santisteban
 ; last modified 20180404-1336
 
 #define		DRIVERS		_DRIVERS

@@ -1,7 +1,7 @@
 ; firmware for minimOS on run65816 BBC simulator
 ; 65c02 version for testing 8-bit kernels
 ; v0.9.6rc20
-; (c) 2017-2021 Carlos J. Santisteban
+; (c) 2017-2022 Carlos J. Santisteban
 ; last modified 20190402-1402
 
 #define		FIRMWARE	_FIRMWARE

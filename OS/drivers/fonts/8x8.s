@@ -1,5 +1,5 @@
 ; font definition for minimOS
-; (c) 2019-2021 Carlos J. Santisteban
+; (c) 2019-2022 Carlos J. Santisteban
 ; last modified 20190521-1009
 
 ; ASCII $00 - NULL / centre filled square

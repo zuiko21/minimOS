@@ -1,7 +1,7 @@
 ; *** *** O B S O L E T E *** ***
 ; firmware for minimOS on Kowalski simulator
 ; v0.9b2
-; (c)2015-2021 Carlos J. Santisteban
+; (c)2015-2022 Carlos J. Santisteban
 ; last modified 20180404-1354
 
 #define		FIRMWARE	_FIRMWARE

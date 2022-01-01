@@ -1,5 +1,5 @@
 ; variables for 4bpp PacMan (Durango-X)
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211010-1434 
 
 ; **************************

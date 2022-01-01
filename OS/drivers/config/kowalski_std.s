@@ -1,7 +1,7 @@
 ; includes for minimOS drivers
 ; Kowalski simulator specific configuration!
 ; v0.9b1
-; (c) 2015-2021 Carlos J. Santisteban
+; (c) 2015-2022 Carlos J. Santisteban
 ; last modified 20180404-1339
 
 #define		DRIVERS		_DRIVERS

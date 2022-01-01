@@ -1,6 +1,6 @@
 ; minimOS ZX tape interface loader!
 ; v0.1b2
-; (c) 2016-2021 Carlos J. Santisteban
+; (c) 2016-2022 Carlos J. Santisteban
 ; last modified 20160923-0944
 
 ; ***** Load block of bytes at (data_pt), size stored at data_size *****

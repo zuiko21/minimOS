@@ -1,6 +1,6 @@
 /* line editor for minimOS!
  * v0.5a6
- * (c) 2016-2021 Carlos J. Santisteban
+ * (c) 2016-2022 Carlos J. Santisteban
  * last modified 20160511-1421 */
 
 /* See more info at http://hughm.cs.ukzn.ac.za/~murrellh/os/notes/ncurses.html */

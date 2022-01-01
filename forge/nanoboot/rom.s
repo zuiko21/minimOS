@@ -1,6 +1,6 @@
 ; minimal nanoBoot firmware
 ; v0.4a1
-; (c) 2018-2021 Carlos J. Santisteban
+; (c) 2018-2022 Carlos J. Santisteban
 ; last modified 20210202-1937
 
 ; already NMOS-savvy

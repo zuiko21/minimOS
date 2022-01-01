@@ -1,6 +1,6 @@
 ; ***      A5 blinking LED mini-test      ***
 ; *** ***      RAM-less version!      *** ***
-; *** (c) 2020-2021 Carlos J. Santisteban ***
+; *** (c) 2020-2022 Carlos J. Santisteban ***
 ; ***    last modified 20201204-2358      ***
 
 		.text

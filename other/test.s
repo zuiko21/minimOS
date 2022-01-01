@@ -1,5 +1,5 @@
 ; code for minimOS testing purposes
-; (c) 2020-2021 Carlos J. Santisteban
+; (c) 2020-2022 Carlos J. Santisteban
 ; assemble from OS/ as usual
 #include "usual.h"
 

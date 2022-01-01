@@ -1,7 +1,7 @@
 ; firmware module for minimOS
 ; Durango-X firmware console 0.9.6b2
 ; 16x16 text 16 colour _or_ 32x32 text b&w
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211230-2054
 
 ; ****************************************

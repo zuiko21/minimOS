@@ -1,6 +1,6 @@
 ; PacMan for Durango breadboard computer!
 ; hopefully adaptable to other 6502 devices
-; (c) 2021 Carlos J. Santisteban
+; (c) 2021-2022 Carlos J. Santisteban
 ; last modified 20211129-1815
 
 ; can be assembled from this folder

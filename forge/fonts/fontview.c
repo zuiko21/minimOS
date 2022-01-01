@@ -1,6 +1,6 @@
 /*
  * PGM font viewer for minimOS bitmaps *
- * (C) 2019-2021 Carlos J. Santisteban *
+ * (C) 2019-2022 Carlos J. Santisteban *
  * Last modified: 20210205-1422        *
  */
 
