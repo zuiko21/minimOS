@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.6.1a4, should match kernel.s
+; v0.6.1a5, should match kernel.s
 ; features TBD
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20211231-1247
+; last modified 20220102-0054
 
 #define		ISR		_ISR
 
@@ -75,21 +75,16 @@ bra ir_done
 			_BRA i_anx			; --- otherwise check next --- optional if optimised as below (3)
 i_rnx:
 		CMP #IQ_FREE		; is this a free entry? Should be the FIRST one, id est, the LAST one to be scanned (2)
-			BEQ ir_done			; yes, we are done (2/3) eeeeeeeek
+			BEQ ir_done		; yes, we are done (2/3) eeeeeeeek
 i_anx:
 		DEX					; go backwards to be faster! (2+2)
 		DEX					; decrease after processing, negative offset on call, less latency, 20151029
 		BPL i_req			; until zero is done (3/2)
 
-ir_done:
-xxx:lda $df80
-clc:adc #$10
-sta $df80
-yyy:iny:bne yyy
-bra xxx
 ; *********************
 ; lastly, check for BRK
 ; *********************
+ir_done:
 	TSX					; get stack pointer (2)
 	LDA $0104, X		; get saved PSR (4)
 	AND #$10			; mask out B bit (2)
@@ -105,9 +100,16 @@ bra xxx
 ; *** BRK is no longer simulated by FW, must use some other way ***
 ; *****************************************************************
 ; a feasible way would be reusing some 65816 vector pointing to (FW) brk_hndl
+jmp_brk:
 		JMP (brk_02)		; reuse some hard vector (will return via NMI end)
 ; *****************************************************************
-
++brk_end:
+		PLA
+		STA sysptr
+		PLA
+		STA sysptr+1
+		PLA
+		STA systmp
 ; *** continue after all interrupts dispatched ***
 isr_done:
 	_PLY				; restore registers (3x4 + 6)

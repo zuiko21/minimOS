@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6.1a2
+; v0.6.1a3
 ; (c) 2012-2022 Carlos J. Santisteban
-; last modified 20211231-1356
+; last modified 20220102-0057
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -97,7 +97,7 @@ ki_ok:
 	STY ex_pt			; no need to know about actual vector location (3)
 	STA ex_pt+1
 	_ADMIN(SET_DBG)		; install routine
-
+brk:.asc"is BRK ok?",0
 ; Kernel no longer supplies default NMI, but could install it otherwise
 ; jiffy already set by firmware
 
@@ -127,8 +127,6 @@ ram_init:
 	STA ram_pos+1		; store second entry and we are done!
 ; ++++++
 #endif
-brk
-.asc "{RAM INITED}",0
 
 ; ************************************************
 ; *** intialise drivers from their jump tables ***
@@ -182,7 +180,7 @@ dr_qcl:
 		DEY
 		BNE dr_qcl
 #endif
-
+brk:.asc"mem OK",0
 ; X know to be zero here
 ; *** prepare access to each driver header ***
 ; first get the pointer to it
@@ -214,7 +212,7 @@ dr_error:
 dr_ok:					; *** all drivers inited ***
 	PLA					; discard stored X, no hassle for NMOS
 
-
+brk:.asc"after PLA",0
 ; **********************************
 ; ********* startup code ***********
 ; **********************************
@@ -227,6 +225,8 @@ dr_ok:					; *** all drivers inited ***
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 
 ; new, show a splash message ever the kernel is restarted!
+brk
+.asc "{pre cr}",0
 	JSR ks_cr			; leading newline
 	LDY #<kern_splash	; get pointer
 	LDA #>kern_splash

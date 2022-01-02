@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; (c) 2018-2022 Carlos J. Santisteban
-; last modified 20181224-1540
+; last modified 20220102-0053
 
 ; *** generic BRK handler for 65(C)02 ***
 ; NMOS-savvy
@@ -15,7 +15,7 @@
 .(
 ; must use some new indirect jump, as set by new SET_BRK
 	JSR brk_call		; indirect jump will return here
-	JMP nmi_end			; standard firmware label
+	JMP brk_end			; standard firmware label, usually nmi_end
 ; as no indirect call is available, call here and return to handler
 brk_call:
 	JMP (fw_dbg)		; will return

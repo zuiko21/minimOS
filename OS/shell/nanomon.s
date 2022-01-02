@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.3a2
+; v0.3a3
 ; (c) 2018-2022 Carlos J. Santisteban
-; last modified 20201227-2349
+; last modified 20220102-0011
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -30,7 +30,7 @@
 ; ***************
 ;#define	SAFE	_SAFE
 ; option to pick full status from standard stack frame, comment if handler not available
-;#define	NMI_SF	_NMI_SF
+#define	NMI_SF	_NMI_SF
 
 BUFFER	= 9				; enough for a single command, even one for a byte and another for a word
 STKSIZ	= 4				; in order not to get into return stack space! writes use up to three
@@ -69,6 +69,7 @@ STKSIZ	= 4				; in order not to get into return stack space! writes use up to th
 #endif
 ; ** procedure for storing PC & PSR values at interrupt time ** 16b, not worth going 15b with a loop
 ; 65816 valid in emulation mode ONLY!
+	STX z_x				; eeeeeek
 	TSX
 	STX z_s				; store initial SP
 
@@ -78,7 +79,7 @@ STKSIZ	= 4				; in order not to get into return stack space! writes use up to th
 ; this could be simpler if register variables would match the stacked order... 14b instead of 30b!
 	LDY #0				; reset counter, unfortunately cannot work backwards
 nmr_loop:
-		LDA $106, X			; get stacked value
+		LDA $106, X			; get stacked value (after a JSR in handler)
 		STA !z_y, Y			; actually absolute,Y addressing!
 		INX					; go deeper into stack...
 		INY					; ...and further into zeropage
@@ -86,7 +87,9 @@ nmr_loop:
 		BNE nmr_loop		; no, continue until done
 #else
 ; systems without NMI-handler may keep old offsets $101...103
+	LDX z_x				; eeeeeek
 	JSR njs_regs		; keep current state, is PSR ok?
+	TSX					; eeeeeek
 	LDA $101, X			; get stacked PSR
 	STA z_psr			; update value
 	LDY $102, X			; get stacked PC

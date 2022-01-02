@@ -1,13 +1,13 @@
 ; minimOS BRK panic handler
-; v0.6.1a2
+; v0.6.1a4
 ; (c) 2016-2022 Carlos J. Santisteban
-; last modified 2021123-1550
+; last modified 20220102-0029
 
 #include "../usual.h"
 
 ; this is currently a panic/crash routine!
 ; expected to end in RTS anyway
-
+brk_wsf:
 ; first of all, send a CR to default device
 	JSR brk_cr			; worth it
 ldy#'b':jsr conio
@@ -15,7 +15,7 @@ ldy#'r':jsr conio
 ldy#'k':jsr conio
 ; let us get the original return address, where the panic string begins
 	TSX					; current stack pointer
-	LDY $010B, X		; get MSB (note offset below)
+	LDY $010B, X		; get MSB (note offset below) like NMI, there's a JSR in the handler!
 	LDA $010A, X		; get LSB+1
 	BNE brk_nw			; will not wrap upon decrement!
 		DEY					; otherwise correct MSB
@@ -25,7 +25,6 @@ brk_nw:
 	STY sysptr+1		; prepare internal pointer, should it be saved for reentrancy?
 	STA sysptr
 	LDY #0				; eeeeeeeeeeeeeeeeeek
-#include "../firmware/modules/streaks.s"
 brk_ploop:
 		_PHY				; save cursor
 		LDA (sysptr), Y		; get current char
@@ -40,8 +39,9 @@ brk_ploop:
 #endif
 brk_term:
 	JSR brk_cr			; another newline
-	PLA					; retrieve saved counter
+	PLA					; discard saved counter
 ; we are done, should call debugger if desired, otherwise we will just lock
+	JMP nanomon
 ;	JMP lock			; let the system DIE
 ; if needed to return after BRK, skip panic message on stacked PC
 	SEC					; Y is in A, get ready for addition, skipping NUL!
@@ -50,11 +50,10 @@ brk_term:
 	LDA sysptr+1		; get MSB
 	ADC #0				; fix MSB if needed, now in A
 	TSX					; current stack pointer
-	STA $010B, X		; set MSB eeeeeeeeeeeeeeek
+	STA $010B, X		; set MSB
 	TYA					; as no STY abs,X...
-	STA $010A, X		; ...set LSB eeeeeeeeeeeek
-	JMP std_nmi			; testing, will return to BRK handler *** needs NMI_SF option ***
-;	RTS					; *** otherwise let it finish the ISR
+	STA $010A, X		; ...set LSB
+	RTS					; *** otherwise let it finish the ISR
 
 ; send a newline to default device
 brk_cr:
