@@ -1,8 +1,8 @@
 ; generic firmware variables for minimOS·65
 ; including Durango specifics
-; v0.6.1a4
+; v0.6.1a5
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20211230-1840
+; last modified 20220102-1359
 
 -sysram:
 fw_isr
@@ -34,3 +34,6 @@ fw_ciop		.word	$6000			; cursor position
 fw_vbot		.byt	$60				; page start of screen at current hardware setting (updated upon FF)
 fw_vtop		.byt	$80				; first non-VRAM page (new)
 fw_io9		.byt	0				; received keypress
+#ifdef	DOWNLOAD
+fds_nmi		.word	0				; default NMI _SERVICE_ as downloaded FW use fw_nmi for the _HANDLER_
+#endif

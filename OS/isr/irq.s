@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.6.1a5, should match kernel.s
+; v0.6.1a6, should match kernel.s
 ; features TBD
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20220102-0054
+; last modified 20220102-1310
 
 #define		ISR		_ISR
 
@@ -89,29 +89,16 @@ ir_done:
 	LDA $0104, X		; get saved PSR (4)
 	AND #$10			; mask out B bit (2)
 	BEQ isr_done		; spurious interrupt! (2/3)
-; ...this is BRK, but must emulate NMI stack frame!
-		LDA systmp			; save extended state (6x3)
-		PHA
-		LDA sysptr+1
-		PHA
-		LDA sysptr
-		PHA
+; ...this is BRK, but must emulate NMI stack frame! *** the BRK _handler_ will!
 ; *****************************************************************
 ; *** BRK is no longer simulated by FW, must use some other way ***
 ; *****************************************************************
 ; a feasible way would be reusing some 65816 vector pointing to (FW) brk_hndl
-jmp_brk:
-		JMP (brk_02)		; reuse some hard vector (will return via NMI end)
+		JMP (brk_02)		; reuse some hard vector (will return, after restoring sys_ptr/sys_tmp, right here)
 ; *****************************************************************
-+brk_end:
-		PLA
-		STA sysptr
-		PLA
-		STA sysptr+1
-		PLA
-		STA systmp
-; *** continue after all interrupts dispatched ***
-isr_done:
+
+; *** continue after all interrupts dispatched *** may be standard entry point after NMI stack frame is restored (minus registers)
++isr_done:
 	_PLY				; restore registers (3x4 + 6)
 	_PLX
 	PLA

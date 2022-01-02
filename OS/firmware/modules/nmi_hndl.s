@@ -1,11 +1,12 @@
 ; firmware module for minimOS·65
 ; (c) 2018-2022 Carlos J. Santisteban
-; last modified 20220102-0109
+; last modified 20220102-1410
 
 ; *** generic NMI handler for 6502/65C02 ***
 ; expected to be fully re-entrant
 ; NMOS savvy
 
+-nmi_hndl:				; make that a standard label
 .(
 #ifdef	NMOS
 	CLD					; eeeeeeeeek! 20150316
@@ -21,7 +22,7 @@
 	PHA
 	LDA sysptr
 	PHA
-/*
+
 #ifdef	SAFE
 ; check whether user NMI pointer is valid
 ; alternative faster way 39b, 58t (was 29b, 89t)
@@ -46,7 +47,7 @@
 	CMP #'*'			; match? (2)
 		BNE rst_nmi			; not a valid routine (2/3)
 #endif
-*/
+
 	JSR nmi_call		; will do indirect call (6...)
 ; **************************************************************
 ; *** here goes the former nmi_end routine, restore and exit ***
@@ -67,7 +68,7 @@
 
 ; *** execute installed NMI handler ***
 nmi_call:
-	JMP (fw_nmi)		; call actual code, ending in RTS, DUH (5/6...)
+	JMP (fw_nmi)		; call actual SERVICE, ending in RTS, DUH (5/6...)
 
 ; *** execute standard NMI handler ***
 rst_nmi:

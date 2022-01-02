@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.3a3
+; v0.3a4
 ; (c) 2018-2022 Carlos J. Santisteban
-; last modified 20220102-0011
+; last modified 20220102-1338
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -61,11 +61,12 @@ STKSIZ	= 4				; in order not to get into return stack space! writes use up to th
 ; *** init stuff ***
 ; ******************
 +nanomon:
+#ifdef	SAFE
+	.asc	"UNj*"		; for SAFE service validation!
+#endif
 #ifdef	C816
-	PHP					; keep status!
 	SEC					; make sure it is in emulation mode!!!
 	XCE
-	PLP
 #endif
 ; ** procedure for storing PC & PSR values at interrupt time ** 16b, not worth going 15b with a loop
 ; 65816 valid in emulation mode ONLY!

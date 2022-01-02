@@ -27,17 +27,11 @@ mini_irq:
 	LDA $0104, X		; get saved PSR (4)
 	AND #$10			; mask out B bit (2)
 	BEQ non_brk			; spurious interrupt! (2/3)
-; ...this is BRK, thus must emulate NMI stack frame!
-		LDA systmp			; save extended state (6x3)
-		PHA
-		LDA sysptr+1
-		PHA
-		LDA sysptr
-		PHA
+; ...this is BRK, thus must emulate NMI stack frame -- but in the handler itself!
 ; a feasible way would be reusing some 65816 vector pointing to (FW) brk_hndl
-		JMP (brk_02)		; reuse some hard vector (will return via NMI end)
+		JMP (brk_02)	; reuse some hard vector (will return via nmi_end or handler itself)
 ; *** continue if no BRK was issued ***
-non_brk:
++non_brk:				; sort of standard label as used by BRK handler
 	_PLY				; restore registers (3x4 + 6)
 	_PLX
 	PLA

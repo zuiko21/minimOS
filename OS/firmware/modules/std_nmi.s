@@ -1,5 +1,5 @@
 ; standard NMI handler for minimOS firmware
-; v0.6a3
+; v0.6a3 *** DEPRECATED as makes little sense with nanoMon
 ; (c) 2015-2022 Carlos J. Santisteban
 ; last modified 20180404-1358
 

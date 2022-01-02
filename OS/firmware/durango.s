@@ -1,8 +1,8 @@
 ; Durango firmware (at least for prototype version)
 ; based on generic firmware template for minimOS·65
-; v0.6.1b1
+; v0.6.1b2
 ; (c)2015-2022 Carlos J. Santisteban
-; last modified 20211231-1541
+; last modified 20220102-1415
 
 #define		ROM			_ROM
 #define		HEADERS		_HEADERS
@@ -81,7 +81,7 @@ fw_start:
 	.asc "boot", 0				; standard filename
 fw_splash:
 #ifdef	DOWNLOAD
-	.asc "  DOWNLOADABLE  "
+	.asc " *DOWNLOADABLE* "
 #endif
 	.asc "0.6.1  firmware for "	; machine description as comment
 fw_mname:
@@ -90,8 +90,8 @@ fw_mname:
 	.dsb	fw_start + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$B3C0				; time, 22.30
-	.word	$532F				; date, 2021/9/15
+	.word	$6DA0				; time, 13.45
+	.word	$5422				; date, 2022/1/2
 
 fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
 
@@ -119,7 +119,7 @@ dreset:
 ; ******************************
 ; 65x02 does not need to deal with native vs. emulation mode
 
-; perhaps make certain that hardware interrupt AND beeper is disabled?
+; perhaps make certain that hardware interrupt AND beeper are disabled
 #include "modules/durango-irqb.s"
 
 ; *********************************
@@ -141,11 +141,11 @@ dreset:
 #include "modules/durango-POST.s"
 #include "modules/durango-beep.s"
 
-; ********************************
-; *** hardware interrupt setup ***
-; ********************************
+; *******************************
+; *** general hardware setup ***
+; *******************************
 
-; this will enable hardware periodic interrupt *** actually will set up CONIO
+; actually will set up CONIO, as interrupts are set by POST
 #include "modules/durango-init.s"
 
 ; ***********************************
@@ -166,7 +166,7 @@ dreset:
 ; preset kernel start address
 #include "modules/kern_addr.s"
 
-; preset default BRK handler
+; preset default BRK _SERVICE_, may set NMI too
 #include "modules/brk_addr.s"
 
 ; NMI is NOT validated, and 6502 systems should set a minimal IRQ handler in order to enable PANIC (BRK) handling!
@@ -189,7 +189,7 @@ dreset:
 #ifndef	DOWNLOAD
 #include "modules/fw-nanoboot.s"
 #else
-; testing
+; testing, just the timeout in order to inspect the screen messages first!
 #include "modules/fw-nanoboot.s"
 #endif
 ; *** possible kernel RELOCation and/or decompression should be done here ***
@@ -208,7 +208,7 @@ start_kernel:
 ; ********************************
 ; ********************************
 
-#ifndef	DOWNLOAD
+
 ; **********************************************
 ; *** vectored NMI handler with magic number ***
 ; **********************************************
@@ -229,7 +229,6 @@ brk_hndl:				; label from vector list
 #include "modules/brk_hndl.s"
 
 ; *** *** 65x02 does have no use for a COP handler *** ***
-#endif
 
 
 
