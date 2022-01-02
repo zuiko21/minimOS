@@ -57,7 +57,7 @@ asynchronous:
 ;		DEX					; go backwards to be faster! (2+2)
 ;		DEX					; decrease after processing, negative offset on call, less latency, 20151029
 ;		BNE i_req			; until zero is done (3/2)
-
+/*
 ; *** alternative way with fixed-size arrays (no queue_mx) *** 24 bytes, 18 if left for the whole queue
 ; *** isr_done if queue is empty in 14t (if EOQ-optimised!)
 ; *** 'first' async in 23t (total 40t)!!!
@@ -80,7 +80,7 @@ i_anx:
 		DEX					; go backwards to be faster! (2+2)
 		DEX					; decrease after processing, negative offset on call, less latency, 20151029
 		BPL i_req			; until zero is done (3/2)
-
+*/
 ; *********************
 ; lastly, check for BRK
 ; *********************

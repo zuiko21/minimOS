@@ -1,19 +1,25 @@
 ; minimOS BRK panic handler
-; v0.6.1a4
+; v0.6.1a5
 ; (c) 2016-2022 Carlos J. Santisteban
-; last modified 20220102-0029
+; last modified 20220102-1808
 
 #include "../usual.h"
 
 ; this is currently a panic/crash routine!
 ; expected to end in RTS anyway
 brk_wsf:
-; first of all, send a CR to default device
-	JSR brk_cr			; worth it
-ldy#'b':jsr conio
-ldy#'r':jsr conio
-ldy#'k':jsr conio
+; first of all, send a CR and text to default device
+	LDX #0
+brk_pt:
+		LDY brk_txt, X
+	BEQ brk_pim
+		_PHX
+		JSR conio
+		_PLX
+		INX
+		BNE brk_pt
 ; let us get the original return address, where the panic string begins
+brk_pim:
 	TSX					; current stack pointer
 	LDY $010B, X		; get MSB (note offset below) like NMI, there's a JSR in the handler!
 	LDA $010A, X		; get LSB+1
@@ -54,7 +60,9 @@ brk_term:
 	TYA					; as no STY abs,X...
 	STA $010A, X		; ...set LSB
 	RTS					; *** otherwise let it finish the ISR
-
+; intial text
+brk_txt:
+	.asc	13, 14, "BRK>", 15, 0
 ; send a newline to default device
 brk_cr:
 	LDA #CR

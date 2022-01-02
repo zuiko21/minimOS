@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; (c) 2018-2022 Carlos J. Santisteban
-; last modified 20180319-0955
+; last modified 20220102-1733
 
 ; ********************************
 ; SET_NMI, set NMI handler routine
@@ -39,8 +39,13 @@
 		BNE fw_nerr			; not a valid routine (2/3)
 #endif
 	LDY ex_pt			; get LSB (3)
+#ifndef	DOWNLOAD
 	STY fw_nmi			; store for firmware (4+4)
 	STA fw_nmi+1
+#else
+	STY fds_nmi			; store for firmware (4+4)
+	STA fds_nmi+1
+#endif
 	_DR_OK				; done (8)
 fw_r_nmi:
 	LDY fw_nmi			; get current if read (4+4)

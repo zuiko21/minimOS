@@ -204,37 +204,6 @@ start_kernel:
 
 ; ********************************
 ; ********************************
-; ****** interrupt handlers ****** no longer here, these go into bootloader firmware -- IF downloaded
-; ********************************
-; ********************************
-
-
-; **********************************************
-; *** vectored NMI handler with magic number ***
-; **********************************************
-nmi:
-#include "modules/nmi_hndl.s"
-
-; ****************************
-; *** vectored IRQ handler ***
-; ****************************
-; nice to be here, but might go elsewhere in order to save space, like between FW interface calls
-irq:
-#include "modules/irq_hndl.s"
-
-; ****************************
-; *** vectored BRK handler ***
-; ****************************
-brk_hndl:				; label from vector list
-#include "modules/brk_hndl.s"
-
-; *** *** 65x02 does have no use for a COP handler *** ***
-
-
-
-
-; ********************************
-; ********************************
 ; *** administrative functions *** these take some custom modules
 ; ********************************
 ; ********************************

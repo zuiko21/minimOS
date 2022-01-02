@@ -1,8 +1,8 @@
 ; generic firmware variables for minimOS·65
 ; including Durango specifics
-; v0.6.1a5
+; v0.6.1a6
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20220102-1359
+; last modified 20220102-1936
 
 -sysram:
 fw_isr
@@ -37,3 +37,5 @@ fw_io9		.byt	0				; received keypress
 #ifdef	DOWNLOAD
 fds_nmi		.word	0				; default NMI _SERVICE_ as downloaded FW use fw_nmi for the _HANDLER_
 #endif
+sysvars:
+#include "sysvars.h"

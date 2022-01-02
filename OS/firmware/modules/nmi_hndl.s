@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; (c) 2018-2022 Carlos J. Santisteban
-; last modified 20220102-1410
+; last modified 20220102-1729
 
 ; *** generic NMI handler for 6502/65C02 ***
 ; expected to be fully re-entrant

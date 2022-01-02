@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
 ; v0.6.1a3
 ; (c) 2012-2022 Carlos J. Santisteban
-; last modified 20220102-0057
+; last modified 20220102-1932
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -97,10 +97,8 @@ ki_ok:
 	STY ex_pt			; no need to know about actual vector location (3)
 	STA ex_pt+1
 	_ADMIN(SET_DBG)		; install routine
-brk:.asc"is BRK ok?",0
 ; Kernel no longer supplies default NMI, but could install it otherwise
 ; jiffy already set by firmware
-
 ; *** default action in case the scheduler runs out of tasks ***
 	LDA #PW_STAT		; default action upon complete task death
 	STA sd_flag			; this is important to be clear (PW_STAT) or set as proper error handler
@@ -110,7 +108,6 @@ brk:.asc"is BRK ok?",0
 ; *****************************
 
 ; ***this should take a basic memory map from firmware, perhaps via the GESTALT function
-
 #ifndef		LOWRAM
 ; ++++++
 	LDY #FREE_RAM		; get status of whole RAM
@@ -127,7 +124,6 @@ ram_init:
 	STA ram_pos+1		; store second entry and we are done!
 ; ++++++
 #endif
-
 ; ************************************************
 ; *** intialise drivers from their jump tables ***
 ; ************************************************
@@ -180,7 +176,6 @@ dr_qcl:
 		DEY
 		BNE dr_qcl
 #endif
-brk:.asc"mem OK",0
 ; X know to be zero here
 ; *** prepare access to each driver header ***
 ; first get the pointer to it
@@ -212,7 +207,6 @@ dr_error:
 dr_ok:					; *** all drivers inited ***
 	PLA					; discard stored X, no hassle for NMOS
 
-brk:.asc"after PLA",0
 ; **********************************
 ; ********* startup code ***********
 ; **********************************
@@ -225,8 +219,6 @@ brk:.asc"after PLA",0
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 
 ; new, show a splash message ever the kernel is restarted!
-brk
-.asc "{pre cr}",0
 	JSR ks_cr			; leading newline
 	LDY #<kern_splash	; get pointer
 	LDA #>kern_splash
@@ -260,8 +252,11 @@ ks_cr:
 	STA io_c
 	LDY #DEVICE
 	_KERNEL(COUT)		; print it
+	BCS ioerror
 	RTS
-
+ioerror:
+	BRK
+	.asc "I/O error",0
 ; in headerless builds, keep at least the splash string
 #ifdef	NOHEAD
 kern_splash:
@@ -327,10 +322,10 @@ shell	= * + 256		; skip header
 #include	"drivers/config/durango_std.s"	; this package will be included with downloadable kernels
 .data
 ; downloadable system have ALL system & driver variables AFTER the kernel/API
-sysvars:
-#include "sysvars.h"
+;sysvars:
+;#include "sysvars.h"
 ; driver-specific system variables, located here 20170207
-dr_vars:
+;dr_vars:
 ;#include DRIVER_PACK_h
 .text					; eeeeeek
 -user_ram = *			; the rest of available SRAM
