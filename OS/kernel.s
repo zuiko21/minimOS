@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6.1a3
+; v0.6.1a4
 ; (c) 2012-2022 Carlos J. Santisteban
-; last modified 20220102-1932
+; last modified 20220103-1559
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -225,7 +225,19 @@ dr_ok:					; *** all drivers inited ***
 	STY str_pt			; set parameter
 	STA str_pt+1
 	LDY #DEVICE			; eeeeeek
-	_KERNEL(STRING)		; print it!
+;	KERNEL(STRING)		; print it!
+ldy#0
+strloop:
+lda(str_pt),y
+beq stringend
+phy
+tya
+jsr conio
+ply
+iny
+bra strloop:
+stringend:
+
 	JSR ks_cr			; trailing newline
 
 ; ******************************
@@ -251,7 +263,9 @@ ks_cr:
 	LDA #CR				; leading newline
 	STA io_c
 	LDY #DEVICE
-	_KERNEL(COUT)		; print it
+;	KERNEL(COUT)		; print it
+tay
+jsr conio
 	BCS ioerror
 	RTS
 ioerror:
