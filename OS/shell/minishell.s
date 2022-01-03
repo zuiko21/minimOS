@@ -1,7 +1,7 @@
 ; Pseudo-file executor shell for minimOS!
 ; v0.5.3b2
 ; like 0.5.1 for 0.6 ABI/API, plus 0.6.1 compatible!
-; last modified 20220104-0005
+; last modified 20220104-0037
 ; (c) 2016-2022 Carlos J. Santisteban
 
 #ifndef	HEADERS
@@ -97,14 +97,7 @@ main_loop:
 		LDX #BUFSIZ-1		; maximum offset
 		STX ln_siz
 		LDY iodev			; use standard device
-;		KERNEL(READLN)		; get string
-ldy #0
-debrln:phy
-debscan:ldy#0:jsr conio:bcs debscan
-phy:jsr conio:ply
-cpy#13:beq debcr
-ply:iny:bra debrln
-debcr:
+		_KERNEL(READLN)		; get string
 ; * end of inlined getLine *
 		LDA buffer			; check whether empty line
 			BEQ main_loop		; if so, just repeat entry
@@ -167,8 +160,7 @@ xsh_success:
 prnChar:
 	STA io_c			; store character
 	LDY iodev			; get device
-	;KERNEL(COUT)		; output it ##### minimOS #####
-tay:jsr conio
+	_KERNEL(COUT)		; output it ##### minimOS #####
 ; ignoring possible I/O errors
 	RTS
 
@@ -182,13 +174,7 @@ prnStr:
 	STA str_pt+2		; and set parameter
 #endif
 	LDY iodev			; standard device
-ldy#0
-debugpsl:
-lda(str_pt),Y:beq debugend
-phy:tay:jsr conio
-ply:iny:bra debugpsl
-debugend:
-	;KERNEL(STRING)		; print it! ##### minimOS #####
+	_KERNEL(STRING)		; print it! ##### minimOS #####
 ; currently ignoring any errors...
 	RTS
 
