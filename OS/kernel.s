@@ -62,7 +62,7 @@ warm:
 ; should clear DBR & DP...
 #endif
 ; * end of 65816 specific code *
-
+ldy#'6':jsr conio
 ; assume interrupts off, binary mode and 65816 in emulation mode!
 ; install kernel jump table if not previously loaded, NOT for 128-byte systems
 #ifndef	LOWRAM
@@ -84,25 +84,27 @@ ki_ok:
 #endif
 ; ++++++
 #endif
+ldy#'k':jsr conio
 ; install ISR code (as defined in "isr/irq.s" below)
 	LDY #<k_isr			; get address, nicer way (2+2)
 	LDA #>k_isr
 	STY ex_pt			; no need to know about actual vector location (3)
 	STA ex_pt+1
 	_ADMIN(SET_ISR)		; install routine
-
+ldy#'i':jsr conio
 ; install BRK code (as defined in "isr/brk.s" loaded from IRQ)
 	LDY #<supplied_brk	; get address, nicer way (2+2)
 	LDA #>supplied_brk
 	STY ex_pt			; no need to know about actual vector location (3)
 	STA ex_pt+1
 	_ADMIN(SET_DBG)		; install routine
+ldy#'b':jsr conio
 ; Kernel no longer supplies default NMI, but could install it otherwise
 ; jiffy already set by firmware
 ; *** default action in case the scheduler runs out of tasks ***
 	LDA #PW_STAT		; default action upon complete task death
 	STA sd_flag			; this is important to be clear (PW_STAT) or set as proper error handler
-
+ldy#'s':jsr conio
 ; *****************************
 ; *** memory initialisation ***
 ; *****************************
@@ -124,6 +126,7 @@ ram_init:
 	STA ram_pos+1		; store second entry and we are done!
 ; ++++++
 #endif
+ldy#'r':jsr conio
 ; ************************************************
 ; *** intialise drivers from their jump tables ***
 ; ************************************************
@@ -149,8 +152,13 @@ dr_clear:
 		_STZA drv_ads+1, X	; ****** could just clear MSB...
 		INX					; next entry (2+2)
 		INX
+phx:txa:clc:adc#'0'
+tay:jsr conio:plx
 		CPX #MX_DRVRS*2+2	; all done? needed for sparse arrays (2)
 		BNE dr_clear		; finish page (3/2)
+ldy#14:jsr conio
+ldy#'c':jsr conio
+ldy#15:jsr conio
 ; only dummy entry of I/O pointer arrays must be initialised
 	LDY #<dr_error		; make unused entries point to a standard error routine, new 20160406 (2+2)
 	LDA #>dr_error
@@ -162,6 +170,8 @@ dr_clear:
 	LDX #128			; initial offset (2)
 dr_spars:
 		_STZA dr_ind-128, X	; clear entry (best for CMOS)
+phx:txa:clc:adc#160
+tay:jsr conio:plx
 		INX
 		BNE dr_spars
 ; ++++++ ++++++ end of standard version extra code ++++++ ++++++
@@ -176,6 +186,12 @@ dr_qcl:
 		DEY
 		BNE dr_qcl
 #endif
+ldy#14:jsr conio
+ldy#'c':jsr conio
+ldy#15:jsr conio
+ldy#18:jsr conio
+ldy#2:jsr conio
+ldx#0
 ; X know to be zero here
 ; *** prepare access to each driver header ***
 ; first get the pointer to it
@@ -186,10 +202,15 @@ dr_loop:
 		STA da_ptr+1		; store pointer MSB (3)
 		LDA drvrs_ad, X		; same for LSB (4+3)
 		STA da_ptr
-
+phx:txa:clc:adc#'0'
+tay:jsr conio:plx
 ; *** call new API install ***
-		_KERNEL(DR_INST)	; try to install this driver
-
+;		KERNEL(DR_INST)	; try to install this driver
+bcc debugok
+ldy#'x':jsr conio:bra debugcont
+debugok:
+ldy#145:jsr conio
+debugcont:
 ; *** continue initing drivers ***
 ; in case drivers_ad is *created* in RAM, dr_abort could just be here, is this OK with new separate pointer tables?
 		_PLX				; retrieve saved index (4)
@@ -206,7 +227,9 @@ dr_error:
 ; ***************************************************************
 dr_ok:					; *** all drivers inited ***
 	PLA					; discard stored X, no hassle for NMOS
-
+ldy#18:jsr conio
+ldy#15:jsr conio
+ldy#'d':jsr conio
 ; **********************************
 ; ********* startup code ***********
 ; **********************************
@@ -215,7 +238,7 @@ dr_ok:					; *** all drivers inited ***
 	LDA #DEVICE			; as defined in options.h
 	STA dfltout			; should check some devices
 	STA dflt_in
-
+ldy#'o':jsr conio
 ; *** interrupt setup no longer here, firmware did it! *** 20150605
 
 ; new, show a splash message ever the kernel is restarted!
@@ -228,18 +251,11 @@ dr_ok:					; *** all drivers inited ***
 ;	KERNEL(STRING)		; print it!
 ldy#0
 strloop:
-lda(str_pt),y
-beq stringend
-phy
-tya
-jsr conio
-ply
-iny
-bra strloop:
+lda(str_pt),y:beq stringend
+phy:tay:jsr conio:ply
+iny:bra strloop
 stringend:
-
 	JSR ks_cr			; trailing newline
-
 ; ******************************
 ; **** launch monitor/shell ****
 ; ******************************
@@ -260,11 +276,11 @@ sh_exec:
 
 ; a quick way to print a newline on standard device
 ks_cr:
-	LDA #CR				; leading newline
+	LDA #NEWL			; leading newline
 	STA io_c
 	LDY #DEVICE
 ;	KERNEL(COUT)		; print it
-tay
+tay:ldy#13
 jsr conio
 	BCS ioerror
 	RTS

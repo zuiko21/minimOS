@@ -1,7 +1,6 @@
-; minimOS 0.6.1a2 System Variables
+; minimOS 0.6.1a3 System Variables
 ; (c) 2012-2022 Carlos J. Santisteban
-; last modified 20211227-1811
-.bss
+; last modified 20220103-1708
 
 ; **** I/O management ****
 ; ** pointer tables for drivers, new order suggested for alternative version **
