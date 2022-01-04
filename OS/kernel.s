@@ -1,7 +1,7 @@
 ; minimOS generic Kernel
-; v0.6.1b1
+; v0.6.1b2
 ; (c) 2012-2022 Carlos J. Santisteban
-; last modified 20220104-1058
+; last modified 20220104-1904
 
 ; avoid standalone definitions
 #define		KERNEL	_KERNEL
@@ -311,7 +311,31 @@ shell	= * + 256		; skip header
 ; ****** Downloaded kernels add driver stuff at the end ******
 ; ************************************************************
 #ifdef	DOWNLOAD
+; **************************
+; *** I/O device drivers ***
+; **************************
+; ### should include a standard header here! ###
+#ifndef	NOHEAD
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
+drv_file:
+	BRK
+	.asc	"aD"				; driver pack file TBD
+	.asc	"****", CR			; flags TBD
+	.asc	"dev", 0, 0			; filename and empty comment
+
+	.dsb	drv_file + $F8 - *, $FF		; padding
+
+	.word	$45A0				; time, 8.45
+	.word	$4E4D				; date, 2019/02/13
+
+drv_size = drv_end - drv_file - $100	; exclude header
+
+	.word	drv_size
+	.word	0
+#endif
+; ### end of minimOS header ###
 #include	"drivers/config/durango_std.s"	; this package will be included with downloadable kernels
+drv_end:
 .data
 ; downloadable system have ALL system & driver variables AFTER the kernel/API
 ;sysvars:

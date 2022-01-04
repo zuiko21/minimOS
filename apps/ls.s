@@ -1,6 +1,6 @@
 ; ROM header listing for minimOS!
-; v0.5.1b1
-; last modified 20211231-0027
+; v0.5.1b2
+; last modified 20220104-1910
 ; (c) 2016-2022 Carlos J. Santisteban
 
 #include "../OS/usual.h"
@@ -67,9 +67,12 @@ go_ls:
 
 ; get initial address
 	LDY #<ROM_BASE		; begin of ROM contents LSB
-	LDA #>ROM_BASE+1	; same for MSB, will NOT read volume header (zero size!)
+	LDX #>ROM_BASE		; same for MSB
+#ifdef	DOWNLOAD
+	INX					; will NOT read volume header (does not exist!)
+#endif
 	STY rompt			; set local pointer
-	STA rompt+1			; internal pointer set
+	STX rompt+1			; internal pointer set
 #ifdef	C816
 	STZ rompt+2			; make it 816-savvy
 #endif
