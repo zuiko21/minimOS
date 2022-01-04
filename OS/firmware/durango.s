@@ -1,8 +1,8 @@
 ; Durango firmware (at least for prototype version)
 ; based on generic firmware template for minimOS·65
-; v0.6.1b2
+; v0.6.1b4
 ; (c)2015-2022 Carlos J. Santisteban
-; last modified 20220102-1415
+; last modified 20220104-1848
 
 #define		ROM			_ROM
 #define		HEADERS		_HEADERS
@@ -93,7 +93,7 @@ fw_mname:
 	.word	$6DA0				; time, 13.45
 	.word	$5422				; date, 2022/1/2
 
-fwSize	=	fw_end - fw_start - 256	; compute size NOT including header!
+fwSize	=	boot_end - fw_start - 256	; compute size NOT including header!
 
 ; filesize in top 32 bits NOT including header, new 20161216
 	.word	fwSize				; filesize
@@ -354,20 +354,43 @@ brk_hndl:				; label from vector list
 #include "modules/brk_hndl.s"
 
 ; *** *** 65x02 does have no use for a COP handler *** ***
-
+boot_end:
 ; ****************************************************************
 ; ****************************************************************
 ; ****** firmware end, here comes the kernel and some apps *******
 ; ****************************************************************
 ; ****************************************************************
+#ifdef	DOWNLOAD
 
 #include "../kernel.s"
 ; kernel includes suitable shell (options.h)
 #include "../apps/ls.s"
 #include "../shell/miniMoDA.s"
-; what will happen?
 
+; ****************************************************
+; ****** skip rest of unused ROM until firmware ******
+; ****************************************************
+; ##### empty header #####
+#ifndef	NOHEAD
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment!!! eeeeek
+free_head:
+	BRK							; don't enter here! NUL marks beginning of header
+	.asc	"aS****", CR		; just reserved SYSTEM space
+	.asc	"[pseudoR", "OM]", 0, 0	; file name (mandatory) and empty comment *** note macro savvy
+; advance to end of header
+	.dsb	free_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time
 
+	.word	$45A0				; time, 8.45
+	.word	$4E4D				; date, 2019/02/13
+
+freeSize	=	fw_end - free_head -256	; compute size NOT including header!
+
+; filesize in top 32 bits NOT including header, new 20161216
+	.word	freeSize			; filesize
+	.word	0					; 64K space does not use upper 16-bit
+#endif
+; ##### end of minimOS header #####
+#endif
 ; ------------ only fixed addresses block remain ------------
 ; filling for ready-to-blow ROM
 #ifdef		ROM
