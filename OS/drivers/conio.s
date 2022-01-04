@@ -1,7 +1,7 @@
 ; generic, UNIVERSAL firmware console support for minimOS!
-; v0.6b3
+; v0.6b4
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220102-1944
+; last modified 20220104-0114
 
 ; ***********************
 ; *** minimOS headers ***
@@ -86,6 +86,7 @@ fwcs_nw:
 fwc_init:
 	LDY #FORMFEED			; clear screen
 	_ADMIN(CONIO)
+_DR_OK
 ; no real need of initialising input "buffer" as will be cleared at first polling
 	RTS						; respect error
 

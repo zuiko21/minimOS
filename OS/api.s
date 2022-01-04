@@ -2,13 +2,12 @@
 ; v0.6.1b2, must match kernel.s
 ; essentially the same as 0.6 for 0.6.1 compatibility
 ; (c) 2012-2022 Carlos J. Santisteban
-; last modified 20220104-0048
+; last modified 20220104-0137
 ; no way for standalone assembly...
 
 ; **************************************************
 ; *** jump table, if not in separate 'jump' file ***
 ; **************************************************
-#ifndef		DOWNLOAD
 k_vec:
 ; FAST API option needs no jump table!
 #ifndef	FAST_API
@@ -63,7 +62,6 @@ k_vec:
 	.word	ts_info		; get taskswitching info
 	.word	set_curr	; set internal kernel info for running task
 #endif
-#endif
 
 ; ***************************************
 ; *** dummy function, non implemented ***
@@ -98,9 +96,8 @@ cin:
 	STA bl_siz			; set size
 	_STZA bl_siz+1
 ; may be moved in front of BLIN for somewhat higher performance, just watch debug string!
-	;KERNEL(BLIN)		; get small block...
-ldy #0:jsr conio:sty io_c
-		RTS					; ...or keep error code from BLIN
+	_KERNEL(BLIN)		; get small block...
+	RTS					; ...or keep error code from BLIN
 ; *** events no longer managed here ***
 
 
@@ -121,7 +118,6 @@ cout:
 	LDA #1				; transfer a single byte
 	STA bl_siz			; set size
 	_STZA bl_siz+1
-ldy io_c:jmp conio
 ; ...and fall into BLOUT
 
 ; ***************************
@@ -969,13 +965,6 @@ ll_wrap:
 ;		USES BLOUT...
 	.asc	"<STRING>"
 string:
-
-ldy#0
-debugsl:phy
-lda(str_pt),y:beq debugsend
-tay:jsr conio:ply:iny:bra debugsl
-debugsend:rts
-
 ; not very efficient... measure string and call BOUT
 	_PHY				; must keep device eeeeeeek
 	LDA str_pt			; get LSB of pointer...
@@ -1010,15 +999,7 @@ str_term:
 ;		USES rl_dev, rl_cur
 	.asc	"<READLN>"
 readln:
-
-ldy#0
-debugrll:phy
-degugget:ldy#0:jsr conio:bcs debugget
-ply:sta(str_pt),y:cmp#13:beq debugsterm
-iny:bra debugrll
-debugsterm:lda#0:sta(str_pt),y:rts
-
-	STY rl_dev			; preset device ID!
+STY rl_dev			; preset device ID!
 	_STZY rl_cur		; reset variable
 rl_l:
 ; always useful to yield CPU time, but could be patched...

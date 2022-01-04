@@ -67,7 +67,6 @@ ldy#'6':jsr conio
 ; install kernel jump table if not previously loaded, NOT for 128-byte systems
 #ifndef	LOWRAM
 ; ++++++
-#ifndef		DOWNLOAD
 #ifndef			FAST_API
 	LDY #<k_vec			; get table address, nicer way (2+2)
 	LDA #>k_vec
@@ -79,7 +78,6 @@ ldy#'6':jsr conio
 	BCC ki_ok		; no problems
 		_PANIC("{FWSIZ}")	; not enough room, incompatible FW
 ki_ok:
-#endif
 #endif
 #endif
 ; ++++++
@@ -205,7 +203,7 @@ dr_loop:
 phx:txa:clc:adc#'0'
 tay:jsr conio:plx
 ; *** call new API install ***
-;		KERNEL(DR_INST)	; try to install this driver
+		_KERNEL(DR_INST)	; try to install this driver
 bcc debugok
 ldy#'x':jsr conio:bra debugcont
 debugok:
@@ -248,13 +246,7 @@ ldy#'o':jsr conio
 	STY str_pt			; set parameter
 	STA str_pt+1
 	LDY #DEVICE			; eeeeeek
-;	KERNEL(STRING)		; print it!
-ldy#0
-strloop:
-lda(str_pt),y:beq stringend
-phy:tay:jsr conio:ply
-iny:bra strloop
-stringend:
+	_KERNEL(STRING)		; print it!
 	JSR ks_cr			; trailing newline
 ; ******************************
 ; **** launch monitor/shell ****
@@ -268,9 +260,18 @@ sh_exec:
 	LDA #DEVICE			; *** revise
 	STA def_io			; default local I/O
 	STA def_io+1
+ldy#18:jsr conio:ldy#5:jsr conio
+ldy#'h':jsr conio
 	_KERNEL(B_FORK)		; reserve first execution braid, no direct call as could be PATCHED!
+ldy#'f':jsr conio
+ldy#0
 	_KERNEL(B_EXEC)		; go for it! no direct call as could be PATCHED!
 ; singletask systems will not arrive here, ever!
+ldy#'E':jsr conio
+jsr$4500
+bcc debugy
+tya:clc:adc#'0':tay:jsr conio
+debugy:
 	_KERNEL(B_YIELD)	; ** get into the working code ASAP! ** no direct call as could be PATCHED!
 	_PANIC("{yield}")	; ...as the scheduler will detour execution
 
@@ -279,9 +280,7 @@ ks_cr:
 	LDA #NEWL			; leading newline
 	STA io_c
 	LDY #DEVICE
-;	KERNEL(COUT)		; print it
-tay:ldy#13
-jsr conio
+	_KERNEL(COUT)		; print it
 	BCS ioerror
 	RTS
 ioerror:
