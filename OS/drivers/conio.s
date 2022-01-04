@@ -1,7 +1,7 @@
 ; generic, UNIVERSAL firmware console support for minimOS!
-; v0.6b4
+; v0.6b5
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220104-0114
+; last modified 20220104-1052
 
 ; ***********************
 ; *** minimOS headers ***
@@ -25,7 +25,7 @@
 
 ; *** driver description ***
 gfc_info:
-	.asc	"Generic  FW I/O console v0.6b1", 0
+	.asc	"Generic  FW I/O console v0.6b5", 0
 
 ; **********************************************************************************
 ; *** this header will enable classic character routines within block procedures ***
@@ -38,6 +38,7 @@ fwcr_l:
 		_PHY				; keep this
 		JSR fwc_i			; *** get one byte ***
 			BCS blck_err	; any error ends transfer!
+		STY io_c			; eeeeeeeek
 		_PLY				; restore index
 		LDA io_c			; received byte...
 		STA (bl_ptr), Y		; ...goes into buffer

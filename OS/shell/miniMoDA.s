@@ -1,6 +1,6 @@
 ; Monitor-debugger-assembler shell for minimOS!
 ; v0.6rc3
-; last modified 20190128-0927
+; last modified 20220104-1122
 ; (c) 2016-2022 Carlos J. Santisteban
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
@@ -38,8 +38,8 @@ title:
 	.dsb	mmd_head + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
 
 ; *** date & time in MS-DOS format at byte 248 ($F8) ***
-	.word	$54E0				; time, 10.39
-	.word	$4AAB				; date, 2017/5/11
+	.word	$5B20				; time, 11.25
+	.word	$5424				; date, 2022/1/4
 
 	mmdsiz8	=	mmd_end - mmd_head - 256	; compute size NOT including header!
 
@@ -1303,17 +1303,17 @@ cmd_ptr:
 
 ; *** strings and other data ***
 splash:
-	.asc	"minimOS 0.6 monitor/debugger/assembler", CR
-	.asc	"(c) 2016-2018 Carlos J. Santisteban", CR, 0
+	.asc	"MOnitor/Debugger/Assembler 0.6", CR
+	.asc	" (c) 2016-2022  Carlos J. Santisteban", CR, 0
 
 err_bad:
-	.asc	"*** Bad command ***", CR, 0
+	.asc	"**Bad command**", CR, 0
 
 err_opc:
-	.asc	"??? Bad opcode ???", CR, 0
+	.asc	"??Bad opcode??", CR, 0
 
 err_ovf:
-	.asc	"### Out of range ###", CR, 0
+	.asc	"##Out of range##", CR, 0
 
 regs_head:
 	.asc	"A: X: Y: S: NV-bDIZC", CR, 0
@@ -1332,47 +1332,47 @@ shut_str:
 	.asc	"Cold, Warm, Shutdown?", CR, 0
 
 io_err:
-	.asc	"*** I/O error ***", CR, 0
+	.asc	"** I/O error **", CR, 0
 
 set_str:
 	.asc	" = $", 0
 
 ex_trok:
-	.asc	" bytes transferred", CR, 0
+	.asc	" bytes transf'd", CR, 0
 
 ; online help only available under the SAFE option!
 #ifdef	SAFE
 help_str:
-	.asc	"---Command list---", CR
-	.asc	".? = show this list", CR
-	.asc	".Ad = set A reg.", CR
-	.asc	".Bd = store byte", CR
-	.asc	".C* = call subroutine", CR
-	.asc	".D* = dis. 'u' instr", CR
-	.asc	".E* = dump 'u' lines", CR
-	.asc	".Gd = set SP reg.", CR
-	.asc	".J* = jump to address", CR
+	.asc	"--Command list--", CR
+	.asc	".? =show this", CR
+	.asc	".Ad=set A reg.", CR
+	.asc	".Bd=store byte", CR
+	.asc	".C*=call subroutine", CR
+	.asc	".D*=disassemble", CR
+	.asc	".E*=hex dump", CR
+	.asc	".Gd=set SP reg.", CR
+	.asc	".J*=jump", CR
 	.asc	".Kcd=load/save n byt.", CR
 	.asc	"   from/to device #d", CR
 	.asc	".Ma=copy n byt. to a", CR
-	.asc	".N* = set 'n' value", CR
-	.asc	".O* = set origin", CR
-	.asc	".Pd = set Status reg", CR
-	.asc	".Q = quit", CR
-	.asc	".R = reboot/poweroff", CR
-	.asc	".Ss = put raw string", CR
-	.asc	".T* = assemble src.", CR
-	.asc	".Ud = set 'u' lines", CR
-	.asc	".V = view registers", CR
-	.asc	".Wa = store word", CR
-	.asc	".Xd = set X reg.", CR
-	.asc	".Yd = set Y reg.", CR
+	.asc	".N*=set 'n'", CR
+	.asc	".O*=set origin", CR
+	.asc	".Pd=set Status", CR
+	.asc	".Q =quit", CR
+	.asc	".R =reboot/poweroff", CR
+	.asc	".Ss=raw string", CR
+	.asc	".T*=assemble", CR
+	.asc	".Ud=set u lines", CR
+	.asc	".V =view regs.", CR
+	.asc	".Wa=store word", CR
+	.asc	".Xd=set X reg.", CR
+	.asc	".Yd=set Y reg.", CR
 	.asc	"--- values ---", CR
-	.asc	"d => 2 hex char.", CR
-	.asc	"a => 4 hex char.", CR
-	.asc	"* => up to 4 char.", CR
-	.asc	"s => raw string", CR
-	.asc	"c = +(load)/ -(save)", CR
+	.asc	"d =2 hex char.", CR
+	.asc	"a =4 hex char.", CR
+	.asc	"* =up to 4 char.", CR
+	.asc	"s =raw string", CR
+	.asc	"c =+(LD)/-(SV)", CR
 	.asc	"x=Cold/Warm/Shutdown", CR
 	.byt	0
 #endif
@@ -1384,6 +1384,6 @@ title:
 
 ; include opcode list
 da_oclist:
-#include "data/opcodes.s"
+#include "shell/data/opcodes.s"
 mmd_end:					; size computation
 .)
