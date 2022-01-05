@@ -1,8 +1,8 @@
 ; Durango firmware (at least for prototype version)
 ; based on generic firmware template for minimOS·65
-; v0.6.1b4
+; v0.6.1b5
 ; (c)2015-2022 Carlos J. Santisteban
-; last modified 20220104-1848
+; last modified 20220105-0115
 
 #define		ROM			_ROM
 #define		HEADERS		_HEADERS
@@ -365,6 +365,7 @@ boot_end:
 #include "../kernel.s"
 ; kernel includes suitable shell (options.h)
 #include "../apps/ls.s"
+#include "../apps/flags.s"
 #include "../shell/miniMoDA.s"
 
 ; ****************************************************

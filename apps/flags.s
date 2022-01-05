@@ -1,6 +1,6 @@
 ; video flag settings for Durango-X
 ; v1.0a1
-; last modified 20220105-0110
+; last modified 20220105-0127
 ; (c) 2022 Carlos J. Santisteban
 
 #include "../OS/usual.h"
@@ -148,6 +148,9 @@ vf_nosn:
 		CMP #'q'		; and this one as well
 		BNE vf_wait		; otherwise keep waiting
 vf_exit:
+	LDA #>down			; set a reasonable cursor
+	LDY #<down
+	JSR prnStr
 	_FINISH
 
 ; *** useful routines ***
@@ -155,7 +158,7 @@ vf_exit:
 ; * print a NULL-terminated string pointed by $AAYY *
 prnStr:
 	STA str_pt+1		; store MSB
-	STY str_pt			; vfB
+	STY str_pt			; LSB
 	LDY #0				; reset index
 prn_loop:
 		_PHY
@@ -176,18 +179,20 @@ clear:
 	.asc	12								; this point will clear screen before
 banner:
 	.asc	14, "Video flags", 15, NEWL		; inverse text label
-	.asc	"HIssC···", NEWL				; flags header
+	.asc	"HIssC---", NEWL				; flags header
 	.asc	10, 10, "0-3=see screen", NEWL	; with blank line for flags
 	.asc	"S=set screen", NEWL
 	.asc	"H=hires", NEWL
 	.asc	"I=inverse video", NEWL
 	.asc	"C=enable colour", NEWL
-	.asc	"G=greyscale (¬C)", NEWL
+	.asc	"G=greyscale (/C)", NEWL
 	.asc	"Esc/Q=quit", 1, 11				; help text, CR, UPCU
 	.asc	11, 11, 11, 11, 11, 11, 11, 0	; 7xUPCU 
 
 unknown:
-	.asc	"···", 1, 0						; ends in CR
+	.asc	"---", 1, 0						; ends in CR
+down:
+	.asc	10, 10, 10, 10, 10, 10, 10, 10, 0	; 8xLF
 ; ***** end of stuff *****
 vfEnd:					; ### for easy size computation ###
 .)
