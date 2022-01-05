@@ -1,6 +1,6 @@
 ; video flag settings for Durango-X
-; v1.0a1
-; last modified 20220105-0127
+; v1.0b2
+; last modified 20220105-0145
 ; (c) 2022 Carlos J. Santisteban
 
 #include "../OS/usual.h"
@@ -70,12 +70,12 @@ vf_col:
 ; *** main loop ***
 ; *****************
 vf_main:
-	LDX #5				; four visible bits+one computed here
 	LDA IO8attr			; get video flags (D7-D3)
 	AND #%11110000		; only active bits
 vf_cbit:
 	ORA col_en			; plus 'stablished' colour enable
 	STA IO8attr			; easily update colour status
+	LDX #5				; four visible bits+one computed here
 vf_loop:
 		LDY #' '		; space by default (off)
 		ASL				; get leftmost bit

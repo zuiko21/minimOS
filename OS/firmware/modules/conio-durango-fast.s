@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; Durango-X firmware console 0.9.6b2
+; Durango-X firmware console 0.9.6b3
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20211230-2054
+; last modified 20220105-0143
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -430,6 +430,7 @@ cio_up:
 	AND fw_ciop+1			; current row is now 000rrrrR, R for hires only
 	BEQ cu_end				; if at top of screen, ignore cursor
 		SBC #1				; this will subtract 1 if C is set, and 2 if clear! YEAH!!!
+;		AND #%00011111		; may be safer with alternative screens
 		ORA fw_vbot			; EEEEEEK must complete pointer address (5b, 6t)
 		STA fw_ciop+1
 cu_end:
