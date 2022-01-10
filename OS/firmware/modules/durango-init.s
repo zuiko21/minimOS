@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20211230-0020
+; last modified 20220110-2238
 
 ; *** init CONIO in durango, as interrupts are already set up ***
 ; *** firmware variables to be reset upon FF ***
@@ -18,25 +18,14 @@
 #define		STD_INK		15
 
 .(
-; set default colours
-	LDA #STD_PPR*17			; twice the colour code
-	STA fw_ccol
-	AND #$F0				; keep STD_PPR in high nibble
-	ORA #STD_INK			; STD_PPR-STD_INK
-	STA fw_ccol+1
-	LDA #STD_INK*17			; all STD_INK
-	STA fw_ccol+3
-	AND #$F0
-	ORA #STD_PPR			; STD_INK-STD_PPR
-	STA fw_ccol+2
 ; set default font
 	LDY #<cio_fnt			; get exported address
 	LDX #>cio_fnt
 	STY fw_fnt				; set firmware font address
 	STX fw_fnt+1
 ; set other variables
-	_STZA fw_cbin			; allow normal mode at startup
-	_STZA fw_mask			; non-inverted
+;	STZA fw_cbin			; allow normal mode at startup *** supposedly 0 via RAMtest
+;	STZA fw_mask			; non-inverted
 ; compute actual video address for cursor
 	LDA IO8attr				; get video flags
 	AND #%00110000			; filter screen-block bits
@@ -55,4 +44,8 @@ dx_p8k:
 	ADC #$20				; from hardware address, valid in all cases
 	STA fw_vtop
 	_STZA fw_ciop			; always page-aligned
+; set default colours (simpler modern way)
+	LDA #STD_INK+16*STD_PPR	; default colours
+	STA fw_ccol+1			; new combined storage!
+	JSR set_col				; generate array before FF
 .)

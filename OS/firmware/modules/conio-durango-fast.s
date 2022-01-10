@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; Durango-X firmware console 0.9.6b3
+; Durango-X firmware console 0.9.6b4
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220105-0143
+; last modified 20220110-2240
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -54,14 +54,12 @@
 
 ; *** other variables, perhaps in ZP ***
 ; fw_cbyt (temporary glyph storage)
-; fw_ccnt (another temporary storage)
+; fw_ccnt (another temporary storage) *** NO LONGER USED
 ; fw_chalf (remaining pages to write)
 
 ; *** firmware variables to be reset upon FF ***
-; fw_ccol.p (SPARSE array of two-pixel combos, will store ink & paper)
-;  above will use offsets 0, 1, 2, 3; 4, 8, 12; 16, 32, 48; 64, 128, 192
-;  set patterns will be  00,01,10,11,01,10, 11, 01, 10, 11, 01,  10,  11 (0=paper, 1=ink)
-;  * now reduced to simple 00.01.10.11 array
+; fw_ccol.p (array 00.01.10.11 of two-pixel combos, will store ink & paper)
+; * NEW* FF will reconstruct it from [1] (PAPER-INK)
 ; fw_ciop.w (upper scan of cursor position)
 ; fw_fnt.w (new, pointer to relocatable 2KB font file)
 ; fw_mask (for inverse/emphasis mode)
@@ -441,18 +439,14 @@ cio_ff:
 ; note that firmware must set IO8attr hardware register appropriately at boot!
 ; we don't want a single CLS to switch modes, although a font reset is acceptable, set it again afterwards if needed
 ; * things to be initialised... *
-; fw_ccol, note it's an array now
+; fw_ccol, note it's an array now (restore from PAPER-INK previous setting)
 ; fw_fnt (new, pointer to relocatable 2KB font file)
 ; fw_mask (for inverse/emphasis mode)
 ; fw_cbin (binary or multibyte mode, but must be reset BEFORE first FF)
 
-	_STZA fw_cbin			; standard, character mode
-	_STZA fw_mask			; true video
-
-	LDA #STD_INK			; preload standard colour combos
-	JSR set_ink				; these will clear fw_cbin
-	LDA #STD_PPR
-	JSR set_paper
+;	STZ fw_mask				; true video *** no real need to reset this
+;	STZ fw_cbin				; standard character mode *** not much sense anyway
+	JSR rs_col				; restore array from whatever is at fw_ccol[1] (will restore fw_cbin)
 	LDY #<cio_fnt			; supplied font address
 	LDA #>cio_fnt
 	STY fw_fnt				; set firmware pointer (will need that again after FF)
@@ -571,6 +565,65 @@ md_atyx:
 ; *******************************
 ; *** some multibyte routines ***
 ; *******************************
+; set INK, 19b + common 55b, old version was 44b
+cn_ink:
+	AND #15					; 2= ink to be set
+	STA fw_cbyt				; temporary INK storage			(0I)
+	LDA fw_ccol+1			; get combined storage
+	AND #$F0				; only old PAPER at high nibble	(p0)
+	ORA fw_cbyt				; combine result				(pI)
+	STA fw_ccol+1
+	JMP st_col				; and complete array
+
+; set PAPER, 18b + common 55b, old version was 42b
+cn_ppr:						; 4= paper to be set
+;	AND #15					; shifting will delete MSN
+	ASL
+	ASL
+	ASL
+	ASL						; PAPER in high nibble			(P0)
+	STA fw_cbyt				; temporary storage
+	LDA fw_ccol+1			; previous combined storage
+	AND #$0F				; only old INK at low nibble	(0i)
+	ORA fw_cbyt				; combine result with PAPER...	(Pi)
+	STA fw_ccol+1			; ...and fall to complete the array
+;	JMP st_col
+; reconstruct array from PAPER-INK index
+; * surely can be shrinked by use of lost fw_ccnt, but who cares...
+rs_col:						; restore colour aray from [1] (PAPER-INK)
+	LDA fw_ccol+1			; get all				xx PI xx xx
+set_col:
+	AND #$0F				; ink only
+	STA fw_cbyt				; temporary ink storage	(0I)
+	ASL
+	ASL
+	ASL
+	ASL						; ink in high nibble	(I0)
+	ORA fw_cbyt				; all ink...			(II)
+	STA fw_ccol+3			; ... at [3]			xx PI xx II
+	AND #$F0				; high nibble only...	(I0)
+	STA fw_cbyt				; ...temporary
+	LDA fw_ccol+1			; both colours again	(PI)
+	LSR
+	LSR
+	LSR
+	LSR						; PAPER at low nibble	(0P)
+	ORA fw_cbyt				; this is INK-PAPER...	(IP)
+	STA fw_ccol+2			; ...at [2]				xx PI IP II
+	AND #$0F				; paper only			(0P)
+	STA fw_cbyt
+	ASL
+	ASL
+	ASL
+	ASL						; at high nibble		(P0)
+	ORA fw_cbyt				; all paper...			(PP)
+	STA fw_ccol				; ...at [0]				PP PI IP II
+md_std:
+	_STZA fw_cbin			; back to standard mode
+	RTS
+
+
+; **** old code ***
 cn_ink:						; 2= ink to be set
 	AND #15					; even if hires will just use d0, keep whole value for this hardware
 set_ink:
@@ -614,6 +667,7 @@ set_paper:
 	ORA fw_cbyt				; now it's INK-PAPER
 	STA fw_ccol+2
 	_BRA md_std
+
 
 cn_sety:					; 6= Y to be set, advance mode to 8
 	JSR coord_ok			; common coordinate check as is a square screen
