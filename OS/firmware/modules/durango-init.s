@@ -14,8 +14,8 @@
 ; NMOS (with macros) and 65816 savvy
 
 ; *** default colours *** globally defined
-#define		STD_PPR		8
-#define		STD_INK		15
+#define		STD_PPR		9
+#define		STD_INK		8
 
 .(
 ; set default font
@@ -24,8 +24,8 @@
 	STY fw_fnt				; set firmware font address
 	STX fw_fnt+1
 ; set other variables
-;	STZA fw_cbin			; allow normal mode at startup *** supposedly 0 via RAMtest
-;	STZA fw_mask			; non-inverted
+;	STZ fw_cbin				; allow normal mode at startup *** supposedly 0 via RAMtest
+	STZ fw_mask				; non-inverted
 ; compute actual video address for cursor
 	LDA IO8attr				; get video flags
 	AND #%00110000			; filter screen-block bits

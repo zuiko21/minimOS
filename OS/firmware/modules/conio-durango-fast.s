@@ -573,7 +573,7 @@ cn_ink:
 	AND #$F0				; only old PAPER at high nibble	(p0)
 	ORA fw_cbyt				; combine result				(pI)
 	STA fw_ccol+1
-	JMP st_col				; and complete array
+	JMP set_col				; and complete array
 
 ; set PAPER, 18b + common 55b, old version was 42b
 cn_ppr:						; 4= paper to be set
@@ -587,12 +587,12 @@ cn_ppr:						; 4= paper to be set
 	AND #$0F				; only old INK at low nibble	(0i)
 	ORA fw_cbyt				; combine result with PAPER...	(Pi)
 	STA fw_ccol+1			; ...and fall to complete the array
-;	JMP st_col
+;	JMP set_col
 ; reconstruct array from PAPER-INK index
 ; * surely can be shrinked by use of lost fw_ccnt, but who cares...
 rs_col:						; restore colour aray from [1] (PAPER-INK)
 	LDA fw_ccol+1			; get all				xx PI xx xx
-set_col:
++set_col:
 	AND #$0F				; ink only
 	STA fw_cbyt				; temporary ink storage	(0I)
 	ASL
@@ -621,53 +621,6 @@ set_col:
 md_std:
 	_STZA fw_cbin			; back to standard mode
 	RTS
-
-
-; **** old code ***
-cn_ink:						; 2= ink to be set
-	AND #15					; even if hires will just use d0, keep whole value for this hardware
-set_ink:
-	STA fw_cbyt				; temporary storage
-	ASL
-	ASL
-	ASL
-	ASL						; ink again, but in high nibble
-	STA fw_ccnt				; another temporary storage (high nibble)
-	ORA fw_cbyt				; twice
-	STA fw_ccol+3			; both INK
-	LDA fw_ccol+2			; this was old ink-paper
-	AND #$0F				; keep paper only
-	ORA fw_ccnt				; now it's INK-PAPER
-	STA fw_ccol+2
-	LDA fw_ccol+1			; this is paper and old ink
-	AND #$F0				; keep paper only
-	ORA fw_cbyt				; now it's PAPER-INK
-	STA fw_ccol+1
-md_std:
-	_STZA fw_cbin			; back to standard mode
-	RTS
-
-cn_ppr:						; 4= paper to be set
-	AND #15					; same as ink
-set_paper:
-	STA fw_cbyt				; temporary storage
-	ASL
-	ASL
-	ASL
-	ASL						; paper again, but in high nibble
-	STA fw_ccnt				; another temporary storage (high nibble)
-	ORA fw_cbyt				; twice
-	STA fw_ccol				; both PAPER (all versions)
-	LDA fw_ccol+1			; this is old paper and ink
-	AND #$0F				; keep ink only
-	ORA fw_ccnt				; now it's PAPER-INK
-	STA fw_ccol+1
-	LDA fw_ccol+2			; this was ink and old paper
-	AND #$F0				; keep ink only
-	ORA fw_cbyt				; now it's INK-PAPER
-	STA fw_ccol+2
-	_BRA md_std
-
 
 cn_sety:					; 6= Y to be set, advance mode to 8
 	JSR coord_ok			; common coordinate check as is a square screen
