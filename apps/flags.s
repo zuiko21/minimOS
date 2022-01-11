@@ -1,6 +1,6 @@
 ; video flag settings for Durango-X
-; v1.0b2
-; last modified 20220105-0145
+; v1.1b1
+; last modified 20220111-1238
 ; (c) 2022 Carlos J. Santisteban
 
 #include "../OS/usual.h"
@@ -23,7 +23,7 @@ vfHead:
 
 ; *** filename and optional comment ***
 	.asc	"flags", 0			; file name (mandatory)
-	.asc	"Sets Durango-X video flags, v1.0", 0		; comment
+	.asc	"Sets Durango-X video flags, v1.1", 0		; comment
 
 ; advance to end of header
 	.dsb	vfHead + $F8 - *, $FF	; for ready-to-blow ROM, advance to time/date field
@@ -89,9 +89,8 @@ vf_clear:
 		PLA
 		DEX				; next bit
 		BNE vf_loop
-	LDA #>unknown		; print unknown bits
-	LDY #<unknown
-	JSR prnStr
+	LDY #1
+	_U_ADM(CONIO)		; send CR for next
 vf_wait:
 		LDY #0			; get input char
 		_U_ADM(CONIO)	; eeeeeek
@@ -179,20 +178,18 @@ clear:
 	.asc	12								; this point will clear screen before
 banner:
 	.asc	14, "Video flags", 15, NEWL		; inverse text label
-	.asc	"HIssC---", NEWL				; flags header
-	.asc	10, 10, "0-3=see screen", NEWL	; with blank line for flags
-	.asc	"S=set screen", NEWL
-	.asc	"H=hires", NEWL
-	.asc	"I=inverse video", NEWL
-	.asc	"C=enable colour", NEWL
-	.asc	"G=greyscale (/C)", NEWL
-	.asc	"Esc/Q=quit", 1, 11				; help text, CR, UPCU
-	.asc	11, 11, 11, 11, 11, 11, 11, 0	; 7xUPCU 
+	.asc	"HIssC", NEWL					; flags header
+	.asc	10, 14, "H", 15, "ires, "		; blank line for flags and help strings
+	.asc	14, "I", 15, "nverse", NEWL
+	.asc	"0-3=see ", 16, 6, " "			; include right-pointing arrow
+	.asc	14, "S", 15, "et", NEWL
+	.asc	14, "C", 15, "olour, "
+	.asc	14, "G", 15, "reyscale", NEWL
+	.asc	14, "Esc/Q", 15, "=quit", 1		; help text, CR
+	.asc	11, 11, 11, 11, 0				; 4xUPCU 
 
-unknown:
-	.asc	"---", 1, 0						; ends in CR
 down:
-	.asc	10, 10, 10, 10, 10, 10, 10, 10, 0	; 8xLF
+	.asc	10, 10, 10, 10, 10, 0	; 8xLF
 ; ***** end of stuff *****
 vfEnd:					; ### for easy size computation ###
 .)
