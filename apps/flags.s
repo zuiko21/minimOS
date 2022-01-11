@@ -1,6 +1,6 @@
 ; video flag settings for Durango-X
-; v1.1b1
-; last modified 20220111-1238
+; v1.1b2
+; last modified 20220111-1652
 ; (c) 2022 Carlos J. Santisteban
 
 #include "../OS/usual.h"
@@ -43,8 +43,9 @@ vfSize	=	vfEnd - vfHead -$100	; compute size NOT including header!
 ; ************************
 ; *** initialise stuff ***
 ; ************************
-	col_en	= z_used+1	; the only variable, just for the unreadable C bit
+	col_en	= z_used+1	; variable for the unreadable C bit
 	tmp		= col_en+1	; need this too
+	set_sc	= tmp+1		; allow proper resolution switch in alternative screens
 
 ; ##### minimOS specific stuff #####
 	LDA #4				; zeropage space needed
@@ -60,6 +61,9 @@ go_vf:
 ; will not use iodev as will work thru firmware
 ; ##### end of minimOS specific stuff #####
 
+	LDA IO8attr
+	AND #%00110000		; filter current screen
+	STA set_sc
 	LDA #>banner		; address of banner message (column header)
 	LDY #<banner
 	JSR prnStr			; print the string! ready for flags
@@ -97,9 +101,11 @@ vf_wait:
 		BCS vf_wait		; hopefully no errors!
 	TYA
 	ORA #32				; all lowercase
-	CMP #'h'			; Hires toggle
+	CMP #'h'			; Hires toggle (will get back to selected screen)
 	BNE no_hr
 		LDA IO8attr
+		AND #%11001111	; remove current screen, just in case
+		ORA set_sc		; back to selected one
 		EOR #%10000000	; toggle D7
 		STA IO8attr
 		JMP vf_clpr		; clear and print, like "s"
@@ -117,6 +123,9 @@ vf_clpr:
 		LDY #<clear		; clearing is all we need (reused by H)
 		LDA #>clear
 		JSR prnStr
+		LDA IO8attr
+		AND #%00110000	; selected screen
+		STA set_sc		; take note
 		JMP vf_main		; and update bits
 no_ss:
 	CMP #'c'			; Enable colour mode
@@ -137,7 +146,7 @@ no_gm:
 		ASL				; times 16
 		STA tmp			; eeeek
 		LDA IO8attr
-		AND %11000000	; filter valid bits
+		AND #%11000000	; filter valid bits EEEEEEK how could it EVER work?
 		ORA tmp			; select new screen
 		JMP vf_cbit		; and update the rest
 vf_nosn:
@@ -178,13 +187,13 @@ clear:
 	.asc	12								; this point will clear screen before
 banner:
 	.asc	14, "Video flags", 15, NEWL		; inverse text label
-	.asc	"HIssC", NEWL					; flags header
-	.asc	10, 14, "H", 15, "ires, "		; blank line for flags and help strings
+	.asc	"HIssC---", NEWL				; flags header
+	.asc	10, 14, "H", 15, "ires   "		; blank line for flags and help strings
 	.asc	14, "I", 15, "nverse", NEWL
-	.asc	"0-3=see ", 16, 6, " "			; include right-pointing arrow
+	.asc	14, "0-3", 15, "=see", 16, 6	; include right-pointing arrow
 	.asc	14, "S", 15, "et", NEWL
-	.asc	14, "C", 15, "olour, "
-	.asc	14, "G", 15, "reyscale", NEWL
+	.asc	14, "C", 15, "olour  "
+	.asc	14, "G", 15, "rey", NEWL
 	.asc	14, "Esc/Q", 15, "=quit", 1		; help text, CR
 	.asc	11, 11, 11, 11, 0				; 4xUPCU 
 
