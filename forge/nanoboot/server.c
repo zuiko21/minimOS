@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2022 Carlos J. Santisteban *
- * last modified 20210610-1417         */
+ * last modified 20220112-1255         */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,17 +27,26 @@ void err(void);		/* show usage in case of parameter error */
 /* *** main code *** */
 /* NEW usage is server (file) (address) [[mode]speed] */
 /* where mode is + (safe, default) or - (fast NMI)    */
+/* address in dec or hex (0x style, not $)            */
 /* speed in MHz, default 1 MHz, safe NMI mode         */
 int main(int argc, char *argv[]) {
 	FILE*	f;
 	int		i, c, fin, ini;
 	char	nombre[80];
 	float	vel = 1.0;		/* NEW speed in MHz, keep these default values */
-	int		seg = 1;		/* NEW, set to 0 if not in SAFE mode (minimal NMI latency) */
+	int		seg = 1;		/* NEW, set to 0 if not in SAFE mode (minimal NMI handler latency) */
 	int		dats;			/* space between bits, nominally 65t with fast NMI */
 	int		cabs;			/* space between header bits, nominally ~2000t */
 
-	printf("*** nanoBoot server (OC) ***\n\n");
+/* check command syntax */
+	if (argc<3) {
+		printf("\nUSAGE: %s file address [[-]speed]\n", argv[0]);
+		printf("address in decimal or hex (Intel '0x' syntax)\n");
+		printf("default speed in MHz is 1, safe NMI handler (<215t/bit)\n");
+		printf("NEGATIVE speed for FAST NMI handler (<65t/bit total)\n\n");
+		return -1;
+	}
+	printf("*** nanoBoot server (OC) ***\n");
 	printf("pin 34=GND, 36=CLK, 38=DAT\n\n");
 /* set new speed parameters (non interactive), otherwise take 1 MHz slow NMI */
 	if (argc>=4) {			/* enough parameters detected */
@@ -49,49 +58,31 @@ int main(int argc, char *argv[]) {
 	}
 /* set delays accordingly */
 	if (vel<200)
-		periodo=200/vel;	/* 200 iterations = 1uS @ RPi400 */
+			periodo=200/vel;/* 200 iterations = 1uS @ RPi400 */
 	else 	periodo=1;		/* maximum speed, we don't want it rounded to zero! */
 	dats=65+seg*150;		/* nominally 12.5 or 4.3 kb/s @ 1 MHz */
-	printf("%f MHz");
-	if (!seg)	prinf(", fast NMI mode");
-	printf("\n\n");
+	printf("%f MHz", vel);
+	if (!seg)	prinf(", fast NMI handler");
+	printf("\nNominal rate: %d b/s\n\n", vel*1000000/(dats+15));
 /* GPIO setup */
 	wiringPiSetupGpio();	/* using BCM numbering! */
 	digitalWrite(CB1, 0);	/* clock initially disabled, note OC */
 	pinMode(CB1, OUTPUT);
 	pinMode(CB2, OUTPUT);
 	pinMode(STB, OUTPUT);	/* not actually used */
-/* get filename, either in batch or interactive mode */
-	if (argc>=2) {			/* NEW batch mode */
-		strcpy(nombre,argv[1]);			/* filename is mandatory in batch mode */
-		printf("File: %s\n", nombre);
-	} else {
-		printf("File: ");
-		scanf("%s", nombre);
-	}
+/* get filename in batch mode */
+	printf("File: %s\n", argv[1]);
 /* open source file */
-	if ((f = fopen(nombre, "rb")) == NULL) {
+	if ((f = fopen(argv[1], "rb")) == NULL) {
 		printf("*** NO SUCH FILE ***\n");
-		return -1;
+		return -2;
 	}
 /* compute header parameters */
 	fseek(f, 0, SEEK_END);
 	fin = ftell(f);
 	printf("It's %d bytes long ($%04X)\n\n", fin, fin);
 /* check start address */
-	if (argc>=3) {			/* address supplied */
-		ini=atof(argv[2]);	/* atoi() won't accept Hex addresses! */
-/* alternative: if first char of argv[2] is $, change it to x
- * then evaluate the string appending '0' first, in ANY case */
-/*		if (argv[2][0]=='$') {		/* hex value supplied, Motorola style */
-/*			argv[2][0]='x';
-		}
-		ini=atoi("0"+argv[2]);	*** concat is hard ***
- * perhaps using atof will accept both Intel and Motorola hex formats! */
-	} else {
-		printf("Address (HEX): ");
-		scanf("%x", &ini);
-	}
+	ini=atof(argv[2]);		/* atoi() won't accept Hex addresses! */
 	fin += ini;				/* nanoBoot mandatory format */
 /* send header */
 	cabe(0x4B);
@@ -99,8 +90,10 @@ int main(int argc, char *argv[]) {
 	cabe(fin&255);
 	cabe(ini>>8);
 	cabe(ini&255);
-/* send binary */
+/* send binary after pressing Return */
 	rewind(f);
+	printf("Hit <CR> to start transfer...\n)";
+	while (getchar()!='\n');
 	printf("*** GO!!! ***\n");
 	for (i=ini; i<fin; i++) {
 		if ((i&255) == 0) {
@@ -153,6 +146,7 @@ void dato(int x) {			/* send a byte at 'top' speed */
 	useg(125);				/* *** perhaps 200 µs or so *** */
 }
 
+/* this actually waits for a number of t-states */
 void useg(int x){
 	int i, t;
 
