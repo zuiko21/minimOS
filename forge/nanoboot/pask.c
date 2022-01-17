@@ -1,6 +1,6 @@
 /* IO9 keyboard emulation              *
  * (c) 2021-2022 Carlos J. Santisteban *
- * last modified 20211228-1211         */
+ * last modified 20220117-1349         */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,17 +8,27 @@
 /* *** needs -lwiringPi option *** */
 
 /* pin definitions, rightmost top row at header is BCM 10-9-11-[GND]-[SD]-5-6-13-19-26-[GND] */
+/* alternative BCM pinout:  17-27-22-[3V3]-[MOSI]-[MISO]-[CLK]-[GND]-[SD]-5-6-13-19-26-[GND] */
 /* say, D7-D5 & D4-D0 */
-/* may use the GND from nanoLink */
+/* may use the GND from nanoLink (pin 34 at bottom row) */
 #define	D0		26
 #define	D1		19
 #define	D2		13
 #define	D3		6
 #define	D4		5
 
+/* might change these to 17-27-22, as they may be used with SPI
 #define	D5		11
 #define	D6		9
-#define	D7		10
+#define	D7		10	*/
+
+/* SPI-savvy higher bits */
+#define	D5		22
+#define	D6		27
+#define	D7		17
+
+/* optional strobe pin is 40 at header, BCM21, rightmost bottom row */
+#define	STB		21
 
 /* Global variables */
 int	ctl=255, alt=0;
@@ -32,7 +42,8 @@ int main(void) {
 	int c;
 
 	printf("*** PASK emulator ***\n\n");
-	printf("pin 19=D7, 21=D6, 23=D5, 29=D4, 31=D3, 33=D2, 35=D1, 37=D0\n\n");
+//	printf("pin 19=D7, 21=D6, 23=D5, 29=D4, 31=D3, 33=D2, 35=D1, 37=D0\n\n");
+	printf("pin 11=D7, 13=D6, 15=D5, 29=D4, 31=D3, 33=D2, 35=D1, 37=D0\n\n");
 /* GPIO setup */
 	wiringPiSetupGpio();	/* using BCM numbering! */
 	digitalWrite(D0, 0);	/* output initially zeroed */
@@ -43,6 +54,7 @@ int main(void) {
 	digitalWrite(D5, 0);
 	digitalWrite(D6, 0);
 	digitalWrite(D7, 0);
+	digitalWrite(STB,1);	/* STROBE is active-low, will go into CA1 */
 	pinMode(D0, OUTPUT);	/* set output port */
 	pinMode(D1, OUTPUT);
 	pinMode(D2, OUTPUT);
@@ -51,6 +63,7 @@ int main(void) {
 	pinMode(D5, OUTPUT);
 	pinMode(D6, OUTPUT);
 	pinMode(D7, OUTPUT);
+	pinMode(STB,OUTPUT);
 /* main loop */
 	while(1) {
 		c = getchar();
@@ -79,8 +92,10 @@ void salida(int x) {
 	digitalWrite(D5, x&32);
 	digitalWrite(D6, x&64);
 	digitalWrite(D7, x&128);
-	delay(1);					/* 20 ms wait should be enough */
-	digitalWrite(D0, 0);		/* reset port to allow repeated keys */
+	digitalWrite(STB,0);		/* assert STROBE pulse */
+	delay(5);					/* 5 ms wait should be enough */
+	digitalWrite(STB,1);		/* negate STROBE pulse */
+	digitalWrite(D0, 0);		/* reset port to allow repeated keys without handshake */
 	digitalWrite(D1, 0);
 	digitalWrite(D2, 0);
 	digitalWrite(D3, 0);
@@ -88,13 +103,14 @@ void salida(int x) {
 	digitalWrite(D5, 0);
 	digitalWrite(D6, 0);
 	digitalWrite(D7, 0);
-	delay(1);
+	delay(5);					/* let a non-handshake, interrupt-driven input allow repeated keys */
 }
 
 void modi() {
 	int n=0;
 
-	printf("\n\n[MODIFIERS]1=CTL, 2=ALT, 3=both: ");
+	while (getchar()=='\n');			/* will this supress the buffering? */
+	printf("\n\n[MODIFIERS] 1=CTL, 2=ALT, 3=both: ");
 	while (!n)	n=getchar();
 	if (n=='1')		ctl=159; alt=0;		/* control key */
 	if (n=='2')		ctl=255; alt=128;	/* alt key */
