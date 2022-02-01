@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 30 0
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -1360,11 +1360,6 @@ Text Label 3700 4500 0    50   ~ 0
 ~OE
 Text Label 4050 4200 2    50   ~ 0
 ~WE
-Wire Wire Line
-	3450 4800 2900 4800
-Connection ~ 2900 4800
-Wire Wire Line
-	2900 4800 2900 5150
 $Comp
 L 74xx:74LS132 U8
 U 4 1 60C4EEF7
@@ -1922,8 +1917,6 @@ F 3 "" H 3900 5950 50  0001 C CNN
 	1    3900 5950
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	3350 3900 2900 3900
 Entry Wire Line
 	3100 7600 3200 7700
 Text GLabel 3200 7700 2    50   Input ~ 0
@@ -2018,8 +2011,6 @@ Text Label 7250 6350 0    50   ~ 0
 ~IO9Q
 Text Label 3000 3800 0    50   ~ 0
 R~W
-Wire Wire Line
-	2900 2550 2900 3900
 Entry Wire Line
 	4200 4550 4300 4650
 Wire Wire Line
@@ -2039,14 +2030,11 @@ MA[0..14]
 Text Label 7450 2350 2    50   ~ 0
 MA[0..14]
 Text Label 3000 4800 0    50   ~ 0
-PHI2
-Connection ~ 2900 3900
-Wire Wire Line
-	2900 3900 2900 4800
+PHI0
 Wire Wire Line
 	3550 3800 3550 3900
 Text Label 3000 3900 0    50   ~ 0
-PHI2
+PHI0
 $Comp
 L Device:D D5
 U 1 1 615D1EEA
@@ -2098,8 +2086,8 @@ ST250
 Wire Wire Line
 	2900 2550 3000 2550
 Wire Wire Line
-	3000 2050 2900 2050
-Text GLabel 2900 2050 1    50   Input ~ 0
+	3000 2050 2950 2050
+Text GLabel 2950 2050 1    50   Input ~ 0
 VCLK
 Wire Wire Line
 	2750 3450 2650 3450
@@ -2732,6 +2720,16 @@ Wire Wire Line
 Wire Wire Line
 	2700 3750 2650 3750
 Connection ~ 800  3950
+Wire Wire Line
+	2900 2550 2900 5150
+Wire Wire Line
+	2950 2050 2950 3900
+Wire Wire Line
+	2950 3900 3350 3900
+Wire Wire Line
+	2950 3900 2950 4800
+Wire Wire Line
+	2950 4800 3450 4800
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Wire Line
@@ -2747,9 +2745,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	7450 950  7450 5050
-Wire Bus Line
 	10800 650  10800 1650
+Wire Bus Line
+	7450 950  7450 5050
 Wire Bus Line
 	650  5500 650  7300
 Wire Bus Line
@@ -2768,4 +2766,7 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
+Connection ~ 2950 3900
+Text Label 3000 5150 0    50   ~ 0
+PHI2
 $EndSCHEMATC
