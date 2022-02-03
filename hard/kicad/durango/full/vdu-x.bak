@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 30 0
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -420,7 +420,7 @@ Wire Wire Line
 	6150 4400 6150 2600
 Wire Wire Line
 	6150 2600 6250 2600
-Text GLabel 9650 1750 0    50   Input ~ 0
+Text GLabel 9650 1800 0    50   Input ~ 0
 HIRES
 $Comp
 L 74xx:74LS175 U22
@@ -1147,11 +1147,9 @@ Wire Wire Line
 Wire Wire Line
 	8950 4550 8950 5100
 Wire Wire Line
-	8950 5100 10750 5100
-Wire Wire Line
 	10750 5100 10750 4400
 Text Label 7050 4550 0    50   ~ 0
-HRDE
+DHRDE
 $Comp
 L 74xx:74HC86 U23
 U 2 1 613328FE
@@ -1165,14 +1163,14 @@ F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 9550 4900 50  0001 C CNN
 $EndComp
 Text Label 2450 5550 2    50   ~ 0
 HPIX
-Text Label 5300 4950 3    50   ~ 0
+Text Label 5150 4950 3    50   ~ 0
 HVID
 $Comp
 L Device:R R824
 U 1 1 6090A54B
 P 4400 4650
 F 0 "R824" H 4150 4650 50  0000 L CNN
-F 1 "68K" V 4400 4550 50  0000 L CNN
+F 1 "220K" V 4400 4550 50  0000 L CNN
 F 2 "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical" V 4330 4650 50  0001 C CNN
 F 3 "~" H 4400 4650 50  0001 C CNN
 	1    4400 4650
@@ -1265,7 +1263,7 @@ Wire Wire Line
 Wire Wire Line
 	2000 4450 2000 4550
 Connection ~ 2500 4550
-Text Label 8650 1650 0    50   ~ 0
+Text Label 8650 1100 0    50   ~ 0
 ~FLAGS
 Wire Wire Line
 	1800 2950 1900 2950
@@ -1315,7 +1313,7 @@ $EndComp
 Text Label 5200 1450 0    50   ~ 0
 ~VA0
 Wire Wire Line
-	5850 1650 5850 2750
+	5850 1100 5850 2750
 Wire Wire Line
 	5850 2750 4250 2750
 Wire Wire Line
@@ -1378,7 +1376,7 @@ Wire Wire Line
 Wire Wire Line
 	9650 1750 9650 2200
 Wire Wire Line
-	9850 2000 9850 2200
+	9850 1700 9850 2200
 Wire Wire Line
 	9350 3250 9350 2750
 Wire Wire Line
@@ -1400,7 +1398,7 @@ Wire Wire Line
 Wire Wire Line
 	10550 3200 10550 3400
 Wire Wire Line
-	9850 2000 5950 2000
+	9850 1700 6700 1700
 Wire Wire Line
 	8650 1950 10350 1950
 Wire Wire Line
@@ -1485,9 +1483,9 @@ Wire Wire Line
 Wire Wire Line
 	10150 650  8650 650 
 Wire Wire Line
-	8650 650  8650 1650
+	8650 650  8650 1100
 Wire Wire Line
-	5850 1650 8650 1650
+	5850 1100 8650 1100
 $Comp
 L power:+5V #PWR0157
 U 1 1 612087BE
@@ -1673,11 +1671,11 @@ L power:+5V #PWR0163
 U 1 1 61A0366E
 P 5900 4600
 F 0 "#PWR0163" H 5900 4450 50  0001 C CNN
-F 1 "+5V" H 5800 4700 50  0000 C CNN
+F 1 "+5V" V 5900 4800 50  0000 C CNN
 F 2 "" H 5900 4600 50  0001 C CNN
 F 3 "" H 5900 4600 50  0001 C CNN
 	1    5900 4600
-	1    0    0    -1  
+	0    -1   -1   0   
 $EndComp
 $Comp
 L 74xx:74HCT02 U16
@@ -1697,13 +1695,13 @@ Wire Wire Line
 $Comp
 L power:GND #PWR0158
 U 1 1 617A63FA
-P 2400 3500
-F 0 "#PWR0158" H 2400 3250 50  0001 C CNN
-F 1 "GND" V 2405 3372 50  0000 R CNN
-F 2 "" H 2400 3500 50  0001 C CNN
-F 3 "" H 2400 3500 50  0001 C CNN
-	1    2400 3500
-	0    1    1    0   
+P 3050 3450
+F 0 "#PWR0158" H 3050 3200 50  0001 C CNN
+F 1 "GND" V 3055 3322 50  0000 R CNN
+F 2 "" H 3050 3450 50  0001 C CNN
+F 3 "" H 3050 3450 50  0001 C CNN
+	1    3050 3450
+	0    -1   -1   0   
 $EndComp
 Text Label 1900 4200 0    50   ~ 0
 HDOT
@@ -1786,8 +1784,8 @@ $Comp
 L Device:R R825
 U 1 1 617C1771
 P 5900 4750
-F 0 "R825" H 5650 4850 50  0000 L CNN
-F 1 "68K" V 5900 4650 50  0000 L CNN
+F 0 "R825" H 5650 4800 50  0000 L CNN
+F 1 "220K" V 5900 4650 50  0000 L CNN
 F 2 "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical" V 5830 4750 50  0001 C CNN
 F 3 "~" H 5900 4750 50  0001 C CNN
 	1    5900 4750
@@ -2021,9 +2019,9 @@ Wire Wire Line
 Wire Wire Line
 	5650 2550 5650 3400
 Wire Wire Line
-	5950 2000 5950 1450
+	6700 1700 6700 1450
 Wire Wire Line
-	5950 1450 5200 1450
+	6700 1450 5200 1450
 Wire Wire Line
 	2500 4200 2500 4100
 Wire Wire Line
@@ -2065,7 +2063,6 @@ Wire Wire Line
 	2400 3450 3050 3450
 Wire Wire Line
 	3050 3450 3050 3500
-Connection ~ 2400 3500
 $Comp
 L 74xx:74HCT02 U16
 U 3 1 612B6A33
@@ -2334,6 +2331,22 @@ Wire Wire Line
 	10750 2000 10750 1750
 Text Label 10400 2000 0    50   ~ 0
 COLOUR
+$Comp
+L Device:R R229
+U 1 1 621963F6
+P 9100 5100
+F 0 "R229" V 9000 5100 50  0000 C CNN
+F 1 "0" V 9100 5100 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical" V 9030 5100 50  0001 C CNN
+F 3 "~" H 9100 5100 50  0001 C CNN
+	1    9100 5100
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	9250 5100 10750 5100
+Connection ~ 3050 3450
+Text Notes 2600 3350 2    50   ~ 0
+MAY BE DELAYED
 Wire Bus Line
 	600  5800 600  7750
 Wire Bus Line

@@ -1246,20 +1246,6 @@ F 3 "" H 2150 2150 50  0001 C CNN
 	1    2150 2150
 	1    0    0    -1  
 $EndComp
-$Comp
-L Connector_Generic:Conn_01x04 J1
-U 1 1 60C55B9A
-P 1000 1950
-F 0 "J1" H 1250 1950 50  0000 C CNN
-F 1 "NANOLINK" H 1250 1850 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical" H 1000 1950 50  0001 C CNN
-F 3 "~" H 1000 1950 50  0001 C CNN
-	1    1000 1950
-	-1   0    0    -1  
-$EndComp
-NoConn ~ 1200 2150
-Text Notes 1200 2150 0    50   ~ 0
-KEY
 Text Label 1200 1950 0    50   ~ 0
 SERCLK
 Text Label 1200 2050 0    50   ~ 0
@@ -2730,6 +2716,9 @@ Wire Wire Line
 	2950 3900 2950 4800
 Wire Wire Line
 	2950 4800 3450 4800
+Connection ~ 2950 3900
+Text Label 3000 5150 0    50   ~ 0
+PHI2
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Wire Line
@@ -2745,9 +2734,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	10800 650  10800 1650
-Wire Bus Line
 	7450 950  7450 5050
+Wire Bus Line
+	10800 650  10800 1650
 Wire Bus Line
 	650  5500 650  7300
 Wire Bus Line
@@ -2766,7 +2755,15 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Connection ~ 2950 3900
-Text Label 3000 5150 0    50   ~ 0
-PHI2
+$Comp
+L Connector:AudioJack3 J1
+U 1 1 62029FC9
+P 1000 1950
+F 0 "J1" H 750 1950 50  0000 C CNN
+F 1 "NANOLINK" H 800 1700 50  0000 C CNN
+F 2 "Connector_Audio:Jack_3.5mm_CUI_SJ1-3533NG_Horizontal_CircularHoles" H 1000 1950 50  0001 C CNN
+F 3 "~" H 1000 1950 50  0001 C CNN
+	1    1000 1950
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
