@@ -2081,7 +2081,7 @@ P 1300 6000
 AR Path="/6310B9C7/62331A7A" Ref="U?"  Part="1" 
 AR Path="/60C42E7C/62331A7A" Ref="U529"  Part="1" 
 F 0 "U529" H 1300 6367 50  0000 C CNN
-F 1 "74HC139" H 1300 6276 50  0000 C CNN
+F 1 "74HC139" H 1300 6250 50  0000 C CNN
 F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 1300 6000 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 1300 6000 50  0001 C CNN
 	1    1300 6000
@@ -2093,8 +2093,8 @@ U 2 1 62331A80
 P 1300 6800
 AR Path="/6310B9C7/62331A80" Ref="U?"  Part="2" 
 AR Path="/60C42E7C/62331A80" Ref="U529"  Part="2" 
-F 0 "U529" H 1300 7200 50  0000 C CNN
-F 1 "74HC139" H 1300 7076 50  0000 C CNN
+F 0 "U529" H 1300 6450 50  0000 C CNN
+F 1 "74HC139" H 1300 6350 50  0000 C CNN
 F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 1300 6800 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 1300 6800 50  0001 C CNN
 	2    1300 6800
@@ -2123,12 +2123,10 @@ Wire Wire Line
 Wire Wire Line
 	700  6700 800  6700
 Wire Wire Line
-	1800 6700 1800 6450
+	1800 6700 1800 6500
 Wire Wire Line
-	1800 6450 800  6450
-Wire Wire Line
-	800  6450 800  6200
-Text Label 1800 6450 0    50   ~ 0
+	800  6350 800  6200
+Text Label 1800 6500 0    50   ~ 0
 ~IA08
 Wire Wire Line
 	700  5900 800  5900
@@ -2293,8 +2291,6 @@ Wire Wire Line
 	8300 4800 8300 4650
 Wire Wire Line
 	8300 6200 8300 6400
-Text Notes 700  7400 0    50   ~ 0
-MAY CONNECT TO PIN 1\nREMOVING PIN 12
 NoConn ~ 10850 1750
 Text GLabel 10950 1850 2    50   Input ~ 0
 SC0
@@ -2319,8 +2315,6 @@ F 3 "" H 9950 750 50  0001 C CNN
 	1    9950 750 
 	0    -1   -1   0   
 $EndComp
-Text Notes 900  7600 0    50   ~ 0
-OR AS ~FLAGS\nFOR TESTING!
 Wire Wire Line
 	11150 1250 11150 2700
 Wire Wire Line
@@ -2347,6 +2341,27 @@ Wire Wire Line
 Connection ~ 3050 3450
 Text Notes 2600 3350 2    50   ~ 0
 MAY BE DELAYED
+$Comp
+L Jumper:Jumper_3_Bridged12 JP1
+U 1 1 621EE0BF
+P 950 6500
+F 0 "JP1" H 750 6450 50  0000 C CNN
+F 1 "FAST/TIGHT" H 1350 6450 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 950 6500 50  0001 C CNN
+F 3 "~" H 950 6500 50  0001 C CNN
+	1    950  6500
+	1    0    0    1   
+$EndComp
+Wire Wire Line
+	1800 6500 1200 6500
+Wire Wire Line
+	800  6350 950  6350
+Wire Wire Line
+	700  6500 550  6500
+Wire Wire Line
+	550  6500 550  7000
+Wire Wire Line
+	550  7000 800  7000
 Wire Bus Line
 	600  5800 600  7750
 Wire Bus Line
@@ -2359,4 +2374,6 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
+Text Label 800  6350 1    50   ~ 0
+~VFEN
 $EndSCHEMATC

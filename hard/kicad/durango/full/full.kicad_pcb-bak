@@ -1220,7 +1220,7 @@
   )
 
   (module Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical (layer F.Cu) (tedit 5AE5139B) (tstamp 6089E225)
-    (at 208.28 92.075 180)
+    (at 205.74 92.075 180)
     (descr "Resistor, Axial_DIN0204 series, Axial, Vertical, pin pitch=2.54mm, 0.167W, length*diameter=3.6*1.6mm^2, http://cdn-reichelt.de/documents/datenblatt/B400/1_4W%23YAG.pdf")
     (tags "Resistor Axial_DIN0204 series Axial Vertical pin pitch 2.54mm 0.167W length 3.6mm diameter 1.6mm")
     (path /60C42E7C/6090A54B)

@@ -1679,8 +1679,8 @@ Wire Wire Line
 	1200 2050 1500 2050
 Wire Wire Line
 	1200 1950 1550 1950
-Text Label 6050 5250 0    50   ~ 0
-PHI2
+Text Label 6000 5300 0    50   ~ 0
+PHI0
 Wire Wire Line
 	9150 2650 9150 5250
 Wire Wire Line
@@ -2101,7 +2101,7 @@ Wire Wire Line
 	1100 3300 1100 3500
 Wire Wire Line
 	800  3300 800  3650
-Text Label 3650 5100 0    50   ~ 0
+Text Label 3250 5100 0    50   ~ 0
 IEN
 Text GLabel 650  5500 1    50   Input ~ 0
 A[0..15]
@@ -2265,9 +2265,7 @@ Wire Wire Line
 Entry Wire Line
 	5900 5300 6000 5400
 Wire Wire Line
-	6050 5150 6050 5300
-Wire Wire Line
-	6050 5300 6200 5300
+	6000 5300 6200 5300
 Text Label 6100 5600 2    50   ~ 0
 ~IO
 Wire Wire Line
@@ -2719,6 +2717,30 @@ Wire Wire Line
 Connection ~ 2950 3900
 Text Label 3000 5150 0    50   ~ 0
 PHI2
+$Comp
+L Connector:AudioJack3 J1
+U 1 1 62029FC9
+P 1000 1950
+F 0 "J1" H 750 1950 50  0000 C CNN
+F 1 "NANOLINK" H 800 1700 50  0000 C CNN
+F 2 "Connector_Audio:Jack_3.5mm_CUI_SJ1-3533NG_Horizontal_CircularHoles" H 1000 1950 50  0001 C CNN
+F 3 "~" H 1000 1950 50  0001 C CNN
+	1    1000 1950
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2950 4800 2950 5050
+Wire Wire Line
+	2950 5050 4700 5050
+Wire Wire Line
+	4700 5050 4700 5200
+Wire Wire Line
+	4700 5200 6000 5200
+Wire Wire Line
+	6000 5200 6000 5300
+Connection ~ 2950 4800
+Text Label 3450 5050 0    50   ~ 0
+PHI0
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Wire Line
@@ -2734,9 +2756,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	7450 950  7450 5050
-Wire Bus Line
 	10800 650  10800 1650
+Wire Bus Line
+	7450 950  7450 5050
 Wire Bus Line
 	650  5500 650  7300
 Wire Bus Line
@@ -2755,15 +2777,4 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-$Comp
-L Connector:AudioJack3 J1
-U 1 1 62029FC9
-P 1000 1950
-F 0 "J1" H 750 1950 50  0000 C CNN
-F 1 "NANOLINK" H 800 1700 50  0000 C CNN
-F 2 "Connector_Audio:Jack_3.5mm_CUI_SJ1-3533NG_Horizontal_CircularHoles" H 1000 1950 50  0001 C CNN
-F 3 "~" H 1000 1950 50  0001 C CNN
-	1    1000 1950
-	1    0    0    -1  
-$EndComp
 $EndSCHEMATC
