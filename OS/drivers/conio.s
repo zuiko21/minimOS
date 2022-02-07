@@ -1,7 +1,7 @@
 ; generic, UNIVERSAL firmware console support for minimOS!
-; v0.6.1b1
+; v0.6.1b2
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220117-1433
+; last modified 20220207-2313
 
 ; ***********************
 ; *** minimOS headers ***
@@ -10,7 +10,7 @@
 
 ; *** begins with sub-function addresses table ***
 	.byt	144			; physical driver number D_ID (TBD)
-	.byt	A_BOUT|A_BLIN	; basic I/O driver, non-interrupt-driven
+	.byt	A_BOUT|A_BLIN|A_POLL	; basic I/O driver, interrupt-driven EEEEEK
 	.word	gfc_i		; read N bytes from 'serial'
 	.word	gfc_o		; output N bytes to 'serial'
 	.word	fwc_init	; initialise 'device', called by POST only
@@ -25,7 +25,7 @@
 
 ; *** driver description ***
 gfc_info:
-	.asc	"Generic  FW I/O console v0.6b5", 0
+	.asc	"Generic  FW I/O console v0.6.1b2", 0
 
 ; **********************************************************************************
 ; *** this header will enable classic character routines within block procedures ***
@@ -116,6 +116,7 @@ fw_some:
 ; *** receive one byte (polled) ***
 ; *********************************
 fwc_poll:
+_PANIC("POLL")
 	LDY #0					; input mode
 	_ADMIN(CONIO)
 	BCS fw_pok

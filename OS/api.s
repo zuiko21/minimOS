@@ -1260,9 +1260,24 @@ dr_sarr:
 	LDX #1				; index for periodic queue (2)
 ; *** suspicious code ***
 dr_iqloop:
+phx
+txa
+clc
+adc#'0'
+tay
+lda dr_aut:pha
+_ADMIN(CONIO)
+pla:sta dr_aut
+plx
 		ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
 		BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
+phx
+ldy#'#'
+lda dr_aut:pha
+_ADMIN(CONIO)
+pla:sta dr_aut
+plx
 			LDY queue_mx, X		; get index of free entry!
 			STY dq_off			; worth saving on a local variable
 			INC queue_mx, X		; add another task in queue
@@ -1370,15 +1385,19 @@ dr_itask:
 ; *** error handling ***
 ; **********************
 dr_iabort:
+_PANIC("{invalid}")
 	LDY #INVALID
 	BNE dr_abort			; could use BNE instead of BRA
 dr_fabort:
+_PANIC("{full}")
 	LDY #FULL
 	BNE dr_abort
 dr_babort:
+_PANIC("{busy}")
 	LDY #BUSY
 	BNE dr_abort
 dr_uabort:
+_PANIC("{UABORT}")
 	LDY #INVALID
 dr_abort:
 ; standard error exit, no macro here
