@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.6.1a6, should match kernel.s
+; v0.6.1a7, should match kernel.s
 ; features TBD
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20220102-1310
+; last modified 20220207-1329
 
 #define		ISR		_ISR
 
@@ -22,10 +22,10 @@
 ; check whether from VIA, BRK...
 ;	ADMIN(IRQ_SRC)		; check source, **generic way**
 ; since 65xx systems are expected to have a single interrupt source, this may serve
-	TXA					; check offset in X
-;testing***		BEQ periodic		; eeeeeeeeeeeeeek
+;	TXA					; check offset in X
+;		BEQ periodic	; eeeeeeeeeeeeeek
 ; otherwise use the full generic way
-;	_JMPX(irq_tab)		; do as appropriate
+;	JMPX(irq_tab)		; do as appropriate
 ;irq_tab:
 ;	.word periodic		; standard jiffy
 ;	.word asynchronous	; async otherwise
@@ -33,7 +33,7 @@
 ; optimised, non-portable code
 ;	BIT VIA+IFR			; much better than LDA + ASL + BPL! (4)
 ;		BVS periodic	; from T1 (3/2)
-
+	_BRA periodic		; ** Durango-X has no asynchronous interrupts, thus goes directly into periodic code ***
 ; *********************************
 ; *** async interrupt otherwise *** (arrives here in 17 cycles if optimised)
 ; *********************************
@@ -157,7 +157,7 @@ i_poll:
 			_PHX				; keep index! (3)
 			JSR ip_call			; call from table (12...)
 ; *** here is the return point needed for B_EXEC in order to create the stack frame ***
-isr_schd:				; *** take this standard address!!! ***
++isr_schd:				; *** take this standard address!!! ***
 			_PLX				; restore index (4)
 			_BRA i_pnx			; --- check next --- optional if optimised as below
 i_rnx2:
@@ -171,7 +171,7 @@ i_pnx:
 ; *** continue after all interrupts dispatched ***
 ip_done:
 ; **********************************************
-; *** STUB for procrastinated task execution ***
+; *** STUB for procrastinated task execution *** WTF??
 /*	LDA i_delay			; something pending? (4) might use an array of several tasks!
 	BNE i_wait			; if not, just continue (2/3) usually minimal latency this way
 ; *** see below for continuation ***
