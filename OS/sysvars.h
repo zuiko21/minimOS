@@ -1,6 +1,6 @@
-; minimOS 0.6.1a3 System Variables
+; minimOS 0.6.1a4 System Variables
 ; (c) 2012-2022 Carlos J. Santisteban
-; last modified 20220103-1708
+; last modified 20220207-1932
 
 ; **** I/O management ****
 ; ** pointer tables for drivers, new order suggested for alternative version **
@@ -63,6 +63,9 @@ ram_stat	.dsb	MAX_LIST		; status of each block, non interleaved
 ram_pid		.dsb	MAX_LIST		; non-interleaved PID array
 #endif
 #endif
+
+; some new I/O vars temporarily stored here!
+pask_ibuf	.byt	0
 
 ; *************************************************
 ; ** these are the older variables, up to 150126 **
