@@ -1,8 +1,8 @@
 ; ISR for minimOS
-; v0.6.1a7, should match kernel.s
-; features TBD
+; v0.6.1a8, should match kernel.s
+; features TBD *** patched for non-async devices like Durango
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20220207-1329
+; last modified 20220209-1816
 
 #define		ISR		_ISR
 
@@ -33,7 +33,7 @@
 ; optimised, non-portable code
 ;	BIT VIA+IFR			; much better than LDA + ASL + BPL! (4)
 ;		BVS periodic	; from T1 (3/2)
-	_BRA periodic		; ** Durango-X has no asynchronous interrupts, thus goes directly into periodic code ***
+	_BRA ir_done		; ** Durango-X has no asynchronous interrupts, thus goes directly into periodic code ***
 ; *********************************
 ; *** async interrupt otherwise *** (arrives here in 17 cycles if optimised)
 ; *********************************
@@ -81,6 +81,8 @@ i_anx:
 		DEX					; decrease after processing, negative offset on call, less latency, 20151029
 		BPL i_req			; until zero is done (3/2)
 */
+; usually will check for BRK after no async IRQs were serviced, but non-async machines shoud check for BRK before periodic
+
 ; *********************
 ; lastly, check for BRK
 ; *********************
@@ -88,7 +90,8 @@ ir_done:
 	TSX					; get stack pointer (2)
 	LDA $0104, X		; get saved PSR (4)
 	AND #$10			; mask out B bit (2)
-	BEQ isr_done		; spurious interrupt! (2/3)
+;	BEQ isr_done		; spurious interrupt! (2/3)
+	BEQ per_int			; no BRK, thus simple periodic interrupt (2/3)
 ; ...this is BRK, but must emulate NMI stack frame! *** the BRK _handler_ will!
 ; *****************************************************************
 ; *** BRK is no longer simulated by FW, must use some other way ***
@@ -111,7 +114,7 @@ ip_call:
 	_JMPX(drv_poll-2)
 
 ; *** here goes the periodic interrupt code *** (4)
-periodic:
+;periodic:
 ;	LDA VIA+T1CL		; acknowledge periodic interrupt!!! (4)
 ; that was only for VIA-equipped systems!
 ; *** scheduler no longer here, just an optional driver! But could be placed here for maximum performance ***
@@ -141,6 +144,8 @@ periodic:
 ;i_pnx:
 ;		BNE i_poll			; until zero is done (3/2)
 
+per_int:
+; non-async machines arrive here AFTER BRK check
 ; *** alternative way with fixed-size arrays (no queue_mx) *** 44 bytes, 38 if left for the whole queue
 	LDX #MX_QUEUE-2		; maximum valid index (2)
 i_poll:
