@@ -116,7 +116,6 @@ fw_some:
 ; *** receive one byte (polled) ***
 ; *********************************
 fwc_poll:
-_PANIC("POLL")
 	LDY #0					; input mode
 	_ADMIN(CONIO)
 	BCS fw_pok

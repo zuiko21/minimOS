@@ -151,14 +151,14 @@ per_int:
 i_poll:
 		LDA drv_p_en , X	; *** check whether enabled, new in 0.6 ***
 		BPL i_rnx2			; *** if disabled, skip this task ***
-			DEC drv_cnt-2, X	; otherwise continue with countdown
+			DEC drv_cnt, X	; otherwise continue with countdown *** or were they -2/-1?
 				BNE i_pnx			; LSB did not expire, do not execute yet
-			DEC drv_cnt-1, X	; check now MSB, note value should be ONE more!
+			DEC drv_cnt+1, X	; check now MSB, note value should be ONE more!
 				BNE i_pnx			; keep waiting...
-			LDA drv_freq-2, X	; ...or pick original value...
-			STA drv_cnt-2, X	; ...and reset it!
-			LDA drv_freq-1, X
-			STA drv_cnt-1, X
+			LDA drv_freq, X	; ...or pick original value...
+			STA drv_cnt, X	; ...and reset it!
+			LDA drv_freq+1, X
+			STA drv_cnt+1, X
 			_PHX				; keep index! (3)
 			JSR ip_call			; call from table (12...)
 ; *** here is the return point needed for B_EXEC in order to create the stack frame ***
@@ -183,6 +183,7 @@ ip_done:
 ; **********************************/
 ; update uptime, much faster new format
 ip_tick:
+jsr$46a4
 	INC ticks			; increment uptime count (6)
 		BNE isr_done		; did not wrap (3/2)
 	INC ticks+1			; otherwise carry (6)

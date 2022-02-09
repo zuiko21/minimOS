@@ -17,15 +17,15 @@
 #define	D3		6
 #define	D4		5
 
-/* might change these to 17-27-22, as they may be used with SPI
+/* might change these to 17-27-22, as they may be used with SPI */
 #define	D5		11
 #define	D6		9
-#define	D7		10	*/
+#define	D7		10	/**/
 
-/* SPI-savvy higher bits */
+/* SPI-savvy higher bits 
 #define	D5		22
 #define	D6		27
-#define	D7		17
+#define	D7		17 */
 
 /* optional strobe pin is 40 at header, BCM21, rightmost bottom row */
 #define	STB		21

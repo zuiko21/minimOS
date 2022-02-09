@@ -192,6 +192,11 @@ co_lckd:
 
 ; *** common I/O call ***
 cio_unlock:
+bcc culdo
+cpy#EMPTY
+beq culdo
+_PANIC("UNLOCK ERR")
+culdo
 	LDX iol_dev			; get offest, need to clear new lock! (3)
 	_STZA cio_lock, X	; ...because I have to clear MUTEX! (4)
 	RTS					; exit with whatever error code
@@ -1297,11 +1302,11 @@ plx
 ; *** must copy here original frequency (PLUS 256) into drv_cnt ***
 			LDA (dq_ptr), Y		; get MSB
 			_INC				; plus 1
-			STA drv_cnt, Y		; store copy...
+			STA drv_cnt, X		; store copy... EEEEEEEK
 			STA (dq_ptr), Y		; ...and correct original value
 			DEY					; go for LSB
 			LDA (dq_ptr), Y		; get original...
-			STA drv_cnt, Y		; ...and store unmodified
+			STA drv_cnt, X		; ...and store unmodified EEEEEEK
 			_BRA dr_doreq		; nothing to skip, go for async queue
 dr_noten:
 		JSR dr_nextq		; if periodic was not enabled, this will skip frequencies queue
