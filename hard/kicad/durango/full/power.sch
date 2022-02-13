@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 30 0
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -57,7 +57,7 @@ U 1 1 6315D0B4
 P 1700 1150
 F 0 "C7" H 1750 1250 50  0000 L CNN
 F 1 "100nF" H 1700 1050 50  0000 L CNN
-F 2 "Capacitor_THT:C_Disc_D4.7mm_W2.5mm_P5.00mm" H 1738 1000 50  0001 C CNN
+F 2 "Capacitor_THT:C_Rect_L7.2mm_W2.5mm_P5.00mm_FKS2_FKP2_MKS2_MKP2" H 1738 1000 50  0001 C CNN
 F 3 "~" H 1700 1150 50  0001 C CNN
 	1    1700 1150
 	1    0    0    -1  
