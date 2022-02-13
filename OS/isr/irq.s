@@ -2,7 +2,7 @@
 ; v0.6.1a8, should match kernel.s
 ; features TBD *** patched for non-async devices like Durango
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20220209-1816
+; last modified 20220213-1700
 
 #define		ISR		_ISR
 
@@ -91,7 +91,7 @@ ir_done:
 	LDA $0104, X		; get saved PSR (4)
 	AND #$10			; mask out B bit (2)
 ;	BEQ isr_done		; spurious interrupt! (2/3)
-	BEQ per_int			; no BRK, thus simple periodic interrupt (2/3)
+	BEQ peiodic			; no BRK, thus simple periodic interrupt (2/3)
 ; ...this is BRK, but must emulate NMI stack frame! *** the BRK _handler_ will!
 ; *****************************************************************
 ; *** BRK is no longer simulated by FW, must use some other way ***
@@ -114,7 +114,7 @@ ip_call:
 	_JMPX(drv_poll-2)
 
 ; *** here goes the periodic interrupt code *** (4)
-;periodic:
+periodic:
 ;	LDA VIA+T1CL		; acknowledge periodic interrupt!!! (4)
 ; that was only for VIA-equipped systems!
 ; *** scheduler no longer here, just an optional driver! But could be placed here for maximum performance ***
@@ -144,7 +144,6 @@ ip_call:
 ;i_pnx:
 ;		BNE i_poll			; until zero is done (3/2)
 
-per_int:
 ; non-async machines arrive here AFTER BRK check
 ; *** alternative way with fixed-size arrays (no queue_mx) *** 44 bytes, 38 if left for the whole queue
 	LDX #MX_QUEUE-2		; maximum valid index (2)
@@ -183,7 +182,6 @@ ip_done:
 ; **********************************/
 ; update uptime, much faster new format
 ip_tick:
-jsr$46a4
 	INC ticks			; increment uptime count (6)
 		BNE isr_done		; did not wrap (3/2)
 	INC ticks+1			; otherwise carry (6)
