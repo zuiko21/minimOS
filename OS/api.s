@@ -2,7 +2,7 @@
 ; v0.6.1b2, must match kernel.s
 ; essentially the same as 0.6 for 0.6.1 compatibility
 ; (c) 2012-2022 Carlos J. Santisteban
-; last modified 20220104-1840
+; last modified 20220213-1835
 ; no way for standalone assembly...
 
 ; **************************************************
@@ -1200,7 +1200,7 @@ dr_chk:
 			BCC dr_ntsk			; yeah!
 dr_nabort:
 ; separate function issues FULL error
-				JMP dr_fabort		; or did not checked OK
+				JMP dr_fabort		; or did not check OK
 dr_ntsk:
 		DEX					; let us check next feature
 		BNE dr_chk
@@ -1265,24 +1265,9 @@ dr_sarr:
 	LDX #1				; index for periodic queue (2)
 ; *** suspicious code ***
 dr_iqloop:
-phx
-txa
-clc
-adc#'0'
-tay
-lda dr_aut:pha
-_ADMIN(CONIO)
-pla:sta dr_aut
-plx
 		ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
 		BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
-phx
-ldy#'#'
-lda dr_aut:pha
-_ADMIN(CONIO)
-pla:sta dr_aut
-plx
 			LDY queue_mx, X		; get index of free entry!
 			STY dq_off			; worth saving on a local variable
 			INC queue_mx, X		; add another task in queue
@@ -1297,6 +1282,7 @@ plx
 ; let us see if we are doing periodic task, in case frequency must be set also
 			TXA					; doing periodic?
 				BEQ dr_done			; if zero, is doing async queue, thus skip frequencies (in fact, already ended)
+bne dr_done
 			JSR dr_nextq		; advance to next queue (frequencies)
 			JSR dr_itask		; same for frequency queue
 ; *** must copy here original frequency (PLUS 256) into drv_cnt ***
@@ -1375,7 +1361,7 @@ dnq_snw:
 dr_itask:
 ; read pointer from header
 	LDY #1				; preset offset
-	LDA (pfa_ptr), Y		; get MSB from header
+	LDA (pfa_ptr), Y	; get MSB from header
 	PHA					; stack it!
 	_LDAY(pfa_ptr)		; non-indexed indirect, get LSB in A
 ; write pointer into queue

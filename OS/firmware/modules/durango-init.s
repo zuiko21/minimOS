@@ -1,6 +1,6 @@
 ; firmware module for minimOS·65
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220110-2238
+; last modified 20220213-1826
 
 ; *** init CONIO in durango, as interrupts are already set up ***
 ; *** firmware variables to be reset upon FF ***
@@ -14,8 +14,8 @@
 ; NMOS (with macros) and 65816 savvy
 
 ; *** default colours *** globally defined
-#define		STD_PPR		9
-#define		STD_INK		8
+#define		STD_PPR		8
+#define		STD_INK		7
 
 .(
 ; set default font

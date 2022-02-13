@@ -91,7 +91,7 @@ ir_done:
 	LDA $0104, X		; get saved PSR (4)
 	AND #$10			; mask out B bit (2)
 ;	BEQ isr_done		; spurious interrupt! (2/3)
-	BEQ peiodic			; no BRK, thus simple periodic interrupt (2/3)
+	BEQ periodic		; no BRK, thus simple periodic interrupt (2/3)
 ; ...this is BRK, but must emulate NMI stack frame! *** the BRK _handler_ will!
 ; *****************************************************************
 ; *** BRK is no longer simulated by FW, must use some other way ***

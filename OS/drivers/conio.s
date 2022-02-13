@@ -116,6 +116,7 @@ fw_some:
 ; *** receive one byte (polled) ***
 ; *********************************
 fwc_poll:
+inc $7fe0
 	LDY #0					; input mode
 	_ADMIN(CONIO)
 	BCS fw_pok
