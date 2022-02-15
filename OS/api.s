@@ -2,7 +2,7 @@
 ; v0.6.1b3, must match kernel.s
 ; essentially the same as 0.6 for 0.6.1 compatibility
 ; (c) 2012-2022 Carlos J. Santisteban
-; last modified 20220215-1221
+; last modified 20220215-2252
 ; no way for standalone assembly...
 
 ; **************************************************
@@ -1286,13 +1286,13 @@ bne dr_done
 			JSR dr_nextq		; advance to next queue (frequencies)
 			JSR dr_itask		; same for frequency queue
 ; *** must copy here original frequency (PLUS 256) into drv_cnt ***
-			LDA (dq_ptr), Y		; get MSB
+			LDA (dq_ptr), Y		; get MSB (Y=2)
 			_INC				; plus 1
-			STA drv_cnt, X		; store copy... EEEEEEEK
+			STA drv_cnt, Y		; store copy... EEEEEEEK
 			STA (dq_ptr), Y		; ...and correct original value
 			DEY					; go for LSB
 			LDA (dq_ptr), Y		; get original...
-			STA drv_cnt, X		; ...and store unmodified EEEEEEK
+			STA drv_cnt, Y		; ...and store unmodified EEEEEEK
 			_BRA dr_doreq		; nothing to skip, go for async queue
 dr_noten:
 		JSR dr_nextq		; if periodic was not enabled, this will skip frequencies queue
