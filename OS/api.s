@@ -2,7 +2,7 @@
 ; v0.6.1b3, must match kernel.s
 ; essentially the same as 0.6 for 0.6.1 compatibility
 ; (c) 2012-2022 Carlos J. Santisteban
-; last modified 20220214-1905
+; last modified 20220215-1221
 ; no way for standalone assembly...
 
 ; **************************************************
@@ -1203,19 +1203,19 @@ dr_nabort:
 				JMP dr_fabort		; or did not check OK
 dr_ntsk:
 		DEX					; let us check next feature
-		BNE dr_chk
+		BPL dr_chk			; EEEEEEEEEEEEEEK
 
 ; 3) if arrived here, there is room for interrupt tasks, but check init code
-	JSR dr_icall		; call routine (6+...)
+	JSR dr_icall		; call routine (6+...) *** I think queues must be set BEFORE calling init!
 	BCC dr_succ			; success
 ; separate function issues UNAVAIL error
 		JMP dr_uabort		; no way, forget about this
 dr_succ:
 
 ; all checked OK, do actual driver installation!
-; *** now adapted for new sparse arrays! ***
+; *** now adapted for new sparse arrays! *** let's check it anyway, but must be done before
 ; time to look for an empty entry on sparse array
-	LDX #2				; will not assing index 0 (2)
+	LDX #2				; will not assign index 0 (2)
 dr_ios:
 		LDA drv_ads+1, X	; check MSB of entry, now on mandatory array (4)
 			BEQ dr_sarr			; found a free entry (2/3)
@@ -1232,7 +1232,7 @@ dr_sarr:
 ; proper index already in X and A
 
 ; 4) Set I/O pointers
-; no longer checks I/O availability as drv_ads array is mandatory!
+; no longer checks I/O availability as drv_ads array is mandatory! seems OK
 ; thus not worth a loop, I think...
 	LDY #D_BLIN			; input routine (2)
 	JSR dr_gind			; get indirect address
@@ -1247,33 +1247,33 @@ dr_sarr:
 	LDA pfa_ptr+1		; same for MSB (3+4)
 	STA drv_opt+1, X
 
-; *** 5) register interrupt routines *** new, much cleaner approach
+; *** 5) register interrupt routines *** new, much cleaner approach... if it WORKED!
 ; time to get a pointer to the-block-of-pointers (source)
 	LDY #D_POLL			; should be the FIRST of the three words (D_POLL, D_FREQ, D_ASYN)
-	JSR dr_gind			; get the pointer into pfa_ptr)
+	JSR dr_gind			; get the pointer into pfa_ptr (source)
 ; also a temporary pointer to the particular queue
 	LDA #<drv_poll		; must be the first one!
-	STA dq_ptr			; store temporarily
+	STA dq_ptr			; store temporarily (destination?)
 	LDA #>drv_poll		; MSB too
 	STA dq_ptr+1
 ; new functionality 170519, pointer to (interleaved) task enabling queues
 	LDA #<drv_p_en		; this is the second one, will be decremented for async
-	STA dte_ptr			; yet another temporary pointer...
+	STA dte_ptr			; yet another temporary pointer... (another, simpler destination)
 	LDA #>drv_p_en		; same for MSB
 	STA dte_ptr+1
 ; all set now, now easier to use a loop
 	LDX #1				; index for periodic queue (2)
-; *** suspicious code ***
+; *** suspicious code *** ...and for a reason
 dr_iqloop:
 		ASL dr_aut			; extract MSB (will be A_POLL first, then A_REQ)
 		BCC dr_noten		; skip installation if task not enabled
 ; prepare another entry into queue
 			LDY queue_mx, X		; get index of free entry!
-			STY dq_off			; worth saving on a local variable
+			STY dq_off			; worth saving on a local variable (index into drv_poll or drv_req?)
 			INC queue_mx, X		; add another task in queue
 			INC queue_mx, X		; pointer takes two bytes
 ; install entry into queue
-			JSR dr_itask		; install into queue
+			JSR dr_itask		; install into queue##
 ; save for frequency queue, flags must be enabled for this task!
 			LDA dr_id			; use ID as flags, simplifies search and bit 7 hi (as per physical device) means enabled by default eeeeeeek
 ; ****** might replace above by LDAY if inmutable IDs ******
