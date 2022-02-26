@@ -704,7 +704,7 @@ L Device:R R113
 U 1 1 60B90BF0
 P 7350 6200
 F 0 "R113" V 7300 6400 50  0000 C CNN
-F 1 "1K3" V 7350 6200 50  0000 C CNN
+F 1 "1K2" V 7350 6200 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7280 6200 50  0001 C CNN
 F 3 "~" H 7350 6200 50  0001 C CNN
 	1    7350 6200
@@ -749,19 +749,6 @@ Wire Wire Line
 	8300 6400 8250 6400
 Text GLabel 8300 6400 2    50   Input ~ 0
 AUDIO
-Wire Wire Line
-	8250 6300 8250 6250
-Wire Wire Line
-	8250 6250 7700 6250
-Wire Wire Line
-	7700 6250 7700 6200
-Connection ~ 7700 6200
-Wire Wire Line
-	7700 5800 7700 5650
-Wire Wire Line
-	7700 5650 8250 5650
-Wire Wire Line
-	8250 5650 8250 5600
 Connection ~ 7700 5800
 $Comp
 L Connector:Conn_Coaxial J206
@@ -775,12 +762,7 @@ F 3 " ~" H 8700 5500 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	8250 5650 8450 5650
-Connection ~ 8250 5650
-Wire Wire Line
 	8450 5700 8700 5700
-Wire Wire Line
-	8450 5700 8450 5650
 Wire Wire Line
 	8250 5500 8300 5500
 NoConn ~ 7750 6400
@@ -788,10 +770,7 @@ NoConn ~ 7750 6300
 NoConn ~ 7750 5600
 NoConn ~ 7750 5500
 Wire Wire Line
-	7700 5650 7700 5500
-Wire Wire Line
 	7700 5400 7750 5400
-Connection ~ 7700 5650
 NoConn ~ 8250 6000
 NoConn ~ 8250 5900
 NoConn ~ 8250 5800
@@ -856,15 +835,12 @@ L Device:R R15
 U 1 1 60C0F0E2
 P 7500 5350
 F 0 "R15" V 7400 5350 50  0000 C CNN
-F 1 "220" V 7500 5350 50  0000 C CNN
+F 1 "150" V 7500 5350 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7430 5350 50  0001 C CNN
 F 3 "~" H 7500 5350 50  0001 C CNN
 	1    7500 5350
 	-1   0    0    1   
 $EndComp
-Wire Wire Line
-	8700 5700 8850 5700
-Connection ~ 8700 5700
 $Comp
 L Transistor_BJT:BC547 Q5
 U 1 1 60C5B6F0
@@ -914,7 +890,7 @@ L Device:R R18
 U 1 1 60CA6B0F
 P 7250 5350
 F 0 "R18" H 7050 5350 50  0000 L CNN
-F 1 "3K3" V 7250 5300 50  0000 L CNN
+F 1 "3K3" V 7250 5350 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7180 5350 50  0001 C CNN
 F 3 "~" H 7250 5350 50  0001 C CNN
 	1    7250 5350
@@ -927,13 +903,13 @@ Wire Wire Line
 $Comp
 L power:GND #PWR0147
 U 1 1 60CE8ADA
-P 8850 5700
-F 0 "#PWR0147" H 8850 5450 50  0001 C CNN
-F 1 "GND" V 8950 5650 50  0000 C CNN
-F 2 "" H 8850 5700 50  0001 C CNN
-F 3 "" H 8850 5700 50  0001 C CNN
-	1    8850 5700
-	0    -1   -1   0   
+P 8700 6300
+F 0 "#PWR0147" H 8700 6050 50  0001 C CNN
+F 1 "GND" H 8700 6150 50  0000 C CNN
+F 2 "" H 8700 6300 50  0001 C CNN
+F 3 "" H 8700 6300 50  0001 C CNN
+	1    8700 6300
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	6950 4950 6950 5000
@@ -942,7 +918,7 @@ L Device:R R17
 U 1 1 60CFFFF5
 P 7250 4800
 F 0 "R17" H 7300 4850 50  0000 L CNN
-F 1 "6K8" V 7250 4750 50  0000 L CNN
+F 1 "6K8" V 7250 4800 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7180 4800 50  0001 C CNN
 F 3 "~" H 7250 4800 50  0001 C CNN
 	1    7250 4800
@@ -950,31 +926,23 @@ F 3 "~" H 7250 4800 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	7250 4950 7250 5200
-Wire Wire Line
-	6950 5450 6750 5450
-Connection ~ 6950 5450
-Wire Wire Line
-	6950 5450 6950 5400
 $Comp
 L Device:R R19
 U 1 1 60D66C8F
 P 6750 5300
 F 0 "R19" H 6800 5250 50  0000 L CNN
-F 1 "6K8" V 6750 5250 50  0000 L CNN
+F 1 "6K8" V 6750 5300 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 6680 5300 50  0001 C CNN
 F 3 "~" H 6750 5300 50  0001 C CNN
 	1    6750 5300
 	1    0    0    -1  
 $EndComp
-Connection ~ 6750 5450
-Wire Wire Line
-	6750 5450 6600 5450
 $Comp
 L Device:R R220
 U 1 1 60D67999
 P 6600 5300
 F 0 "R220" H 6350 5400 50  0000 L CNN
-F 1 "3K3" V 6600 5250 50  0000 L CNN
+F 1 "3K3" V 6600 5300 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 6530 5300 50  0001 C CNN
 F 3 "~" H 6600 5300 50  0001 C CNN
 	1    6600 5300
@@ -1023,8 +991,6 @@ F 3 "~" H 7100 5500 50  0001 C CNN
 $EndComp
 Connection ~ 7250 5500
 Connection ~ 6950 5500
-Wire Wire Line
-	6950 5500 6950 5450
 Wire Wire Line
 	6750 4600 9250 4600
 Wire Wire Line
@@ -1164,9 +1130,9 @@ Wire Wire Line
 Wire Wire Line
 	7600 4250 7600 4100
 Wire Wire Line
-	8350 5700 8250 5700
+	8300 5700 8250 5700
 Wire Wire Line
-	8350 5700 8350 5850
+	8300 5700 8300 5850
 $Comp
 L 74xx:74HCT02 U16
 U 4 1 6181229E
@@ -1209,7 +1175,7 @@ F 3 "http://www.fairchildsemi.com/ds/BC/BC547.pdf" H 9200 5650 50  0001 L CNN
 	-1   0    0    -1  
 $EndComp
 Wire Wire Line
-	8350 5850 8800 5850
+	8300 5850 8800 5850
 Wire Wire Line
 	10950 5650 9400 5650
 Wire Wire Line
@@ -1625,12 +1591,12 @@ $Comp
 L 74xx:74HC86 U23
 U 1 1 612644D5
 P 10150 4700
-F 0 "U23" V 10104 4888 50  0000 L CNN
-F 1 "74HC86" V 10195 4888 50  0000 L CNN
+F 0 "U23" V 10050 4350 50  0000 L CNN
+F 1 "74HC86" V 10150 4250 50  0000 L CNN
 F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 10150 4700 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 10150 4700 50  0001 C CNN
 	1    10150 4700
-	0    1    1    0   
+	0    -1   1    0   
 $EndComp
 Wire Wire Line
 	4500 5050 4500 5200
@@ -1726,7 +1692,7 @@ Wire Wire Line
 	5100 4550 5100 4850
 Text Label 6600 4800 3    50   ~ 0
 HVG
-Text Label 8400 5850 0    50   ~ 0
+Text Label 8300 5850 0    50   ~ 0
 FBLANK
 Text Label 7000 5000 0    50   ~ 0
 ZMIX
@@ -1866,13 +1832,13 @@ Text Notes 9350 5400 0    50   ~ 0
 *MIGHT CONNECT E-C\nIF ONLY COLOUR MODE
 Text Notes 9050 5950 0    50   ~ 0
 *
-Text Label 7550 5700 0    50   ~ 0
+Text Label 7550 5700 2    50   ~ 0
 RED
-Text Label 7550 6100 0    50   ~ 0
+Text Label 7550 6100 2    50   ~ 0
 BLUE
-Text Label 7650 5900 0    50   ~ 0
+Text Label 7650 5900 2    50   ~ 0
 GRN
-Text Label 8400 5500 3    50   ~ 0
+Text Label 8300 5500 0    50   ~ 0
 VBS
 $Comp
 L Device:R R107
@@ -2064,47 +2030,13 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 1300 6000 50  0001 C CNN
 	1    1300 6000
 	1    0    0    -1  
 $EndComp
-$Comp
-L 74xx:74LS139 U?
-U 2 1 62331A80
-P 1300 6800
-AR Path="/6310B9C7/62331A80" Ref="U?"  Part="2" 
-AR Path="/60C42E7C/62331A80" Ref="U529"  Part="2" 
-F 0 "U529" H 1300 6450 50  0000 C CNN
-F 1 "74HC139" H 1300 6350 50  0000 C CNN
-F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 1300 6800 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 1300 6800 50  0001 C CNN
-	2    1300 6800
-	1    0    0    -1  
-$EndComp
-Text GLabel 800  7000 3    50   Input ~ 0
+Text GLabel 800  6200 3    50   Input ~ 0
 ~IO8Q
-Entry Wire Line
-	600  6600 700  6700
-Entry Wire Line
-	600  6700 700  6800
-Text Label 700  6800 0    50   ~ 0
-A0
-Text Label 700  6700 0    50   ~ 0
-A1
 NoConn ~ 1800 6100
-NoConn ~ 1800 7000
-NoConn ~ 1800 6800
-NoConn ~ 1800 6900
 Entry Wire Line
 	600  5800 700  5900
 Text Label 700  5900 0    50   ~ 0
 A3
-Wire Wire Line
-	700  6800 800  6800
-Wire Wire Line
-	700  6700 800  6700
-Wire Wire Line
-	1800 6700 1800 6500
-Wire Wire Line
-	800  6350 800  6200
-Text Label 1800 6500 0    50   ~ 0
-~IA08
 Wire Wire Line
 	700  5900 800  5900
 Wire Wire Line
@@ -2316,34 +2248,9 @@ Wire Wire Line
 Connection ~ 3050 3450
 Text Notes 2600 3350 2    50   ~ 0
 MAY BE DELAYED
-$Comp
-L Jumper:Jumper_3_Bridged12 JP1
-U 1 1 621EE0BF
-P 950 6500
-F 0 "JP1" H 750 6450 50  0000 C CNN
-F 1 "FAST/TIGHT" H 1350 6450 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 950 6500 50  0001 C CNN
-F 3 "~" H 950 6500 50  0001 C CNN
-	1    950  6500
-	1    0    0    1   
-$EndComp
-Wire Wire Line
-	1800 6500 1200 6500
-Wire Wire Line
-	800  6350 950  6350
-Wire Wire Line
-	700  6500 550  6500
-Wire Wire Line
-	550  6500 550  7000
-Wire Wire Line
-	550  7000 800  7000
-Text Label 800  6350 1    50   ~ 0
-~VFEN
 Connection ~ 8450 4650
 Wire Wire Line
 	8450 4650 8900 4650
-Wire Wire Line
-	8450 4950 8450 5650
 Wire Wire Line
 	7250 5500 7500 5500
 Wire Wire Line
@@ -2361,7 +2268,6 @@ Wire Wire Line
 	7500 5500 7700 5500
 Wire Wire Line
 	7500 5200 7700 5200
-Connection ~ 8450 5650
 $Comp
 L Device:R R30
 U 1 1 624D4251
@@ -2378,8 +2284,73 @@ Wire Wire Line
 Connection ~ 7700 5200
 Wire Wire Line
 	8150 5200 8300 5200
+Wire Wire Line
+	6950 5400 6950 5500
+Wire Wire Line
+	6600 5450 6600 5500
+Wire Wire Line
+	6600 5500 6750 5500
+Wire Wire Line
+	6750 5450 6750 5500
+Connection ~ 6750 5500
+Wire Wire Line
+	6750 5500 6950 5500
+Wire Wire Line
+	8450 4950 8450 5600
+Wire Wire Line
+	7700 5500 7700 5800
+$Comp
+L power:GND #PWR?
+U 1 1 623A5F47
+P 7500 5500
+F 0 "#PWR?" H 7500 5250 50  0001 C CNN
+F 1 "GND" H 7400 5400 50  0000 C CNN
+F 2 "" H 7500 5500 50  0001 C CNN
+F 3 "" H 7500 5500 50  0001 C CNN
+	1    7500 5500
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8250 5600 8450 5600
+Connection ~ 8450 5600
+Wire Wire Line
+	8450 5600 8450 5700
+Text Label 6900 5500 2    50   ~ 0
+VIN
+Wire Wire Line
+	8250 6300 8700 6300
+Wire Wire Line
+	8700 6300 8700 5700
 Wire Bus Line
 	600  5800 600  7750
+Connection ~ 8700 6300
+Connection ~ 8700 5700
+$Comp
+L 74xx:74LS139 U?
+U 2 1 62331A80
+P 1300 6800
+AR Path="/6310B9C7/62331A80" Ref="U?"  Part="2" 
+AR Path="/60C42E7C/62331A80" Ref="U529"  Part="2" 
+F 0 "U529" H 1300 6450 50  0000 C CNN
+F 1 "74HC139" H 1300 6350 50  0000 C CNN
+F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 1300 6800 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 1300 6800 50  0001 C CNN
+	2    1300 6800
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	1800 6700 1800 6800
+Connection ~ 1800 7100
+Connection ~ 1800 6800
+Wire Wire Line
+	1800 6800 1800 7000
+Connection ~ 1800 7000
+Wire Wire Line
+	1800 7000 1800 7100
+NoConn ~ 800  6700
+NoConn ~ 800  6800
+NoConn ~ 800  6900
+NoConn ~ 800  7000
 Wire Bus Line
 	2200 6300 2700 6300
 Wire Bus Line
