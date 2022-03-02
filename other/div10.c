@@ -8,11 +8,11 @@
 int div10(long n) {
 	long t, s;
 	
-	t = (long)n<<EXTRABITS;		/* try with extra bits		*/
+	t = n<<EXTRABITS;			/* try with extra bits		*/
 	s  = t>>4;					/* add shifted values		*/
 	s += t>>8;
 	s += t>>12;
-	s += t>>16;					/* if using 2 bytes, this would be n	*/
+	s += t>>16;					/* if using 2 extra bytes, this would be n	*/
 	
 	s += s>>1;					/* one-and-a-half			*/
 
