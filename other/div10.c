@@ -2,33 +2,35 @@
 /* based on Alexandre Dumont's method */
 #include <stdio.h>
 
-#define	EXTRABITS	8
+#define	EXTRABITS	16
+#define	OFFSET		1
 
-int div10(unsigned int n) {
-	long t, s=0;
+int div10(long n) {
+	long t, s;
 	
-	t = n<<EXTRABITS;			/* try with one extra byte	*/
-	s += t>>4;					/* add shifted values		*/
-	s += t>>8;					/* this one is actually n	*/
+	t = (long)n<<EXTRABITS;		/* try with extra bits		*/
+	s  = t>>4;					/* add shifted values		*/
+	s += t>>8;
 	s += t>>12;
-	s += t>>16;
+	s += t>>16;					/* if using 2 bytes, this would be n	*/
 	
 	s += s>>1;					/* one-and-a-half			*/
-	
-	return (int) s>>EXTRABITS;	/* remove extra byte		*/
+
+	return s>>EXTRABITS;		/* remove extra bits		*/
 }
-	
+
 int main(void) {
-	unsigned int i;
-	long errors = 0;			/* count whenever the computed result is not right */
+	long i;
+	int errors = 0;						/* count whenever the computed result is not right */
 	
-	for (i=0; i<=65535; i++) {	/* try all possible 16-bit values	*/
-		if (i/10 != div10(i)) {	/* is the expected result?			*/
-			errors++;			/* if not, count this as an error	*/
+	for (i=0; i<=65535; i++) {			/* try all possible 16-bit values	*/
+		if (i/10 != div10(i+OFFSET)) {	/* is the expected result?			*/
+			errors++;					/* if not, count this as an error	*/
+			printf("%ld/10 failed! (%d)\n", i, div10(i+OFFSET));
 		}
 	}
 	
-	printf("Errors within 65536 different values: %d\n", errors);
+	printf("\nErrors within 65536 different values: %d\n", errors);
 	
 	return 0;
 }
