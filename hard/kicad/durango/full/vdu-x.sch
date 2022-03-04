@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:full-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -322,10 +322,6 @@ LEND
 Connection ~ 4650 3900
 Wire Wire Line
 	5250 3400 5250 3300
-Wire Wire Line
-	4950 3300 4950 3400
-Wire Wire Line
-	4950 3300 4650 3300
 Wire Wire Line
 	4650 3300 4650 3900
 Wire Wire Line
@@ -2359,9 +2355,16 @@ Wire Wire Line
 Wire Wire Line
 	7600 4400 6200 4400
 Wire Wire Line
-	6200 4400 6200 3300
+	6200 4400 6200 3250
+Connection ~ 10050 4400
+Text Label 7050 4400 0    50   ~ 0
+~VS
 Wire Wire Line
-	6200 3300 5250 3300
+	4650 3300 5250 3300
+Wire Wire Line
+	4950 3400 4950 3250
+Wire Wire Line
+	4950 3250 6200 3250
 Wire Bus Line
 	2200 6300 2700 6300
 Wire Bus Line
@@ -2372,7 +2375,4 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
-Connection ~ 10050 4400
-Text Label 7050 4400 0    50   ~ 0
-~VS
 $EndSCHEMATC
