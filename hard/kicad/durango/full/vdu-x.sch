@@ -323,14 +323,11 @@ Connection ~ 4650 3900
 Wire Wire Line
 	5250 3400 5250 3300
 Wire Wire Line
-	5250 3300 4950 3300
-Wire Wire Line
 	4950 3300 4950 3400
 Wire Wire Line
 	4950 3300 4650 3300
 Wire Wire Line
 	4650 3300 4650 3900
-Connection ~ 4950 3300
 Wire Wire Line
 	5150 3400 5150 3350
 Wire Wire Line
@@ -2351,6 +2348,20 @@ NoConn ~ 800  6700
 NoConn ~ 800  6800
 NoConn ~ 800  6900
 NoConn ~ 800  7000
+Wire Wire Line
+	10050 4400 9750 4400
+Wire Wire Line
+	9750 4400 9750 4500
+Wire Wire Line
+	9750 4500 7600 4500
+Wire Wire Line
+	7600 4500 7600 4400
+Wire Wire Line
+	7600 4400 6200 4400
+Wire Wire Line
+	6200 4400 6200 3300
+Wire Wire Line
+	6200 3300 5250 3300
 Wire Bus Line
 	2200 6300 2700 6300
 Wire Bus Line
@@ -2361,4 +2372,7 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
+Connection ~ 10050 4400
+Text Label 7050 4400 0    50   ~ 0
+~VS
 $EndSCHEMATC
