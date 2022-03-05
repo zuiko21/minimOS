@@ -409,10 +409,6 @@ Wire Wire Line
 	6250 4250 7600 4250
 Wire Wire Line
 	5750 4400 6150 4400
-Wire Wire Line
-	6150 4400 6150 2600
-Wire Wire Line
-	6150 2600 6250 2600
 Text GLabel 9650 1800 0    50   Input ~ 0
 HIRES
 $Comp
@@ -436,10 +432,7 @@ Wire Wire Line
 Wire Wire Line
 	10150 3350 10150 3400
 Wire Wire Line
-	6150 2600 6150 2250
-Wire Wire Line
 	9350 3250 10200 3250
-Connection ~ 6150 2600
 Wire Wire Line
 	9850 3300 9850 3400
 $Comp
@@ -1657,7 +1650,7 @@ Connection ~ 5650 2550
 Wire Wire Line
 	3600 2650 5750 2650
 Wire Wire Line
-	5750 2150 5750 2650
+	5750 2150 5750 2600
 Connection ~ 5750 2650
 Text Label 3800 2650 0    50   ~ 0
 ~LINE
@@ -2365,6 +2358,10 @@ Wire Wire Line
 	4950 3400 4950 3250
 Wire Wire Line
 	4950 3250 6200 3250
+Wire Wire Line
+	6150 2250 6150 4400
+Wire Wire Line
+	6250 2600 5750 2600
 Wire Bus Line
 	2200 6300 2700 6300
 Wire Bus Line
@@ -2375,4 +2372,9 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
+Connection ~ 5750 2600
+Wire Wire Line
+	5750 2600 5750 2650
+Text Label 6300 2250 0    50   ~ 0
+UHS
 $EndSCHEMATC

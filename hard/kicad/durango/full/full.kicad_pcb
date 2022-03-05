@@ -4083,7 +4083,7 @@
     (pad 2 thru_hole oval (at 0 2.54) (size 1.6 1.6) (drill 0.8) (layers *.Cu *.Mask)
       (net 1 +5V))
     (pad 9 thru_hole oval (at 7.62 17.78) (size 1.6 1.6) (drill 0.8) (layers *.Cu *.Mask)
-      (net 1 +5V))
+      (net 2 GND))
     (pad 1 thru_hole rect (at 0 0) (size 1.6 1.6) (drill 0.8) (layers *.Cu *.Mask)
       (net 2 GND))
     (model ${KISYS3DMOD}/Package_DIP.3dshapes/DIP-16_W7.62mm_Socket.wrl

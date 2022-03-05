@@ -4155,7 +4155,7 @@
     (pad 3 thru_hole oval (at 0 5.08) (size 1.6 1.6) (drill 0.8) (layers *.Cu *.Mask)
       (net 61 VA10))
     (pad 10 thru_hole oval (at 7.62 15.24) (size 1.6 1.6) (drill 0.8) (layers *.Cu *.Mask)
-      (net 137 /VDU-X/UHS))
+      (net 127 ~LINE))
     (pad 2 thru_hole oval (at 0 2.54) (size 1.6 1.6) (drill 0.8) (layers *.Cu *.Mask)
       (net 62 VA11))
     (pad 9 thru_hole oval (at 7.62 17.78) (size 1.6 1.6) (drill 0.8) (layers *.Cu *.Mask)
