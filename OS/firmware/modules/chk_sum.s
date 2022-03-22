@@ -58,7 +58,7 @@ f16_noio:
 	ORA sum					; any non-zero bit will show up
 	BEQ good				; otherwise, all OK!
 ; *** non-zero is invalid, sum & check as output parameters for checking ***
-		_DR_ERR(CORRUPT)
+;		DR_ERR(CORRUPT)
 good:
 	_DR_OK					; no errors
 .)
