@@ -1,13 +1,13 @@
-; Durango firmware (at least for prototype version)
+; Durango firmware
 ; based on generic firmware template for minimOS·65
-; v0.6.1b5
+; v0.6.1b6
 ; (c)2015-2022 Carlos J. Santisteban
-; last modified 20220105-0115
+; last modified 20220322-0945
 
 #define		ROM			_ROM
 #define		HEADERS		_HEADERS
 #define		FIRMWARE	_FIRMWARE
-#define		DOWNLOAD	_DOWNLOAD
+;#define		DOWNLOAD	_DOWNLOAD
 ; setting 
 ; already set at FW_BASE via rom.s
 
@@ -20,16 +20,33 @@
 * = $200
 #include "firmware/durango.h"
 .text
-#else
-;#include "../usual.h"
-#endif
-	* = FW_BASE					; 16 KiB ROM at $C000, otherwise at $2000-$5FFF
+	* = FW_BASE					; 32 KiB ROM at $8000, otherwise at $2000-$5FFF
 
 ; *** since nanoBoot will start executing from first loaded address, an empty page with a JMP is mandatory ***
 	JMP dreset					; skip up to two pages
-; think about using the BRK handler (in bootloader firmware) to do JMP ($5FFC), like a regular reset
-
 ; could put here some routines, or tables, really disposable once booted into minimOS...
+#else
+; these are temporarily included here
+#include "options/durango.h"
+#include "macros.h"
+#include "abi.h"
+#include "zeropage.h"
+* = $200
+#include "firmware/durango.h"
+#include "../../forge/eh_basic/drv_ehbasic.h"
+;#include "../usual.h"
+.text
+	* = ROM_BASE					; 32 KiB ROM at $8000, otherwise at $2000-$5FFF
+; *** kludge app software and kernel included here ***
+#include "../kernel.s"
+; kernel includes suitable shell (options.h)
+#include "../apps/ls.s"
+#include "../apps/flags.s"
+#include "../shell/miniMoDA.s"
+#include "../../forge/eh_basic/ehbasic.s"
+
+#endif
+
 
 ; *********************************
 ; *********************************
@@ -83,7 +100,7 @@ fw_splash:
 #ifdef	DOWNLOAD
 	.asc " *DOWNLOADABLE* "
 #endif
-	.asc "0.6.1  firmware for "	; machine description as comment
+	.asc "0.6.1b6 firmware for "	; machine description as comment
 fw_mname:
 	.asc	MACHINE_NAME, 0
 ; advance to end of header (may need extra fields for relocation)
