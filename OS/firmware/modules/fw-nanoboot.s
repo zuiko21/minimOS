@@ -1,11 +1,24 @@
 ; firmware module for minimOS
 ; nanoBoot loader
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220322-1009
+; last modified 20220322-2249
 
 .(
+; *** constants ***
 fb_pos	= $5440				; 10 lines + 1 raster below
 
+; *** zeropage storage ***
+timeout	= uz				; timeout counter
+nb_rcv	= timeout+2			; received value
+nb_flag	= nb_rcv+1			; a byte is ready when zero (must be preset every byte)
+nb_ptr	= nb_flag+1			; initial address, will be used as pointer
+nb_fin	= nb_ptr+2			; final address (consecutive) after downloaded chunk
+nb_ex	= nb_fin+2			; copy of initial address
+; *** will temporarily use 3 more bytes, the last one for checking valid header ***
+
+; *****************
+; *** init code ***
+; *****************
 	LDX #0					; reset index
 nb_prn:
 		LDA text, X
@@ -30,14 +43,6 @@ wait:						; *** OLD placeholder, wait for a couple of seconds ***
 ; *** *** *** ******** *** *** ***
 ; *** *** *** NANOBOOT *** *** ***
 ; *** *** *** ******** *** *** ***
-
-; *** needed zeropage variables ***
-; nb_rcv, received byte (no longer need to be reset!)
-; nb_flag, counter of shifted bits, goes zero when a byte is received
-; nb_ptr (word) for initial address, will use as pointer
-; nb_fin (word) is final address, MUST be right after nb_ptr
-; nb_ex (word) keeps initial address, should be consecutive
-; *** will temporarily use 3 more bytes, the last one for checking valid header ***
 
 	SEI						; make sure interrupts are off (2)
 ; ******************************
@@ -156,6 +161,7 @@ nbg_nw:
 ; ********************************************
 #ifdef	SAFE
 ; should I reset NMI/IRQ vectors?
+	JSR vec_res
 #endif
 	JMP (nb_ex)				; go!
 
@@ -163,7 +169,8 @@ nbg_nw:
 ; *** otherwise, it failed one way or another ***
 ; ***********************************************
 nb_err:
-; *** might display something to tell error from timeout *** may unify routines
+	JSR vec_res
+; *** may display something to tell error from timeout *** might unify routines
 	LDX #0					; reset index
 err_prn:
 		LDA nberr_tx, X
@@ -186,6 +193,7 @@ nb_pexit:
 ; *** *** *** if nanoboot code did timeout, resume normal boot *** *** ***
 ; *** *** *** ************************************************ *** *** ***
 nb_exit:
+	JSR vec_res				; just in case
 	LDX #0					; reset index
 to_prn:
 		LDA delete, X
@@ -197,15 +205,54 @@ to_prn:
 		INX
 		BNE to_prn			; no need for BRA
 
+; **************************
+; *** interrupt routines ***
+; **************************
+nb_tab:
+	.word	nb_irq
+	.word	nb_nmi
+
+; *** interrupt service routines ***
+nb_nmi:
+; received bits should be LSB first!
+	CLC					; bits are *OFF* by default, will be inverted later (2)
+	PHA					; preserve A, as ISR will change it! (3)
+	CLI					; enable interrupts for a moment (2...)
+; if /IRQ was low, ISR will *set* C, thus injecting a one
+	SEI					; what happened? (2)
+	PLA					; retrieve A, but C won't be affected (4)
+	ROR nb_rcv			; inject C into byte, LSB first (5)
+	DEC nb_flag			; this will turn 0 when done, if preloaded with 8 (5)
+nb_rti:
+	RTI					; (6) total 29, plus ISR
+; ISR takes 7 clocks to acknowledge, plus 15 clocks itself, that's 22t for a grand total (including NMI ack) of 58 clocks per bit worst case
+
+nb_irq:
+; *** this modifies A (and stored P), thus PHA is needed on NMI for proper operation ***
+; since this has to set I flag anyway, clear stored C as received bit value
+	PLA				; saved status... (4)
+	ORA #%00000101	; ...now with I set *AND* C set (2)
+	PHA				; restore all (A changed) (3)
+	RTI				; (6) whole routine takes only 15 clocks
+
 ; ***************
 ; *** strings ***
 ; ***************
 text:
 	.asc	"nanoBoot?", 0
 delete:
-	.asc	2, 18, 2, '*', 18, STD_INK, 13, 0
+	.asc	2, 18, 5, '*', 18, STD_INK, 13, 0
 nberr_tx:
 	.asc	18, 2, "ERROR!", 0
+
+; *** vector restore ***
+vec_res:
+	LDY #<nb_rti
+	LDX #>nb_rti
+	STY fw_isr
+	STY fw_nmi
+	STX fw_isr+1
+	STX fw_nmi+1
 subdly:
 	RTS						; could be elsewhere
 continue:
