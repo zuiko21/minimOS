@@ -1,7 +1,8 @@
 ; generic, UNIVERSAL firmware console support for minimOS!
-; v0.6.1b2
+; non-interrupt version
+; v0.6.1b3
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220207-2313
+; last modified 20220322-233
 
 ; ***********************
 ; *** minimOS headers ***
@@ -14,8 +15,8 @@
 	.word	gfc_i		; read N bytes from 'serial'
 	.word	gfc_o		; output N bytes to 'serial'
 	.word	fwc_init	; initialise 'device', called by POST only
-	.word	fwc_poll	; NEW, periodic interrupt for input read
-	.word	1			; 4 ms polling seems OK for bounce
+	.word	gfc_nreq	; does nothing
+	.word	1			; 4 ms polling seems OK for bounce *** does nothing
 	.word	gfc_nreq	; D_ASYN does nothing
 	.word	gfc_nreq	; no config
 	.word	gfc_nreq	; no status
@@ -25,7 +26,7 @@
 
 ; *** driver description ***
 gfc_info:
-	.asc	"Generic  FW I/O console v0.6.1b2", 0
+	.asc	"Polled FW I/O   console v0.6.1b3", 0
 
 ; **********************************************************************************
 ; *** this header will enable classic character routines within block procedures ***
@@ -105,22 +106,8 @@ fwc_nul:
 ; *** read one byte from 'buffer' ***
 ; ***********************************
 fwc_i:
-	LDY pask_ibuf			; get single byte
-	BNE fw_some				; zero means no new key
-		_DR_ERR(EMPTY)
-fw_some:
-	_STZA pask_ibuf			; delete from buffer
-	_DR_OK
-
-; *********************************
-; *** receive one byte (polled) ***
-; *********************************
-fwc_poll:
 	LDY #0					; input mode
 	_ADMIN(CONIO)
-	BCS fw_pok
-		STY pask_ibuf		; store received ***new var***
-fw_pok:
 	RTS						; respect error (?)
 
 ; *** assorted stuff ***

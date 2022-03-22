@@ -2,7 +2,7 @@
 ; based on generic firmware template for minimOS·65
 ; v0.6.1b6
 ; (c)2015-2022 Carlos J. Santisteban
-; last modified 20220322-0945
+; last modified 20220322-2322
 
 #define		ROM			_ROM
 #define		HEADERS		_HEADERS
@@ -33,18 +33,19 @@
 #include "zeropage.h"
 * = $200
 #include "firmware/durango.h"
-#include "../../forge/eh_basic/drv_ehbasic.h"
+;#include "../../forge/eh_basic/drv_ehbasic.h"
 ;#include "../usual.h"
+-user_ram = *
 .text
 	* = ROM_BASE					; 32 KiB ROM at $8000, otherwise at $2000-$5FFF
 ; *** kludge app software and kernel included here ***
 #include "../kernel.s"
 ; kernel includes suitable shell (options.h)
+#include "../drivers/config/durango_std.s"	; EEEEEEK
 #include "../apps/ls.s"
 #include "../apps/flags.s"
 #include "../shell/miniMoDA.s"
 #include "../../forge/eh_basic/ehbasic.s"
-
 #endif
 
 

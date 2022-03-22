@@ -5,7 +5,7 @@
 
 ; ##### minimOS stuff but check macros.h for CMOS opcode compatibility #####
 
-#include "../usual.h"
+;#include "../usual.h"
 
 .(
 ; *** uncomment for narrow (20-char) displays ***

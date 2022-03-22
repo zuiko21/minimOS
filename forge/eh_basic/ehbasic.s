@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for minimOS ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20181024-0859
+; last modified 20220322-2309
 ; **********************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -22,7 +22,7 @@
 ; 2.21	fixed IF .. THEN RETURN to not cause error
 ; 2.22	fixed RND() breaking the get byte routine
 
-#include "../../OS/usual.h"
+;#include "../../OS/usual.h"
 
 .(
 ; **********************

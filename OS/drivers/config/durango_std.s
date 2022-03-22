@@ -1,8 +1,8 @@
 ; includes for minimOS drivers
 ; EMPTY configuration for testing purposes!
-; v1.1
+; v1.2
 ; (c) 2016-2022 Carlos J. Santisteban
-; last modified 20211231-1327
+; last modified 20220322-2343
 
 #define		DRIVERS		_DRIVERS
 
@@ -18,7 +18,7 @@
 
 ; *** load appropriate drivers here, currently just the GENERIC firmware console ***
 driver0:
-#include	"drivers/conio.s"
+#include	"drivers/conio_ni.s"
 
 ; *** driver list in ROM ***
 ; only the addresses, in no particular order (watch out undefined drivers!)
