@@ -2,7 +2,7 @@
 ; v0.6.1b3, must match kernel.s
 ; essentially the same as 0.6 for 0.6.1 compatibility
 ; (c) 2012-2022 Carlos J. Santisteban
-; last modified 20220216-2349
+; last modified 20220323-1932
 ; no way for standalone assembly...
 
 ; **************************************************
@@ -192,11 +192,7 @@ co_lckd:
 
 ; *** common I/O call ***
 cio_unlock:
-bcc culdo
-cpy#EMPTY
-beq culdo
-_PANIC("UNLOCK ERR")
-culdo
+; here was the UNLOCK ERR trap...
 	LDX iol_dev			; get offest, need to clear new lock! (3)
 	_STZA cio_lock, X	; ...because I have to clear MUTEX! (4)
 	RTS					; exit with whatever error code
@@ -876,9 +872,7 @@ ll_reset:
 	LDA #<ROM_BASE		; begin of ROM contents LSB, most likely zero
 	STA	rh_scan			; set local pointer
 	LDX #>ROM_BASE		; same for MSB...
-#ifdef	DOWNLOAD
-	INX					; ...but skip volume header!!!
-#endif
+	INX					; ...but skip volume header!!! *** only for download?
 	STX rh_scan+1		; internal pointer set
 ll_geth:
 ; ** check whether we are on a valid header!!! **

@@ -1,7 +1,7 @@
 ; firmware module for minimOS
 ; nanoBoot loader
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220323-1819
+; last modified 20220323-1930
 
 .(
 ; *** constants ***
@@ -90,7 +90,7 @@ nb_cont:
 			BNE nb_lbit			; no, keep trying (3/2)
 		LDA nb_rcv			; get received (3)
 ; note NMI gets inverted bytes, is this OK for neg_server.c?
-;		EOR #$FF			; NOPE***must invert byte, as now works the opposite (2)
+		EOR #$FF			; *** ONLY needed for neg_server
 
 ; *********************************
 ; *** header byte received in A ***
@@ -138,7 +138,7 @@ nb_gbit:
 		LDX nb_flag			; received something? (3)
 		BNE nb_gbit			; no, keep trying (3/2)
 	LDA nb_rcv				; get received (3)
-;	EOR #$FF				; NOPE***must invert byte, as now works the opposite (2) NO LONGER, but check neg_server
+	EOR #$FF				; *** ONLY needed for neg_server
 
 ; **************************
 ; *** byte received in A ***
