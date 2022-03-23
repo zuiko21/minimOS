@@ -1,15 +1,15 @@
 ; firmware module for minimOS
 ; nanoBoot loader
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220322-2249
+; last modified 20220323-1819
 
 .(
 ; *** constants ***
 fb_pos	= $5440				; 10 lines + 1 raster below
 
 ; *** zeropage storage ***
-timeout	= uz				; timeout counter
-nb_rcv	= timeout+2			; received value
+timeout	= uz				; timeout counter (now 24-bit)
+nb_rcv	= timeout+3			; received value
 nb_flag	= nb_rcv+1			; a byte is ready when zero (must be preset every byte)
 nb_ptr	= nb_flag+1			; initial address, will be used as pointer
 nb_fin	= nb_ptr+2			; final address (consecutive) after downloaded chunk
@@ -67,18 +67,20 @@ nb_lnk:
 ; *** receive byte on A, perhaps with feedback and timeout *** affects X
 ; ************************************************************
 
-; *** standard overhead per byte is 16t, or 24t with timeout ***
 		LDX #8				; number of bits per byte (2)
 		STX nb_flag			; preset bit counter (3)
-		LDX #0				; or use STZs (2)
-		STX timeout			; preset timeout counter for ~0.92 s @ 1 MHz, more if display is used (3+3)
-		STX timeout+1
+		LDY #5				; actual value for MSB, may use STZ for LSB and HSB, #1 ~ 0.6s (2)
+		STY timeout			; preset timeout counter, note MSB is backwards (3+3)
+		STY timeout+1
+		STY timeout+2		; note MSB must take Y, not STZ (3)
 nb_lbit:
 ; *** optional timeout adds typically 8 or 15 (0.4% of times) cycles to loop ***
-			DEC timeout			; one less to go (5)
-			BNE nb_cont			; if still within time, continue waiting after 8 extra cycles (3/2)
-				DEC timeout+1	; update MSB too otherwise (5)
-			BNE nb_cont			; not yet expired, continue after 15 extra cycles (3/2)
+			INC timeout			; one less to go (5)
+			BNE nb_cont			; if still within time, continue waiting (3/2)
+				INC timeout+1	; update HSB too otherwise (5)
+			BNE nb_cont			; if still within time, continue waiting (3/2)
+				DEC timeout+2	; update LSB too otherwise, downwards (5)
+			BNE nb_cont			; not yet expired, continue (3/2)
 				PLA				; discard return address otherwise... (4+4)
 				PLA
 				JMP nb_exit		; ...and proceed with standard boot!
@@ -113,7 +115,7 @@ nb_ok:
 ; might also check for boundaries (system dependant)
 #endif
 
-; optionally display colour dot at end of feedback line
+; *** optionally display colour dot at end of feedback line ***
 	LDX nb_fin+1			; get last page (or is it first page after transfer?)
 	LDA #$05				; green rightmost pixel
 	STA fb_pos, X
@@ -249,10 +251,10 @@ nberr_tx:
 vec_res:
 	LDY #<nb_rti
 	LDX #>nb_rti
-	STY fw_isr
 	STY fw_nmi
-	STX fw_isr+1
 	STX fw_nmi+1
+	STY fw_isr
+	STX fw_isr+1
 subdly:
 	RTS						; could be elsewhere
 continue:
