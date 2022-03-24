@@ -2,7 +2,7 @@
 ; non-interrupt version
 ; v0.6.1b3
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220322-233
+; last modified 20220324-0705
 
 ; ***********************
 ; *** minimOS headers ***
@@ -11,7 +11,7 @@
 
 ; *** begins with sub-function addresses table ***
 	.byt	144			; physical driver number D_ID (TBD)
-	.byt	A_BOUT|A_BLIN|A_POLL	; basic I/O driver, interrupt-driven EEEEEK
+	.byt	A_BOUT|A_BLIN	; basic I/O driver, NON interrupt-driven EEEEEK
 	.word	gfc_i		; read N bytes from 'serial'
 	.word	gfc_o		; output N bytes to 'serial'
 	.word	fwc_init	; initialise 'device', called by POST only
