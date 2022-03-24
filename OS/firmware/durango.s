@@ -7,6 +7,7 @@
 #define		ROM			_ROM
 #define		HEADERS		_HEADERS
 #define		FIRMWARE	_FIRMWARE
+#define		SAFE		_SAFE
 ;#define		DOWNLOAD	_DOWNLOAD
 ; setting 
 ; already set at FW_BASE via rom.s

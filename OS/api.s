@@ -1,8 +1,8 @@
 ; minimOS generic Kernel API
-; v0.6.1b3, must match kernel.s
+; v0.6.1b4, must match kernel.s
 ; essentially the same as 0.6 for 0.6.1 compatibility
 ; (c) 2012-2022 Carlos J. Santisteban
-; last modified 20220323-1932
+; last modified 20220324-1637
 ; no way for standalone assembly...
 
 ; **************************************************
@@ -872,7 +872,9 @@ ll_reset:
 	LDA #<ROM_BASE		; begin of ROM contents LSB, most likely zero
 	STA	rh_scan			; set local pointer
 	LDX #>ROM_BASE		; same for MSB...
+#ifdef	DOWNLOAD
 	INX					; ...but skip volume header!!! *** only for download?
+#endif
 	STX rh_scan+1		; internal pointer set
 ll_geth:
 ; ** check whether we are on a valid header!!! **
