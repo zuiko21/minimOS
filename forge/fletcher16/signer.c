@@ -1,6 +1,6 @@
 /* ROM signer with Fletcher-16 checksum *
  * (c) 2021-2022 Carlos J. Santisteban  *
- * last modified 20211230-2218          */
+ * last modified 20220324-1604          */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +10,7 @@ int main(int argc, char* argv[]) {
 	int sum, check;				/* computed sums    */
 	int sig_s, sig_c;			/* signature values at $FFDE-$FFDF (in 6502 space) */
 	int size;					/* ROM size         */
+	int skip;					/* I/O page to be skipped                          */
 	int offset;					/* position of signature (default $7FDE for 32K)   */
 	int target;					/* preliminary sum */
 	int i, j;
@@ -17,9 +18,10 @@ int main(int argc, char* argv[]) {
 
 	if (argc == 1) {			/* no arguments, asking for help */
 		printf("Fletcher-16 signer for minimOS ROM files\n");
-		printf("USAGE: %s file [offset]\n", argv[0]);
+		printf("USAGE: %s file [skip [offset]]\n", argv[0]);
 		printf("\tfile   = filename (duh), max. 32 kiB\n");
-		printf("\toffset = position of signature (default: $7FDE for 32K)\n");
+		printf("\tskip   = I/O page to skip (usually 223, $DF)\n");
+		printf("\toffset = negative position of signature (default: 34, $FFDE in 6502 space)\n");
 		return -1;				/* did nothing */
 	}
 
@@ -43,8 +45,8 @@ int main(int argc, char* argv[]) {
 		rom[i]=fgetc(f);		/* get contents    */
 		target += rom[i];		/* preliminary sum */
 	}
-	if (argc>2) {
-		offset = atoi(argv[2]);
+	if (argc>3) {
+		offset = size-atoi(argv[3]);
 	} else {
 		offset=size-34;			/* default offset  */
 		if (offset<0) {
@@ -53,6 +55,14 @@ int main(int argc, char* argv[]) {
 			return -4;			/* wrong offset    */
 		}
 	}
+	if (argc>2) {
+		skip = atoi(argv[2]);	/* I/O page to skip */
+		printf("I/O page: $%02X\n", skip);
+	} else {
+		skip = 256;				/* impossible value */
+		printf("DOWNLOADABLE ROM, no page skipped\n");
+	}
+	skip = size-((256-skip)<<8);	/* convert page into offset */
 	target -= rom[offset];		/* subtract reserved values */
 	target -= rom[offset+1];
 	target &= 255;
@@ -78,6 +88,7 @@ int main(int argc, char* argv[]) {
 		rom[offset+1]=(target-j) & 255;	/* as defined from preliminary sum */
 		check=sum=0;
 		for(i=0;i<size;i++) {
+			if (i==skip)	i+=256;		/* skip I/O page */
 			sum += rom[i];
 			sum &= 255;
 			check += sum;
