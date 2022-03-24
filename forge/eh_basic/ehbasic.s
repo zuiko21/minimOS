@@ -8471,7 +8471,7 @@ TAB_1STC
 	.byte	"U"
 	.byte	"V"
 	.byte	"W"
-	.byte	"^"
+	.byte	94				; ^
 	.byte	$00				; table terminator
 
 ; pointers to keyword tables
@@ -8899,7 +8899,7 @@ LAB_KEYT
 	.word	$0000		; *
 	.byte	1,"/"
 	.word	$0000		; /
-	.byte	1,"^"
+	.byte	1, 94
 	.word	$0000		; ^
 	.byte	3,"A"
 	.word	LBB_AND		; AND
