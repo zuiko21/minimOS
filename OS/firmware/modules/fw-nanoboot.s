@@ -1,7 +1,7 @@
 ; firmware module for minimOS
 ; nanoBoot loader
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220323-1930
+; last modified 20220326-0019
 
 .(
 ; *** constants ***
@@ -45,6 +45,7 @@ wait:						; *** OLD placeholder, wait for a couple of seconds ***
 ; *** *** *** ******** *** *** ***
 
 	SEI						; make sure interrupts are off (2)
+	_STZA IOAie				; hardware too EEEEEK
 ; ******************************
 ; *** set interrupt handlers *** SET OVERFLOW no longer supported
 ; ******************************
@@ -258,4 +259,6 @@ vec_res:
 subdly:
 	RTS						; could be elsewhere
 continue:
+	LDA #1
+	STA IOAie				; reenable interrupts EEEEEEEEEEK
 .)
