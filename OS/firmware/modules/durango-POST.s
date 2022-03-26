@@ -300,7 +300,7 @@ it_slow:
 it_3:
 	CMP #34					; up to 33 is fine
 	BCC it_ok				; 31-33 accepted
-		LDA #%10101010		; otherwise turn off LED four times
+		LDA #%10101010		; otherwise turn *ON* LED four times
 		JMP lock			; >33 is fast
 it_ok:
 	JMP test_end			; all OK, skip data
