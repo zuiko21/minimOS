@@ -702,17 +702,6 @@ F 3 "~" H 7350 6400 50  0001 C CNN
 	1    7350 6400
 	0    1    1    0   
 $EndComp
-$Comp
-L Connector_Generic:Conn_2Rows-21Pins J105
-U 1 1 608DC490
-P 7950 5900
-F 0 "J105" H 7800 5300 50  0000 C CNN
-F 1 "SCART" H 8050 5300 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_2x11_P2.54mm_Vertical" H 7950 5900 50  0001 C CNN
-F 3 "~" H 7950 5900 50  0001 C CNN
-	1    7950 5900
-	1    0    0    1   
-$EndComp
 Wire Wire Line
 	7750 6200 7700 6200
 Wire Wire Line
@@ -2380,4 +2369,15 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
+$Comp
+L Connector_Generic:Conn_2Rows-21Pins J105
+U 1 1 608DC490
+P 7950 5900
+F 0 "J105" H 7800 5300 50  0000 C CNN
+F 1 "SCART" H 8050 5300 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x11_P2.54mm_Vertical" H 7950 5900 50  0001 C CNN
+F 3 "~" H 7950 5900 50  0001 C CNN
+	1    7950 5900
+	1    0    0    1   
+$EndComp
 $EndSCHEMATC
