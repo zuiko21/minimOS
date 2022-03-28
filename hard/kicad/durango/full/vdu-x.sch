@@ -2359,16 +2359,6 @@ Wire Wire Line
 Connection ~ 8850 3300
 Wire Wire Line
 	8850 3300 9850 3300
-Wire Bus Line
-	2200 6300 2700 6300
-Wire Bus Line
-	600  7750 2300 7750
-Wire Bus Line
-	8800 550  10750 550 
-Wire Bus Line
-	4100 550  8050 550 
-Wire Bus Line
-	800  4350 3700 4350
 $Comp
 L Connector_Generic:Conn_2Rows-21Pins J105
 U 1 1 608DC490
@@ -2380,4 +2370,14 @@ F 3 "~" H 7950 5900 50  0001 C CNN
 	1    7950 5900
 	1    0    0    1   
 $EndComp
+Wire Bus Line
+	2200 6300 2700 6300
+Wire Bus Line
+	600  7750 2300 7750
+Wire Bus Line
+	8800 550  10750 550 
+Wire Bus Line
+	4100 550  8050 550 
+Wire Bus Line
+	800  4350 3700 4350
 $EndSCHEMATC
