@@ -1920,13 +1920,12 @@ Wire Wire Line
 	7200 6100 8100 6100
 Wire Wire Line
 	7200 5900 7300 5900
-NoConn ~ 7200 5500
 NoConn ~ 7200 5400
 Text Label 6000 6000 0    50   ~ 0
 A4
 Text Label 6000 5900 0    50   ~ 0
 A5
-Text Label 6000 5400 0    50   ~ 0
+Text Label 950  5900 2    50   ~ 0
 A15
 $Comp
 L 74xx:74LS139 U10
@@ -2131,7 +2130,7 @@ Text Label 950  5800 2    50   ~ 0
 A8
 Text Label 950  6100 2    50   ~ 0
 A7
-Text Label 950  5900 2    50   ~ 0
+Text Label 6150 5400 2    50   ~ 0
 A6
 Wire Wire Line
 	600  5100 5750 5100
@@ -2167,9 +2166,6 @@ Connection ~ 950  7000
 Wire Wire Line
 	950  7000 950  7100
 Wire Wire Line
-	900  7700 1450 7700
-Connection ~ 1450 7700
-Wire Wire Line
 	950  6600 800  6600
 Wire Wire Line
 	800  6600 800  5300
@@ -2178,9 +2174,7 @@ Wire Wire Line
 Connection ~ 950  6600
 Connection ~ 1450 5300
 Wire Wire Line
-	7200 5600 7200 5750
-Wire Wire Line
-	7200 5750 6150 5750
+	7350 5750 6150 5750
 Text Label 6800 7500 2    50   ~ 0
 ~IO9Q
 Wire Wire Line
@@ -2258,16 +2252,12 @@ Wire Wire Line
 Text Label 950  6000 2    50   ~ 0
 A14
 Wire Wire Line
-	900  6800 900  7700
-Wire Wire Line
 	950  7100 950  7200
 Connection ~ 950  7100
 Wire Wire Line
 	950  6600 950  6500
 Wire Wire Line
-	900  6800 950  6800
-Wire Wire Line
-	950  6700 950  6900
+	950  6700 950  6800
 Wire Wire Line
 	1950 7750 4100 7750
 Wire Wire Line
@@ -2612,13 +2602,13 @@ $EndComp
 $Comp
 L Connector_Generic:Conn_01x01 J2
 U 1 1 6199DFE2
-P 10200 5400
-F 0 "J2" H 10150 5500 50  0000 L CNN
-F 1 "AUDIO IN" H 10300 5400 50  0000 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical" H 10200 5400 50  0001 C CNN
-F 3 "~" H 10200 5400 50  0001 C CNN
-	1    10200 5400
-	1    0    0    -1  
+P 10000 5200
+F 0 "J2" V 10100 5300 50  0000 L CNN
+F 1 "AUDIO IN" V 10000 5300 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical" H 10000 5200 50  0001 C CNN
+F 3 "~" H 10000 5200 50  0001 C CNN
+	1    10000 5200
+	0    -1   -1   0   
 $EndComp
 Wire Wire Line
 	2200 5050 2650 5050
@@ -2751,6 +2741,27 @@ F 3 "~" H 1000 1950 50  0001 C CNN
 $EndComp
 NoConn ~ 1200 2150
 NoConn ~ 0    1650
+Text GLabel 7400 5450 2    50   Input ~ 0
+~RESET
+Text GLabel 10400 3750 2    50   Input ~ 0
+~WE
+Text Label 1950 5600 0    50   ~ 0
+~IO
+Text GLabel 7350 5750 2    50   Input ~ 0
+~IOQ
+Text GLabel 4150 3200 2    50   Input ~ 0
+~ROM_CS
+Text GLabel 4100 3000 2    50   Input ~ 0
+~ROM_OE
+Text GLabel 10000 5400 2    50   Input ~ 0
+AUDIO_IN
+Connection ~ 950  6800
+Wire Wire Line
+	950  6800 950  6900
+Wire Wire Line
+	7200 5500 7350 5500
+Wire Wire Line
+	7350 5500 7350 5750
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Wire Line
@@ -2766,9 +2777,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	7450 950  7450 5050
-Wire Bus Line
 	10800 650  10800 1650
+Wire Bus Line
+	7450 950  7450 5050
 Wire Bus Line
 	650  5500 650  7300
 Wire Bus Line
@@ -2787,18 +2798,6 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Text GLabel 7400 5450 2    50   Input ~ 0
-~RESET
-Text GLabel 10400 3750 2    50   Input ~ 0
-~WE
-Text Label 1950 5600 0    50   ~ 0
-~IO
-Text GLabel 7200 5750 2    50   Input ~ 0
-~IOQ
-Text GLabel 4150 3200 2    50   Input ~ 0
-~ROM_CS
-Text GLabel 4100 3000 2    50   Input ~ 0
-~ROM_OE
-Text GLabel 10000 5400 1    50   Input ~ 0
-AUDIO_IN
+Text GLabel 7200 5600 2    50   Input ~ 0
+~IOC
 $EndSCHEMATC

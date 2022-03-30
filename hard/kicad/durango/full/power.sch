@@ -454,12 +454,7 @@ Wire Wire Line
 	1350 2150 2750 2150
 Wire Wire Line
 	2750 2150 2750 2200
-Wire Wire Line
-	1350 3650 2750 3650
-Wire Wire Line
-	2750 3650 2750 3600
 Connection ~ 1350 2150
-Connection ~ 1350 3650
 $Comp
 L Connector:USB_B J7
 U 1 1 61A5663E
@@ -485,10 +480,10 @@ Text GLabel 1350 5500 0    50   Input ~ 0
 VCLK
 Text GLabel 1850 5500 2    50   Input ~ 0
 ~RESET
-Text GLabel 1350 4000 0    50   Input ~ 0
+Text GLabel 1200 4100 0    50   Input ~ 0
 ~WE
 Text GLabel 1850 4000 2    50   Input ~ 0
-~IOQ
+~IOC
 Entry Wire Line
 	750  4100 850  4200
 Entry Wire Line
@@ -646,18 +641,8 @@ Wire Wire Line
 	2000 4700 1850 4700
 Wire Wire Line
 	2000 4900 1850 4900
-Text GLabel 1200 4100 0    50   Input ~ 0
+Text GLabel 1350 4000 0    50   Input ~ 0
 AUDIO_IN
-Wire Bus Line
-	3700 2150 3700 2900
-Wire Bus Line
-	2300 5100 2300 5600
-Wire Bus Line
-	2450 4300 2450 5650
-Wire Bus Line
-	900  2050 900  5600
-Wire Bus Line
-	750  2050 750  5650
 Wire Wire Line
 	1200 4100 1350 4100
 Wire Wire Line
@@ -677,8 +662,6 @@ Wire Wire Line
 Wire Wire Line
 	850  4900 1350 4900
 Wire Wire Line
-	850  5000 1350 5000
-Wire Wire Line
 	1000 5100 1350 5100
 Wire Wire Line
 	1000 5200 1350 5200
@@ -686,4 +669,23 @@ Text Label 1350 5200 2    50   ~ 0
 D1
 Wire Wire Line
 	1000 5300 1350 5300
+Wire Wire Line
+	1350 3650 1350 3750
+Wire Wire Line
+	1350 3750 2750 3750
+Wire Wire Line
+	2750 3600 2750 3750
+Wire Wire Line
+	850  5000 1350 5000
+Wire Bus Line
+	3700 2150 3700 2900
+Wire Bus Line
+	2300 5100 2300 5600
+Wire Bus Line
+	2450 4300 2450 5650
+Wire Bus Line
+	900  2050 900  5600
+Wire Bus Line
+	750  2050 750  5650
+Connection ~ 1350 3650
 $EndSCHEMATC
