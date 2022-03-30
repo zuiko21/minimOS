@@ -688,4 +688,6 @@ Wire Bus Line
 Wire Bus Line
 	750  2050 750  5650
 Connection ~ 1350 3650
+Text Notes 4150 3300 0    100  ~ 0
+ xx = Standard\n1xx = Only used in Colour mode\n2xx = Only used in HiRes mode\n3xx = Only for switchable modes (may be replaced by jumpers)\n4xx = Switchable features (may be replaced by jumpers)\n5xx = Advanced features (may be replaced by jumpers)\n8xx = Only if HiRes is *NOT* supported
 $EndSCHEMATC

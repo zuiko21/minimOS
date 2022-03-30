@@ -454,12 +454,7 @@ Wire Wire Line
 	1350 2150 2750 2150
 Wire Wire Line
 	2750 2150 2750 2200
-Wire Wire Line
-	1350 3650 2750 3650
-Wire Wire Line
-	2750 3650 2750 3600
 Connection ~ 1350 2150
-Connection ~ 1350 3650
 $Comp
 L Connector:USB_B J7
 U 1 1 61A5663E
@@ -675,6 +670,12 @@ D1
 Wire Wire Line
 	1000 5300 1350 5300
 Wire Wire Line
+	1350 3650 1350 3750
+Wire Wire Line
+	1350 3750 2750 3750
+Wire Wire Line
+	2750 3600 2750 3750
+Wire Wire Line
 	850  5000 1350 5000
 Wire Bus Line
 	3700 2150 3700 2900
@@ -686,4 +687,5 @@ Wire Bus Line
 	900  2050 900  5600
 Wire Bus Line
 	750  2050 750  5650
+Connection ~ 1350 3650
 $EndSCHEMATC
