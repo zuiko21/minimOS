@@ -482,7 +482,7 @@ Text GLabel 1850 5500 2    50   Input ~ 0
 ~RESET
 Text GLabel 1200 4100 0    50   Input ~ 0
 ~WE
-Text GLabel 1850 4000 2    50   Input ~ 0
+Text GLabel 1850 3900 2    50   Input ~ 0
 ~IOC
 Entry Wire Line
 	750  4100 850  4200
@@ -552,17 +552,6 @@ Entry Wire Line
 	2350 4400 2450 4500
 Entry Wire Line
 	2350 4300 2450 4400
-$Comp
-L Connector_Generic:Conn_02x16_Odd_Even J9
-U 1 1 624FACA4
-P 1650 4700
-F 0 "J9" H 1700 5617 50  0000 C CNN
-F 1 "CARTRIDGE" H 1700 5526 50  0000 C CNN
-F 2 "Connector_PinSocket_2.54mm:PinSocket_2x16_P2.54mm_Vertical" H 1650 4700 50  0001 C CNN
-F 3 "~" H 1650 4700 50  0001 C CNN
-	1    1650 4700
-	-1   0    0    -1  
-$EndComp
 Entry Wire Line
 	2350 4200 2450 4300
 Wire Wire Line
@@ -641,7 +630,7 @@ Wire Wire Line
 	2000 4700 1850 4700
 Wire Wire Line
 	2000 4900 1850 4900
-Text GLabel 1350 4000 0    50   Input ~ 0
+Text GLabel 1350 3900 0    50   Input ~ 0
 AUDIO_IN
 Wire Wire Line
 	1200 4100 1350 4100
@@ -675,6 +664,22 @@ Wire Wire Line
 	1350 3750 2750 3750
 Wire Wire Line
 	2750 3600 2750 3750
+Connection ~ 1350 3650
+Text Notes 4150 3300 0    100  ~ 0
+ xx = Standard\n1xx = Only used in Colour mode\n2xx = Only used in HiRes mode\n3xx = Only for switchable modes (may be replaced by jumpers)\n4xx = Switchable features (may be replaced by jumpers)\n5xx = Advanced features (may be replaced by jumpers)\n8xx = Only if HiRes is *NOT* supported
+$Comp
+L Connector_Generic:Conn_02x17_Odd_Even J9
+U 1 1 62545A1D
+P 1650 4700
+F 0 "J9" H 1700 3700 50  0000 C CNN
+F 1 "CARTRIDGE" H 1700 3600 50  0000 C CNN
+F 2 "Connector_PinSocket_2.54mm:PinSocket_2x17_P2.54mm_Vertical" H 1650 4700 50  0001 C CNN
+F 3 "~" H 1650 4700 50  0001 C CNN
+	1    1650 4700
+	-1   0    0    -1  
+$EndComp
+NoConn ~ 1350 4000
+NoConn ~ 1850 4000
 Wire Wire Line
 	850  5000 1350 5000
 Wire Bus Line
@@ -687,7 +692,8 @@ Wire Bus Line
 	900  2050 900  5600
 Wire Bus Line
 	750  2050 750  5650
-Connection ~ 1350 3650
-Text Notes 4150 3300 0    100  ~ 0
- xx = Standard\n1xx = Only used in Colour mode\n2xx = Only used in HiRes mode\n3xx = Only for switchable modes (may be replaced by jumpers)\n4xx = Switchable features (may be replaced by jumpers)\n5xx = Advanced features (may be replaced by jumpers)\n8xx = Only if HiRes is *NOT* supported
+Text Notes 1900 4050 0    50   Italic 0
+KEY
+Text Notes 1150 4050 0    50   Italic 0
+KEY
 $EndSCHEMATC

@@ -2751,42 +2751,6 @@ Wire Wire Line
 	7350 5500 7350 5750
 Text Label 6200 6200 3    50   ~ 0
 ~IOQ
-Wire Bus Line
-	2500 5250 2800 5250
-Wire Bus Line
-	5900 700  5900 5900
-Wire Bus Line
-	650  5500 650  7300
-Wire Bus Line
-	2800 7700 3200 7700
-Wire Bus Line
-	2800 5250 3200 5250
-Wire Bus Line
-	4200 3350 4200 7200
-Wire Bus Line
-	5800 3350 5800 5050
-Wire Bus Line
-	5800 5050 5800 6350
-Wire Bus Line
-	5850 950  5850 5100
-Wire Bus Line
-	7500 950  7500 5100
-Wire Bus Line
-	7550 700  7550 4100
-Wire Bus Line
-	7450 950  7450 5050
-Wire Bus Line
-	2800 650  2800 5250
-Wire Bus Line
-	10800 650  10800 1650
-Wire Wire Line
-	10600 1050 10850 1050
-Wire Bus Line
-	5500 650  5500 1650
-Wire Bus Line
-	9100 950  9100 5050
-Wire Bus Line
-	4250 700  4250 6450
 $Comp
 L 74xx:74LS139 U10
 U 2 1 60C0F869
@@ -2804,4 +2768,40 @@ Text Notes 10100 5300 0    50   ~ 0
 DC Bias = 3.1-3.2 V\nmax. 3.6-3.8 Vpp
 Text Notes 10600 6050 0    50   ~ 0
 or 39n
+Wire Bus Line
+	2500 5250 2800 5250
+Wire Wire Line
+	10600 1050 10850 1050
+Wire Bus Line
+	2800 5250 3200 5250
+Wire Bus Line
+	2800 7700 3200 7700
+Wire Bus Line
+	5800 3350 5800 5050
+Wire Bus Line
+	5800 5050 5800 6350
+Wire Bus Line
+	5850 950  5850 5100
+Wire Bus Line
+	7450 950  7450 5050
+Wire Bus Line
+	650  5500 650  7300
+Wire Bus Line
+	4200 3350 4200 7200
+Wire Bus Line
+	7500 950  7500 5100
+Wire Bus Line
+	7550 700  7550 4100
+Wire Bus Line
+	2800 650  2800 5250
+Wire Bus Line
+	10800 650  10800 1650
+Wire Bus Line
+	5500 650  5500 1650
+Wire Bus Line
+	5900 700  5900 5900
+Wire Bus Line
+	9100 950  9100 5050
+Wire Bus Line
+	4250 700  4250 6450
 $EndSCHEMATC

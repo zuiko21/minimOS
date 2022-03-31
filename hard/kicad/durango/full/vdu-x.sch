@@ -2339,6 +2339,10 @@ F 3 "~" H 7950 5900 50  0001 C CNN
 	1    7950 5900
 	1    0    0    1   
 $EndComp
+Text Notes 2200 6000 0    50   ~ 0
+OR ~IO8Q
+Text Notes 9350 5500 0    50   Italic 10
+*
 Wire Bus Line
 	2200 6300 2700 6300
 Wire Bus Line
@@ -2349,8 +2353,4 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
-Text Notes 2200 6000 0    50   ~ 0
-OR ~IO8Q
-Text Notes 9350 5500 0    50   Italic 10
-*
 $EndSCHEMATC
