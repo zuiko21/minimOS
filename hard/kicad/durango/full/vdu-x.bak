@@ -42,32 +42,6 @@ F 3 "" H 1200 2500 50  0001 C CNN
 	1    1200 2500
 	1    0    0    -1  
 $EndComp
-$Comp
-L power:PWR_FLAG #FLG?
-U 1 1 610E54A5
-P 850 800
-AR Path="/610E54A5" Ref="#FLG?"  Part="1" 
-AR Path="/60C42E7C/610E54A5" Ref="#FLG0103"  Part="1" 
-F 0 "#FLG0103" H 850 875 50  0001 C CNN
-F 1 "PWR_FLAG" H 750 950 50  0000 C CNN
-F 2 "" H 850 800 50  0001 C CNN
-F 3 "~" H 850 800 50  0001 C CNN
-	1    850  800 
-	1    0    0    -1  
-$EndComp
-$Comp
-L power:PWR_FLAG #FLG?
-U 1 1 610E54AB
-P 850 2500
-AR Path="/610E54AB" Ref="#FLG?"  Part="1" 
-AR Path="/60C42E7C/610E54AB" Ref="#FLG0104"  Part="1" 
-F 0 "#FLG0104" H 850 2575 50  0001 C CNN
-F 1 "PWR_FLAG" H 800 2650 50  0000 C CNN
-F 2 "" H 850 2500 50  0001 C CNN
-F 3 "~" H 850 2500 50  0001 C CNN
-	1    850  2500
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	7250 2600 7250 650 
 Wire Wire Line
@@ -1088,7 +1062,7 @@ $Comp
 L Device:R R824
 U 1 1 6090A54B
 P 4400 4650
-F 0 "R824" H 4150 4650 50  0000 L CNN
+F 0 "R824" H 4150 4650 50  0000 L CIN
 F 1 "220K" V 4400 4550 50  0000 L CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 4330 4650 50  0001 C CNN
 F 3 "~" H 4400 4650 50  0001 C CNN
@@ -1134,10 +1108,10 @@ D7
 Wire Wire Line
 	4500 3000 6100 3000
 $Comp
-L Transistor_BJT:BC547 Q106
+L Transistor_BJT:BC547 Q306
 U 1 1 62057B0A
 P 9200 5650
-F 0 "Q106" H 9050 5850 50  0000 L CNN
+F 0 "Q306" H 9050 5850 50  0000 L CNN
 F 1 "BC547" H 8900 5750 50  0000 L CNN
 F 2 "Package_TO_SOT_THT:TO-92_Inline" H 9400 5575 50  0001 L CIN
 F 3 "http://www.fairchildsemi.com/ds/BC/BC547.pdf" H 9200 5650 50  0001 L CNN
@@ -1238,10 +1212,10 @@ Wire Wire Line
 Wire Wire Line
 	10450 650  10450 750 
 $Comp
-L 74xx:74LS174 U528
+L 74xx:74LS174 U428
 U 1 1 613D5377
 P 10450 1250
-F 0 "U528" V 10200 350 50  0000 L CNN
+F 0 "U428" V 10200 350 50  0000 L CNN
 F 1 "74HC174" V 10300 250 50  0000 L CNN
 F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 10450 1250 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS174" H 10450 1250 50  0001 C CNN
@@ -1697,7 +1671,7 @@ $Comp
 L Device:R R825
 U 1 1 617C1771
 P 5900 4750
-F 0 "R825" H 5650 4800 50  0000 L CNN
+F 0 "R825" H 5650 4800 50  0000 L CIN
 F 1 "220K" V 5900 4650 50  0000 L CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 5830 4750 50  0001 C CNN
 F 3 "~" H 5900 4750 50  0001 C CNN
@@ -1786,25 +1760,25 @@ Wire Wire Line
 	10450 6200 10450 4400
 Text Label 7050 4250 0    50   ~ 0
 FEND
-Text Notes 6900 5900 0    50   ~ 0
+Text Notes 6900 5900 0    50   Italic 10
 *
-Text Notes 8900 6450 0    50   ~ 0
+Text Notes 8900 6450 0    50   Italic 10
 *) NOT FOR SYNC-ON-GREEN
-Text Notes 6900 6300 0    50   ~ 0
+Text Notes 6900 6300 0    50   Italic 10
 *
-Text Notes 8850 5500 1    50   ~ 0
+Text Notes 8850 5500 1    50   Italic 10
 SYNC-ON-GREEN
-Text Notes 6650 5650 0    50   ~ 0
+Text Notes 6650 5650 0    50   Italic 10
 OR 4K7
-Text Notes 6650 6050 0    50   ~ 0
+Text Notes 6650 6050 0    50   Italic 10
 OR 10K
-Text Notes 9350 5400 0    50   ~ 0
+Text Notes 9550 5600 0    50   ~ 0
 *MIGHT CONNECT E-C\nIF ONLY COLOUR MODE
-Text Notes 9050 5950 0    50   ~ 0
+Text Notes 9050 5950 0    50   Italic 10
 *
-Text Label 7550 5700 2    50   ~ 0
+Text Label 7650 5700 2    50   ~ 0
 RED
-Text Label 7550 6100 2    50   ~ 0
+Text Label 7600 6100 2    50   ~ 0
 BLUE
 Text Label 7650 5900 2    50   ~ 0
 GRN
@@ -1847,8 +1821,6 @@ Wire Wire Line
 	1100 800  1200 800 
 Wire Wire Line
 	1200 1400 1200 2500
-Wire Wire Line
-	1200 2500 850  2500
 $Comp
 L 4xxx:4040 U15
 U 1 1 617B535F
@@ -1872,7 +1844,6 @@ F 3 "" H 1100 800 50  0001 C CNN
 	1    1100 800 
 	1    0    0    -1  
 $EndComp
-Connection ~ 1100 800 
 Wire Wire Line
 	3000 2600 1500 2600
 Wire Wire Line
@@ -2161,8 +2132,6 @@ Wire Wire Line
 	5750 4800 5750 4900
 Connection ~ 1200 800 
 Wire Wire Line
-	1100 800  850  800 
-Wire Wire Line
 	1200 800  2000 800 
 Wire Wire Line
 	8300 6200 8300 6400
@@ -2370,6 +2339,10 @@ F 3 "~" H 7950 5900 50  0001 C CNN
 	1    7950 5900
 	1    0    0    1   
 $EndComp
+Text Notes 2200 6000 0    50   ~ 0
+OR ~IO8Q
+Text Notes 9350 5500 0    50   Italic 10
+*
 Wire Bus Line
 	2200 6300 2700 6300
 Wire Bus Line

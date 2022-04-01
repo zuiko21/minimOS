@@ -1550,7 +1550,7 @@ L power:GND #PWR0137
 U 1 1 60A30812
 P 10550 6000
 F 0 "#PWR0137" H 10550 5750 50  0001 C CNN
-F 1 "GND" H 10650 5900 50  0000 C CNN
+F 1 "GND" H 10450 5900 50  0000 C CNN
 F 2 "" H 10550 6000 50  0001 C CNN
 F 3 "" H 10550 6000 50  0001 C CNN
 	1    10550 6000
@@ -1920,25 +1920,13 @@ Wire Wire Line
 	7200 6100 8100 6100
 Wire Wire Line
 	7200 5900 7300 5900
-NoConn ~ 7200 5500
 NoConn ~ 7200 5400
 Text Label 6000 6000 0    50   ~ 0
 A4
 Text Label 6000 5900 0    50   ~ 0
 A5
-Text Label 6000 5400 0    50   ~ 0
+Text Label 950  5900 2    50   ~ 0
 A15
-$Comp
-L 74xx:74LS139 U10
-U 2 1 60C0F869
-P 6700 5400
-F 0 "U10" H 6700 5400 50  0000 C CNN
-F 1 "74HC139" H 6650 5300 50  0000 C CNN
-F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 6700 5400 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 6700 5400 50  0001 C CNN
-	2    6700 5400
-	1    0    0    -1  
-$EndComp
 $Comp
 L 74xx:74LS139 U10
 U 1 1 60C0EDF7
@@ -2131,7 +2119,7 @@ Text Label 950  5800 2    50   ~ 0
 A8
 Text Label 950  6100 2    50   ~ 0
 A7
-Text Label 950  5900 2    50   ~ 0
+Text Label 6150 5400 2    50   ~ 0
 A6
 Wire Wire Line
 	600  5100 5750 5100
@@ -2167,9 +2155,6 @@ Connection ~ 950  7000
 Wire Wire Line
 	950  7000 950  7100
 Wire Wire Line
-	900  7700 1450 7700
-Connection ~ 1450 7700
-Wire Wire Line
 	950  6600 800  6600
 Wire Wire Line
 	800  6600 800  5300
@@ -2178,9 +2163,7 @@ Wire Wire Line
 Connection ~ 950  6600
 Connection ~ 1450 5300
 Wire Wire Line
-	7200 5600 7200 5750
-Wire Wire Line
-	7200 5750 6150 5750
+	7350 5750 6150 5750
 Text Label 6800 7500 2    50   ~ 0
 ~IO9Q
 Wire Wire Line
@@ -2258,16 +2241,12 @@ Wire Wire Line
 Text Label 950  6000 2    50   ~ 0
 A14
 Wire Wire Line
-	900  6800 900  7700
-Wire Wire Line
 	950  7100 950  7200
 Connection ~ 950  7100
 Wire Wire Line
 	950  6600 950  6500
 Wire Wire Line
-	900  6800 950  6800
-Wire Wire Line
-	950  6700 950  6900
+	950  6700 950  6800
 Wire Wire Line
 	1950 7750 4100 7750
 Wire Wire Line
@@ -2612,13 +2591,13 @@ $EndComp
 $Comp
 L Connector_Generic:Conn_01x01 J2
 U 1 1 6199DFE2
-P 10200 5400
-F 0 "J2" H 10150 5500 50  0000 L CNN
-F 1 "AUDIO IN" H 10300 5400 50  0000 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical" H 10200 5400 50  0001 C CNN
-F 3 "~" H 10200 5400 50  0001 C CNN
-	1    10200 5400
-	1    0    0    -1  
+P 10000 5200
+F 0 "J2" V 10100 5300 50  0000 L CNN
+F 1 "AUDIO IN" V 10000 5300 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical" H 10000 5200 50  0001 C CNN
+F 3 "~" H 10000 5200 50  0001 C CNN
+	1    10000 5200
+	0    -1   -1   0   
 $EndComp
 Wire Wire Line
 	2200 5050 2650 5050
@@ -2709,7 +2688,7 @@ $Comp
 L Device:R R23
 U 1 1 6223ED95
 P 10350 6300
-F 0 "R23" V 10250 6300 50  0000 C CNN
+F 0 "R23" V 10250 6300 50  0000 C CIN
 F 1 "22" V 10350 6300 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10280 6300 50  0001 C CNN
 F 3 "~" H 10350 6300 50  0001 C CNN
@@ -2725,8 +2704,8 @@ $Comp
 L Connector_Generic:Conn_01x04 J4
 U 1 1 6228107D
 P 11050 6100
-F 0 "J4" H 11000 6300 50  0000 L CNN
-F 1 "BUZZER" H 10900 5800 50  0000 L CNN
+F 0 "J4" H 11000 6300 50  0000 L CIN
+F 1 "BUZZER" H 10900 5800 50  0000 L CIN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical" H 11050 6100 50  0001 C CNN
 F 3 "~" H 11050 6100 50  0001 C CNN
 	1    11050 6100
@@ -2751,6 +2730,44 @@ F 3 "~" H 1000 1950 50  0001 C CNN
 $EndComp
 NoConn ~ 1200 2150
 NoConn ~ 0    1650
+Text GLabel 7400 5450 2    50   Input ~ 0
+~RESET
+Text GLabel 10400 3750 2    50   Input ~ 0
+~WE
+Text Label 1950 5600 0    50   ~ 0
+~IO
+Text GLabel 4150 3200 2    50   Input ~ 0
+~ROM_CS
+Text GLabel 4100 3000 2    50   Input ~ 0
+~ROM_OE
+Text GLabel 10000 5400 2    50   Input ~ 0
+AUDIO_IN
+Connection ~ 950  6800
+Wire Wire Line
+	950  6800 950  6900
+Wire Wire Line
+	7200 5500 7350 5500
+Wire Wire Line
+	7350 5500 7350 5750
+Text Label 6200 6200 3    50   ~ 0
+~IOQ
+$Comp
+L 74xx:74LS139 U10
+U 2 1 60C0F869
+P 6700 5400
+F 0 "U10" H 6700 5400 50  0000 C CNN
+F 1 "74HC139" H 6650 5300 50  0000 C CNN
+F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 6700 5400 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 6700 5400 50  0001 C CNN
+	2    6700 5400
+	1    0    0    -1  
+$EndComp
+Text GLabel 7200 5600 2    50   Input ~ 0
+~IOC
+Text Notes 10100 5300 0    50   ~ 0
+DC Bias = 3.1-3.2 V\nmax. 3.6-3.8 Vpp
+Text Notes 10600 6050 0    50   ~ 0
+or 39n
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Wire Line
@@ -2768,8 +2785,6 @@ Wire Bus Line
 Wire Bus Line
 	7450 950  7450 5050
 Wire Bus Line
-	10800 650  10800 1650
-Wire Bus Line
 	650  5500 650  7300
 Wire Bus Line
 	4200 3350 4200 7200
@@ -2780,6 +2795,8 @@ Wire Bus Line
 Wire Bus Line
 	2800 650  2800 5250
 Wire Bus Line
+	10800 650  10800 1650
+Wire Bus Line
 	5500 650  5500 1650
 Wire Bus Line
 	5900 700  5900 5900
@@ -2787,18 +2804,4 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Text GLabel 7400 5450 2    50   Input ~ 0
-~RESET
-Text GLabel 10400 3750 2    50   Input ~ 0
-~WE
-Text Label 1950 5600 0    50   ~ 0
-~IO
-Text GLabel 7200 5750 2    50   Input ~ 0
-~IOQ
-Text GLabel 4150 3200 2    50   Input ~ 0
-~ROM_CS
-Text GLabel 4100 3000 2    50   Input ~ 0
-~ROM_OE
-Text GLabel 10000 5400 1    50   Input ~ 0
-AUDIO_IN
 $EndSCHEMATC
