@@ -1,4 +1,4 @@
-15943690939297699
+15945339856835460
 Battery
 BatteryHolder_Bulgin_BX0036_1xC
 Bulgin Battery Holder, BX0036, Battery Type C (https://www.bulgin.com/products/pub/media/bulgin/data/Battery_holders.pdf)
@@ -35790,6 +35790,13 @@ Surface mounted socket strip SMD 2x17 2.54mm double row
 0
 34
 34
+Connector_PinSocket_2.54mm
+PinSocket_2x18_EDGE
+
+
+0
+36
+36
 Connector_PinSocket_2.54mm
 PinSocket_2x18_P2.54mm_Horizontal
 Through hole angled socket strip, 2x18, 2.54mm pitch, 8.51mm socket length, double cols (from Kicad 4.0.7), script generated

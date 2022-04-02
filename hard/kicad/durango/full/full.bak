@@ -1757,10 +1757,6 @@ Text Label 9900 4700 0    50   ~ 0
 ~WE2
 Text Label 9300 4800 1    50   ~ 0
 ~WE3
-Text Label 2150 2450 0    50   ~ 0
-~IRQ
-Text Label 2200 1650 0    50   ~ 0
-~NMI
 Text Label 2400 1350 1    50   ~ 0
 RDY
 Text Label 2500 1350 1    50   ~ 0
@@ -1788,7 +1784,7 @@ U 1 1 61381976
 P 2900 7250
 F 0 "J3" V 3000 7700 50  0000 C CNN
 F 1 "IOX9" V 2900 7700 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_2x08_P2.54mm_Vertical" H 2900 7250 50  0001 C CNN
+F 2 "Connector_IDC:IDC-Header_2x08_P2.54mm_Vertical" H 2900 7250 50  0001 C CNN
 F 3 "~" H 2900 7250 50  0001 C CNN
 	1    2900 7250
 	0    -1   -1   0   
@@ -2581,22 +2577,11 @@ $Comp
 L Diode:1N4148 D3
 U 1 1 60986179
 P 10000 5550
-F 0 "D3" V 10100 5700 50  0000 R CNN
-F 1 "1N4148" V 10000 5500 50  0000 R CNN
+F 0 "D3" V 10050 5500 50  0000 R CNN
+F 1 "1N4148" V 9950 5500 50  0000 R CNN
 F 2 "Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_KathodeUp" H 10000 5375 50  0001 C CNN
 F 3 "https://assets.nexperia.com/documents/data-sheet/1N4148_1N4448.pdf" H 10000 5550 50  0001 C CNN
 	1    10000 5550
-	0    -1   -1   0   
-$EndComp
-$Comp
-L Connector_Generic:Conn_01x01 J2
-U 1 1 6199DFE2
-P 10000 5200
-F 0 "J2" V 10100 5300 50  0000 L CNN
-F 1 "AUDIO IN" V 10000 5300 50  0000 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical" H 10000 5200 50  0001 C CNN
-F 3 "~" H 10000 5200 50  0001 C CNN
-	1    10000 5200
 	0    -1   -1   0   
 $EndComp
 Wire Wire Line
@@ -2714,9 +2699,9 @@ $EndComp
 NoConn ~ 10850 6100
 NoConn ~ 10850 6200
 Wire Wire Line
-	10850 6000 10550 6000
+	10850 6000 10800 6000
 Wire Wire Line
-	10500 6300 10850 6300
+	10500 6300 10800 6300
 $Comp
 L Connector_Generic:Conn_01x04 J1
 U 1 1 625B7CE2
@@ -2766,8 +2751,46 @@ Text GLabel 7200 5600 2    50   Input ~ 0
 ~IOC
 Text Notes 10100 5300 0    50   ~ 0
 DC Bias = 3.1-3.2 V\nmax. 3.6-3.8 Vpp
-Text Notes 10600 6050 0    50   ~ 0
+Text Notes 10750 5900 0    50   ~ 0
 or 39n
+Text GLabel 2600 2450 3    50   Input ~ 0
+~IRQ
+Text GLabel 1900 1650 3    50   Input ~ 0
+~NMI
+$Comp
+L Device:Buzzer BZ1
+U 1 1 6262528E
+P 10700 6200
+F 0 "BZ1" H 10800 6200 50  0000 C CIN
+F 1 "Buzzer" H 10750 6350 50  0000 C CIN
+F 2 "Buzzer_Beeper:Buzzer_12x9.5RM7.6" V 10675 6300 50  0001 C CNN
+F 3 "~" V 10675 6300 50  0001 C CNN
+	1    10700 6200
+	-1   0    0    1   
+$EndComp
+Connection ~ 10800 6300
+Wire Wire Line
+	10800 6300 10850 6300
+Wire Wire Line
+	10800 6100 10800 6000
+Connection ~ 10800 6000
+Wire Wire Line
+	10800 6000 10550 6000
+$Comp
+L Connector_Generic:Conn_01x02 J2
+U 1 1 6267A7FB
+P 10000 5200
+F 0 "J2" V 10100 5100 50  0000 L CNN
+F 1 "AUDIO IN" V 10000 4700 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 10000 5200 50  0001 C CNN
+F 3 "~" H 10000 5200 50  0001 C CNN
+	1    10000 5200
+	0    1    -1   0   
+$EndComp
+Text Label 9800 5400 2    50   ~ 0
+SERDAT
+Wire Wire Line
+	9800 5400 9900 5400
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Wire Line
@@ -2783,6 +2806,8 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
+	10800 650  10800 1650
+Wire Bus Line
 	7450 950  7450 5050
 Wire Bus Line
 	650  5500 650  7300
@@ -2794,8 +2819,6 @@ Wire Bus Line
 	7550 700  7550 4100
 Wire Bus Line
 	2800 650  2800 5250
-Wire Bus Line
-	10800 650  10800 1650
 Wire Bus Line
 	5500 650  5500 1650
 Wire Bus Line
