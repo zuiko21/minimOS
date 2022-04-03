@@ -1067,7 +1067,6 @@ Layer(1 "back" "copper")
 	Line[2345.00mil 2911.00mil 2345.00mil 3011.00mil 10.00mil 20.00mil "clearline"]
 	Line[2445.00mil 2911.00mil 2445.00mil 3011.00mil 10.00mil 20.00mil "clearline"]
 	Line[1645.00mil 2811.00mil 1645.00mil 2711.00mil 10.00mil 20.00mil "clearline"]
-	Line[1345.00mil 2711.00mil 1345.00mil 2611.00mil 10.00mil 20.00mil "clearline"]
 	Line[1445.00mil 2511.00mil 1445.00mil 2711.00mil 10.00mil 20.00mil "clearline"]
 	Line[1545.00mil 2411.00mil 1545.00mil 2711.00mil 10.00mil 20.00mil "clearline"]
 	Line[1745.00mil 2511.00mil 1745.00mil 2711.00mil 10.00mil 20.00mil "clearline"]
@@ -1126,6 +1125,7 @@ Layer(1 "back" "copper")
 	Line[2245.00mil 1511.00mil 2245.00mil 1311.00mil 10.00mil 20.00mil "clearline"]
 	Line[2045.00mil 1711.00mil 2045.00mil 1911.00mil 10.00mil 20.00mil "clearline"]
 	Line[2245.00mil 1811.00mil 2245.00mil 1911.00mil 10.00mil 20.00mil "clearline"]
+	Line[1345.00mil 2611.00mil 1345.00mil 2911.00mil 10.00mil 20.00mil "clearline"]
 	Text[1338.10mil 1792.70mil 0 100 "74HC21" "clearline"]
 	Text[1145.00mil 1211.00mil 0 100 "74HC85" "clearline"]
 	Text[1445.00mil 2311.00mil 0 100 "74HTC4040" "clearline"]
@@ -1136,7 +1136,7 @@ Layer(1 "back" "copper")
 	Text[2365.00mil 1690.00mil 0 100 "74HTC4040" "clearline"]
 	Text[1170.00mil 2736.00mil 0 100 "74HC85" "clearline"]
 	Text[845.00mil 1411.00mil 0 100 "!VS" "clearline"]
-	Text[2820.00mil 1061.00mil 0 100 "Clock" "clearline"]
+	Text[2420.00mil 1061.00mil 0 100 "Clock" "clearline"]
 )
 Layer(2 "bridge" "copper")
 (
