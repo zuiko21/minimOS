@@ -5,7 +5,7 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 2 3
-Title ""
+Title "Durango-X built-in video"
 Date ""
 Rev ""
 Comp ""
@@ -632,17 +632,6 @@ Wire Wire Line
 	6650 6200 7200 6200
 Wire Wire Line
 	7200 6400 6650 6400
-$Comp
-L Device:R R111
-U 1 1 60B9031C
-P 7350 5800
-F 0 "R111" V 7300 6000 50  0000 C CNN
-F 1 "680" V 7350 5800 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7280 5800 50  0001 C CNN
-F 3 "~" H 7350 5800 50  0001 C CNN
-	1    7350 5800
-	0    1    1    0   
-$EndComp
 $Comp
 L Device:R R112
 U 1 1 60B908BB
@@ -1776,12 +1765,6 @@ Text Notes 9550 5600 0    50   ~ 0
 *MIGHT CONNECT E-C\nIF ONLY COLOUR MODE
 Text Notes 9050 5950 0    50   Italic 10
 *
-Text Label 7650 5700 2    50   ~ 0
-RED
-Text Label 7600 6100 2    50   ~ 0
-BLUE
-Text Label 7650 5900 2    50   ~ 0
-GRN
 Text Label 8300 5500 0    50   ~ 0
 VBS
 $Comp
@@ -2353,4 +2336,21 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
+Text GLabel 7550 5700 0    50   Input ~ 0
+RED
+Text GLabel 7650 6050 0    50   Input ~ 0
+GRN
+Text GLabel 7550 6300 0    50   Input ~ 0
+BLUE
+$Comp
+L Device:R R111
+U 1 1 60B9031C
+P 7350 5800
+F 0 "R111" V 7300 6000 50  0000 C CNN
+F 1 "680" V 7350 5800 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7280 5800 50  0001 C CNN
+F 3 "~" H 7350 5800 50  0001 C CNN
+	1    7350 5800
+	0    1    1    0   
+$EndComp
 $EndSCHEMATC
