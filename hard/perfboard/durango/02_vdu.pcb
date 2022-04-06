@@ -1054,6 +1054,86 @@ Element["" "Dual in-line package, narrow (300 mil)" "" "DIP20" 2900.00mil 1000.0
 	ElementArc [-50.00mil -150.00mil 50.00mil 50.00mil 90.000000 180.000000 10.00mil]
 
 	)
+
+Element["" "" "R14" "" 3000.00mil 1400.00mil 56.00mil -138.00mil 0 100 ""]
+(
+	Pin[0.0000 0.0000 60.00mil 30.00mil 60.00mil 28.00mil "" "1" ""]
+	Pin[0.0000 -300.00mil 60.00mil 30.00mil 60.00mil 28.00mil "" "2" ""]
+	ElementLine [0.0000 -90.00mil 0.0000 -50.00mil 10.00mil]
+	ElementLine [-40.00mil -90.00mil 40.00mil -90.00mil 10.00mil]
+	ElementLine [-40.00mil -210.00mil -40.00mil -90.00mil 10.00mil]
+	ElementLine [-40.00mil -210.00mil 40.00mil -210.00mil 10.00mil]
+	ElementLine [40.00mil -210.00mil 40.00mil -90.00mil 10.00mil]
+	ElementLine [0.0000 -250.00mil 0.0000 -210.00mil 10.00mil]
+
+	)
+
+Element["" "" "R15" "" 3200.00mil 1400.00mil 56.00mil -138.00mil 0 100 ""]
+(
+	Pin[0.0000 0.0000 60.00mil 30.00mil 60.00mil 28.00mil "" "1" ""]
+	Pin[0.0000 -300.00mil 60.00mil 30.00mil 60.00mil 28.00mil "" "2" ""]
+	ElementLine [0.0000 -90.00mil 0.0000 -50.00mil 10.00mil]
+	ElementLine [-40.00mil -90.00mil 40.00mil -90.00mil 10.00mil]
+	ElementLine [-40.00mil -210.00mil -40.00mil -90.00mil 10.00mil]
+	ElementLine [-40.00mil -210.00mil 40.00mil -210.00mil 10.00mil]
+	ElementLine [40.00mil -210.00mil 40.00mil -90.00mil 10.00mil]
+	ElementLine [0.0000 -250.00mil 0.0000 -210.00mil 10.00mil]
+
+	)
+
+Element["" "" "16" "" 3400.00mil 1400.00mil 56.00mil -138.00mil 0 100 ""]
+(
+	Pin[0.0000 0.0000 60.00mil 30.00mil 60.00mil 28.00mil "" "1" ""]
+	Pin[0.0000 -300.00mil 60.00mil 30.00mil 60.00mil 28.00mil "" "2" ""]
+	ElementLine [0.0000 -90.00mil 0.0000 -50.00mil 10.00mil]
+	ElementLine [-40.00mil -90.00mil 40.00mil -90.00mil 10.00mil]
+	ElementLine [-40.00mil -210.00mil -40.00mil -90.00mil 10.00mil]
+	ElementLine [-40.00mil -210.00mil 40.00mil -210.00mil 10.00mil]
+	ElementLine [40.00mil -210.00mil 40.00mil -90.00mil 10.00mil]
+	ElementLine [0.0000 -250.00mil 0.0000 -210.00mil 10.00mil]
+
+	)
+
+Element["" "" "17" "" 3600.00mil 1400.00mil 56.00mil -138.00mil 0 100 ""]
+(
+	Pin[0.0000 0.0000 60.00mil 30.00mil 60.00mil 28.00mil "" "1" ""]
+	Pin[0.0000 -300.00mil 60.00mil 30.00mil 60.00mil 28.00mil "" "2" ""]
+	ElementLine [0.0000 -90.00mil 0.0000 -50.00mil 10.00mil]
+	ElementLine [-40.00mil -90.00mil 40.00mil -90.00mil 10.00mil]
+	ElementLine [-40.00mil -210.00mil -40.00mil -90.00mil 10.00mil]
+	ElementLine [-40.00mil -210.00mil 40.00mil -210.00mil 10.00mil]
+	ElementLine [40.00mil -210.00mil 40.00mil -90.00mil 10.00mil]
+	ElementLine [0.0000 -250.00mil 0.0000 -210.00mil 10.00mil]
+
+	)
+
+Element["" "" "15" "" 2900.00mil 1900.00mil -138.00mil -56.00mil 1 100 ""]
+(
+	Pin[0.0000 0.0000 60.00mil 30.00mil 60.00mil 28.00mil "" "1" "edge2"]
+	Pin[-300.00mil 0.0000 60.00mil 30.00mil 60.00mil 28.00mil "" "2" "edge2"]
+	ElementLine [-90.00mil 0.0000 -50.00mil 0.0000 10.00mil]
+	ElementLine [-90.00mil -40.00mil -90.00mil 40.00mil 10.00mil]
+	ElementLine [-210.00mil 40.00mil -90.00mil 40.00mil 10.00mil]
+	ElementLine [-210.00mil -40.00mil -210.00mil 40.00mil 10.00mil]
+	ElementLine [-210.00mil -40.00mil -90.00mil -40.00mil 10.00mil]
+	ElementLine [-250.00mil 0.0000 -210.00mil 0.0000 10.00mil]
+
+	)
+
+Element["" "Transistor" "" "TO126SW" 4090.00mil 1400.00mil -170.00mil -70.00mil 2 100 ""]
+(
+	Pin[-10.00mil 0.0000 80.00mil 30.00mil 86.00mil 52.00mil "1" "1" "square,edge2"]
+	Pin[-100.00mil -100.00mil 80.00mil 30.00mil 86.00mil 52.00mil "2" "2" "edge2"]
+	Pin[-190.00mil 0.0000 80.00mil 30.00mil 86.00mil 52.00mil "3" "3" "edge2"]
+	ElementLine [-100.00mil -100.00mil -100.00mil -50.00mil 30.00mil]
+	ElementLine [-250.00mil 50.00mil 50.00mil 50.00mil 20.00mil]
+	ElementLine [-250.00mil -50.00mil -250.00mil 50.00mil 20.00mil]
+	ElementLine [-250.00mil -50.00mil 50.00mil -50.00mil 20.00mil]
+	ElementLine [50.00mil -50.00mil 50.00mil 50.00mil 20.00mil]
+	ElementLine [-50.00mil -50.00mil -50.00mil 50.00mil 10.00mil]
+	ElementLine [-150.00mil -50.00mil -150.00mil 50.00mil 10.00mil]
+
+	)
 Layer(1 "back" "copper")
 (
 	Line[1200.00mil 700.00mil 1200.00mil 600.00mil 10.00mil 20.00mil "clearline"]
@@ -1131,6 +1211,25 @@ Layer(1 "back" "copper")
 	Line[3100.00mil 600.00mil 3100.00mil 700.00mil 10.00mil 20.00mil "clearline"]
 	Line[3100.00mil 700.00mil 3200.00mil 700.00mil 10.00mil 20.00mil "clearline"]
 	Line[2300.00mil 1000.00mil 2300.00mil 1100.00mil 10.00mil 20.00mil "clearline"]
+	Line[2100.00mil 1400.00mil 2100.00mil 1500.00mil 10.00mil 20.00mil "clearline"]
+	Line[2100.00mil 1500.00mil 2400.00mil 1500.00mil 10.00mil 20.00mil "clearline"]
+	Line[2400.00mil 1500.00mil 2400.00mil 1700.00mil 10.00mil 20.00mil "clearline"]
+	Line[2600.00mil 1700.00mil 2600.00mil 1900.00mil 10.00mil 20.00mil "clearline"]
+	Line[3000.00mil 1000.00mil 3000.00mil 1100.00mil 10.00mil 20.00mil "clearline"]
+	Line[3200.00mil 1000.00mil 3200.00mil 1100.00mil 10.00mil 20.00mil "clearline"]
+	Line[3400.00mil 1000.00mil 3400.00mil 1100.00mil 10.00mil 20.00mil "clearline"]
+	Line[3600.00mil 1000.00mil 3600.00mil 1100.00mil 10.00mil 20.00mil "clearline"]
+	Line[3000.00mil 1100.00mil 3100.00mil 1100.00mil 10.00mil 20.00mil "clearline"]
+	Line[3200.00mil 1100.00mil 3300.00mil 1100.00mil 10.00mil 20.00mil "clearline"]
+	Line[3400.00mil 1100.00mil 3500.00mil 1100.00mil 10.00mil 20.00mil "clearline"]
+	Line[3600.00mil 1100.00mil 3700.00mil 1100.00mil 10.00mil 20.00mil "clearline"]
+	Line[2900.00mil 1900.00mil 3100.00mil 1900.00mil 10.00mil 20.00mil "clearline"]
+	Line[3000.00mil 1400.00mil 3900.00mil 1400.00mil 10.00mil 20.00mil "clearline"]
+	Line[3100.00mil 1900.00mil 3100.00mil 1400.00mil 10.00mil 20.00mil "clearline"]
+	Line[3100.00mil 1000.00mil 3100.00mil 1100.00mil 10.00mil 20.00mil "clearline"]
+	Line[3300.00mil 1000.00mil 3300.00mil 1100.00mil 10.00mil 20.00mil "clearline"]
+	Line[3500.00mil 1000.00mil 3500.00mil 1100.00mil 10.00mil 20.00mil "clearline"]
+	Line[3700.00mil 1000.00mil 3700.00mil 1100.00mil 10.00mil 20.00mil "clearline"]
 	Text[1100.00mil 800.00mil 0 100 "74HC257" "clearline"]
 	Text[1075.00mil 1550.00mil 0 100 "74HC574" "clearline"]
 	Text[1100.00mil 2500.00mil 0 100 "74HC166" "clearline"]
@@ -1141,8 +1240,10 @@ Layer(1 "back" "copper")
 	Text[2600.00mil 850.00mil 0 100 "Color" "clearline"]
 	Text[2625.00mil 1550.00mil 0 100 "B/N" "clearline"]
 	Text[2175.00mil 2100.00mil 1 100 "220K" "clearline"]
-	Text[1875.00mil 2300.00mil 1 100 "220K" "clearline"]
 	Text[2725.00mil 2075.00mil 0 100 "0K" "clearline"]
+	Text[1875.00mil 2300.00mil 1 100 "220K" "clearline"]
+	Text[3200.00mil 900.00mil 0 100 "74HC245" "clearline"]
+	Text[2700.00mil 1875.00mil 0 100 "3K3" "clearline"]
 )
 Layer(2 "bridges" "copper")
 (
