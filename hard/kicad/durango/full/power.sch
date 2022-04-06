@@ -5,7 +5,7 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 3 3
-Title ""
+Title "Durango-X power & extra features"
 Date ""
 Rev ""
 Comp ""
@@ -702,4 +702,10 @@ Wire Bus Line
 	900  2150 900  5700
 Wire Bus Line
 	750  2150 750  5750
+Text GLabel 3850 4500 0    50   Input ~ 0
+RED
+Text GLabel 3850 5100 0    50   Input ~ 0
+BLUE
+Text GLabel 3850 4800 0    50   Input ~ 0
+GRN
 $EndSCHEMATC
