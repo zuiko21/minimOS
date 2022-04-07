@@ -1053,7 +1053,7 @@ Wire Wire Line
 Text Notes 2300 750  0    50   Italic 0
 74AC might be fast enough for nominal f.
 Text Notes 8550 5550 0    50   ~ 10
-press to disable RGB\n(grey square)
+press to disable RGB\n(dark grey square)
 Text Label 8350 5700 0    50   ~ 0
 FB
 Connection ~ 4650 3300
