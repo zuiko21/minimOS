@@ -162,13 +162,13 @@ $EndComp
 $Comp
 L power:+5V #PWR0120
 U 1 1 6080689B
-P 4650 3900
-F 0 "#PWR0120" H 4650 3750 50  0001 C CNN
-F 1 "+5V" V 4700 3950 50  0000 L CNN
-F 2 "" H 4650 3900 50  0001 C CNN
-F 3 "" H 4650 3900 50  0001 C CNN
-	1    4650 3900
-	0    -1   -1   0   
+P 4650 3300
+F 0 "#PWR0120" H 4650 3150 50  0001 C CNN
+F 1 "+5V" H 4700 3350 50  0000 L CNN
+F 2 "" H 4650 3300 50  0001 C CNN
+F 3 "" H 4650 3300 50  0001 C CNN
+	1    4650 3300
+	1    0    0    -1  
 $EndComp
 $Comp
 L power:+5V #PWR0121
@@ -200,7 +200,7 @@ F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 8350 2550 50  0001 C CNN
 	1    8350 2550
 	1    0    0    -1  
 $EndComp
-Text Label 8650 2550 0    50   ~ 0
+Text Label 9600 2550 2    50   ~ 0
 DE
 Text Label 2350 2600 2    50   ~ 0
 LEND
@@ -348,7 +348,7 @@ L Device:R R4
 U 1 1 60B90F46
 P 6800 5200
 F 0 "R4" V 6700 5200 50  0000 C CNN
-F 1 "1K" V 6800 5200 50  0000 C CNN
+F 1 "1K2" V 6800 5200 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 6730 5200 50  0001 C CNN
 F 3 "~" H 6800 5200 50  0001 C CNN
 	1    6800 5200
@@ -455,8 +455,8 @@ $Comp
 L Device:R R5
 U 1 1 615F5223
 P 8950 5700
-F 0 "R5" V 9050 5700 50  0000 C CNN
-F 1 "150" V 8950 5700 50  0000 C CNN
+F 0 "R5" V 8850 5700 50  0000 C CNN
+F 1 "180" V 8950 5700 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P2.54mm_Vertical" V 8880 5700 50  0001 C CNN
 F 3 "~" H 8950 5700 50  0001 C CNN
 	1    8950 5700
@@ -474,10 +474,6 @@ Connection ~ 6650 5800
 Wire Wire Line
 	9950 2550 9750 2550
 Wire Wire Line
-	4300 2450 5450 2450
-Wire Wire Line
-	5450 2450 5450 3400
-Wire Wire Line
 	4650 4400 4950 4400
 $Comp
 L 74xx:74HCT02 U4
@@ -491,12 +487,9 @@ F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 7500 4500 50  0001 C CNN
 	-1   0    0    -1  
 $EndComp
 Wire Wire Line
-	3600 2750 4100 2750
-Text Label 3800 2750 0    50   ~ 0
+	3600 2550 4250 2550
+Text Label 3800 2550 0    50   ~ 0
 VA1
-Wire Wire Line
-	3600 2550 5650 2550
-Connection ~ 5650 2550
 Wire Wire Line
 	3600 2650 5750 2650
 Wire Wire Line
@@ -504,7 +497,7 @@ Wire Wire Line
 Connection ~ 5750 2650
 Text Label 3800 2650 0    50   ~ 0
 ~LINE
-Text Label 3800 2550 0    50   ~ 0
+Text Label 3800 2750 0    50   ~ 0
 VA5
 Wire Wire Line
 	9850 6500 6750 6500
@@ -519,24 +512,24 @@ FEND
 $Comp
 L 74xx:74LS21 U3
 U 1 1 615D7357
-P 3300 2600
-F 0 "U3" H 3550 2550 50  0000 C CNN
-F 1 "74HC21" H 3550 2450 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3300 2600 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS21" H 3300 2600 50  0001 C CNN
-	1    3300 2600
-	-1   0    0    -1  
+P 7600 3800
+F 0 "U3" V 7700 3550 50  0000 C CNN
+F 1 "74HC21" V 7800 3550 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7600 3800 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS21" H 7600 3800 50  0001 C CNN
+	1    7600 3800
+	0    1    1    0   
 $EndComp
 $Comp
 L 74xx:74LS21 U3
 U 2 1 615EA142
-P 7600 3800
-F 0 "U3" V 7650 4200 50  0000 R CNN
-F 1 "74HC21" V 7750 4200 50  0000 R CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7600 3800 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS21" H 7600 3800 50  0001 C CNN
-	2    7600 3800
-	0    -1   1    0   
+P 3300 2600
+F 0 "U3" H 3600 2750 50  0000 R CNN
+F 1 "74HC21" H 3650 2850 50  0000 R CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3300 2600 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS21" H 3300 2600 50  0001 C CNN
+	2    3300 2600
+	-1   0    0    1   
 $EndComp
 Wire Wire Line
 	1200 1400 1200 2500
@@ -569,13 +562,11 @@ Wire Wire Line
 	1500 2600 1500 1400
 NoConn ~ 2500 1100
 Wire Wire Line
-	2500 1600 4100 1600
+	2500 1600 4250 1600
 Wire Wire Line
-	4100 1600 4100 2750
+	4250 1600 4250 2550
 Wire Wire Line
-	2500 1800 4300 1800
-Wire Wire Line
-	4300 1800 4300 2450
+	2500 1800 5450 1800
 Wire Wire Line
 	2500 1900 5550 1900
 Wire Wire Line
@@ -583,14 +574,10 @@ Wire Wire Line
 Wire Wire Line
 	2500 2000 5650 2000
 Wire Wire Line
-	5650 2000 5650 2550
-Wire Wire Line
 	2500 2100 5750 2100
 Wire Wire Line
 	5750 2100 5750 2150
 NoConn ~ 2500 2200
-Wire Wire Line
-	5650 2550 5650 3400
 Connection ~ 2000 800 
 Wire Wire Line
 	1200 2500 2000 2500
@@ -736,7 +723,7 @@ Text Label 9850 6500 2    50   ~ 0
 ~DE
 Text Label 7550 5700 0    50   ~ 0
 S_R
-Text Label 7550 6000 0    50   ~ 0
+Text Label 7650 5900 1    50   ~ 0
 S_G
 Text Label 7550 6200 0    50   ~ 0
 S_B
@@ -1021,8 +1008,8 @@ $Comp
 L Switch:SW_Push_Open SW1
 U 1 1 62AB13E7
 P 8600 5700
-F 0 "SW1" H 8600 5915 50  0000 C CNN
-F 1 "TEST" H 8600 5824 50  0000 C CNN
+F 0 "SW1" H 8600 5600 50  0000 C CNN
+F 1 "TEST" H 8600 5800 50  0000 C CNN
 F 2 "" H 8600 5900 50  0001 C CNN
 F 3 "~" H 8600 5900 50  0001 C CNN
 	1    8600 5700
@@ -1038,4 +1025,36 @@ Wire Wire Line
 	8150 3300 8150 3900
 Connection ~ 8150 3300
 Connection ~ 8150 3900
+Text Label 8300 5500 0    50   ~ 0
+COMP
+Text Notes 8500 5050 0    50   ~ 0
+or lower, down to 470 ohm
+Text Notes 8700 5900 0    50   ~ 0
+or higher,\nup to 360
+Text Notes 3850 6400 0    50   ~ 10
+Horizontal/Vertical pattern choice,\nmay be connected to any counter output
+Text Notes 9300 2100 0    50   ~ 0
+may be supressed,\nfor buffering only
+Text Notes 3650 4650 0    50   ~ 0
+these may be supressed,\nfor buffering only
+Text Notes 500  1400 0    50   Italic 0
+or 24 MHz\nfor nominal f.
+Text Notes 3800 2450 0    50   Italic 0
+or +5V for\nnominal f.
+Wire Wire Line
+	5650 2000 5650 2750
+Wire Wire Line
+	5650 2750 3600 2750
+Connection ~ 5650 2750
+Wire Wire Line
+	5650 2750 5650 3400
+Wire Wire Line
+	5450 1800 5450 3400
+Text Notes 2300 750  0    50   Italic 0
+74AC might be fast enough for nominal f.
+Text Notes 8550 5550 0    50   ~ 10
+press to disable RGB\n(grey square)
+Text Label 8350 5700 0    50   ~ 0
+FB
+Connection ~ 4650 3300
 $EndSCHEMATC
