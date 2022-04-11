@@ -103,10 +103,10 @@ F 3 "" H 6750 4000 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 74xx:74LS85 U18
+L 74xx:74LS85 U7
 U 1 1 607EF60C
 P 5350 3900
-F 0 "U18" V 4900 3450 50  0000 R CNN
+F 0 "U7" V 4900 3450 50  0000 R CNN
 F 1 "74HC85" V 5000 3500 50  0000 R CNN
 F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 5350 3900 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS85" H 5350 3900 50  0001 C CNN
@@ -114,10 +114,10 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS85" H 5350 3900 50  0001 C CNN
 	0    -1   1    0   
 $EndComp
 $Comp
-L 74xx:74LS85 U20
+L 74xx:74LS85 U8
 U 1 1 607F05F3
 P 8850 3900
-F 0 "U20" V 8350 3450 50  0000 R CNN
+F 0 "U8" V 8350 3450 50  0000 R CNN
 F 1 "74HC85" V 8450 3450 50  0000 R CNN
 F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 8850 3900 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS85" H 8850 3900 50  0001 C CNN
@@ -388,8 +388,6 @@ Wire Wire Line
 Wire Wire Line
 	7550 5700 7750 5700
 Wire Wire Line
-	7650 5800 7500 5800
-Wire Wire Line
 	7650 5900 7750 5900
 $Comp
 L power:+5V #PWR0146
@@ -403,11 +401,9 @@ F 3 "" H 9100 5700 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 Wire Wire Line
-	7650 5900 7650 5800
+	7650 5900 7650 6000
 Wire Wire Line
-	7550 5700 7550 6000
-Wire Wire Line
-	7550 6000 7500 6000
+	7650 6000 7500 6000
 Wire Wire Line
 	7550 6100 7550 6200
 $Comp
@@ -681,17 +677,17 @@ Wire Wire Line
 	9750 2550 9650 2550
 Wire Wire Line
 	9850 6500 9850 3150
-Text Label 6700 5800 0    50   ~ 0
-GREEN
 Text Label 6700 6000 0    50   ~ 0
+GREEN
+Text Label 6700 5800 0    50   ~ 0
 RED
 Text Label 6700 6200 0    50   ~ 0
 BLUE
 Text Label 7550 5200 0    50   ~ 0
 ~S_SYNC
-Text Label 5650 5750 2    50   ~ 0
+Text Label 5650 6000 2    50   ~ 0
 GIN
-Text Label 5650 5950 2    50   ~ 0
+Text Label 5650 5800 2    50   ~ 0
 RIN
 Text Label 5650 6150 2    50   ~ 0
 BIN
@@ -723,7 +719,7 @@ Text Label 9850 6500 2    50   ~ 0
 ~DE
 Text Label 7550 5700 0    50   ~ 0
 S_R
-Text Label 7650 5900 1    50   ~ 0
+Text Label 7650 6000 1    50   ~ 0
 S_G
 Text Label 7550 6200 0    50   ~ 0
 S_B
@@ -733,7 +729,7 @@ U 1 1 628E9C05
 P 5450 4750
 F 0 "U6" H 5450 4450 50  0000 C CNN
 F 1 "74HC86" H 5450 4550 50  0000 C CNN
-F 2 "" H 5450 4750 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 5450 4750 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 5450 4750 50  0001 C CNN
 	1    5450 4750
 	-1   0    0    1   
@@ -751,7 +747,7 @@ U 2 1 62913F52
 P 5050 5100
 F 0 "U6" V 5004 5288 50  0000 L CNN
 F 1 "74HC86" V 5095 5288 50  0000 L CNN
-F 2 "" H 5050 5100 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 5050 5100 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 5050 5100 50  0001 C CNN
 	2    5050 5100
 	0    1    1    0   
@@ -762,7 +758,7 @@ U 3 1 62918DBD
 P 4400 5100
 F 0 "U6" V 4354 5288 50  0000 L CNN
 F 1 "74HC86" V 4445 5288 50  0000 L CNN
-F 2 "" H 4400 5100 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 4400 5100 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 4400 5100 50  0001 C CNN
 	3    4400 5100
 	0    1    1    0   
@@ -773,7 +769,7 @@ U 4 1 6291D70F
 P 3750 5100
 F 0 "U6" V 3704 5288 50  0000 L CNN
 F 1 "74HC86" V 3795 5288 50  0000 L CNN
-F 2 "" H 3750 5100 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3750 5100 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 3750 5100 50  0001 C CNN
 	4    3750 5100
 	0    1    1    0   
@@ -832,7 +828,7 @@ U 5 1 6296569A
 P 1650 6700
 F 0 "U6" H 1880 6746 50  0000 L CNN
 F 1 "74HC86" H 1880 6655 50  0000 L CNN
-F 2 "" H 1650 6700 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1650 6700 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 1650 6700 50  0001 C CNN
 	5    1650 6700
 	1    0    0    -1  
@@ -843,7 +839,7 @@ U 5 1 62966881
 P 2400 6700
 F 0 "U4" H 2630 6746 50  0000 L CNN
 F 1 "74HC02" H 2630 6655 50  0000 L CNN
-F 2 "" H 2400 6700 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 2400 6700 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74hc02" H 2400 6700 50  0001 C CNN
 	5    2400 6700
 	1    0    0    -1  
@@ -854,7 +850,7 @@ U 3 1 62968D57
 P 3150 6700
 F 0 "U3" H 3380 6746 50  0000 L CNN
 F 1 "74HC21" H 3380 6655 50  0000 L CNN
-F 2 "" H 3150 6700 50  0001 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3150 6700 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS21" H 3150 6700 50  0001 C CNN
 	3    3150 6700
 	1    0    0    -1  
@@ -870,7 +866,7 @@ Wire Wire Line
 Wire Wire Line
 	3150 6200 3150 4700
 Wire Wire Line
-	3150 4700 3650 4700
+	3150 4700 2250 4700
 Connection ~ 3150 6200
 Connection ~ 2400 6200
 Wire Wire Line
@@ -918,7 +914,7 @@ U 1 1 6299BA6E
 P 8950 5200
 F 0 "R6" V 8850 5200 50  0000 C CNN
 F 1 "1K5" V 8950 5200 50  0000 C CNN
-F 2 "" V 8880 5200 50  0001 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 8880 5200 50  0001 C CNN
 F 3 "~" H 8950 5200 50  0001 C CNN
 	1    8950 5200
 	0    1    1    0   
@@ -936,23 +932,23 @@ NoConn ~ 2500 1700
 $Comp
 L Jumper:Jumper_3_Open JP1
 U 1 1 629CB504
-P 5150 5650
-F 0 "JP1" H 5150 5874 50  0000 C CNN
-F 1 "GREEN SEL" H 5150 5783 50  0000 C CNN
-F 2 "" H 5150 5650 50  0001 C CNN
-F 3 "~" H 5150 5650 50  0001 C CNN
-	1    5150 5650
+P 4650 5850
+F 0 "JP1" H 4650 6074 50  0000 C CNN
+F 1 "GREEN SEL" H 4650 5983 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 4650 5850 50  0001 C CNN
+F 3 "~" H 4650 5850 50  0001 C CNN
+	1    4650 5850
 	1    0    0    -1  
 $EndComp
 $Comp
 L Jumper:Jumper_3_Open JP2
 U 1 1 629CE90F
-P 4650 5850
-F 0 "JP2" H 4650 6074 50  0000 C CNN
-F 1 "RED SEL" H 4650 5983 50  0000 C CNN
-F 2 "" H 4650 5850 50  0001 C CNN
-F 3 "~" H 4650 5850 50  0001 C CNN
-	1    4650 5850
+P 5150 5650
+F 0 "JP2" H 5150 5874 50  0000 C CNN
+F 1 "RED SEL" H 5150 5783 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 5150 5650 50  0001 C CNN
+F 3 "~" H 5150 5650 50  0001 C CNN
+	1    5150 5650
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -961,7 +957,7 @@ U 1 1 629D055D
 P 4150 6050
 F 0 "JP3" H 4150 6274 50  0000 C CNN
 F 1 "BLUE SEL" H 4150 6183 50  0000 C CNN
-F 2 "" H 4150 6050 50  0001 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical" H 4150 6050 50  0001 C CNN
 F 3 "~" H 4150 6050 50  0001 C CNN
 	1    4150 6050
 	1    0    0    -1  
@@ -977,15 +973,15 @@ Wire Wire Line
 Connection ~ 5650 6200
 Text Label 3900 6050 2    50   ~ 0
 H0
-Text Label 4400 5850 2    50   ~ 0
-H1
 Text Label 4900 5650 2    50   ~ 0
+H1
+Text Label 4400 5850 2    50   ~ 0
 H2
 Text Label 4400 6050 0    50   ~ 0
 V0
-Text Label 4900 5850 0    50   ~ 0
-V1
 Text Label 5400 5650 0    50   ~ 0
+V1
+Text Label 4900 5850 0    50   ~ 0
 V2
 Connection ~ 5150 4750
 Wire Wire Line
@@ -1010,7 +1006,7 @@ U 1 1 62AB13E7
 P 8600 5700
 F 0 "SW1" H 8600 5600 50  0000 C CNN
 F 1 "TEST" H 8600 5800 50  0000 C CNN
-F 2 "" H 8600 5900 50  0001 C CNN
+F 2 "Button_Switch_THT:SW_TH_Tactile_Omron_B3F-10xx" H 8600 5900 50  0001 C CNN
 F 3 "~" H 8600 5900 50  0001 C CNN
 	1    8600 5700
 	1    0    0    -1  
@@ -1053,8 +1049,59 @@ Wire Wire Line
 Text Notes 2300 750  0    50   Italic 0
 74AC might be fast enough for nominal f.
 Text Notes 8550 5550 0    50   ~ 10
-press to disable RGB\n(dark grey square)
+press to disable RGB\n(grey square)
 Text Label 8350 5700 0    50   ~ 0
 FB
 Connection ~ 4650 3300
+Wire Wire Line
+	7550 5700 7550 5800
+Wire Wire Line
+	7550 5800 7500 5800
+$Comp
+L Connector:USB_B J2
+U 1 1 625936AB
+P 1650 4900
+F 0 "J2" H 1500 5350 50  0000 C CNN
+F 1 "POWER" H 1550 5250 50  0000 C CNN
+F 2 "Connector_USB:USB_B_OST_USB-B1HSxx_Horizontal" H 1800 4850 50  0001 C CNN
+F 3 " ~" H 1800 4850 50  0001 C CNN
+	1    1650 4900
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0102
+U 1 1 625A1F95
+P 1650 5300
+F 0 "#PWR0102" H 1650 5050 50  0001 C CNN
+F 1 "GND" H 1655 5127 50  0000 C CNN
+F 2 "" H 1650 5300 50  0001 C CNN
+F 3 "" H 1650 5300 50  0001 C CNN
+	1    1650 5300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1550 5300 1650 5300
+Connection ~ 1650 5300
+NoConn ~ 1950 4900
+NoConn ~ 1950 5000
+$Comp
+L Device:CP C2
+U 1 1 62638BCA
+P 2250 4850
+F 0 "C2" H 2300 5050 50  0000 L CNN
+F 1 "470uF" H 2300 4950 50  0000 L CNN
+F 2 "Capacitor_THT:CP_Radial_D6.3mm_P2.50mm" H 2288 4700 50  0001 C CNN
+F 3 "~" H 2250 4850 50  0001 C CNN
+	1    2250 4850
+	1    0    0    -1  
+$EndComp
+Connection ~ 2250 4700
+Wire Wire Line
+	1650 5300 2250 5300
+Wire Wire Line
+	2250 5300 2250 5000
+Wire Wire Line
+	3150 4700 3650 4700
+Wire Wire Line
+	2250 4700 1950 4700
 $EndSCHEMATC
