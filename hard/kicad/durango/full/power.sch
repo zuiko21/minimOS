@@ -50,7 +50,6 @@ F 3 "" H 1700 650 50  0001 C CNN
 	1    1700 650 
 	1    0    0    -1  
 $EndComp
-Connection ~ 1350 1000
 $Comp
 L Device:C C7
 U 1 1 6315D0B4
@@ -471,8 +470,6 @@ Wire Wire Line
 	950  1300 1350 1300
 Connection ~ 1700 650 
 Wire Wire Line
-	1350 1000 1350 700 
-Wire Wire Line
 	1350 700  1250 700 
 NoConn ~ 1250 900 
 NoConn ~ 1250 1000
@@ -690,6 +687,25 @@ Text GLabel 1850 3900 2    50   Input ~ 0
 ~IRQ
 Wire Wire Line
 	2050 4000 1850 4000
+Text GLabel 3850 4500 0    50   Input ~ 0
+RED
+Text GLabel 3850 5100 0    50   Input ~ 0
+BLUE
+Text GLabel 3850 4800 0    50   Input ~ 0
+GRN
+$Comp
+L Device:Jumper_NC_Small JP3
+U 1 1 626C59A2
+P 1350 800
+F 0 "JP3" V 1304 874 50  0000 L CNN
+F 1 "PWR_SW" V 1450 850 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 1350 800 50  0001 C CNN
+F 3 "~" H 1350 800 50  0001 C CNN
+	1    1350 800 
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	1350 900  1350 1000
 Wire Wire Line
 	850  5100 1350 5100
 Wire Bus Line
@@ -702,10 +718,5 @@ Wire Bus Line
 	900  2150 900  5700
 Wire Bus Line
 	750  2150 750  5750
-Text GLabel 3850 4500 0    50   Input ~ 0
-RED
-Text GLabel 3850 5100 0    50   Input ~ 0
-BLUE
-Text GLabel 3850 4800 0    50   Input ~ 0
-GRN
+Connection ~ 1350 1000
 $EndSCHEMATC
