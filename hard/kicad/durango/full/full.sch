@@ -1488,8 +1488,8 @@ $Comp
 L Diode:1N4148 D2
 U 1 1 608BF1C3
 P 9850 5700
-F 0 "D2" H 9950 5650 50  0000 C CNN
-F 1 "1N4148" H 9850 5800 50  0000 C CNN
+F 0 "D2" H 9950 5750 50  0000 C CNN
+F 1 "1N4148" H 9850 5850 50  0000 C CNN
 F 2 "Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_KathodeUp" H 9850 5525 50  0001 C CNN
 F 3 "https://assets.nexperia.com/documents/data-sheet/1N4148_1N4448.pdf" H 9850 5700 50  0001 C CNN
 	1    9850 5700
@@ -1653,8 +1653,8 @@ Wire Wire Line
 	6800 6350 7250 6350
 Wire Wire Line
 	7250 6350 7250 6000
-Text Label 1550 3950 2    50   ~ 0
-HZ250
+Text Label 1450 3950 2    50   ~ 0
+250HZ
 Text Label 700  2450 0    50   ~ 0
 ~INTREQ
 Wire Wire Line
@@ -2805,8 +2805,8 @@ F 3 "~" H 10600 6300 50  0001 C CNN
 	1    10600 6300
 	1    0    0    -1  
 $EndComp
-Text Notes 1850 1550 0    50   ~ 0
-DIODE HERE?
+Text Notes 1750 1550 0    50   ~ 0
+DIODE+R HERE?
 Wire Wire Line
 	7450 5600 7200 5600
 Wire Bus Line
@@ -2845,4 +2845,38 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
+Text Notes 8750 6000 0    50   ~ 0
+or +5V
+Text Label 9700 5700 0    50   ~ 0
+AOUT
+Text Label 10000 5700 0    50   ~ 0
+AMIX
+Text Label 10200 6100 0    50   ~ 0
+ABUF
+Text Label 10500 6300 1    50   ~ 0
+ATBZ
+Text Label 10700 6300 1    50   ~ 0
+BZZ
+Text Label 10350 5700 0    50   ~ 0
+AFILT
+Text Label 9050 6300 0    50   ~ 0
+ERLED
+Text Label 1750 950  1    50   ~ 0
+RESET
+Text Label 850  1000 0    50   ~ 0
+PWLED
+Text Label 1850 1950 0    50   ~ 0
+BCL
+Text Label 1800 2650 0    50   ~ 0
+BDT
+Text Label 1500 4450 0    50   ~ 0
+C2K
+Text Label 1500 4650 0    50   ~ 0
+C4K
+Text Label 850  4550 3    50   ~ 0
+~250HZ
+Text Notes 5600 2650 1    50   ~ 0
+ACTUALLY IN CARTRIDGE!\nREMOVE FOOTPRINT FROM PCB
+Text Label 10000 5400 0    50   ~ 0
+AFB
 $EndSCHEMATC

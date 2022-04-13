@@ -159,9 +159,9 @@ F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 5750 1150 50  0001 C CNN
 	5    5750 1150
 	1    0    0    -1  
 $EndComp
-Text GLabel 900  2050 1    50   Input ~ 0
+Text GLabel 900  2150 1    50   Input ~ 0
 D[0..7]
-Text GLabel 750  2050 1    50   Input ~ 0
+Text GLabel 750  2150 1    50   Input ~ 0
 A[0..15]
 $Comp
 L Connector_Generic:Conn_01x17 J8
@@ -663,7 +663,7 @@ Wire Wire Line
 	2750 3600 2750 3750
 Connection ~ 1350 3650
 Text Notes 4150 3300 0    100  ~ 0
- xx = Standard\n1xx = Only used in Colour mode\n2xx = Only used in HiRes mode\n3xx = Only for switchable modes (may be replaced by jumpers)\n4xx = Switchable features (may be replaced by jumpers)\n5xx = Advanced features (may be replaced by jumpers)\n8xx = Only if HiRes is *NOT* supported
+ xx = Standard\n1xx = Only needed for Colour mode\n2xx = Only needed for HiRes mode\n3xx = Only for switching modes (may be replaced by jumpers)\n4xx = Switchable features (may be replaced by jumpers)\n5xx = Advanced features (may be replaced by jumpers)\n8xx = Only if HiRes is *NOT* supported
 NoConn ~ 1350 4100
 NoConn ~ 1850 4100
 Text Notes 1900 4150 0    50   Italic 0
@@ -698,7 +698,7 @@ L Device:Jumper_NC_Small JP3
 U 1 1 626C59A2
 P 1350 800
 F 0 "JP3" V 1304 874 50  0000 L CNN
-F 1 "PWR_SW" V 1450 850 50  0000 L CNN
+F 1 "PWR_SW" V 1450 800 50  0000 L CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 1350 800 50  0001 C CNN
 F 3 "~" H 1350 800 50  0001 C CNN
 	1    1350 800 
@@ -706,6 +706,7 @@ F 3 "~" H 1350 800 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	1350 900  1350 1000
+Connection ~ 1350 1000
 Wire Wire Line
 	850  5100 1350 5100
 Wire Bus Line
@@ -718,5 +719,8 @@ Wire Bus Line
 	900  2150 900  5700
 Wire Bus Line
 	750  2150 750  5750
-Connection ~ 1350 1000
+Text Notes 4000 4900 0    100  Italic 0
+Future component-video output\ngoes here…
+Text Label 1250 700  0    50   ~ 0
++5V_IN
 $EndSCHEMATC
