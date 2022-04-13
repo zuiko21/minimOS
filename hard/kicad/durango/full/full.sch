@@ -2809,6 +2809,40 @@ Text Notes 1750 1550 0    50   ~ 0
 DIODE+R HERE?
 Wire Wire Line
 	7450 5600 7200 5600
+Text Notes 8750 6000 0    50   ~ 0
+or +5V
+Text Label 9700 5700 0    50   ~ 0
+AOUT
+Text Label 10000 5700 0    50   ~ 0
+AMIX
+Text Label 10200 6100 0    50   ~ 0
+ABUF
+Text Label 10500 6300 1    50   ~ 0
+ATBZ
+Text Label 10700 6300 1    50   ~ 0
+BZZ
+Text Label 10350 5700 0    50   ~ 0
+AFILT
+Text Label 9050 6300 0    50   ~ 0
+ERLED
+Text Label 1750 950  1    50   ~ 0
+RESET
+Text Label 850  1000 0    50   ~ 0
+PWLED
+Text Label 1850 1950 0    50   ~ 0
+BCL
+Text Label 1800 2650 0    50   ~ 0
+BDT
+Text Label 1500 4450 0    50   ~ 0
+C2K
+Text Label 1500 4650 0    50   ~ 0
+C4K
+Text Label 850  4550 3    50   ~ 0
+~250HZ
+Text Notes 5600 2650 1    50   ~ 0
+ACTUALLY IN CARTRIDGE!\nREMOVE FOOTPRINT FROM PCB
+Text Label 10000 5400 0    50   ~ 0
+AFB
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Wire Line
@@ -2845,38 +2879,4 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Text Notes 8750 6000 0    50   ~ 0
-or +5V
-Text Label 9700 5700 0    50   ~ 0
-AOUT
-Text Label 10000 5700 0    50   ~ 0
-AMIX
-Text Label 10200 6100 0    50   ~ 0
-ABUF
-Text Label 10500 6300 1    50   ~ 0
-ATBZ
-Text Label 10700 6300 1    50   ~ 0
-BZZ
-Text Label 10350 5700 0    50   ~ 0
-AFILT
-Text Label 9050 6300 0    50   ~ 0
-ERLED
-Text Label 1750 950  1    50   ~ 0
-RESET
-Text Label 850  1000 0    50   ~ 0
-PWLED
-Text Label 1850 1950 0    50   ~ 0
-BCL
-Text Label 1800 2650 0    50   ~ 0
-BDT
-Text Label 1500 4450 0    50   ~ 0
-C2K
-Text Label 1500 4650 0    50   ~ 0
-C4K
-Text Label 850  4550 3    50   ~ 0
-~250HZ
-Text Notes 5600 2650 1    50   ~ 0
-ACTUALLY IN CARTRIDGE!\nREMOVE FOOTPRINT FROM PCB
-Text Label 10000 5400 0    50   ~ 0
-AFB
 $EndSCHEMATC
