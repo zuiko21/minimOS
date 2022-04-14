@@ -418,9 +418,9 @@ $EndComp
 NoConn ~ 10550 4400
 NoConn ~ 10350 4400
 NoConn ~ 10150 4400
-Text Label 10050 4500 0    50   ~ 0
+Text Label 10050 4400 0    50   ~ 0
 ~VS
-Text Label 10250 4500 0    50   ~ 0
+Text Label 10250 4400 0    50   ~ 0
 ~HS
 Text Label 10450 4850 3    50   ~ 0
 ~CDE
@@ -516,7 +516,7 @@ L 74xx:74LS257 U125
 U 1 1 609B6126
 P 4350 6200
 F 0 "U125" H 4550 7050 50  0000 C CNN
-F 1 "74HC257" H 4550 6950 50  0000 C CNN
+F 1 "74HC157" H 4550 6950 50  0000 C CNN
 F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 4350 6200 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS257" H 4350 6200 50  0001 C CNN
 	1    4350 6200
@@ -524,8 +524,6 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS257" H 4350 6200 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	3800 5600 3850 5600
-Wire Wire Line
-	3400 5700 3850 5700
 Wire Wire Line
 	3700 5900 3850 5900
 Wire Wire Line
@@ -768,7 +766,7 @@ L Device:R R15
 U 1 1 60C0F0E2
 P 7500 5350
 F 0 "R15" V 7400 5350 50  0000 C CNN
-F 1 "150" V 7500 5350 50  0000 C CNN
+F 1 "330" V 7500 5350 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7430 5350 50  0001 C CNN
 F 3 "~" H 7500 5350 50  0001 C CNN
 	1    7500 5350
@@ -779,7 +777,7 @@ L Transistor_BJT:BC547 Q5
 U 1 1 60C5B6F0
 P 7600 5000
 F 0 "Q5" H 7800 5050 50  0000 L CNN
-F 1 "BC547" H 7300 5050 50  0000 L CNN
+F 1 "BC548" H 7300 5050 50  0000 L CNN
 F 2 "Package_TO_SOT_THT:TO-92_Inline" H 7800 4925 50  0001 L CIN
 F 3 "http://www.fairchildsemi.com/ds/BC/BC547.pdf" H 7600 5000 50  0001 L CNN
 	1    7600 5000
@@ -790,7 +788,7 @@ L Transistor_BJT:BC547 Q4
 U 1 1 60C5C3A3
 P 7050 5200
 F 0 "Q4" H 7200 5350 50  0000 L CNN
-F 1 "BC547" H 6850 5350 50  0000 L CNN
+F 1 "BC548" H 6850 5350 50  0000 L CNN
 F 2 "Package_TO_SOT_THT:TO-92_Inline" H 7250 5125 50  0001 L CIN
 F 3 "http://www.fairchildsemi.com/ds/BC/BC547.pdf" H 7050 5200 50  0001 L CNN
 	1    7050 5200
@@ -1101,7 +1099,7 @@ L Transistor_BJT:BC547 Q306
 U 1 1 62057B0A
 P 9200 5650
 F 0 "Q306" H 9050 5850 50  0000 L CNN
-F 1 "BC547" H 8900 5750 50  0000 L CNN
+F 1 "BC548" H 8900 5750 50  0000 L CNN
 F 2 "Package_TO_SOT_THT:TO-92_Inline" H 9400 5575 50  0001 L CIN
 F 3 "http://www.fairchildsemi.com/ds/BC/BC547.pdf" H 9200 5650 50  0001 L CNN
 	1    9200 5650
@@ -1122,8 +1120,8 @@ L Device:R R122
 U 1 1 615F5223
 P 8950 5850
 F 0 "R122" V 9050 5850 50  0000 C CNN
-F 1 "150" V 8950 5850 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P2.54mm_Vertical" V 8880 5850 50  0001 C CNN
+F 1 "220" V 8950 5850 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 8880 5850 50  0001 C CNN
 F 3 "~" H 8950 5850 50  0001 C CNN
 	1    8950 5850
 	0    1    1    0   
@@ -1566,8 +1564,6 @@ F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 4900 1450 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	2900 4550 2900 4250
-Wire Wire Line
-	1900 4200 2500 4200
 $Comp
 L power:GND #PWR0158
 U 1 1 617A63FA
@@ -1579,7 +1575,7 @@ F 3 "" H 3050 3450 50  0001 C CNN
 	1    3050 3450
 	0    -1   -1   0   
 $EndComp
-Text Label 1900 4200 0    50   ~ 0
+Text Label 2500 4200 0    50   ~ 0
 HDOT
 Wire Wire Line
 	2750 1300 2750 2900
@@ -1631,7 +1627,7 @@ Text Label 7000 5000 0    50   ~ 0
 ZMIX
 Text Label 5850 4900 3    50   ~ 0
 ~HVG
-Text Label 9800 5000 0    50   ~ 0
+Text Label 9850 5000 0    50   ~ 0
 CSYNC
 Wire Wire Line
 	2600 1200 2600 2800
@@ -1643,8 +1639,6 @@ Connection ~ 2950 4250
 Wire Wire Line
 	2500 2800 2600 2800
 Connection ~ 2600 2800
-Wire Wire Line
-	2600 2800 2600 3500
 Wire Wire Line
 	2750 2900 2500 2900
 Connection ~ 2850 3000
@@ -1675,7 +1669,7 @@ Text GLabel 8050 4200 0    50   Input ~ 0
 ~FRAME
 Text GLabel 5000 2100 3    50   Input ~ 0
 ~LINE
-Text Label 1550 1100 1    50   ~ 0
+Text Label 1500 1100 3    50   ~ 0
 MCLK
 Connection ~ 5900 4600
 Wire Wire Line
@@ -1708,8 +1702,6 @@ Wire Wire Line
 	3600 6200 3600 5550
 Wire Wire Line
 	3200 5550 3200 6300
-Wire Wire Line
-	3500 6500 3500 5550
 Wire Wire Line
 	2650 4250 2900 4250
 Connection ~ 2900 4250
@@ -1781,24 +1773,24 @@ $EndComp
 $Comp
 L 74xx:74LS21 U17
 U 1 1 615D7357
-P 3300 2600
-F 0 "U17" H 3550 2550 50  0000 C CNN
-F 1 "74HC21" H 3550 2450 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3300 2600 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS21" H 3300 2600 50  0001 C CNN
-	1    3300 2600
-	-1   0    0    -1  
+P 7600 3800
+F 0 "U17" V 7750 3550 50  0000 C CNN
+F 1 "74HC21" V 7850 3550 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7600 3800 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS21" H 7600 3800 50  0001 C CNN
+	1    7600 3800
+	0    1    1    0   
 $EndComp
 $Comp
 L 74xx:74LS21 U17
 U 2 1 615EA142
-P 7600 3800
-F 0 "U17" V 7650 4200 50  0000 R CNN
-F 1 "74HC21" V 7750 4200 50  0000 R CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7600 3800 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS21" H 7600 3800 50  0001 C CNN
-	2    7600 3800
-	0    -1   1    0   
+P 3300 2600
+F 0 "U17" H 3400 2250 50  0000 R CNN
+F 1 "74HC21" H 3450 2350 50  0000 R CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3300 2600 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS21" H 3300 2600 50  0001 C CNN
+	2    3300 2600
+	-1   0    0    1   
 $EndComp
 Wire Wire Line
 	1100 800  1200 800 
@@ -1890,8 +1882,6 @@ Wire Wire Line
 Wire Wire Line
 	6700 1450 5200 1450
 Wire Wire Line
-	2500 4200 2500 4100
-Wire Wire Line
 	10200 3250 10200 3400
 Wire Wire Line
 	10200 3400 10350 3400
@@ -1925,22 +1915,9 @@ Wire Wire Line
 Text Label 3600 6750 0    50   ~ 0
 ~DQ3
 Wire Wire Line
-	2400 3500 2400 3450
-Wire Wire Line
 	2400 3450 3050 3450
 Wire Wire Line
 	3050 3450 3050 3500
-$Comp
-L 74xx:74HCT02 U16
-U 3 1 612B6A33
-P 2500 3800
-F 0 "U16" V 2450 4150 50  0000 C CNN
-F 1 "74HC02" V 2550 4150 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 2500 3800 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 2500 3800 50  0001 C CNN
-	3    2500 3800
-	0    -1   1    0   
-$EndComp
 $Comp
 L 74xx:74LS139 U?
 U 1 1 62331A7A
@@ -1986,7 +1963,7 @@ L 74xx:74LS257 U321
 U 1 1 613D5371
 P 10250 2700
 F 0 "U321" V 10600 1900 50  0000 L CNN
-F 1 "74HC257" V 10700 1800 50  0000 L CNN
+F 1 "74HC157" V 10700 1800 50  0000 L CNN
 F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 10250 2700 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS257" H 10250 2700 50  0001 C CNN
 	1    10250 2700
@@ -2166,8 +2143,6 @@ $EndComp
 Wire Wire Line
 	9250 5100 10750 5100
 Connection ~ 3050 3450
-Text Notes 2600 3350 2    50   ~ 0
-MAY BE DELAYED
 Connection ~ 8450 4650
 Wire Wire Line
 	8450 4650 8900 4650
@@ -2326,16 +2301,6 @@ Text Notes 2200 6000 0    50   ~ 0
 OR ~IO8Q
 Text Notes 9350 5500 0    50   Italic 10
 *
-Wire Bus Line
-	2200 6300 2700 6300
-Wire Bus Line
-	600  7750 2300 7750
-Wire Bus Line
-	8800 550  10750 550 
-Wire Bus Line
-	4100 550  8050 550 
-Wire Bus Line
-	800  4350 3700 4350
 Text GLabel 7550 5700 0    50   Input ~ 0
 RED
 Text GLabel 7650 6050 0    50   Input ~ 0
@@ -2353,4 +2318,92 @@ F 3 "~" H 7350 5800 50  0001 C CNN
 	1    7350 5800
 	0    1    1    0   
 $EndComp
+Text Label 3100 5700 1    50   ~ 0
+B_L
+Text Label 3200 5700 1    50   ~ 0
+GL_L
+Text Label 3300 5700 1    50   ~ 0
+R_L
+Text Label 3400 5700 1    50   ~ 0
+GH_L
+Wire Wire Line
+	3500 6500 3500 5550
+Wire Wire Line
+	3400 5700 3850 5700
+Text Label 3500 5550 3    50   ~ 0
+B_R
+Text Label 3600 5550 3    50   ~ 0
+GL_R
+Text Label 3700 5550 3    50   ~ 0
+R_R
+Text Label 3800 5550 3    50   ~ 0
+GH_R
+Wire Wire Line
+	2400 3500 2400 3450
+$Comp
+L 74xx:74HCT02 U16
+U 3 1 612B6A33
+P 2500 3800
+F 0 "U16" V 2450 4150 50  0000 C CNN
+F 1 "74HC02" V 2550 4150 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 2500 3800 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 2500 3800 50  0001 C CNN
+	3    2500 3800
+	0    -1   1    0   
+$EndComp
+Wire Wire Line
+	2600 2800 2600 3500
+$Comp
+L Device:R R232
+U 1 1 62770BF6
+P 2250 4200
+F 0 "R232" V 2150 4200 50  0000 C CNN
+F 1 "0" V 2250 4200 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 2180 4200 50  0001 C CNN
+F 3 "~" H 2250 4200 50  0001 C CNN
+	1    2250 4200
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	2100 4200 1900 4200
+Wire Wire Line
+	2400 4200 2500 4200
+Wire Wire Line
+	2500 4200 2500 4100
+Text Label 4850 6400 1    50   ~ 0
+XB
+Text Label 4850 6100 1    50   ~ 0
+XGL
+Text Label 4850 5800 1    50   ~ 0
+XR
+Text Label 4850 5500 1    50   ~ 0
+XGH
+Text Label 5550 6500 0    50   ~ 0
+IB
+Text Label 5600 6200 1    50   ~ 0
+IGL
+Text Label 5550 5900 0    50   ~ 0
+IR
+Text Label 5550 5600 0    50   ~ 0
+IGH
+Text Label 1900 4200 0    50   ~ 0
+DDOT
+Text Label 8200 5200 1    50   ~ 0
+RMIX
+Text Notes 9500 850  0    50   ~ 0
+or ~RESET
+Text Label 9100 5850 0    50   ~ 0
+BUFRGB
+Text Notes 8050 4950 0    50   ~ 0
+CLOSE TO Q5
+Wire Bus Line
+	2200 6300 2700 6300
+Wire Bus Line
+	600  7750 2300 7750
+Wire Bus Line
+	8800 550  10750 550 
+Wire Bus Line
+	4100 550  8050 550 
+Wire Bus Line
+	800  4350 3700 4350
 $EndSCHEMATC
