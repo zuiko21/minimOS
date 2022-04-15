@@ -1,6 +1,6 @@
 ; Interrupt-based polyphonic player for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220415-1256
+; last modified 20220415-1411
 
 #include "../../macros.h"
 #include "../../zeropage.h"
@@ -64,9 +64,8 @@ vloop:
 		BNE cont
 			INC index, X
 chk:
-			LDA index, X	; cursor for first voice
-			TAY
-			LDA c1d, Y		; get duration for
+			LDY index, X	; cursor for current voice
+			LDA c1d, Y		; get duration for*************************** NOOOOOOOO
 			BNE cont1		; still within list limits
 				STA index, X		; otherwise reset index (A known to have zero)
 				BEQ chk		; ...and try again
@@ -125,22 +124,71 @@ delay:
 
 
 ; *** music score *** note labels
-; format for tone list (c·p) is delay cycles, 0 if silence
+; format for pitch list (c·p) is delay cycles, 0 means rest
 ; format for duration list (c·d) is number of interrupt slots (1=semiquaver... 16=whole), 0 means go back to start
 c1p:
-	.byt	
-	.byt	0				; (at least one rest if empty)
+	.byt	136,0,136,0,136,0,			115,0,230,0
+	.byt	115,0,136,0,172,0,			129,0,115,0,122,129,0
+	.byt	136,0,86,68,64,0,76,68,		0,86,0,102,91,115,0
+	.byt	172,0,115,0,86,0,			129,0,86,0,129,0
+	.byt	172,0,115,0,115,86,			0,32,0,32,0,115,0
+	.byt	172,0,115,0,86,0,			129,0,86,0,129,0
+	.byt	172,0,108,0,96,0,			86,0,112,0,172,0
 c1d:
-	.byt	1, 0	; end as loop
+	.byt	2,1,1,1,2,1,				1,3,1,3
+	.byt	1,2,1,2,1,2,				1,1,1,1,1,1,1
+	.byt	1,1,1,1,1,1,1,1,			1,1,1,1,1,1,2
+	.byt	1,2,1,2,1,1,				1,2,1,2,1,1
+	.byt	1,2,1,2,1,1,				1,1,1,2,1,1,1
+	.byt	1,2,1,2,1,1,				1,2,1,2,1,1
+	.byt	1,1,1,2,1,2,				1,2,2,1,1,1
+	.byt	0				; end as loop
 c2p:
-	.byt	0				; (at least one rest if empty)
+	.byt	60,0,60,0,60,0,				45,0,57,0
+	.byt	68,0,86,0,115,0,			86,0,76,0,81,86,0
+	.byt	86,0,57,45,43,0,51,45,		0,51,0,68,64,76,0
+	.byt	34,36,38,45,0,43,			0,68,64,57,0,86,68,64
+	.byt	0,34,36,38,45,0,43,			0,28,0,28,0
+	.byt	34,36,38,45,0,43,			0,68,64,57,0,86,68,64
+	.byt	0,54,0,64,0,				68,0
 c2d:
-	.byt	1, 0	; end as loop
+	.byt	2,1,1,1,2,1,				1,3,1,3
+	.byt	1,2,1,2,1,2,				1,1,1,1,1,1,1
+	.byt	1,1,1,1,1,1,1,1,			1,1,1,1,1,1,4
+	.byt	1,1,1,1,1,1,				1,1,1,1,1,1,1,1
+	.byt	2,1,1,1,1,1,1,				1,1,1,2,5
+	.byt	1,1,1,1,1,1,				1,1,1,1,1,1,1,1
+	.byt	2,1,2,1,2,					1,7
+	.byt	0				; end as loop
 c3p:
-	.byt	0				; (at least one rest if empty)
+	.byt	34,0,34,0,43,34,0,			28,0
+	.byt	43,0,57,0,68,0,				51,0,45,0,48,51,0
+	.byt	57,0,34,28,25,0,32,28,		0,34,0,43,38,45,0
+	.byt	28,30,32,36,0,34,			0,54,51,43,0,51,43,38
+	.byt	0,28,30,32,36,0,34,			0,21,0,21,0
+	.byt	28,30,32,36,0,34,			0,54,51,43,0,51,43,38
+	.byt	0,36,0,38,0,				43,0
 c3d:
-	.byt	1, 0	; end as loop
+	.byt	2,1,1,1,1,1,1,				1,7
+	.byt	1,2,1,2,1,2,				1,1,1,1,1,1,1
+	.byt	1,1,1,1,1,1,1,1,			1,1,1,1,1,1,4
+	.byt	1,1,1,1,1,1,				1,1,1,1,1,1,1,1
+	.byt	2,1,1,1,1,1,1,				1,1,1,2,5
+	.byt	1,1,1,1,1,1,				1,1,1,1,1,1,1,1
+	.byt	2,1,2,1,2,					1,7
+	.byt	0				; end as loop
 c4p:
-	.byt	0				; (at least one rest if empty)
+	.byt				
+	.byt				
+	.byt				
+	.byt				
+	.byt				
 c4d:
-	.byt	1, 0	; end as loop
+	.byt				
+	.byt				
+	.byt				
+	.byt				
+	.byt				
+	.byt				
+	.byt				
+	.byt	0				; end as loop
