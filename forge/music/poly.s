@@ -1,6 +1,6 @@
 ; Interrupt-based polyphonic player for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220414-2246
+; last modified 20220415-1256
 
 #include "../../macros.h"
 #include "../../zeropage.h"
@@ -32,6 +32,7 @@ count		.dsb	MAXVOICE, 0		; remaining times to play this note
 	JSR restore				; clears count & index arrays, plus voices variable, just in case
 	LDY #<mp_isr			; interrupt handler!
 	LDA #>mp_isr
+	SEI						; some critical section!
 	STY fw_isr				; set interrupt vector ** does NOT respect previous routines **
 	STA fw_isr+1
 ; for demo purposes, set some test values
@@ -74,7 +75,23 @@ cont:
 			_PHX			; will affect X right now, play routine will save Y
 			LDX c1p, Y		; get pitch for this note
 		BEQ vend			; if it's a rest, try next note
-			JSR play		; otherwise play for 4 cycles
+; otherwise play for 4 cycles *** inlined ***
+; *******************************************
+			_PHY			; X already saved
+			TXA				; needs a copy of X in A anyway
+			LDY #8			; number of semicycles to play (may be computed depending on pitch)
+cyloop:
+				TAX			; retrieve pitch cycles
+ploop:
+					DEX
+					JSR delay		; 12t extra
+;					STY IOBeep		; 4t extra (for 9x+10, min ~333 Hz)
+					BNE ploop		; this takes (17X+10)t per semicycle (min ~177 Hz)
+				DEY
+				STY IOBeep	; toggle speaker 
+				BNE cyloop
+			_PLY
+; *******************************************
 vend:
 			_PLX
 			DEC count, X	; one slot less remains (will check later)
@@ -103,30 +120,15 @@ res_loop:
 	STA voices				; essential to keep player stopped
 	LDA tempo
 	STA wait				; slight, but controlled delay at start
-	RTS
-
-play:
-	TXA
-	PHA						; needs a copy of X in A anyway, thus no PHX
-	LDY #8					; number of semicycles to play (may be computed depending on pitch)
-cyloop:
-		TAX					; retrieve pitch cycles
-ploop:
-			DEX
-			JSR delay		; 12t extra
-;			STY IOBeep		; 4t extra (for 9x+10, min ~333 Hz)
-			BNE ploop		; this takes (17X+10)t per semicycle (min ~177 Hz)
-		DEY
-		STY IOBeep			; toggle speaker 
-		BNE cyloop
-	_PLX
 delay:
 	RTS
 
+
 ; *** music score *** note labels
-; format for tone list (c·p) is delay cycles (total time= n*6.51µs?), 0 if silence
+; format for tone list (c·p) is delay cycles, 0 if silence
 ; format for duration list (c·d) is number of interrupt slots (1=semiquaver... 16=whole), 0 means go back to start
 c1p:
+	.byt	
 	.byt	0				; (at least one rest if empty)
 c1d:
 	.byt	1, 0	; end as loop
