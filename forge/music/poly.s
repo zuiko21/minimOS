@@ -1,23 +1,38 @@
 ; Interrupt-based polyphonic player for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220415-1411
+; last modified 20220416-1718
 
-#include "../../macros.h"
-#include "../../zeropage.h"
+#include "../../OS/macros.h"
+#include "../../OS/zeropage.h"
+
+#define	CHUNK	_CHUNK
 
 ; constant for max number of voices
 #define	MAXVOICE	4
 
 ; *** some global definitions ***
+fw_isr	= $0200				; ROM standard
 IOBeep	= $DFB0
+
+; *** zeropage ***
+.zero
+; will use system-defined sysprt -- for interrupts only!
+; also systmp (plus adjacent sys_sp) for performance reasons
 
 ; *** input parameters ***
 .bss
+#ifdef	CHUNK
+*	= $5FF0
+#else
 *	= $300					; hopefully a safe address!
+#endif
 
 voices		.byt	0		; number of active voices (set 0 to disable and reset all channels)
 tempo		.byt	0		; tempo setting (number of 4ms interrupts between semiquavers, 31 means b=119)
-; might add pointers to note lists
+; really needs pointers to note lists
+;pptarr		.dsb	2*MAXVOICE, 0	; 4 pointers to pitch lists
+;dptarr		.dsb	2*MAXVOICE, 0	; 4 pointers to duration lists
+
 
 ; *** local variables ***
 wait		.byt	0		; remaining interrupts to trigger play (countdown from tempo)
@@ -26,7 +41,11 @@ count		.dsb	MAXVOICE, 0		; remaining times to play this note
 
 ; *** installation code ***
 .text
+#ifdef	CHUNK
+*	= $D000
+#else
 *	= $400					; safe download address
+#endif
 
 ; reset all structures
 	JSR restore				; clears count & index arrays, plus voices variable, just in case
@@ -64,20 +83,40 @@ vloop:
 		BNE cont
 			INC index, X
 chk:
+; * must copy appropriate pointer(s) *
+			TXA
+			ASL				; voice index times two for pointer load
+			TAY
+			LDA dptarr, Y	; copy LSB
+			STA sysptr		; temporary!
+			LDA dptarr+1, Y	; copy MSB too
+			STA sysptr+1
+			LDA pptarr, Y	; do the same for pitch list pointer
+			STA systmp
+			LDA pptarr+1, Y
+			STA systmp+1	; actually sys_sp
+; * now will use (sysptr), Y instead of c1d, Y and (systmp), Y instead of c1p, Y *
 			LDY index, X	; cursor for current voice
-			LDA c1d, Y		; get duration for*************************** NOOOOOOOO
-			BNE cont1		; still within list limits
+			LDA (sysptr), Y	; get duration
+			BNE cont		; still within list limits
 				STA index, X		; otherwise reset index (A known to have zero)
 				BEQ chk		; ...and try again
 cont: 
 			STA count, X	; reset counter
 			_PHX			; will affect X right now, play routine will save Y
-			LDX c1p, Y		; get pitch for this note
+			LDA (systmp), Y
+;			LDX c1p, Y		; get pitch for this note**********************
 		BEQ vend			; if it's a rest, try next note
 ; otherwise play for 4 cycles *** inlined ***
 ; *******************************************
-			_PHY			; X already saved
+#ifdef	NMOS
+			TAX				; needs both A & X equal
+			TYA
+			PHA				; save Y
 			TXA				; needs a copy of X in A anyway
+#else
+			PHY				; X already saved, A will be transferred to X
+#endif
 			LDY #8			; number of semicycles to play (may be computed depending on pitch)
 cyloop:
 				TAX			; retrieve pitch cycles
@@ -122,6 +161,17 @@ res_loop:
 delay:
 	RTS
 
+; *** list pointers *** should be at known RAM address
+pptarr:
+	.word	c1p
+	.word	c2p
+	.word	c3p
+	.word	0
+dptarr:
+	.word	c1d
+	.word	c2d
+	.word	c3d
+	.word	0
 
 ; *** music score *** note labels
 ; format for pitch list (c·p) is delay cycles, 0 means rest
@@ -177,6 +227,7 @@ c3d:
 	.byt	1,1,1,1,1,1,				1,1,1,1,1,1,1,1
 	.byt	2,1,2,1,2,					1,7
 	.byt	0				; end as loop
+/*
 c4p:
 	.byt				
 	.byt				
@@ -192,3 +243,5 @@ c4d:
 	.byt				
 	.byt				
 	.byt	0				; end as loop
+*/
+mp_end:
