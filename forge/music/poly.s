@@ -148,7 +148,7 @@ mp_exit:
 restore:
 	LDY #MAXVOICE-1			; number of elements per array
 res_loop:
-		LDA #-1				; eeeeeeeek, unfortunately STX only Y-indexed in ZP anyway
+		LDA #$FF			; eeeeeeeek, unfortunately STX only Y-indexed in ZP anyway
 		STA index, Y		; restart list...
 		LDA #0				; NMOS savvy
 		STA count, Y		; ...and current note
