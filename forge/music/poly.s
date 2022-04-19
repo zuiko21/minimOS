@@ -1,6 +1,6 @@
 ; Interrupt-based polyphonic player for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220416-1718
+; last modified 20220418-0036
 
 #include "../../OS/macros.h"
 #include "../../OS/zeropage.h"
@@ -42,7 +42,7 @@ count		.dsb	MAXVOICE, 0		; remaining times to play this note
 ; *** installation code ***
 .text
 #ifdef	CHUNK
-*	= $D000
+*	= $D000					; install address
 #else
 *	= $400					; safe download address
 #endif
@@ -80,9 +80,8 @@ mp_isr:
 ; voice routine (will try to index them)
 vloop:
 		LDA count, X		; note still active?
-		BNE cont
-			INC index, X
-chk:
+		BNE cont			; keep playing it
+			INC index, X	; otherwise advance to next note
 ; * must copy appropriate pointer(s) *
 			TXA
 			ASL				; voice index times two for pointer load
@@ -96,16 +95,16 @@ chk:
 			LDA pptarr+1, Y
 			STA systmp+1	; actually sys_sp
 ; * now will use (sysptr), Y instead of c1d, Y and (systmp), Y instead of c1p, Y *
+chk:
 			LDY index, X	; cursor for current voice
 			LDA (sysptr), Y	; get duration
 			BNE cont		; still within list limits
 				STA index, X		; otherwise reset index (A known to have zero)
 				BEQ chk		; ...and try again
 cont: 
-			STA count, X	; reset counter
+			STA count, X	; reset counter if needed
 			_PHX			; will affect X right now, play routine will save Y
-			LDA (systmp), Y
-;			LDX c1p, Y		; get pitch for this note**********************
+			LDA (systmp), Y	; get pitch for this note
 		BEQ vend			; if it's a rest, try next note
 ; otherwise play for 4 cycles *** inlined ***
 ; *******************************************
@@ -123,7 +122,6 @@ cyloop:
 ploop:
 					DEX
 					JSR delay		; 12t extra
-;					STY IOBeep		; 4t extra (for 9x+10, min ~333 Hz)
 					BNE ploop		; this takes (17X+10)t per semicycle (min ~177 Hz)
 				DEY
 				STY IOBeep	; toggle speaker 
@@ -148,12 +146,13 @@ mp_exit:
 
 ; *** useful stuff ***
 restore:
-	LDX #MAXVOICE-1			; number of elements per array
-	LDA #0					; NMOS savvy
+	LDY #MAXVOICE-1			; number of elements per array
 res_loop:
-		STA index, X		; restart list...
-		STA count, X		; ...and current note
-		DEX
+		LDA #$FF			; eeeeeeeek, unfortunately STX only Y-indexed in ZP anyway
+		STA index, Y		; restart list...
+		LDA #0				; NMOS savvy
+		STA count, Y		; ...and current note
+		DEY
 		BPL res_loop
 	STA voices				; essential to keep player stopped
 	LDA tempo
