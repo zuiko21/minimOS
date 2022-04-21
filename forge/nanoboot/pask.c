@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <wiringPi.h>
 /* *** needs -lwiringPi option *** */
+#include <curses.h>
+/* *** needs -lncurses option *** */
 
 /* pin definitions, rightmost top row at header is BCM 10-9-11-[GND]-[SD]-5-6-13-19-26-[GND] */
 /* alternative BCM pinout:  17-27-22-[3V3]-[MOSI]-[MISO]-[CLK]-[GND]-[SD]-5-6-13-19-26-[GND] */
