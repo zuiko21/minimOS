@@ -1,6 +1,6 @@
 ; video stress test for Durango-X, colour mode (x2)
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20211209-1334
+; last modified 20220422-1559
 
 ; ****************************
 ; *** standard definitions ***
@@ -9,42 +9,44 @@
 	IOAen	= $DFA0
 	IOBeep	= $DFB0
 ; ****************************
-	ptr		= 2				; indirect pointer
-	wrap	= 4
 
-* = $400					; downloadable start address
+	pt		= 2				; indirect pointer
+	wrap	= 4
+/*
+* = $400					; downloadable start address *** Commented for La Jaqueria ***
 
 	SEI						; standard 6502 stuff, don't care about stack
 	CLD
 ; Durango-X specific stuff
 
 	LDA #$38				; flag init, colour, screen 3
-	STA IO8lh				; set video mode
+	STA IO8lh				; set video mode */
 again:
 		LDA #$60
-		STA ptr+1
+		STA pt+1
 		LDY #0
-		STY ptr
+		STY pt
 line:
-			LDA (ptr)		; first byte in line
+			LDA (pt)		; first byte in line
 			STA wrap		; will be at the end
 			LDY #1
 loop:
-				LDA (ptr), Y		; get current byte
+				LDA (pt), Y		; get current byte
 				DEY
-				STA (ptr), Y		; update screen
+				STA (pt), Y		; update screen
 				INY
 				INY
 				CPY #64
 				BNE loop
 			DEY				; back to last byte in line
 			LDA wrap		; place wrapped byte
-			STA (ptr), Y
-			LDA ptr			; next line
+			STA (pt), Y
+			LDA pt			; next line
 			CLC
 			ADC #64			; eeeeek! colour mode
-			STA ptr
+			STA pt
 			BNE line
-		INC ptr+1
+		INC pt+1
 		BPL line
 	BMI again				; repeat forever
+

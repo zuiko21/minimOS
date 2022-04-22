@@ -1,23 +1,26 @@
 ; RLE decoder for minimOS
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20211031-1931
+; last modified 20220422-1555
 
 ; *** zeropage variables ***
 .zero
 
-*	= 3
+*	= $80
 
 src		.word	0			; pointer to compressed source
 ptr		.word	0			; pointer to screen output
 
 .text
 
-* = $4000					; room enough
+* = $D000					; room enough, ROMable (was $4000)
 
 ; *** parameter definitions ***
 dest	= $6000				; Durango-X screen address
 
 ; *** actual code ***
+; set Durango-X in greyscale mode ***
+	LDA #$30
+	STA $DF80
 ; preload pointers as required
 	LDA #>source			; compressed data origin
 	LDY #<source
@@ -80,7 +83,9 @@ rle_next:
 rle_exit:
 
 ; ** test code ahead **
-	BRA rle_exit			; just hang after decoding!
+;	BRA rle_exit			; just hang after decoding!
+#include "../test/fshift.s"
+
 ; ** compressed 'file' ahead **
 source:
-	.bin	0, 2908, "../rle/source.rle"
+	.bin	0, 1571, "../rle/source.rle"
