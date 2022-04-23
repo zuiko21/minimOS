@@ -2823,8 +2823,8 @@ Text Label 10700 6300 1    50   ~ 0
 BZZ
 Text Label 10350 5700 0    50   ~ 0
 AFILT
-Text Label 9050 6300 0    50   ~ 0
-ERLED
+Text Label 9000 6300 0    50   ~ 0
+ERRLED
 Text Label 1750 950  1    50   ~ 0
 RESET
 Text Label 850  1000 0    50   ~ 0
@@ -2879,4 +2879,8 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
+Entry Wire Line
+	2600 5250 2700 5350
+Entry Wire Line
+	2900 5250 3000 5350
 $EndSCHEMATC

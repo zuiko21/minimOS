@@ -687,11 +687,11 @@ Text GLabel 1850 3900 2    50   Input ~ 0
 ~IRQ
 Wire Wire Line
 	2050 4000 1850 4000
-Text GLabel 3850 4500 0    50   Input ~ 0
+Text GLabel 5750 4450 0    50   Input ~ 0
 RED
-Text GLabel 3850 5100 0    50   Input ~ 0
+Text GLabel 5750 5050 0    50   Input ~ 0
 BLUE
-Text GLabel 3850 4800 0    50   Input ~ 0
+Text GLabel 5750 4750 0    50   Input ~ 0
 GRN
 $Comp
 L Device:Jumper_NC_Small JP3
@@ -707,20 +707,144 @@ $EndComp
 Wire Wire Line
 	1350 900  1350 1000
 Connection ~ 1350 1000
+Text Notes 5900 4850 0    100  Italic 0
+Future component-video output\ngoes here…
+Text Label 1250 700  0    50   ~ 0
++5V_IN
+NoConn ~ 3750 4800
+Text Label 3750 4300 0    50   ~ 0
+BA0
+Text Label 3750 4400 0    50   ~ 0
+BA1
+Text Label 3750 4500 0    50   ~ 0
+BA2
+Text Label 3750 4600 0    50   ~ 0
+BA3
+Text Label 3750 4700 0    50   ~ 0
+BA4
+Text Label 3950 4700 3    50   ~ 0
+~BWR
+Wire Wire Line
+	3950 4300 3750 4300
+Wire Wire Line
+	3950 4400 3750 4400
+Wire Wire Line
+	3950 4500 3750 4500
+Wire Wire Line
+	3950 4600 3750 4600
+Wire Wire Line
+	3950 4700 3750 4700
+Entry Wire Line
+	3950 4300 4050 4400
+Entry Wire Line
+	3950 4400 4050 4500
+Entry Wire Line
+	3950 4500 4050 4600
+Entry Wire Line
+	3950 4600 4050 4700
+Entry Wire Line
+	3950 4700 4050 4800
+Text GLabel 4050 4900 3    50   Input ~ 0
+BA[0..4]
+$Comp
+L 74xx:74HC245 U?
+U 1 1 627D9D31
+P 3250 4800
+AR Path="/60C42E7C/627D9D31" Ref="U?"  Part="1" 
+AR Path="/6310B9C7/627D9D31" Ref="U32"  Part="1" 
+F 0 "U32" H 3050 5550 50  0000 R CNN
+F 1 "74HC245" H 3150 5450 50  0000 R CNN
+F 2 "Package_DIP:DIP-20_W7.62mm_Socket" H 3250 4800 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC245" H 3250 4800 50  0001 C CNN
+	1    3250 4800
+	-1   0    0    -1  
+$EndComp
+Entry Wire Line
+	2450 4400 2550 4300
+Entry Wire Line
+	2450 4500 2550 4400
+Entry Wire Line
+	2450 4600 2550 4500
+Entry Wire Line
+	2450 4700 2550 4600
+NoConn ~ 3750 4900
+NoConn ~ 3750 5000
+Wire Wire Line
+	3250 5600 3750 5600
+Wire Wire Line
+	3750 5600 3750 5300
+Connection ~ 3750 5300
+Wire Wire Line
+	3750 5300 3750 5200
+Wire Wire Line
+	2550 4300 2750 4300
+Wire Wire Line
+	2550 4400 2750 4400
+Wire Wire Line
+	2550 4500 2750 4500
+Wire Wire Line
+	2550 4600 2750 4600
+Wire Wire Line
+	3250 5600 2750 5600
+Wire Wire Line
+	2750 5600 2750 5000
+Connection ~ 3250 5600
+Connection ~ 2750 4900
+Wire Wire Line
+	2750 4900 2750 4800
+Connection ~ 2750 5000
+Wire Wire Line
+	2750 5000 2750 4900
+$Comp
+L power:GND #PWR0135
+U 1 1 628164ED
+P 3250 5600
+F 0 "#PWR0135" H 3250 5350 50  0001 C CNN
+F 1 "GND" H 3255 5427 50  0000 C CNN
+F 2 "" H 3250 5600 50  0001 C CNN
+F 3 "" H 3250 5600 50  0001 C CNN
+	1    3250 5600
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+5V #PWR0166
+U 1 1 62816C8C
+P 3250 4000
+F 0 "#PWR0166" H 3250 3850 50  0001 C CNN
+F 1 "+5V" H 3265 4173 50  0000 C CNN
+F 2 "" H 3250 4000 50  0001 C CNN
+F 3 "" H 3250 4000 50  0001 C CNN
+	1    3250 4000
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2550 4700 2750 4700
+Text Label 2600 4700 0    50   ~ 0
+R~W
+Wire Bus Line
+	4050 4400 4050 4900
+Wire Bus Line
+	2450 4400 2450 5750
+Wire Bus Line
+	2300 5200 2300 5700
 Wire Wire Line
 	850  5100 1350 5100
 Wire Bus Line
 	3700 2150 3700 2900
 Wire Bus Line
-	2300 5200 2300 5700
-Wire Bus Line
-	2450 4400 2450 5750
-Wire Bus Line
 	900  2150 900  5700
 Wire Bus Line
 	750  2150 750  5750
-Text Notes 4000 4900 0    100  Italic 0
-Future component-video output\ngoes here…
-Text Label 1250 700  0    50   ~ 0
-+5V_IN
+Wire Wire Line
+	2550 4850 2550 4700
+Text GLabel 2550 4850 3    50   Input ~ 0
+R~W
+Text Label 2600 4300 0    50   ~ 0
+A0
+Text Label 2600 4400 0    50   ~ 0
+A1
+Text Label 2600 4500 0    50   ~ 0
+A2
+Text Label 2600 4600 0    50   ~ 0
+A3
 $EndSCHEMATC
