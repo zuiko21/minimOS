@@ -1632,7 +1632,7 @@ CSYNC
 Wire Wire Line
 	2600 1200 2600 2800
 Wire Wire Line
-	2650 4250 2650 6750
+	2650 4250 2650 6800
 Wire Wire Line
 	2900 4250 2950 4250
 Connection ~ 2950 4250
@@ -1706,20 +1706,20 @@ Wire Wire Line
 	2650 4250 2900 4250
 Connection ~ 2900 4250
 Wire Wire Line
-	2650 6750 3200 6750
+	2650 6800 3200 6800
 Text GLabel 2950 4100 2    50   Input ~ 0
 VCLK
-Text Label 2950 6750 0    50   ~ 0
+Text Label 2950 6800 0    50   ~ 0
 ~Q3
 $Comp
 L Device:R R127
 U 1 1 614B20D9
-P 3350 6750
-F 0 "R127" V 3250 6750 50  0000 C CNN
-F 1 "1K8" V 3350 6750 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 3280 6750 50  0001 C CNN
-F 3 "~" H 3350 6750 50  0001 C CNN
-	1    3350 6750
+P 3350 6800
+F 0 "R127" V 3250 6800 50  0000 C CNN
+F 1 "1K8" V 3350 6800 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 3280 6800 50  0001 C CNN
+F 3 "~" H 3350 6800 50  0001 C CNN
+	1    3350 6800
 	0    1    1    0   
 $EndComp
 Wire Wire Line
@@ -1911,8 +1911,8 @@ Text Label 6750 4950 1    50   ~ 0
 Text Label 4100 4500 2    50   ~ 0
 HPIX
 Wire Wire Line
-	3500 6750 3850 6750
-Text Label 3600 6750 0    50   ~ 0
+	3500 6800 3850 6800
+Text Label 3600 6800 0    50   ~ 0
 ~DQ3
 Wire Wire Line
 	2400 3450 3050 3450
@@ -1931,7 +1931,7 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 1300 6000 50  0001 C CNN
 	1    1300 6000
 	1    0    0    -1  
 $EndComp
-Text GLabel 800  6200 3    50   Input ~ 0
+Text GLabel 800  6200 0    50   Input ~ 0
 ~IO8Q
 NoConn ~ 1800 6100
 Entry Wire Line
@@ -1952,10 +1952,8 @@ Wire Wire Line
 	3100 6600 3850 6600
 Wire Wire Line
 	3100 5550 3100 6600
-Text GLabel 600  5800 1    50   Input ~ 0
+Text GLabel 600  5750 1    50   Input ~ 0
 A[0..15]
-Text GLabel 2500 7700 2    50   Input ~ 0
-R~W
 Connection ~ 10550 2200
 Connection ~ 9550 2200
 $Comp
@@ -1972,118 +1970,18 @@ $EndComp
 Wire Wire Line
 	650  6000 800  6000
 $Comp
-L 74xx:74LS365 U32
-U 1 1 62F51AAA
-P 2500 7100
-F 0 "U32" V 2546 6356 50  0000 R CNN
-F 1 "74HC365" V 2455 6356 50  0000 R CNN
-F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 2500 7100 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS365" H 2500 7100 50  0001 C CNN
-	1    2500 7100
-	0    -1   -1   0   
-$EndComp
-Wire Wire Line
-	3850 6750 3850 6800
-Wire Wire Line
-	2600 7600 2800 7600
-Wire Wire Line
-	3200 7600 3200 7100
-Connection ~ 2800 7600
-Wire Wire Line
-	2800 7600 2900 7600
-Connection ~ 2900 7600
-Wire Wire Line
-	2900 7600 3200 7600
-$Comp
 L power:+5V #PWR0113
 U 1 1 6304A1B3
-P 1800 7100
-F 0 "#PWR0113" H 1800 6950 50  0001 C CNN
-F 1 "+5V" V 1700 7150 50  0000 L CNN
-F 2 "" H 1800 7100 50  0001 C CNN
-F 3 "" H 1800 7100 50  0001 C CNN
-	1    1800 7100
-	0    -1   -1   0   
-$EndComp
-NoConn ~ 2600 6600
-Entry Wire Line
-	2300 7750 2400 7650
-Entry Wire Line
-	2200 7750 2300 7650
-Entry Wire Line
-	2100 7750 2200 7650
-Entry Wire Line
-	2000 7750 2100 7650
-Wire Wire Line
-	2100 7650 2100 7600
-Wire Wire Line
-	2200 7650 2200 7600
-Wire Wire Line
-	2300 7650 2300 7600
-Wire Wire Line
-	2400 7650 2400 7600
-Wire Wire Line
-	2500 7700 2500 7600
-Wire Wire Line
-	650  6000 650  7700
-Wire Wire Line
-	650  7700 2500 7700
-Text Label 700  6000 0    50   ~ 0
-R~W
-$Comp
-L power:GND #PWR0135
-U 1 1 63280B2C
-P 3200 7600
-F 0 "#PWR0135" H 3200 7350 50  0001 C CNN
-F 1 "GND" H 3300 7500 50  0000 C CNN
-F 2 "" H 3200 7600 50  0001 C CNN
-F 3 "" H 3200 7600 50  0001 C CNN
-	1    3200 7600
+P 1800 6700
+F 0 "#PWR0113" H 1800 6550 50  0001 C CNN
+F 1 "+5V" H 1850 6800 50  0000 L CNN
+F 2 "" H 1800 6700 50  0001 C CNN
+F 3 "" H 1800 6700 50  0001 C CNN
+	1    1800 6700
 	1    0    0    -1  
 $EndComp
-Connection ~ 3200 7600
-Text Label 2100 6600 1    50   ~ 0
-BA0
-Text Label 2200 6600 1    50   ~ 0
-BA1
-Text Label 2300 6600 1    50   ~ 0
-BA2
-Text Label 2400 6600 1    50   ~ 0
-BA3
-Text Label 2500 6550 0    50   ~ 0
-BA4
-Text Label 2500 6600 1    50   ~ 0
-~BWR
-Wire Wire Line
-	2100 6400 2100 6600
-Wire Wire Line
-	2200 6400 2200 6600
-Wire Wire Line
-	2300 6400 2300 6600
-Wire Wire Line
-	2400 6400 2400 6600
-Wire Wire Line
-	2500 6400 2500 6600
-Entry Wire Line
-	2100 6400 2200 6300
-Entry Wire Line
-	2200 6400 2300 6300
-Entry Wire Line
-	2300 6400 2400 6300
-Entry Wire Line
-	2400 6400 2500 6300
-Entry Wire Line
-	2500 6400 2600 6300
-Text GLabel 2700 6300 2    50   Input ~ 0
-BA[0..4]
-Text Label 2100 7650 1    50   ~ 0
-A0
-Text Label 2200 7650 1    50   ~ 0
-A1
-Text Label 2300 7650 1    50   ~ 0
-A2
-Text Label 2400 7650 1    50   ~ 0
-A3
+Text Label 700  6000 0    50   ~ 0
+R~W
 Wire Wire Line
 	5150 4850 5100 4850
 Wire Wire Line
@@ -2106,7 +2004,7 @@ Wire Wire Line
 	10950 1950 10550 1950
 Wire Wire Line
 	10550 1950 10550 1750
-Text Notes 3000 6900 0    50   ~ 0
+Text Notes 3000 6950 0    50   ~ 0
 LOWER FOR INVERSE?
 $Comp
 L power:+5V #PWR0151
@@ -2216,8 +2114,6 @@ Wire Wire Line
 	8250 6300 8700 6300
 Wire Wire Line
 	8700 6300 8700 5700
-Wire Bus Line
-	600  5800 600  7750
 Connection ~ 8700 6300
 Connection ~ 8700 5700
 $Comp
@@ -2235,13 +2131,9 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 1300 6800 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	1800 6700 1800 6800
-Connection ~ 1800 7100
 Connection ~ 1800 6800
 Wire Wire Line
 	1800 6800 1800 7000
-Connection ~ 1800 7000
-Wire Wire Line
-	1800 7000 1800 7100
 NoConn ~ 800  6700
 NoConn ~ 800  6800
 NoConn ~ 800  6900
@@ -2396,10 +2288,11 @@ Text Label 9100 5850 0    50   ~ 0
 BUFRGB
 Text Notes 8050 4950 0    50   ~ 0
 CLOSE TO Q5
+Connection ~ 1800 6700
 Wire Bus Line
-	2200 6300 2700 6300
-Wire Bus Line
-	600  7750 2300 7750
+	600  5750 600  5800
+Text GLabel 650  6000 0    50   Input ~ 0
+R~W
 Wire Bus Line
 	8800 550  10750 550 
 Wire Bus Line
