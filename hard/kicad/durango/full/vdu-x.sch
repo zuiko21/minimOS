@@ -1185,7 +1185,7 @@ F 3 "" H 4600 1550 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Text Label 5200 1450 0    50   ~ 0
-~VA0
+~LOST
 Wire Wire Line
 	5850 1100 5850 2750
 Wire Wire Line
@@ -1215,10 +1215,10 @@ Wire Wire Line
 	9250 2200 9550 2200
 Wire Wire Line
 	9550 2200 9550 2050
-Text Label 9950 2200 0    50   ~ 0
-~Q3
+Text Label 9950 2200 1    50   ~ 0
+EV~ODD
 Text Label 9850 2200 2    50   ~ 0
-~VA0
+~LOST
 Wire Wire Line
 	10550 2200 10750 2200
 Wire Wire Line
@@ -1709,8 +1709,8 @@ Wire Wire Line
 	2650 6800 3200 6800
 Text GLabel 2950 4100 2    50   Input ~ 0
 VCLK
-Text Label 2950 6800 0    50   ~ 0
-~Q3
+Text Label 2800 6800 0    50   ~ 0
+EV~ODD
 $Comp
 L Device:R R127
 U 1 1 614B20D9
@@ -1912,8 +1912,8 @@ Text Label 4100 4500 2    50   ~ 0
 HPIX
 Wire Wire Line
 	3500 6800 3850 6800
-Text Label 3600 6800 0    50   ~ 0
-~DQ3
+Text Label 3550 6800 0    50   ~ 0
+DEV~ODD
 Wire Wire Line
 	2400 3450 3050 3450
 Wire Wire Line
@@ -2299,4 +2299,6 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
+Text Label 2900 4450 2    50   ~ 0
+EV~ODD
 $EndSCHEMATC
