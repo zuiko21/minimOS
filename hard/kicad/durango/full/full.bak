@@ -2879,4 +2879,8 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
+Entry Wire Line
+	2600 5250 2700 5350
+Entry Wire Line
+	2900 5250 3000 5350
 $EndSCHEMATC

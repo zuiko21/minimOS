@@ -821,20 +821,6 @@ Wire Wire Line
 	2550 4700 2750 4700
 Text Label 2600 4700 0    50   ~ 0
 R~W
-Wire Bus Line
-	4050 4400 4050 4900
-Wire Bus Line
-	2450 4400 2450 5750
-Wire Bus Line
-	2300 5200 2300 5700
-Wire Wire Line
-	850  5100 1350 5100
-Wire Bus Line
-	3700 2150 3700 2900
-Wire Bus Line
-	900  2150 900  5700
-Wire Bus Line
-	750  2150 750  5750
 Wire Wire Line
 	2550 4850 2550 4700
 Text GLabel 2550 4850 3    50   Input ~ 0
@@ -847,4 +833,18 @@ Text Label 2600 4500 0    50   ~ 0
 A2
 Text Label 2600 4600 0    50   ~ 0
 A3
+Wire Wire Line
+	850  5100 1350 5100
+Wire Bus Line
+	4050 4400 4050 4900
+Wire Bus Line
+	3700 2150 3700 2900
+Wire Bus Line
+	2300 5200 2300 5700
+Wire Bus Line
+	2450 4400 2450 5750
+Wire Bus Line
+	900  2150 900  5700
+Wire Bus Line
+	750  2150 750  5750
 $EndSCHEMATC
