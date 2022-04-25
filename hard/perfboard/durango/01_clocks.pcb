@@ -1012,8 +1012,8 @@ Via[345.00mil 3011.00mil 36.00mil 20.00mil 0.0000 20.00mil "" ""]
 Via[345.00mil 2911.00mil 36.00mil 20.00mil 0.0000 20.00mil "" ""]
 Via[345.00mil 3111.00mil 36.00mil 20.00mil 0.0000 20.00mil "" ""]
 Via[2545.00mil 511.00mil 36.00mil 20.00mil 0.0000 20.00mil "" ""]
-Via[2545.00mil 4511.00mil 36.00mil 20.00mil 0.0000 20.00mil "" ""]
-Via[2545.00mil 4611.00mil 36.00mil 20.00mil 0.0000 20.00mil "" ""]
+Via[2245.00mil 4511.00mil 36.00mil 20.00mil 0.0000 20.00mil "" ""]
+Via[2245.00mil 4611.00mil 36.00mil 20.00mil 0.0000 20.00mil "" ""]
 
 Element["" "Dual in-line package, narrow (300 mil)" "" "DIP16" 1045.00mil 3911.00mil 50.00mil -170.00mil 0 100 ""]
 (
@@ -1448,7 +1448,8 @@ Layer(1 "back" "copper")
 	Line[4345.00mil 1111.00mil 2445.00mil 1111.00mil 10.00mil 20.00mil "clearline"]
 	Line[1845.00mil 1311.00mil 2445.00mil 1311.00mil 10.00mil 20.00mil "clearline"]
 	Line[2545.00mil 511.00mil 3145.00mil 511.00mil 10.00mil 20.00mil "clearline"]
-	Line[2545.00mil 4511.00mil 2545.00mil 4611.00mil 10.00mil 20.00mil "clearline"]
+	Line[2245.00mil 4611.00mil 2245.00mil 4511.00mil 10.00mil 20.00mil "clearline"]
+	Line[2245.00mil 4511.00mil 2545.00mil 4511.00mil 10.00mil 20.00mil "clearline"]
 	Text[1465.00mil 3790.00mil 0 100 "74HTC4040" "clearline"]
 	Text[1045.00mil 3811.00mil 0 100 "U19" "clearline"]
 	Text[5720.00mil 4736.00mil 1 100 "GCC" "clearline"]
@@ -1490,12 +1491,12 @@ Layer(1 "back" "copper")
 	Text[3720.00mil 4786.00mil 1 100 "HDOT" "clearline"]
 	Text[3620.00mil 4786.00mil 1 100 "VCLK" "clearline"]
 	Text[2620.00mil 4836.00mil 1 100 "HIRES" "clearline"]
-	Text[2045.00mil 4811.00mil 1 100 "COLOR" "clearline"]
+	Text[2020.00mil 4811.00mil 1 100 "COLOR" "clearline"]
 	Text[620.00mil 4786.00mil 1 100 "HRDE" "clearline"]
 	Text[520.00mil 4761.00mil 1 100 "!CDE" "clearline"]
 	Text[420.00mil 4736.00mil 1 100 "!HS" "clearline"]
 	Text[320.00mil 4736.00mil 1 100 "!VS" "clearline"]
-	Text[2520.00mil 4786.00mil 1 100 "RGB" "clearline"]
+	Text[2220.00mil 4761.00mil 1 100 "RGB" "clearline"]
 )
 Layer(2 "bridge" "copper")
 (
