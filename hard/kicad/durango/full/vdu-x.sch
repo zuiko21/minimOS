@@ -1993,7 +1993,6 @@ Wire Wire Line
 	1200 800  2000 800 
 Wire Wire Line
 	8300 6200 8300 6400
-NoConn ~ 10850 1750
 Text GLabel 10950 1850 2    50   Input ~ 0
 SC0
 Text GLabel 10950 1950 2    50   Input ~ 0
@@ -2293,12 +2292,23 @@ Wire Bus Line
 	600  5750 600  5800
 Text GLabel 650  6000 0    50   Input ~ 0
 R~W
+Text Label 2900 4450 2    50   ~ 0
+EV~ODD
 Wire Bus Line
 	8800 550  10750 550 
 Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
-Text Label 2900 4450 2    50   ~ 0
-EV~ODD
+$Comp
+L Connector_Generic:Conn_01x01 J4
+U 1 1 6271F029
+P 11050 1750
+F 0 "J4" H 11050 1950 50  0000 L CNN
+F 1 "LED" H 11000 1850 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical" H 11050 1750 50  0001 C CNN
+F 3 "~" H 11050 1750 50  0001 C CNN
+	1    11050 1750
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC

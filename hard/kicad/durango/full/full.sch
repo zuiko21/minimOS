@@ -15,7 +15,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L mos6502:MOS6502 U1
+L w65c02s:W65C02S U1
 U 1 1 607C3CC6
 P 3500 2250
 F 0 "U1" H 3250 3600 50  0000 C CNN
@@ -834,15 +834,14 @@ $EndComp
 $Comp
 L power:GND #PWR0107
 U 1 1 60AEA38E
-P 3500 3650
-F 0 "#PWR0107" H 3500 3400 50  0001 C CNN
-F 1 "GND" H 3350 3550 50  0000 C CNN
-F 2 "" H 3500 3650 50  0001 C CNN
-F 3 "" H 3500 3650 50  0001 C CNN
-	1    3500 3650
+P 3600 3650
+F 0 "#PWR0107" H 3600 3400 50  0001 C CNN
+F 1 "GND" H 3750 3550 50  0000 C CNN
+F 2 "" H 3600 3650 50  0001 C CNN
+F 3 "" H 3600 3650 50  0001 C CNN
+	1    3600 3650
 	1    0    0    -1  
 $EndComp
-Connection ~ 3500 3650
 Wire Wire Line
 	6650 750  4900 750 
 Wire Wire Line
@@ -860,7 +859,6 @@ Text Label 5850 2950 2    50   ~ 0
 VA[0..13]
 Text Label 8700 5050 0    50   ~ 0
 MA[0..14]
-NoConn ~ 4000 2750
 Wire Wire Line
 	4500 2650 4400 2650
 $Comp
@@ -1067,10 +1065,6 @@ Entry Wire Line
 Entry Wire Line
 	4200 6350 4300 6450
 Connection ~ 6650 750 
-Wire Wire Line
-	3400 3650 3500 3650
-Wire Wire Line
-	3500 3650 3600 3650
 Entry Wire Line
 	4250 6450 4350 6550
 Entry Wire Line
@@ -1157,8 +1151,6 @@ Wire Wire Line
 	2500 1150 2500 3150
 Wire Wire Line
 	2500 3150 3000 3150
-Wire Wire Line
-	2400 1150 2400 2350
 Wire Wire Line
 	2400 2350 3000 2350
 Wire Wire Line
@@ -1348,8 +1340,8 @@ $Comp
 L 74xx:74LS132 U8
 U 4 1 60C4EEF7
 P 1750 1250
-F 0 "U8" V 1750 1450 50  0000 L CNN
-F 1 "74HC132" V 1850 1400 50  0000 L CNN
+F 0 "U8" V 1950 1000 50  0000 L CNN
+F 1 "74HC132" V 2050 900 50  0000 L CNN
 F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1750 1250 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS132" H 1750 1250 50  0001 C CNN
 	4    1750 1250
@@ -1385,8 +1377,8 @@ $Comp
 L Device:CP C1
 U 1 1 60CB72E6
 P 2000 950
-F 0 "C1" V 1850 950 50  0000 C CNN
-F 1 "10uF" V 2150 1000 50  0000 C CNN
+F 0 "C1" V 1750 950 50  0000 C CNN
+F 1 "10uF" V 1850 950 50  0000 C CNN
 F 2 "Capacitor_THT:CP_Radial_D4.0mm_P1.50mm" H 2038 800 50  0001 C CNN
 F 3 "~" H 2000 950 50  0001 C CNN
 	1    2000 950 
@@ -1404,7 +1396,7 @@ F 1 "RESET" V 1400 1000 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1350 1000 50  0001 C CNN
 F 3 "~" H 1350 1000 50  0001 C CNN
 	1    1350 800 
-	0    -1   1    0   
+	0    -1   -1   0   
 $EndComp
 $Comp
 L 74xx:74HCT00 U9
@@ -1757,9 +1749,9 @@ Text Label 9900 4700 0    50   ~ 0
 ~WE2
 Text Label 9300 4800 1    50   ~ 0
 ~WE3
-Text Label 2400 1350 1    50   ~ 0
+Text Label 2400 1250 1    50   ~ 0
 RDY
-Text Label 2500 1350 1    50   ~ 0
+Text Label 2500 1250 1    50   ~ 0
 ~SO
 Text Label 8700 5900 0    50   ~ 0
 ~IEN
@@ -2843,10 +2835,55 @@ Text Notes 5600 2650 1    50   ~ 0
 ACTUALLY IN CARTRIDGE!\nREMOVE FOOTPRINT FROM PCB
 Text Label 10000 5400 0    50   ~ 0
 AFB
-Wire Bus Line
-	2500 5250 2800 5250
+Entry Wire Line
+	2600 5250 2700 5350
+Entry Wire Line
+	2900 5250 3000 5350
+Text Label 4000 2750 0    50   ~ 0
+SYNC
+$Comp
+L Device:Jumper_NC_Small JP4
+U 1 1 6272E967
+P 3500 3650
+F 0 "JP4" H 3250 3650 50  0000 C CNN
+F 1 "~WDC" H 3450 3750 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 3500 3650 50  0001 C CNN
+F 3 "~" H 3500 3650 50  0001 C CNN
+	1    3500 3650
+	1    0    0    1   
+$EndComp
+Connection ~ 3600 3650
+Wire Wire Line
+	2400 1150 2400 1300
+$Comp
+L Connector_Generic:Conn_01x02 J10
+U 1 1 62731839
+P 2150 1300
+F 0 "J10" H 2150 1400 50  0000 C CNN
+F 1 "STEP" H 2300 1200 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 2150 1300 50  0001 C CNN
+F 3 "~" H 2150 1300 50  0001 C CNN
+	1    2150 1300
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	2350 1300 2400 1300
+Connection ~ 2400 1300
+Wire Wire Line
+	2400 1300 2400 2350
+Text Label 2350 1400 0    50   ~ 0
+SYNC
+NoConn ~ 4000 2850
+Wire Wire Line
+	3000 2650 2450 2650
+Wire Wire Line
+	2450 2650 2450 3150
+Wire Wire Line
+	2450 3150 2150 3150
 Wire Wire Line
 	10600 1050 10850 1050
+Wire Bus Line
+	2500 5250 2800 5250
 Wire Bus Line
 	2800 5250 3200 5250
 Wire Bus Line
@@ -2858,9 +2895,9 @@ Wire Bus Line
 Wire Bus Line
 	5850 950  5850 5100
 Wire Bus Line
-	7450 950  7450 5050
-Wire Bus Line
 	10800 650  10800 1650
+Wire Bus Line
+	7450 950  7450 5050
 Wire Bus Line
 	650  5500 650  7300
 Wire Bus Line
@@ -2879,8 +2916,5 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Entry Wire Line
-	2600 5250 2700 5350
-Entry Wire Line
-	2900 5250 3000 5350
+Connection ~ 2150 3150
 $EndSCHEMATC
