@@ -833,6 +833,23 @@ Text Label 2600 4500 0    50   ~ 0
 A2
 Text Label 2600 4600 0    50   ~ 0
 A3
+$Comp
+L Connector:Conn_Coaxial J?
+U 1 1 631CCF99
+P 3550 3550
+AR Path="/60C42E7C/631CCF99" Ref="J?"  Part="1" 
+AR Path="/6310B9C7/631CCF99" Ref="J206"  Part="1" 
+F 0 "J206" H 3650 3550 50  0000 L CNN
+F 1 "VIDEO/Y" H 3600 3450 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 3550 3550 50  0001 C CNN
+F 3 " ~" H 3550 3550 50  0001 C CNN
+	1    3550 3550
+	1    0    0    -1  
+$EndComp
+Text GLabel 3350 3550 0    50   Input ~ 0
+VIDEO
+Wire Wire Line
+	3550 3750 2750 3750
 Wire Wire Line
 	850  5100 1350 5100
 Wire Bus Line
@@ -847,4 +864,7 @@ Wire Bus Line
 	900  2150 900  5700
 Wire Bus Line
 	750  2150 750  5750
+Connection ~ 2750 3750
+Text Notes 3200 3450 0    50   Italic 10
+ALSO SYNC-ON-GREEN
 $EndSCHEMATC
