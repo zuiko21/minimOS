@@ -192,12 +192,12 @@ Wire Wire Line
 $Comp
 L 74xx:74HCT02 U4
 U 1 1 6080EDF3
-P 8350 2550
-F 0 "U4" H 8350 2850 50  0000 C CNN
-F 1 "74HC02" H 8350 2750 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 8350 2550 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 8350 2550 50  0001 C CNN
-	1    8350 2550
+P 8400 2500
+F 0 "U4" H 8400 2800 50  0000 C CNN
+F 1 "74HC02" H 8400 2700 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 8400 2500 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 8400 2500 50  0001 C CNN
+	1    8400 2500
 	1    0    0    -1  
 $EndComp
 Text Label 9600 2550 2    50   ~ 0
@@ -434,12 +434,12 @@ Wire Wire Line
 $Comp
 L 74xx:74HCT02 U4
 U 4 1 6181229E
-P 9850 2850
-F 0 "U4" V 9800 2400 50  0000 L CNN
-F 1 "74HC02" V 9900 2350 50  0000 L CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 9850 2850 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 9850 2850 50  0001 C CNN
-	4    9850 2850
+P 9900 2900
+F 0 "U4" V 9850 2450 50  0000 L CNN
+F 1 "74HC02" V 9950 2400 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 9900 2900 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 9900 2900 50  0001 C CNN
+	4    9900 2900
 	0    -1   1    0   
 $EndComp
 Wire Wire Line
@@ -468,18 +468,16 @@ Wire Wire Line
 	6650 5800 6650 5700
 Connection ~ 6650 5800
 Wire Wire Line
-	9950 2550 9750 2550
-Wire Wire Line
 	4650 4400 4950 4400
 $Comp
 L 74xx:74HCT02 U4
 U 2 1 608EFBD8
-P 7500 4500
-F 0 "U4" H 7500 4700 50  0000 C CNN
-F 1 "74HC02" H 7500 4300 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7500 4500 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 7500 4500 50  0001 C CNN
-	2    7500 4500
+P 7450 4550
+F 0 "U4" H 7450 4750 50  0000 C CNN
+F 1 "74HC02" H 7450 4350 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7450 4550 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 7450 4550 50  0001 C CNN
+	2    7450 4550
 	-1   0    0    -1  
 $EndComp
 Wire Wire Line
@@ -582,12 +580,12 @@ Wire Wire Line
 $Comp
 L 74xx:74HCT02 U4
 U 3 1 612B6A33
-P 9100 2250
-F 0 "U4" H 9100 1950 50  0000 C CNN
-F 1 "74HC02" H 9100 2050 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 9100 2250 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 9100 2250 50  0001 C CNN
-	3    9100 2250
+P 9100 2200
+F 0 "U4" H 9100 1900 50  0000 C CNN
+F 1 "74HC02" H 9100 2000 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 9100 2200 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 9100 2200 50  0001 C CNN
+	3    9100 2200
 	1    0    0    1   
 $EndComp
 Connection ~ 1200 800 
@@ -672,9 +670,6 @@ Wire Wire Line
 	8300 6300 8300 6400
 Wire Wire Line
 	9100 6100 8250 6100
-Connection ~ 9750 2550
-Wire Wire Line
-	9750 2550 9650 2550
 Wire Wire Line
 	9850 6500 9850 3150
 Text Label 6700 6000 0    50   ~ 0
@@ -726,13 +721,13 @@ S_B
 $Comp
 L 74xx:74HC86 U6
 U 1 1 628E9C05
-P 5450 4750
-F 0 "U6" H 5450 4450 50  0000 C CNN
-F 1 "74HC86" H 5450 4550 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 5450 4750 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 5450 4750 50  0001 C CNN
-	1    5450 4750
-	-1   0    0    1   
+P 5050 5100
+F 0 "U6" V 5150 4900 50  0000 C CNN
+F 1 "74HC86" V 5250 4900 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 5050 5100 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 5050 5100 50  0001 C CNN
+	1    5050 5100
+	0    -1   1    0   
 $EndComp
 Wire Wire Line
 	5750 4850 7800 4850
@@ -744,13 +739,13 @@ Connection ~ 6150 7200
 $Comp
 L 74xx:74HC86 U6
 U 2 1 62913F52
-P 5050 5100
-F 0 "U6" V 5004 5288 50  0000 L CNN
-F 1 "74HC86" V 5095 5288 50  0000 L CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 5050 5100 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 5050 5100 50  0001 C CNN
-	2    5050 5100
-	0    1    1    0   
+P 5450 4750
+F 0 "U6" H 5350 4550 50  0000 L CNN
+F 1 "74HC86" H 5300 4950 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 5450 4750 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 5450 4750 50  0001 C CNN
+	2    5450 4750
+	-1   0    0    1   
 $EndComp
 $Comp
 L 74xx:74HC86 U6
@@ -805,17 +800,9 @@ Wire Wire Line
 Text Label 5150 4750 1    50   ~ 0
 CSYNC
 Wire Wire Line
-	3750 5400 4400 5400
-Wire Wire Line
 	5750 5400 5750 5200
 Wire Wire Line
 	5750 5200 6650 5200
-Connection ~ 4400 5400
-Wire Wire Line
-	4400 5400 5050 5400
-Connection ~ 5050 5400
-Wire Wire Line
-	5050 5400 5750 5400
 NoConn ~ 6650 6300
 NoConn ~ 6650 6400
 Wire Wire Line
@@ -983,7 +970,6 @@ Text Label 5400 5650 0    50   ~ 0
 V1
 Text Label 4900 5850 0    50   ~ 0
 V2
-Connection ~ 5150 4750
 Wire Wire Line
 	3150 7200 5650 7200
 Wire Wire Line
@@ -1104,4 +1090,18 @@ Wire Wire Line
 	3150 4700 3650 4700
 Wire Wire Line
 	2250 4700 1950 4700
+Wire Wire Line
+	9650 2550 9750 2550
+Wire Wire Line
+	3750 5400 4400 5400
+Connection ~ 5050 5400
+Wire Wire Line
+	5050 5400 5750 5400
+Connection ~ 5150 4750
+Connection ~ 4400 5400
+Wire Wire Line
+	4400 5400 5050 5400
+Wire Wire Line
+	9950 2550 9750 2550
+Connection ~ 9750 2550
 $EndSCHEMATC
