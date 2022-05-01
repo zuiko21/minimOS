@@ -850,6 +850,9 @@ Text GLabel 3350 3550 0    50   Input ~ 0
 VIDEO
 Wire Wire Line
 	3550 3750 2750 3750
+Connection ~ 2750 3750
+Text Notes 3200 3450 0    50   Italic 10
+ALSO SYNC-ON-GREEN
 Wire Wire Line
 	850  5100 1350 5100
 Wire Bus Line
@@ -864,7 +867,4 @@ Wire Bus Line
 	900  2150 900  5700
 Wire Bus Line
 	750  2150 750  5750
-Connection ~ 2750 3750
-Text Notes 3200 3450 0    50   Italic 10
-ALSO SYNC-ON-GREEN
 $EndSCHEMATC
