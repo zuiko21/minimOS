@@ -1911,7 +1911,7 @@ Text Label 6000 6000 0    50   ~ 0
 A4
 Text Label 6000 5900 0    50   ~ 0
 A5
-Text Label 950  5900 2    50   ~ 0
+Text Label 950  6300 2    50   ~ 0
 A15
 $Comp
 L 74xx:74LS139 U10
@@ -2077,11 +2077,11 @@ Wire Wire Line
 	750  6300 950  6300
 Text Label 750  7400 0    50   ~ 0
 A13
-Text Label 950  5600 2    50   ~ 0
+Text Label 950  6100 2    50   ~ 0
 A12
-Text Label 950  6300 2    50   ~ 0
+Text Label 950  6000 2    50   ~ 0
 A11
-Text Label 950  5700 2    50   ~ 0
+Text Label 950  5900 2    50   ~ 0
 A10
 Entry Wire Line
 	650  5800 750  5900
@@ -2099,11 +2099,11 @@ Wire Wire Line
 	750  5800 950  5800
 Wire Wire Line
 	750  5900 950  5900
-Text Label 950  6200 2    50   ~ 0
-A9
 Text Label 950  5800 2    50   ~ 0
+A9
+Text Label 950  5700 2    50   ~ 0
 A8
-Text Label 950  6100 2    50   ~ 0
+Text Label 950  5600 2    50   ~ 0
 A7
 Text Label 6150 5400 2    50   ~ 0
 A6
@@ -2224,7 +2224,7 @@ Entry Wire Line
 	650  7300 750  7400
 Wire Wire Line
 	750  7400 950  7400
-Text Label 950  6000 2    50   ~ 0
+Text Label 950  6200 2    50   ~ 0
 A14
 Wire Wire Line
 	950  7100 950  7200
@@ -2917,5 +2917,4 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Connection ~ 11650 0   
 $EndSCHEMATC

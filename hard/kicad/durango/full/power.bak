@@ -291,17 +291,6 @@ A12
 Text Label 1200 2350 0    50   ~ 0
 R~W
 $Comp
-L 74xx:74LS367 U530
-U 1 1 61283F21
-P 2750 2900
-F 0 "U530" H 2500 3550 50  0000 C CNN
-F 1 "74HC367" H 2500 3450 50  0000 C CNN
-F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 2750 2900 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS367" H 2750 2900 50  0001 C CNN
-	1    2750 2900
-	1    0    0    -1  
-$EndComp
-$Comp
 L 74xx:74LS139 U10
 U 3 1 612E1A0F
 P 3050 1150
@@ -320,47 +309,29 @@ Wire Wire Line
 	5750 1650 6200 1650
 Text GLabel 3700 2150 1    50   Input ~ 0
 D[0..7]
-Wire Wire Line
-	3600 3000 3300 3000
-Wire Wire Line
-	3600 2900 3350 2900
 Entry Wire Line
-	3700 2900 3600 3000
+	3700 2700 3600 2800
 Entry Wire Line
-	3700 2800 3600 2900
+	3700 2600 3600 2700
 Entry Wire Line
 	3700 2500 3600 2600
 Entry Wire Line
 	3700 2400 3600 2500
-Wire Wire Line
-	3250 2800 3300 2800
-Wire Wire Line
-	3300 2800 3300 3000
-Connection ~ 3300 3000
-Wire Wire Line
-	3300 3000 3250 3000
-Wire Wire Line
-	3250 2700 3350 2700
-Wire Wire Line
-	3350 2700 3350 2900
-Connection ~ 3350 2900
-Wire Wire Line
-	3350 2900 3250 2900
 Text Label 3600 2500 2    50   ~ 0
 D4
 Text Label 3600 2600 2    50   ~ 0
 D5
-Text Label 3600 2900 2    50   ~ 0
+Text Label 3600 2700 2    50   ~ 0
 D6
-Text Label 3600 3000 2    50   ~ 0
+Text Label 3600 2800 2    50   ~ 0
 D7
 Text GLabel 2250 2800 0    50   Input ~ 0
 HIRES
 Text GLabel 2250 2700 0    50   Input ~ 0
 INVERT
-Text GLabel 2250 2900 0    50   Input ~ 0
-~FRAME
 Text GLabel 2250 3000 0    50   Input ~ 0
+~FRAME
+Text GLabel 2250 2900 0    50   Input ~ 0
 ~LINE
 Wire Wire Line
 	3500 750  3500 650 
@@ -854,11 +825,36 @@ Connection ~ 2750 3750
 Text Notes 3200 3450 0    50   Italic 10
 ALSO SYNC-ON-GREEN
 Wire Wire Line
+	3250 2700 3350 2700
+Wire Wire Line
+	3250 2800 3600 2800
+$Comp
+L 74xx:74LS367 U530
+U 1 1 61283F21
+P 2750 2900
+F 0 "U530" H 2500 3550 50  0000 C CNN
+F 1 "74HC367" H 2500 3450 50  0000 C CNN
+F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 2750 2900 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS367" H 2750 2900 50  0001 C CNN
+	1    2750 2900
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3250 2900 3250 2800
+Connection ~ 3250 2800
+Wire Wire Line
+	3250 3000 3350 3000
+Wire Wire Line
+	3350 3000 3350 2700
+Connection ~ 3350 2700
+Wire Wire Line
+	3350 2700 3600 2700
+Wire Wire Line
 	850  5100 1350 5100
 Wire Bus Line
 	4050 4400 4050 4900
 Wire Bus Line
-	3700 2150 3700 2900
+	3700 2150 3700 2700
 Wire Bus Line
 	2300 5200 2300 5700
 Wire Bus Line
