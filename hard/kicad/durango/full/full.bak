@@ -2917,4 +2917,5 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
+Connection ~ 11650 0   
 $EndSCHEMATC
