@@ -404,8 +404,6 @@ Wire Wire Line
 	10600 1550 10700 1550
 Wire Wire Line
 	10600 1650 10700 1650
-Wire Wire Line
-	10700 1750 10600 1750
 Entry Wire Line
 	10700 1050 10800 950 
 Entry Wire Line
@@ -422,21 +420,21 @@ Entry Wire Line
 	10700 1650 10800 1550
 Entry Wire Line
 	10700 1750 10800 1650
-Text Label 10600 1050 0    50   ~ 0
-D0
-Text Label 10600 1150 0    50   ~ 0
-D1
-Text Label 10600 1250 0    50   ~ 0
-D2
-Text Label 10600 1350 0    50   ~ 0
-D3
-Text Label 10600 1450 0    50   ~ 0
-D4
-Text Label 10600 1550 0    50   ~ 0
-D5
-Text Label 10600 1650 0    50   ~ 0
-D6
 Text Label 10600 1750 0    50   ~ 0
+D0
+Text Label 10600 1650 0    50   ~ 0
+D1
+Text Label 10600 1550 0    50   ~ 0
+D2
+Text Label 10600 1450 0    50   ~ 0
+D3
+Text Label 10600 1250 0    50   ~ 0
+D4
+Text Label 10600 1350 0    50   ~ 0
+D5
+Text Label 10600 1050 0    50   ~ 0
+D6
+Text Label 10600 1150 0    50   ~ 0
 D7
 Wire Wire Line
 	3000 1050 2900 1050
@@ -1613,9 +1611,9 @@ Wire Wire Line
 Wire Wire Line
 	9000 6300 9200 6300
 Wire Wire Line
-	10850 1050 10850 3400
+	10700 1750 10700 3400
 Wire Wire Line
-	10850 3400 9200 3400
+	10700 3400 9200 3400
 Wire Wire Line
 	9200 3400 9200 5300
 Wire Wire Line
@@ -1913,7 +1911,7 @@ Text Label 6000 6000 0    50   ~ 0
 A4
 Text Label 6000 5900 0    50   ~ 0
 A5
-Text Label 950  5900 2    50   ~ 0
+Text Label 950  6300 2    50   ~ 0
 A15
 $Comp
 L 74xx:74LS139 U10
@@ -2079,11 +2077,11 @@ Wire Wire Line
 	750  6300 950  6300
 Text Label 750  7400 0    50   ~ 0
 A13
-Text Label 950  5600 2    50   ~ 0
+Text Label 950  6100 2    50   ~ 0
 A12
-Text Label 950  6300 2    50   ~ 0
+Text Label 950  6000 2    50   ~ 0
 A11
-Text Label 950  5700 2    50   ~ 0
+Text Label 950  5900 2    50   ~ 0
 A10
 Entry Wire Line
 	650  5800 750  5900
@@ -2101,11 +2099,11 @@ Wire Wire Line
 	750  5800 950  5800
 Wire Wire Line
 	750  5900 950  5900
-Text Label 950  6200 2    50   ~ 0
-A9
 Text Label 950  5800 2    50   ~ 0
+A9
+Text Label 950  5700 2    50   ~ 0
 A8
-Text Label 950  6100 2    50   ~ 0
+Text Label 950  5600 2    50   ~ 0
 A7
 Text Label 6150 5400 2    50   ~ 0
 A6
@@ -2226,7 +2224,7 @@ Entry Wire Line
 	650  7300 750  7400
 Wire Wire Line
 	750  7400 950  7400
-Text Label 950  6000 2    50   ~ 0
+Text Label 950  6200 2    50   ~ 0
 A14
 Wire Wire Line
 	950  7100 950  7200
@@ -2882,7 +2880,9 @@ Wire Wire Line
 	2450 3150 2150 3150
 Connection ~ 2150 3150
 Wire Wire Line
-	10600 1050 10850 1050
+	10600 1050 10700 1050
+Wire Wire Line
+	10600 1750 10700 1750
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Bus Line

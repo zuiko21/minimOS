@@ -951,9 +951,9 @@ Entry Wire Line
 	10250 550  10350 650 
 Entry Wire Line
 	10350 550  10450 650 
-Text Label 10450 750  1    50   ~ 0
+Text Label 10650 750  1    50   ~ 0
 D6
-Text Label 10350 750  1    50   ~ 0
+Text Label 10550 750  1    50   ~ 0
 D7
 Wire Wire Line
 	4500 3000 6100 3000
@@ -1079,7 +1079,7 @@ Text Label 10550 3200 2    50   ~ 0
 UCDE
 Text Label 10850 3400 2    50   ~ 0
 UHDE
-Text Label 9900 1850 0    50   ~ 0
+Text Label 10550 1850 0    50   ~ 0
 INVERT
 Text Label 9950 3200 2    50   ~ 0
 LATCH
@@ -1091,7 +1091,7 @@ Wire Wire Line
 Wire Wire Line
 	10250 2200 10250 2000
 Wire Wire Line
-	9650 1750 9650 2200
+	9650 1800 9650 2200
 Wire Wire Line
 	9850 1700 9850 2200
 Wire Wire Line
@@ -1117,21 +1117,15 @@ Wire Wire Line
 Wire Wire Line
 	9850 1700 6700 1700
 Wire Wire Line
-	8650 1950 10350 1950
+	8650 1950 10300 1950
 Wire Wire Line
 	10550 2150 10550 2200
 Text Label 10950 5650 2    50   ~ 0
 RGB
-Text Label 10150 1750 2    50   ~ 0
-HIRES
-Wire Wire Line
-	9650 1750 10350 1750
 Wire Wire Line
 	6100 3000 6100 1850
 Wire Wire Line
-	6100 1850 10450 1850
-Wire Wire Line
-	10450 1850 10450 1750
+	6100 1850 10650 1850
 Entry Wire Line
 	10450 550  10550 650 
 Entry Wire Line
@@ -1148,11 +1142,11 @@ Wire Wire Line
 	10750 650  10750 750 
 Wire Wire Line
 	10850 650  10850 750 
-Text Label 10550 750  1    50   ~ 0
+Text Label 10450 750  1    50   ~ 0
 D5
-Text Label 10650 750  1    50   ~ 0
-D4
 Text Label 10750 750  1    50   ~ 0
+D4
+Text Label 10350 750  1    50   ~ 0
 D3
 Text Label 10850 750  1    50   ~ 0
 D2
@@ -1180,9 +1174,9 @@ F 3 "" H 11150 1250 50  0001 C CNN
 $EndComp
 Connection ~ 11150 1250
 Wire Wire Line
-	10550 2150 10350 2150
+	10550 2150 10300 2150
 Wire Wire Line
-	10350 2150 10350 1950
+	10300 2150 10300 1950
 $Comp
 L power:GND #PWR0156
 U 1 1 62596167
@@ -1742,36 +1736,36 @@ Wire Wire Line
 $Comp
 L 74xx:74LS139 U?
 U 1 1 62331A7A
-P 1300 6000
+P 1300 6800
 AR Path="/6310B9C7/62331A7A" Ref="U?"  Part="1" 
 AR Path="/60C42E7C/62331A7A" Ref="U529"  Part="1" 
-F 0 "U529" H 1300 6367 50  0000 C CNN
-F 1 "74HC139" H 1300 6250 50  0000 C CNN
-F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 1300 6000 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 1300 6000 50  0001 C CNN
-	1    1300 6000
-	1    0    0    -1  
+F 0 "U529" H 1300 6450 50  0000 C CNN
+F 1 "74HC139" H 1300 6350 50  0000 C CNN
+F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 1300 6800 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 1300 6800 50  0001 C CNN
+	1    1300 6800
+	-1   0    0    -1  
 $EndComp
 Text GLabel 800  6200 0    50   Input ~ 0
 ~IO8Q
-NoConn ~ 1800 6100
+NoConn ~ 1800 6000
 Entry Wire Line
-	600  5800 700  5900
-Text Label 700  5900 0    50   ~ 0
+	600  5900 700  6000
+Text Label 700  6000 0    50   ~ 0
 A3
 Wire Wire Line
-	700  5900 800  5900
+	700  6000 800  6000
 Wire Wire Line
 	1800 5900 2550 5900
 Text Label 2500 5900 2    50   ~ 0
 ~FLAGS
-Text GLabel 1800 6000 2    50   Input ~ 0
+Text GLabel 1800 6100 2    50   Input ~ 0
 ~STAT
 Text GLabel 1800 6200 2    50   Input ~ 0
 ~BLANK
 Wire Wire Line
 	3100 5550 3100 5700
-Text GLabel 600  5750 1    50   Input ~ 0
+Text GLabel 600  5850 1    50   Input ~ 0
 A[0..15]
 Connection ~ 10550 2200
 Connection ~ 9550 2200
@@ -1786,8 +1780,6 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS257" H 10250 2700 50  0001 C CNN
 	1    10250 2700
 	0    1    1    0   
 $EndComp
-Wire Wire Line
-	650  6000 800  6000
 $Comp
 L power:+5V #PWR0113
 U 1 1 6304A1B3
@@ -1799,8 +1791,6 @@ F 3 "" H 1800 6700 50  0001 C CNN
 	1    1800 6700
 	1    0    0    -1  
 $EndComp
-Text Label 700  6000 0    50   ~ 0
-R~W
 Wire Wire Line
 	5150 4850 5100 4850
 Wire Wire Line
@@ -1815,11 +1805,7 @@ SC0
 Text GLabel 10950 1950 2    50   Input ~ 0
 SC1
 Wire Wire Line
-	10650 1850 10650 1750
-Wire Wire Line
-	10950 1950 10550 1950
-Wire Wire Line
-	10550 1950 10550 1750
+	10950 1950 10450 1950
 Text Notes 2950 6950 0    50   ~ 0
 LOWER FOR INVERSE?
 $Comp
@@ -1836,12 +1822,10 @@ $EndComp
 Wire Wire Line
 	11150 1250 11150 2700
 Wire Wire Line
-	10950 1850 10650 1850
+	10950 1850 10750 1850
 Wire Wire Line
-	10250 2000 10750 2000
-Wire Wire Line
-	10750 2000 10750 1750
-Text Label 10400 2000 0    50   ~ 0
+	10250 2000 10350 2000
+Text Label 10350 2000 1    50   ~ 0
 COLOUR
 $Comp
 L Device:R R231
@@ -1918,15 +1902,15 @@ VIN
 $Comp
 L 74xx:74LS139 U?
 U 2 1 62331A80
-P 1300 6800
+P 1300 6000
 AR Path="/6310B9C7/62331A80" Ref="U?"  Part="2" 
 AR Path="/60C42E7C/62331A80" Ref="U529"  Part="2" 
-F 0 "U529" H 1300 6450 50  0000 C CNN
-F 1 "74HC139" H 1300 6350 50  0000 C CNN
-F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 1300 6800 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 1300 6800 50  0001 C CNN
-	2    1300 6800
-	-1   0    0    -1  
+F 0 "U529" H 1300 5650 50  0000 C CNN
+F 1 "74HC139" H 1300 5550 50  0000 C CNN
+F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 1300 6000 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS139" H 1300 6000 50  0001 C CNN
+	2    1300 6000
+	1    0    0    -1  
 $EndComp
 Wire Wire Line
 	1800 6700 1800 6800
@@ -2085,8 +2069,8 @@ Text Notes 8050 4950 0    50   ~ 0
 CLOSE TO Q5
 Connection ~ 1800 6700
 Wire Bus Line
-	600  5750 600  5800
-Text GLabel 650  6000 0    50   Input ~ 0
+	600  5850 600  5900
+Text GLabel 750  5900 1    50   Input ~ 0
 R~W
 Text Label 2900 4450 2    50   ~ 0
 EV~ODD
@@ -2304,6 +2288,20 @@ F 3 "~" H 8950 6100 50  0001 C CNN
 	1    8950 6100
 	0    -1   -1   0   
 $EndComp
+Wire Wire Line
+	10650 1850 10650 1750
+Wire Wire Line
+	10450 1950 10450 1750
+Wire Wire Line
+	10750 1850 10750 1750
+Wire Wire Line
+	10350 2000 10350 1750
+Wire Wire Line
+	9650 1800 10550 1800
+Wire Wire Line
+	10550 1800 10550 1750
+Wire Wire Line
+	750  5900 800  5900
 Wire Bus Line
 	8800 550  10750 550 
 Wire Bus Line

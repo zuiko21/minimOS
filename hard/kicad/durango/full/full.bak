@@ -404,8 +404,6 @@ Wire Wire Line
 	10600 1550 10700 1550
 Wire Wire Line
 	10600 1650 10700 1650
-Wire Wire Line
-	10700 1750 10600 1750
 Entry Wire Line
 	10700 1050 10800 950 
 Entry Wire Line
@@ -422,21 +420,21 @@ Entry Wire Line
 	10700 1650 10800 1550
 Entry Wire Line
 	10700 1750 10800 1650
-Text Label 10600 1050 0    50   ~ 0
-D0
-Text Label 10600 1150 0    50   ~ 0
-D1
-Text Label 10600 1250 0    50   ~ 0
-D2
-Text Label 10600 1350 0    50   ~ 0
-D3
-Text Label 10600 1450 0    50   ~ 0
-D4
-Text Label 10600 1550 0    50   ~ 0
-D5
-Text Label 10600 1650 0    50   ~ 0
-D6
 Text Label 10600 1750 0    50   ~ 0
+D0
+Text Label 10600 1650 0    50   ~ 0
+D1
+Text Label 10600 1550 0    50   ~ 0
+D2
+Text Label 10600 1450 0    50   ~ 0
+D3
+Text Label 10600 1250 0    50   ~ 0
+D4
+Text Label 10600 1350 0    50   ~ 0
+D5
+Text Label 10600 1050 0    50   ~ 0
+D6
+Text Label 10600 1150 0    50   ~ 0
 D7
 Wire Wire Line
 	3000 1050 2900 1050
@@ -1613,9 +1611,9 @@ Wire Wire Line
 Wire Wire Line
 	9000 6300 9200 6300
 Wire Wire Line
-	10850 1050 10850 3400
+	10700 1750 10700 3400
 Wire Wire Line
-	10850 3400 9200 3400
+	10700 3400 9200 3400
 Wire Wire Line
 	9200 3400 9200 5300
 Wire Wire Line
@@ -2882,7 +2880,9 @@ Wire Wire Line
 	2450 3150 2150 3150
 Connection ~ 2150 3150
 Wire Wire Line
-	10600 1050 10850 1050
+	10600 1050 10700 1050
+Wire Wire Line
+	10600 1750 10700 1750
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Bus Line
@@ -2917,4 +2917,5 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
+Connection ~ 11650 0   
 $EndSCHEMATC
