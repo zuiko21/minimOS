@@ -1,6 +1,6 @@
 ; Interrupt-based polyphonic player for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220505-1036
+; last modified 20220505-1103
 
 #include "../../OS/macros.h"
 #include "../../OS/zeropage.h"
@@ -16,28 +16,29 @@ IOBeep	= $DFB0
 
 ; *** zeropage ***
 .zero
-; will use system-defined sysprt -- for interrupts only!
+; will use system-defined sysptr -- for interrupts only!
 ; also systmp (plus adjacent sys_sp) for performance reasons
 
 ; *** input parameters ***
 .bss
 #ifdef	CHUNK
-*	= $5FF0
+*	= $5FE0
 #else
 *	= $300					; hopefully a safe address!
 #endif
 
-voices		.byt	0		; number of active voices (set 0 to disable and reset all channels)
-tempo		.byt	0		; tempo setting (number of 4ms interrupts between semiquavers, 31 means b=119)
 ; really needs pointers to note lists
-;pptarr		.dsb	2*MAXVOICE, 0	; 4 pointers to pitch lists
-;dptarr		.dsb	2*MAXVOICE, 0	; 4 pointers to duration lists
+pptarr		.dsb	2/Pingendo/pingendo/releases/download/v4.3.2/Pingendo-4.3.2-x86_64.AppImage*MAXVOICE, 0	; 4 pointers to pitch lists, $5FE0-$5FE7
+dptarr		.dsb	2*MAXVOICE, 0	; 4 pointers to duration lists, $5FE8-$5FEF
 
+; user parameters
+voices/Pingendo/pingendo/releases/download/v4.3.2/Pingendo-4.3.2-x86_64.AppImage		.byt	0		; $5FF0/$310 number of active voices (set 0 to disable and reset all channels)
+tempo		.byt	0		; $5FF1/$311 tempo setting (number of 4ms interrupts between semiquavers, 31 means b=119)
 
 ; *** local variables ***
-wait		.byt	0		; remaining interrupts to trigger play (countdown from tempo)
-index		.dsb	MAXVOICE, 0		; note position in its queue (from $0303)
-count		.dsb	MAXVOICE, 0		; remaining times to play this note
+wait		.byt	0		; $5FF2 remaining interrupts to trigger play (countdown from tempo)
+index		.dsb	MAXVOICE, 0		; $5FF3-$5FF6 note position in its queue (from $0303)
+count		.dsb	MAXVOICE, 0		; $5FF7-$5FFA remaining times to play this note
 
 ; *** installation code ***
 .text
@@ -54,7 +55,17 @@ count		.dsb	MAXVOICE, 0		; remaining times to play this note
 	SEI						; some critical section!
 	STY fw_isr				; set interrupt vector ** does NOT respect previous routines **
 	STA fw_isr+1
-; for demo purposes, set some test values
+; * for demo purposes, set some test values *
+; point to supplied lists
+	LDX #2*MAXVOICE-1		; max offset
+pt_load:
+		LDA o_pptarr, X		; copy supplied into RAM
+		STA pptarr, X
+		LDA o_dptarr, X		; could be integrated with above
+		STA dptarr, X
+		DEX
+		BPL pt_load
+; play parameters
 	LDA #31					; crotchet = 119
 	STA tempo
 	LDA #3					; number of voices
@@ -77,6 +88,12 @@ mp_isr:
 		LDA tempo
 		STA wait			; it's time to play, thus preset this counter for the next time
 		DEX					; make control arrays 0...voices-1
+; enable some microinterrupt in order to keep timing during play!
+		LDY #<u_isr			; points to a simple DEC wait
+		LDA #>u_isr
+		STY fw_isr			; set new vector!
+		STA fw_isr+1
+		CLI					; enable interrupts!
 ; voice routine (will try to index them)
 vloop:
 		LDA count, X		; note still active?
@@ -120,8 +137,8 @@ cont:
 cyloop:
 				TAX			; retrieve pitch cycles
 ploop:
-					DEX
-					JSR delay		; 12t extra
+					D/Pingendo/pingendo/releases/download/v4.3.2/Pingendo-4.3.2-x86_64.AppImageEX
+	/Pingendo/pingendo/releases/download/v4.3.2/Pingendo-4.3.2-x86_64.AppImage				JSR delay		; 12t extra
 					BNE ploop		; this takes (17X+10)t per semicycle (min ~177 Hz)
 				DEY
 				STY IOBeep	; toggle speaker 
@@ -133,7 +150,14 @@ vend:
 			DEC count, X	; one slot less remains (will check later)
 		DEX
 		BPL vloop			; next voice
-	BMI mp_exit				; this slot completed, do not reset anything
+; * all ended, must restore previous interrupt vector
+	LDY #<mp_isr			; standard routine
+	LDA #>mp_isr
+	SEI						; somewhat critical
+	STY fw_isr
+	STA fw_isr+1
+	CLI						; 6.5 uS of absence, while the IRQ pulse takes 13-15 uS seems OK
+	BRA mp_exit				; this slot completed, do not reset anything
 ; * exit player if no active voices remain! *
 mp_stop:
 	JSR restore				; to stop playing, all structures must be reset
@@ -160,13 +184,18 @@ res_loop:
 delay:
 	RTS
 
+; *** micro-interrupt handler for timing ***
+u_isr:
+	DEC wait				; no registers affected, total 19t is about one iteration of the playing loop
+	RTI
+
 ; *** list pointers *** should be at known RAM address
-pptarr:
+o_pptarr:
 	.word	c1p
 	.word	c2p
 	.word	c3p
 	.word	0
-dptarr:
+o_dptarr:
 	.word	c1d
 	.word	c2d
 	.word	c3d
