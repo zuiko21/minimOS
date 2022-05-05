@@ -1,6 +1,6 @@
 ; Interrupt-based polyphonic player for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220418-0036
+; last modified 20220505-1036
 
 #include "../../OS/macros.h"
 #include "../../OS/zeropage.h"
