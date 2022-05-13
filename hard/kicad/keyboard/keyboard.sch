@@ -1,0 +1,1614 @@
+EESchema Schematic File Version 4
+EELAYER 29 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title "Full ASCII keyboard for IOX interface"
+Date "2022-05-13"
+Rev ""
+Comp "@zuiko21"
+Comment1 "Spanish ISO layout"
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L Switch:SW_Push_45deg SW08
+U 1 1 627F131F
+P 1700 5300
+F 0 "SW08" H 1700 5581 50  0000 C CNN
+F 1 "º \\" H 1700 5490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 1700 5300 50  0001 C CNN
+F 3 "~" H 1700 5300 50  0001 C CNN
+	1    1700 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW18
+U 1 1 627F150C
+P 1950 5300
+F 0 "SW18" H 1950 5581 50  0000 C CNN
+F 1 "1" H 1950 5490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 1950 5300 50  0001 C CNN
+F 3 "~" H 1950 5300 50  0001 C CNN
+	1    1950 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW28
+U 1 1 627F1E36
+P 2200 5300
+F 0 "SW28" H 2200 5581 50  0000 C CNN
+F 1 "2" H 2200 5490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2200 5300 50  0001 C CNN
+F 3 "~" H 2200 5300 50  0001 C CNN
+	1    2200 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW38
+U 1 1 627F222D
+P 2450 5300
+F 0 "SW38" H 2450 5581 50  0000 C CNN
+F 1 "3" H 2450 5490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2450 5300 50  0001 C CNN
+F 3 "~" H 2450 5300 50  0001 C CNN
+	1    2450 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW48
+U 1 1 627F2B25
+P 2700 5300
+F 0 "SW48" H 2700 5581 50  0000 C CNN
+F 1 "4" H 2700 5490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2700 5300 50  0001 C CNN
+F 3 "~" H 2700 5300 50  0001 C CNN
+	1    2700 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW58
+U 1 1 627F2CB5
+P 2950 5300
+F 0 "SW58" H 2950 5581 50  0000 C CNN
+F 1 "5" H 2950 5490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2950 5300 50  0001 C CNN
+F 3 "~" H 2950 5300 50  0001 C CNN
+	1    2950 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW68
+U 1 1 627F2E7E
+P 3200 5300
+F 0 "SW68" H 3200 5581 50  0000 C CNN
+F 1 "6" H 3200 5490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 3200 5300 50  0001 C CNN
+F 3 "~" H 3200 5300 50  0001 C CNN
+	1    3200 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW78
+U 1 1 627F3251
+P 3450 5300
+F 0 "SW78" H 3450 5581 50  0000 C CNN
+F 1 "7" H 3450 5490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 3450 5300 50  0001 C CNN
+F 3 "~" H 3450 5300 50  0001 C CNN
+	1    3450 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW88
+U 1 1 627F4050
+P 3700 5300
+F 0 "SW88" H 3700 5581 50  0000 C CNN
+F 1 "8" H 3700 5490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 3700 5300 50  0001 C CNN
+F 3 "~" H 3700 5300 50  0001 C CNN
+	1    3700 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW98
+U 1 1 627F4267
+P 3950 5300
+F 0 "SW98" H 3950 5581 50  0000 C CNN
+F 1 "9" H 3950 5490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 3950 5300 50  0001 C CNN
+F 3 "~" H 3950 5300 50  0001 C CNN
+	1    3950 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWA8
+U 1 1 627F4498
+P 4200 5300
+F 0 "SWA8" H 4200 5581 50  0000 C CNN
+F 1 "0" H 4200 5490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 4200 5300 50  0001 C CNN
+F 3 "~" H 4200 5300 50  0001 C CNN
+	1    4200 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWB8
+U 1 1 627F4686
+P 4450 5300
+F 0 "SWB8" H 4450 5581 50  0000 C CNN
+F 1 "'" H 4450 5490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 4450 5300 50  0001 C CNN
+F 3 "~" H 4450 5300 50  0001 C CNN
+	1    4450 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWC8
+U 1 1 627F48EB
+P 4700 5300
+F 0 "SWC8" H 4700 5581 50  0000 C CNN
+F 1 "¡" H 4700 5490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 4700 5300 50  0001 C CNN
+F 3 "~" H 4700 5300 50  0001 C CNN
+	1    4700 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWD8
+U 1 1 627F4B6A
+P 4950 5300
+F 0 "SWD8" H 4950 5581 50  0000 C CNN
+F 1 "Up" H 4950 5490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 4950 5300 50  0001 C CNN
+F 3 "~" H 4950 5300 50  0001 C CNN
+	1    4950 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWE8
+U 1 1 627F4E03
+P 5200 5300
+F 0 "SWE8" H 5200 5581 50  0000 C CNN
+F 1 "Esc" H 5200 5490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 5200 5300 50  0001 C CNN
+F 3 "~" H 5200 5300 50  0001 C CNN
+	1    5200 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW04
+U 1 1 627F646F
+P 1700 5800
+F 0 "SW04" H 1700 6081 50  0000 C CNN
+F 1 "Tab" H 1700 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 1700 5800 50  0001 C CNN
+F 3 "~" H 1700 5800 50  0001 C CNN
+	1    1700 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW14
+U 1 1 627F6479
+P 1950 5800
+F 0 "SW14" H 1950 6081 50  0000 C CNN
+F 1 "Q" H 1950 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 1950 5800 50  0001 C CNN
+F 3 "~" H 1950 5800 50  0001 C CNN
+	1    1950 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW24
+U 1 1 627F6483
+P 2200 5800
+F 0 "SW24" H 2200 6081 50  0000 C CNN
+F 1 "W" H 2200 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2200 5800 50  0001 C CNN
+F 3 "~" H 2200 5800 50  0001 C CNN
+	1    2200 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW34
+U 1 1 627F648D
+P 2450 5800
+F 0 "SW34" H 2450 6081 50  0000 C CNN
+F 1 "E" H 2450 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2450 5800 50  0001 C CNN
+F 3 "~" H 2450 5800 50  0001 C CNN
+	1    2450 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW44
+U 1 1 627F6497
+P 2700 5800
+F 0 "SW44" H 2700 6081 50  0000 C CNN
+F 1 "R" H 2700 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2700 5800 50  0001 C CNN
+F 3 "~" H 2700 5800 50  0001 C CNN
+	1    2700 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW54
+U 1 1 627F64A1
+P 2950 5800
+F 0 "SW54" H 2950 6081 50  0000 C CNN
+F 1 "T" H 2950 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2950 5800 50  0001 C CNN
+F 3 "~" H 2950 5800 50  0001 C CNN
+	1    2950 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW64
+U 1 1 627F64AB
+P 3200 5800
+F 0 "SW64" H 3200 6081 50  0000 C CNN
+F 1 "Y" H 3200 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 3200 5800 50  0001 C CNN
+F 3 "~" H 3200 5800 50  0001 C CNN
+	1    3200 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW74
+U 1 1 627F64B5
+P 3450 5800
+F 0 "SW74" H 3450 6081 50  0000 C CNN
+F 1 "U" H 3450 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 3450 5800 50  0001 C CNN
+F 3 "~" H 3450 5800 50  0001 C CNN
+	1    3450 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW84
+U 1 1 627F64BF
+P 3700 5800
+F 0 "SW84" H 3700 6081 50  0000 C CNN
+F 1 "I" H 3700 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 3700 5800 50  0001 C CNN
+F 3 "~" H 3700 5800 50  0001 C CNN
+	1    3700 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW94
+U 1 1 627F64C9
+P 3950 5800
+F 0 "SW94" H 3950 6081 50  0000 C CNN
+F 1 "O" H 3950 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 3950 5800 50  0001 C CNN
+F 3 "~" H 3950 5800 50  0001 C CNN
+	1    3950 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWA4
+U 1 1 627F64D3
+P 4200 5800
+F 0 "SWA4" H 4200 6081 50  0000 C CNN
+F 1 "P" H 4200 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 4200 5800 50  0001 C CNN
+F 3 "~" H 4200 5800 50  0001 C CNN
+	1    4200 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWB4
+U 1 1 627F64DD
+P 4450 5800
+F 0 "SWB4" H 4450 6081 50  0000 C CNN
+F 1 "`" H 4450 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 4450 5800 50  0001 C CNN
+F 3 "~" H 4450 5800 50  0001 C CNN
+	1    4450 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWC4
+U 1 1 627F64E7
+P 4700 5800
+F 0 "SWC4" H 4700 6081 50  0000 C CNN
+F 1 "+" H 4700 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 4700 5800 50  0001 C CNN
+F 3 "~" H 4700 5800 50  0001 C CNN
+	1    4700 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWD4
+U 1 1 627F64F1
+P 4950 5800
+F 0 "SWD4" H 4950 6081 50  0000 C CNN
+F 1 "Left" H 4950 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 4950 5800 50  0001 C CNN
+F 3 "~" H 4950 5800 50  0001 C CNN
+	1    4950 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWE4
+U 1 1 627F64FB
+P 5200 5800
+F 0 "SWE4" H 5200 6081 50  0000 C CNN
+F 1 "Del" H 5200 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 5200 5800 50  0001 C CNN
+F 3 "~" H 5200 5800 50  0001 C CNN
+	1    5200 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW02
+U 1 1 6283A2BD
+P 1700 6300
+F 0 "SW02" H 1700 6581 50  0000 C CNN
+F 1 "<" H 1700 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 1700 6300 50  0001 C CNN
+F 3 "~" H 1700 6300 50  0001 C CNN
+	1    1700 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW12
+U 1 1 6283A2C7
+P 1950 6300
+F 0 "SW12" H 1950 6581 50  0000 C CNN
+F 1 "A" H 1950 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 1950 6300 50  0001 C CNN
+F 3 "~" H 1950 6300 50  0001 C CNN
+	1    1950 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW22
+U 1 1 6283A2D1
+P 2200 6300
+F 0 "SW22" H 2200 6581 50  0000 C CNN
+F 1 "S" H 2200 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2200 6300 50  0001 C CNN
+F 3 "~" H 2200 6300 50  0001 C CNN
+	1    2200 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW32
+U 1 1 6283A2DB
+P 2450 6300
+F 0 "SW32" H 2450 6581 50  0000 C CNN
+F 1 "D" H 2450 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2450 6300 50  0001 C CNN
+F 3 "~" H 2450 6300 50  0001 C CNN
+	1    2450 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW42
+U 1 1 6283A2E5
+P 2700 6300
+F 0 "SW42" H 2700 6581 50  0000 C CNN
+F 1 "F" H 2700 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2700 6300 50  0001 C CNN
+F 3 "~" H 2700 6300 50  0001 C CNN
+	1    2700 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW52
+U 1 1 6283A2EF
+P 2950 6300
+F 0 "SW52" H 2950 6581 50  0000 C CNN
+F 1 "G" H 2950 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2950 6300 50  0001 C CNN
+F 3 "~" H 2950 6300 50  0001 C CNN
+	1    2950 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW62
+U 1 1 6283A2F9
+P 3200 6300
+F 0 "SW62" H 3200 6581 50  0000 C CNN
+F 1 "H" H 3200 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 3200 6300 50  0001 C CNN
+F 3 "~" H 3200 6300 50  0001 C CNN
+	1    3200 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW72
+U 1 1 6283A303
+P 3450 6300
+F 0 "SW72" H 3450 6581 50  0000 C CNN
+F 1 "J" H 3450 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 3450 6300 50  0001 C CNN
+F 3 "~" H 3450 6300 50  0001 C CNN
+	1    3450 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW82
+U 1 1 6283A30D
+P 3700 6300
+F 0 "SW82" H 3700 6581 50  0000 C CNN
+F 1 "K" H 3700 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 3700 6300 50  0001 C CNN
+F 3 "~" H 3700 6300 50  0001 C CNN
+	1    3700 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW92
+U 1 1 6283A317
+P 3950 6300
+F 0 "SW92" H 3950 6581 50  0000 C CNN
+F 1 "L" H 3950 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 3950 6300 50  0001 C CNN
+F 3 "~" H 3950 6300 50  0001 C CNN
+	1    3950 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWA2
+U 1 1 6283A321
+P 4200 6300
+F 0 "SWA2" H 4200 6581 50  0000 C CNN
+F 1 "Ñ" H 4200 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 4200 6300 50  0001 C CNN
+F 3 "~" H 4200 6300 50  0001 C CNN
+	1    4200 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWB2
+U 1 1 6283A32B
+P 4450 6300
+F 0 "SWB2" H 4450 6581 50  0000 C CNN
+F 1 "´" H 4450 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 4450 6300 50  0001 C CNN
+F 3 "~" H 4450 6300 50  0001 C CNN
+	1    4450 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWC2
+U 1 1 6283A335
+P 4700 6300
+F 0 "SWC2" H 4700 6581 50  0000 C CNN
+F 1 "Ç" H 4700 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 4700 6300 50  0001 C CNN
+F 3 "~" H 4700 6300 50  0001 C CNN
+	1    4700 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWD2
+U 1 1 6283A33F
+P 4950 6300
+F 0 "SWD2" H 4950 6581 50  0000 C CNN
+F 1 "Down" H 4950 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 4950 6300 50  0001 C CNN
+F 3 "~" H 4950 6300 50  0001 C CNN
+	1    4950 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWE2
+U 1 1 6283A349
+P 5200 6300
+F 0 "SWE2" H 5200 6581 50  0000 C CNN
+F 1 "PgUp" H 5200 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 5200 6300 50  0001 C CNN
+F 3 "~" H 5200 6300 50  0001 C CNN
+	1    5200 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW01
+U 1 1 6283A35D
+P 1700 6800
+F 0 "SW01" H 1700 7081 50  0000 C CNN
+F 1 "Space" H 1700 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 1700 6800 50  0001 C CNN
+F 3 "~" H 1700 6800 50  0001 C CNN
+	1    1700 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW11
+U 1 1 6283A367
+P 1950 6800
+F 0 "SW11" H 1950 7081 50  0000 C CNN
+F 1 "Z" H 1950 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 1950 6800 50  0001 C CNN
+F 3 "~" H 1950 6800 50  0001 C CNN
+	1    1950 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW21
+U 1 1 6283A371
+P 2200 6800
+F 0 "SW21" H 2200 7081 50  0000 C CNN
+F 1 "X" H 2200 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2200 6800 50  0001 C CNN
+F 3 "~" H 2200 6800 50  0001 C CNN
+	1    2200 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW31
+U 1 1 6283A37B
+P 2450 6800
+F 0 "SW31" H 2450 7081 50  0000 C CNN
+F 1 "C" H 2450 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2450 6800 50  0001 C CNN
+F 3 "~" H 2450 6800 50  0001 C CNN
+	1    2450 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW41
+U 1 1 6283A385
+P 2700 6800
+F 0 "SW41" H 2700 7081 50  0000 C CNN
+F 1 "V" H 2700 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2700 6800 50  0001 C CNN
+F 3 "~" H 2700 6800 50  0001 C CNN
+	1    2700 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW51
+U 1 1 6283A38F
+P 2950 6800
+F 0 "SW51" H 2950 7081 50  0000 C CNN
+F 1 "B" H 2950 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2950 6800 50  0001 C CNN
+F 3 "~" H 2950 6800 50  0001 C CNN
+	1    2950 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW61
+U 1 1 6283A399
+P 3200 6800
+F 0 "SW61" H 3200 7081 50  0000 C CNN
+F 1 "N" H 3200 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 3200 6800 50  0001 C CNN
+F 3 "~" H 3200 6800 50  0001 C CNN
+	1    3200 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW71
+U 1 1 6283A3A3
+P 3450 6800
+F 0 "SW71" H 3450 7081 50  0000 C CNN
+F 1 "M" H 3450 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 3450 6800 50  0001 C CNN
+F 3 "~" H 3450 6800 50  0001 C CNN
+	1    3450 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW81
+U 1 1 6283A3AD
+P 3700 6800
+F 0 "SW81" H 3700 7081 50  0000 C CNN
+F 1 "," H 3700 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 3700 6800 50  0001 C CNN
+F 3 "~" H 3700 6800 50  0001 C CNN
+	1    3700 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW91
+U 1 1 6283A3B7
+P 3950 6800
+F 0 "SW91" H 3950 7081 50  0000 C CNN
+F 1 "." H 3950 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 3950 6800 50  0001 C CNN
+F 3 "~" H 3950 6800 50  0001 C CNN
+	1    3950 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWA1
+U 1 1 6283A3C1
+P 4200 6800
+F 0 "SWA1" H 4200 7081 50  0000 C CNN
+F 1 "-" H 4200 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 4200 6800 50  0001 C CNN
+F 3 "~" H 4200 6800 50  0001 C CNN
+	1    4200 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWB1
+U 1 1 6283A3CB
+P 4450 6800
+F 0 "SWB1" H 4450 7081 50  0000 C CNN
+F 1 "BkSp" H 4450 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 4450 6800 50  0001 C CNN
+F 3 "~" H 4450 6800 50  0001 C CNN
+	1    4450 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWC1
+U 1 1 6283A3D5
+P 4700 6800
+F 0 "SWC1" H 4700 7081 50  0000 C CNN
+F 1 "Return" H 4700 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 4700 6800 50  0001 C CNN
+F 3 "~" H 4700 6800 50  0001 C CNN
+	1    4700 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWD1
+U 1 1 6283A3DF
+P 4950 6800
+F 0 "SWD1" H 4950 7081 50  0000 C CNN
+F 1 "Right" H 4950 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 4950 6800 50  0001 C CNN
+F 3 "~" H 4950 6800 50  0001 C CNN
+	1    4950 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWE1
+U 1 1 6283A3E9
+P 5200 6800
+F 0 "SWE1" H 5200 7081 50  0000 C CNN
+F 1 "PgDn" H 5200 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 5200 6800 50  0001 C CNN
+F 3 "~" H 5200 6800 50  0001 C CNN
+	1    5200 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW101
+U 1 1 6284FFF2
+P 1400 6800
+F 0 "SW101" H 1400 7081 50  0000 C CNN
+F 1 "Space" H 1400 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 1400 6800 50  0001 C CNN
+F 3 "~" H 1400 6800 50  0001 C CNN
+	1    1400 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW201
+U 1 1 62850B6A
+P 1100 6800
+F 0 "SW201" H 1100 7081 50  0000 C CNN
+F 1 "Space" H 1100 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 1100 6800 50  0001 C CNN
+F 3 "~" H 1100 6800 50  0001 C CNN
+	1    1100 6800
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1000 6700 1300 6700
+Connection ~ 1300 6700
+Wire Wire Line
+	1300 6700 1600 6700
+Wire Wire Line
+	1600 5200 1600 5700
+Connection ~ 1600 6700
+Connection ~ 1600 5700
+Wire Wire Line
+	1600 5700 1600 6200
+Connection ~ 1600 6200
+Wire Wire Line
+	1600 6200 1600 6700
+Wire Wire Line
+	1850 6700 1850 6200
+Connection ~ 1850 5700
+Wire Wire Line
+	1850 5700 1850 5200
+Connection ~ 1850 6200
+Wire Wire Line
+	1850 6200 1850 5700
+Wire Wire Line
+	2100 5200 2100 5700
+Connection ~ 2100 5700
+Wire Wire Line
+	2100 5700 2100 6200
+Connection ~ 2100 6200
+Wire Wire Line
+	2100 6200 2100 6700
+Wire Wire Line
+	2350 5200 2350 5700
+Connection ~ 2350 5700
+Wire Wire Line
+	2350 5700 2350 6200
+Connection ~ 2350 6200
+Wire Wire Line
+	2350 6200 2350 6700
+Wire Wire Line
+	2600 5200 2600 5700
+Connection ~ 2600 5700
+Wire Wire Line
+	2600 5700 2600 6200
+Connection ~ 2600 6200
+Wire Wire Line
+	2600 6200 2600 6700
+Wire Wire Line
+	2850 5200 2850 5700
+Connection ~ 2850 5700
+Wire Wire Line
+	2850 5700 2850 6200
+Connection ~ 2850 6200
+Wire Wire Line
+	2850 6200 2850 6700
+Wire Wire Line
+	3100 5200 3100 5700
+Connection ~ 3100 5700
+Wire Wire Line
+	3100 5700 3100 6200
+Connection ~ 3100 6200
+Wire Wire Line
+	3100 6200 3100 6700
+Wire Wire Line
+	3350 5200 3350 5700
+Connection ~ 3350 5700
+Wire Wire Line
+	3350 5700 3350 6200
+Connection ~ 3350 6200
+Wire Wire Line
+	3350 6200 3350 6700
+Wire Wire Line
+	3600 5200 3600 5700
+Connection ~ 3600 5700
+Wire Wire Line
+	3600 5700 3600 6200
+Connection ~ 3600 6200
+Wire Wire Line
+	3600 6200 3600 6700
+Wire Wire Line
+	3850 5200 3850 5700
+Connection ~ 3850 5700
+Wire Wire Line
+	3850 5700 3850 6200
+Connection ~ 3850 6200
+Wire Wire Line
+	3850 6200 3850 6700
+Wire Wire Line
+	4100 5200 4100 5700
+Connection ~ 4100 5700
+Wire Wire Line
+	4100 5700 4100 6200
+Connection ~ 4100 6200
+Wire Wire Line
+	4100 6200 4100 6700
+Wire Wire Line
+	4350 5200 4350 5700
+Connection ~ 4350 5700
+Wire Wire Line
+	4350 5700 4350 6200
+Connection ~ 4350 6200
+Wire Wire Line
+	4350 6200 4350 6700
+Wire Wire Line
+	4600 5200 4600 5700
+Connection ~ 4600 5700
+Wire Wire Line
+	4600 5700 4600 6200
+Connection ~ 4600 6200
+Wire Wire Line
+	4600 6200 4600 6700
+Wire Wire Line
+	4850 5200 4850 5700
+Connection ~ 4850 5700
+Wire Wire Line
+	4850 5700 4850 6200
+Connection ~ 4850 6200
+Wire Wire Line
+	4850 6200 4850 6700
+Wire Wire Line
+	5100 5200 5100 5700
+Connection ~ 5100 5700
+Wire Wire Line
+	5100 5700 5100 6200
+Connection ~ 5100 6200
+Wire Wire Line
+	5100 6200 5100 6700
+Wire Wire Line
+	1200 6900 1500 6900
+Connection ~ 1500 6900
+Wire Wire Line
+	1500 6900 1800 6900
+Connection ~ 1800 6900
+Wire Wire Line
+	1800 6900 2050 6900
+Connection ~ 2050 6900
+Wire Wire Line
+	2050 6900 2300 6900
+Connection ~ 2300 6900
+Wire Wire Line
+	2300 6900 2550 6900
+Connection ~ 2550 6900
+Wire Wire Line
+	2550 6900 2800 6900
+Connection ~ 2800 6900
+Wire Wire Line
+	2800 6900 3050 6900
+Connection ~ 3050 6900
+Wire Wire Line
+	3050 6900 3300 6900
+Connection ~ 3300 6900
+Wire Wire Line
+	3300 6900 3550 6900
+Connection ~ 3550 6900
+Wire Wire Line
+	3550 6900 3800 6900
+Connection ~ 3800 6900
+Wire Wire Line
+	3800 6900 4050 6900
+Connection ~ 4050 6900
+Wire Wire Line
+	4050 6900 4300 6900
+Connection ~ 4300 6900
+Wire Wire Line
+	4300 6900 4550 6900
+Connection ~ 4550 6900
+Wire Wire Line
+	4550 6900 4800 6900
+Connection ~ 4800 6900
+Wire Wire Line
+	4800 6900 5050 6900
+Connection ~ 5050 6900
+Wire Wire Line
+	5050 6900 5300 6900
+Wire Wire Line
+	1800 6400 2050 6400
+Connection ~ 2050 6400
+Wire Wire Line
+	2050 6400 2300 6400
+Connection ~ 2300 6400
+Wire Wire Line
+	2300 6400 2550 6400
+Connection ~ 2550 6400
+Wire Wire Line
+	2550 6400 2800 6400
+Connection ~ 2800 6400
+Wire Wire Line
+	2800 6400 3050 6400
+Connection ~ 3050 6400
+Wire Wire Line
+	3050 6400 3300 6400
+Connection ~ 3300 6400
+Wire Wire Line
+	3300 6400 3550 6400
+Connection ~ 3550 6400
+Wire Wire Line
+	3550 6400 3800 6400
+Connection ~ 3800 6400
+Wire Wire Line
+	3800 6400 4050 6400
+Connection ~ 4050 6400
+Wire Wire Line
+	4050 6400 4300 6400
+Connection ~ 4300 6400
+Wire Wire Line
+	4300 6400 4550 6400
+Connection ~ 4550 6400
+Wire Wire Line
+	4550 6400 4800 6400
+Connection ~ 4800 6400
+Wire Wire Line
+	4800 6400 5050 6400
+Connection ~ 5050 6400
+Wire Wire Line
+	5050 6400 5300 6400
+Wire Wire Line
+	1800 5900 2050 5900
+Connection ~ 2050 5900
+Wire Wire Line
+	2050 5900 2300 5900
+Connection ~ 2300 5900
+Wire Wire Line
+	2300 5900 2550 5900
+Connection ~ 2550 5900
+Wire Wire Line
+	2550 5900 2800 5900
+Connection ~ 2800 5900
+Wire Wire Line
+	2800 5900 3050 5900
+Connection ~ 3050 5900
+Wire Wire Line
+	3050 5900 3300 5900
+Connection ~ 3300 5900
+Wire Wire Line
+	3300 5900 3550 5900
+Connection ~ 3550 5900
+Wire Wire Line
+	3550 5900 3800 5900
+Connection ~ 3800 5900
+Wire Wire Line
+	3800 5900 4050 5900
+Connection ~ 4050 5900
+Wire Wire Line
+	4050 5900 4300 5900
+Connection ~ 4300 5900
+Wire Wire Line
+	4300 5900 4550 5900
+Connection ~ 4550 5900
+Wire Wire Line
+	4550 5900 4800 5900
+Connection ~ 4800 5900
+Wire Wire Line
+	4800 5900 5050 5900
+Connection ~ 5050 5900
+Wire Wire Line
+	5050 5900 5300 5900
+Wire Wire Line
+	1800 5400 2050 5400
+Connection ~ 2050 5400
+Wire Wire Line
+	2050 5400 2300 5400
+Connection ~ 2300 5400
+Wire Wire Line
+	2300 5400 2550 5400
+Connection ~ 2550 5400
+Wire Wire Line
+	2550 5400 2800 5400
+Connection ~ 2800 5400
+Wire Wire Line
+	2800 5400 3050 5400
+Connection ~ 3050 5400
+Wire Wire Line
+	3050 5400 3300 5400
+Connection ~ 3300 5400
+Wire Wire Line
+	3300 5400 3550 5400
+Connection ~ 3550 5400
+Wire Wire Line
+	3550 5400 3800 5400
+Connection ~ 3800 5400
+Wire Wire Line
+	3800 5400 4050 5400
+Connection ~ 4050 5400
+Wire Wire Line
+	4050 5400 4300 5400
+Connection ~ 4300 5400
+Wire Wire Line
+	4300 5400 4550 5400
+Connection ~ 4550 5400
+Wire Wire Line
+	4550 5400 4800 5400
+Connection ~ 4800 5400
+Wire Wire Line
+	4800 5400 5050 5400
+Connection ~ 5050 5400
+Wire Wire Line
+	5050 5400 5300 5400
+$Comp
+L 74xx:74LS154 U1
+U 1 1 6287490D
+P 3500 3750
+F 0 "U1" V 3454 2606 50  0000 R CNN
+F 1 "74HC154" V 3545 2606 50  0000 R CNN
+F 2 "Package_DIP:DIP-24_W7.62mm_Socket" H 3500 3750 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS154" H 3500 3750 50  0001 C CNN
+	1    3500 3750
+	0    -1   1    0   
+$EndComp
+$Comp
+L Device:D D0
+U 1 1 6287AA87
+P 1600 4800
+F 0 "D0" V 1700 4800 50  0000 L CNN
+F 1 "1N4148" H 1400 4700 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 1600 4800 50  0001 C CNN
+F 3 "~" H 1600 4800 50  0001 C CNN
+	1    1600 4800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:D D1
+U 1 1 62881456
+P 1850 4800
+F 0 "D1" V 1950 4800 50  0000 L CNN
+F 1 "1N4148" H 1650 4700 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 1850 4800 50  0001 C CNN
+F 3 "~" H 1850 4800 50  0001 C CNN
+	1    1850 4800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:D D2
+U 1 1 628821E7
+P 2100 4800
+F 0 "D2" V 2200 4800 50  0000 L CNN
+F 1 "1N4148" H 1900 4700 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 2100 4800 50  0001 C CNN
+F 3 "~" H 2100 4800 50  0001 C CNN
+	1    2100 4800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:D D3
+U 1 1 628825A3
+P 2350 4800
+F 0 "D3" V 2450 4800 50  0000 L CNN
+F 1 "1N4148" H 2150 4700 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 2350 4800 50  0001 C CNN
+F 3 "~" H 2350 4800 50  0001 C CNN
+	1    2350 4800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:D D4
+U 1 1 62882AA4
+P 2600 4800
+F 0 "D4" V 2700 4800 50  0000 L CNN
+F 1 "1N4148" H 2400 4700 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 2600 4800 50  0001 C CNN
+F 3 "~" H 2600 4800 50  0001 C CNN
+	1    2600 4800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:D D5
+U 1 1 62882E2E
+P 2850 4800
+F 0 "D5" V 2950 4800 50  0000 L CNN
+F 1 "1N4148" H 2650 4700 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 2850 4800 50  0001 C CNN
+F 3 "~" H 2850 4800 50  0001 C CNN
+	1    2850 4800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:D D6
+U 1 1 628831B8
+P 3100 4800
+F 0 "D6" V 3200 4800 50  0000 L CNN
+F 1 "1N4148" H 2900 4700 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 3100 4800 50  0001 C CNN
+F 3 "~" H 3100 4800 50  0001 C CNN
+	1    3100 4800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:D D7
+U 1 1 62883704
+P 3350 4800
+F 0 "D7" V 3450 4800 50  0000 L CNN
+F 1 "1N4148" H 3150 4700 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 3350 4800 50  0001 C CNN
+F 3 "~" H 3350 4800 50  0001 C CNN
+	1    3350 4800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:D D8
+U 1 1 62883BD3
+P 3600 4800
+F 0 "D8" V 3700 4800 50  0000 L CNN
+F 1 "1N4148" H 3400 4700 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 3600 4800 50  0001 C CNN
+F 3 "~" H 3600 4800 50  0001 C CNN
+	1    3600 4800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:D D9
+U 1 1 62884057
+P 3850 4800
+F 0 "D9" V 3950 4800 50  0000 L CNN
+F 1 "1N4148" H 3650 4700 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 3850 4800 50  0001 C CNN
+F 3 "~" H 3850 4800 50  0001 C CNN
+	1    3850 4800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:D D10
+U 1 1 6288429C
+P 4100 4800
+F 0 "D10" V 4200 4800 50  0000 L CNN
+F 1 "1N4148" H 3900 4700 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 4100 4800 50  0001 C CNN
+F 3 "~" H 4100 4800 50  0001 C CNN
+	1    4100 4800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:D D11
+U 1 1 62884626
+P 4350 4800
+F 0 "D11" V 4450 4800 50  0000 L CNN
+F 1 "1N4148" H 4100 4700 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 4350 4800 50  0001 C CNN
+F 3 "~" H 4350 4800 50  0001 C CNN
+	1    4350 4800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:D D12
+U 1 1 62884C5F
+P 4600 4800
+F 0 "D12" V 4700 4800 50  0000 L CNN
+F 1 "1N4148" H 4350 4700 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 4600 4800 50  0001 C CNN
+F 3 "~" H 4600 4800 50  0001 C CNN
+	1    4600 4800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:D D13
+U 1 1 62884F3A
+P 4850 4800
+F 0 "D13" V 4950 4800 50  0000 L CNN
+F 1 "1N4148" H 4600 4700 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 4850 4800 50  0001 C CNN
+F 3 "~" H 4850 4800 50  0001 C CNN
+	1    4850 4800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:D D14
+U 1 1 628852AB
+P 5100 4800
+F 0 "D14" V 5200 4800 50  0000 L CNN
+F 1 "1N4148" H 4850 4700 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 5100 4800 50  0001 C CNN
+F 3 "~" H 5100 4800 50  0001 C CNN
+	1    5100 4800
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	1600 4950 1600 5200
+Connection ~ 1600 5200
+Wire Wire Line
+	1850 4950 1850 5200
+Connection ~ 1850 5200
+Wire Wire Line
+	2100 4950 2100 5200
+Connection ~ 2100 5200
+Wire Wire Line
+	2350 4950 2350 5200
+Connection ~ 2350 5200
+Wire Wire Line
+	2600 4950 2600 5200
+Connection ~ 2600 5200
+Wire Wire Line
+	2850 4950 2850 5200
+Connection ~ 2850 5200
+Wire Wire Line
+	3100 4950 3100 5200
+Connection ~ 3100 5200
+Wire Wire Line
+	3350 4950 3350 5200
+Connection ~ 3350 5200
+Wire Wire Line
+	3600 4950 3600 5200
+Connection ~ 3600 5200
+Wire Wire Line
+	3850 4950 3850 5200
+Connection ~ 3850 5200
+Wire Wire Line
+	4100 4950 4100 5200
+Connection ~ 4100 5200
+Wire Wire Line
+	4350 4950 4350 5200
+Connection ~ 4350 5200
+Wire Wire Line
+	4600 4950 4600 5200
+Connection ~ 4600 5200
+Wire Wire Line
+	4850 4950 4850 5200
+Connection ~ 4850 5200
+Wire Wire Line
+	5100 4950 5100 5200
+Connection ~ 5100 5200
+Wire Wire Line
+	3600 4650 3600 4250
+Wire Wire Line
+	3500 4250 3500 4600
+Wire Wire Line
+	3500 4600 3350 4600
+Wire Wire Line
+	3350 4600 3350 4650
+Wire Wire Line
+	3400 4250 3400 4550
+Wire Wire Line
+	3400 4550 3100 4550
+Wire Wire Line
+	3100 4550 3100 4650
+Wire Wire Line
+	3300 4250 3300 4500
+Wire Wire Line
+	3300 4500 2850 4500
+Wire Wire Line
+	2850 4500 2850 4650
+Wire Wire Line
+	3200 4250 3200 4450
+Wire Wire Line
+	3200 4450 2600 4450
+Wire Wire Line
+	2600 4450 2600 4650
+Wire Wire Line
+	3100 4250 3100 4400
+Wire Wire Line
+	3100 4400 2350 4400
+Wire Wire Line
+	2350 4400 2350 4650
+Wire Wire Line
+	3000 4250 3000 4350
+Wire Wire Line
+	3000 4350 2100 4350
+Wire Wire Line
+	2100 4350 2100 4650
+Wire Wire Line
+	2900 4250 2900 4300
+Wire Wire Line
+	2900 4300 1850 4300
+Wire Wire Line
+	1850 4300 1850 4650
+Wire Wire Line
+	2800 4250 1600 4250
+Wire Wire Line
+	1600 4250 1600 4650
+Wire Wire Line
+	3700 4250 3700 4600
+Wire Wire Line
+	3700 4600 3850 4600
+Wire Wire Line
+	3850 4600 3850 4650
+Wire Wire Line
+	3800 4250 3800 4550
+Wire Wire Line
+	3800 4550 4100 4550
+Wire Wire Line
+	4100 4550 4100 4650
+Wire Wire Line
+	3900 4250 3900 4500
+Wire Wire Line
+	3900 4500 4350 4500
+Wire Wire Line
+	4350 4500 4350 4650
+Wire Wire Line
+	4000 4250 4000 4450
+Wire Wire Line
+	4000 4450 4600 4450
+Wire Wire Line
+	4600 4450 4600 4650
+Wire Wire Line
+	4100 4250 4100 4400
+Wire Wire Line
+	4100 4400 4850 4400
+Wire Wire Line
+	4850 4400 4850 4650
+Wire Wire Line
+	4200 4250 4200 4350
+Wire Wire Line
+	4200 4350 5100 4350
+Wire Wire Line
+	5100 4350 5100 4650
+Text Label 1600 4600 1    50   ~ 0
+~COL0
+Text Label 1850 4600 1    50   ~ 0
+~COL1
+Text Label 2100 4600 1    50   ~ 0
+~COL2
+Text Label 2350 4600 1    50   ~ 0
+~COL3
+Text Label 2600 4600 1    50   ~ 0
+~COL4
+Text Label 3300 4500 1    50   ~ 0
+~COL5
+Text Label 3400 4500 1    50   ~ 0
+~COL6
+Text Label 3500 4500 1    50   ~ 0
+~COL7
+Text Label 3600 4500 1    50   ~ 0
+~COL8
+Text Label 3700 4500 1    50   ~ 0
+~COL9
+Text Label 3800 4500 1    50   ~ 0
+~COLA
+Text Label 3900 4500 1    50   ~ 0
+~COLB
+Text Label 4600 4600 1    50   ~ 0
+~COLC
+Text Label 4850 4600 1    50   ~ 0
+~COLD
+Text Label 5100 4600 1    50   ~ 0
+~COLE
+$Comp
+L Device:R_Network04 RN1
+U 1 1 6299424F
+P 1050 5150
+F 0 "RN1" H 770 5196 50  0000 R CNN
+F 1 "4K7" H 770 5105 50  0000 R CNN
+F 2 "Resistor_THT:R_Array_SIP5" V 1325 5150 50  0001 C CNN
+F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 1050 5150 50  0001 C CNN
+	1    1050 5150
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	1250 5350 1250 5400
+Wire Wire Line
+	1250 5400 1800 5400
+Connection ~ 1800 5400
+Wire Wire Line
+	1150 5350 1150 5900
+Wire Wire Line
+	1150 5900 1800 5900
+Connection ~ 1800 5900
+Wire Wire Line
+	1050 5350 1050 6400
+Wire Wire Line
+	1050 6400 1800 6400
+Connection ~ 1800 6400
+Wire Wire Line
+	1200 6900 950  6900
+Wire Wire Line
+	950  6900 950  5350
+Connection ~ 1200 6900
+Text Label 1350 5400 0    50   ~ 0
+~ROW8
+Text Label 1350 5900 0    50   ~ 0
+~ROW4
+Text Label 1350 6400 0    50   ~ 0
+~ROW2
+Text Label 950  6900 1    50   ~ 0
+~ROW1
+Connection ~ 5300 5400
+Connection ~ 5300 5900
+Connection ~ 5300 6400
+Connection ~ 5300 6900
+$Comp
+L Device:D_Schottky D15
+U 1 1 628855EA
+P 5950 4800
+F 0 "D15" V 6050 4800 50  0000 L CNN
+F 1 "BAT43" H 5800 4700 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 5950 4800 50  0001 C CNN
+F 3 "~" H 5950 4800 50  0001 C CNN
+	1    5950 4800
+	0    1    1    0   
+$EndComp
+Text Label 5750 6900 0    50   ~ 0
+~SH1
+Text Label 5750 6400 0    50   ~ 0
+~SH2
+Text Label 5750 5900 0    50   ~ 0
+~SH4
+Text Label 5750 5400 0    50   ~ 0
+~SH8
+Text Label 5950 4600 1    50   ~ 0
+~COLF
+Wire Wire Line
+	5750 5400 6150 5400
+Wire Wire Line
+	5300 5400 5450 5400
+Connection ~ 6150 5900
+Wire Wire Line
+	5750 5900 6150 5900
+Wire Wire Line
+	5300 5900 5450 5900
+Connection ~ 6150 6400
+Wire Wire Line
+	5750 6400 6150 6400
+Wire Wire Line
+	5300 6400 5450 6400
+Connection ~ 6150 6900
+Wire Wire Line
+	5750 6900 6150 6900
+Wire Wire Line
+	5300 6900 5450 6900
+$Comp
+L Device:D_Schottky D21
+U 1 1 629367DB
+P 5600 6900
+F 0 "D21" H 5550 6800 50  0000 L CNN
+F 1 "BAT43" H 5500 7000 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 5600 6900 50  0001 C CNN
+F 3 "~" H 5600 6900 50  0001 C CNN
+	1    5600 6900
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:D_Schottky D22
+U 1 1 62936325
+P 5600 6400
+F 0 "D22" H 5550 6300 50  0000 L CNN
+F 1 "BAT43" H 5500 6500 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 5600 6400 50  0001 C CNN
+F 3 "~" H 5600 6400 50  0001 C CNN
+	1    5600 6400
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:D_Schottky D24
+U 1 1 62935DC0
+P 5600 5900
+F 0 "D24" H 5550 5800 50  0000 L CNN
+F 1 "BAT43" H 5500 6000 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 5600 5900 50  0001 C CNN
+F 3 "~" H 5600 5900 50  0001 C CNN
+	1    5600 5900
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:D_Schottky D28
+U 1 1 62934699
+P 5600 5400
+F 0 "D28" H 5550 5300 50  0000 L CNN
+F 1 "BAT43" H 5500 5500 50  0000 L CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 5600 5400 50  0001 C CNN
+F 3 "~" H 5600 5400 50  0001 C CNN
+	1    5600 5400
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	5950 4250 4300 4250
+Wire Wire Line
+	5950 4650 5950 4250
+Connection ~ 5950 5200
+Wire Wire Line
+	5950 4950 5950 5200
+Wire Wire Line
+	6150 6900 6450 6900
+Wire Wire Line
+	6150 6400 6450 6400
+Wire Wire Line
+	6150 5900 6450 5900
+Wire Wire Line
+	5950 5700 6250 5700
+Wire Wire Line
+	5950 6200 6250 6200
+Wire Wire Line
+	5950 6200 5950 6700
+Connection ~ 5950 6200
+Wire Wire Line
+	5950 5700 5950 6200
+Connection ~ 5950 5700
+Connection ~ 5950 6700
+Wire Wire Line
+	5950 6700 6250 6700
+Wire Wire Line
+	5950 5200 5950 5700
+$Comp
+L Switch:SW_Push_45deg SW1F1
+U 1 1 62852B59
+P 6350 6800
+F 0 "SW1F1" H 6350 7081 50  0000 C CNN
+F 1 "Alt" H 6350 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 6350 6800 50  0001 C CNN
+F 3 "~" H 6350 6800 50  0001 C CNN
+	1    6350 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW1F2
+U 1 1 6284E5F7
+P 6350 6300
+F 0 "SW1F2" H 6350 6581 50  0000 C CNN
+F 1 "Control" H 6350 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 6350 6300 50  0001 C CNN
+F 3 "~" H 6350 6300 50  0001 C CNN
+	1    6350 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW1F4
+U 1 1 6284CC9A
+P 6350 5800
+F 0 "SW1F4" H 6350 6081 50  0000 C CNN
+F 1 "Shift" H 6350 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 6350 5800 50  0001 C CNN
+F 3 "~" H 6350 5800 50  0001 C CNN
+	1    6350 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWF1
+U 1 1 6283A3F3
+P 6050 6800
+F 0 "SWF1" H 6050 7081 50  0000 C CNN
+F 1 "Alt" H 6050 6990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 6050 6800 50  0001 C CNN
+F 3 "~" H 6050 6800 50  0001 C CNN
+	1    6050 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWF2
+U 1 1 6283A353
+P 6050 6300
+F 0 "SWF2" H 6050 6581 50  0000 C CNN
+F 1 "Control" H 6050 6490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 6050 6300 50  0001 C CNN
+F 3 "~" H 6050 6300 50  0001 C CNN
+	1    6050 6300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWF4
+U 1 1 627F6505
+P 6050 5800
+F 0 "SWF4" H 6050 6081 50  0000 C CNN
+F 1 "Shift" H 6050 5990 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 6050 5800 50  0001 C CNN
+F 3 "~" H 6050 5800 50  0001 C CNN
+	1    6050 5800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SWF8
+U 1 1 627F50B6
+P 6050 5300
+F 0 "SWF8" H 6050 5581 50  0000 C CNN
+F 1 "Caps Lock" H 6050 5490 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH-12mm" H 6050 5300 50  0001 C CNN
+F 3 "~" H 6050 5300 50  0001 C CNN
+	1    6050 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0101
+U 1 1 629D83C3
+P 4600 3750
+F 0 "#PWR0101" H 4600 3500 50  0001 C CNN
+F 1 "GND" H 4605 3577 50  0000 C CNN
+F 2 "" H 4600 3750 50  0001 C CNN
+F 3 "" H 4600 3750 50  0001 C CNN
+	1    4600 3750
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2500 3750 1600 3750
+Wire Wire Line
+	1250 3750 1250 4950
+$Comp
+L power:+5V #PWR0102
+U 1 1 629E289A
+P 1250 3750
+F 0 "#PWR0102" H 1250 3600 50  0001 C CNN
+F 1 "+5V" H 1265 3923 50  0000 C CNN
+F 2 "" H 1250 3750 50  0001 C CNN
+F 3 "" H 1250 3750 50  0001 C CNN
+	1    1250 3750
+	1    0    0    -1  
+$EndComp
+Connection ~ 1250 3750
+$Comp
+L power:PWR_FLAG #FLG0101
+U 1 1 629E333C
+P 1600 3750
+F 0 "#FLG0101" H 1600 3825 50  0001 C CNN
+F 1 "PWR_FLAG" H 1600 3923 50  0000 C CNN
+F 2 "" H 1600 3750 50  0001 C CNN
+F 3 "~" H 1600 3750 50  0001 C CNN
+	1    1600 3750
+	1    0    0    -1  
+$EndComp
+Connection ~ 1600 3750
+Wire Wire Line
+	1600 3750 1250 3750
+$Comp
+L power:PWR_FLAG #FLG0102
+U 1 1 629E3CD6
+P 4600 3750
+F 0 "#FLG0102" H 4600 3825 50  0001 C CNN
+F 1 "PWR_FLAG" H 4600 3923 50  0000 C CNN
+F 2 "" H 4600 3750 50  0001 C CNN
+F 3 "~" H 4600 3750 50  0001 C CNN
+	1    4600 3750
+	1    0    0    -1  
+$EndComp
+Connection ~ 4600 3750
+$EndSCHEMATC
