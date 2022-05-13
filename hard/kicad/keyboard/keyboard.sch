@@ -1,4 +1,5 @@
 EESchema Schematic File Version 4
+LIBS:keyboard-cache
 EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
@@ -1602,13 +1603,317 @@ Wire Wire Line
 $Comp
 L power:PWR_FLAG #FLG0102
 U 1 1 629E3CD6
-P 4600 3750
-F 0 "#FLG0102" H 4600 3825 50  0001 C CNN
-F 1 "PWR_FLAG" H 4600 3923 50  0000 C CNN
-F 2 "" H 4600 3750 50  0001 C CNN
-F 3 "~" H 4600 3750 50  0001 C CNN
-	1    4600 3750
+P 4600 3250
+F 0 "#FLG0102" H 4600 3325 50  0001 C CNN
+F 1 "PWR_FLAG" H 4600 3423 50  0000 C CNN
+F 2 "" H 4600 3250 50  0001 C CNN
+F 3 "~" H 4600 3250 50  0001 C CNN
+	1    4600 3250
 	1    0    0    -1  
 $EndComp
+Wire Wire Line
+	3300 3250 3400 3250
+Connection ~ 3400 3250
+Wire Wire Line
+	3400 3250 4000 3250
+Wire Wire Line
+	4600 3750 4600 3250
 Connection ~ 4600 3750
+Connection ~ 4600 3250
+$Comp
+L 74xx:74LS174 U?
+U 1 1 62809879
+P 3200 2500
+F 0 "U?" V 3154 1656 50  0000 R CNN
+F 1 "74LS174" V 3245 1656 50  0000 R CNN
+F 2 "" H 3200 2500 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS174" H 3200 2500 50  0001 C CNN
+	1    3200 2500
+	0    -1   1    0   
+$EndComp
+Wire Wire Line
+	2500 2500 2500 3750
+Connection ~ 2500 3750
+Wire Wire Line
+	2800 3000 2800 3250
+Wire Wire Line
+	2900 3000 2900 3250
+Wire Wire Line
+	3000 3000 3000 3250
+Wire Wire Line
+	3100 3000 3100 3250
+Wire Wire Line
+	3200 3000 3300 3000
+Wire Wire Line
+	3200 2000 3300 2000
+$Comp
+L Connector_Generic:Conn_02x08_Odd_Even J1
+U 1 1 628A1D51
+P 4200 1300
+F 0 "J1" H 4250 750 50  0000 C CNN
+F 1 "IOx" H 4250 650 50  0000 C CNN
+F 2 "" H 4200 1300 50  0001 C CNN
+F 3 "~" H 4200 1300 50  0001 C CNN
+	1    4200 1300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_02x08_Odd_Even J2
+U 1 1 628A4791
+P 5250 1300
+F 0 "J2" H 5300 750 50  0000 C CNN
+F 1 "IOx" H 5300 650 50  0000 C CNN
+F 2 "" H 5250 1300 50  0001 C CNN
+F 3 "~" H 5250 1300 50  0001 C CNN
+	1    5250 1300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_02x08_Odd_Even J3
+U 1 1 628A52CA
+P 6300 1300
+F 0 "J3" H 6350 750 50  0000 C CNN
+F 1 "IOx" H 6350 650 50  0000 C CNN
+F 2 "" H 6300 1300 50  0001 C CNN
+F 3 "~" H 6300 1300 50  0001 C CNN
+	1    6300 1300
+	1    0    0    -1  
+$EndComp
+Entry Wire Line
+	5700 1000 5800 1100
+Entry Wire Line
+	5700 1100 5800 1200
+Entry Wire Line
+	5700 1200 5800 1300
+Entry Wire Line
+	5700 1300 5800 1400
+Entry Wire Line
+	5700 1400 5800 1500
+Entry Wire Line
+	5700 1500 5800 1600
+Entry Wire Line
+	5700 1600 5800 1700
+Entry Wire Line
+	5700 1700 5800 1800
+Wire Wire Line
+	5700 1000 5550 1000
+Wire Wire Line
+	5700 1100 5550 1100
+Wire Wire Line
+	5700 1200 5550 1200
+Wire Wire Line
+	5700 1300 5550 1300
+Wire Wire Line
+	5700 1400 5550 1400
+Wire Wire Line
+	5700 1500 5550 1500
+Wire Wire Line
+	5700 1600 5550 1600
+Wire Wire Line
+	5700 1700 5550 1700
+Text Label 5700 1000 2    50   ~ 0
+PD0
+Text Label 5700 1100 2    50   ~ 0
+PD1
+Text Label 5700 1200 2    50   ~ 0
+PD2
+Text Label 5700 1300 2    50   ~ 0
+PD3
+Text Label 5700 1400 2    50   ~ 0
+PD4
+Text Label 5700 1500 2    50   ~ 0
+PD5
+Text Label 5700 1600 2    50   ~ 0
+PD6
+Text Label 5700 1700 2    50   ~ 0
+PD7
+Entry Wire Line
+	6750 1000 6850 1100
+Entry Wire Line
+	6750 1100 6850 1200
+Entry Wire Line
+	6750 1200 6850 1300
+Entry Wire Line
+	6750 1300 6850 1400
+Entry Wire Line
+	6750 1400 6850 1500
+Entry Wire Line
+	6750 1500 6850 1600
+Entry Wire Line
+	6750 1600 6850 1700
+Entry Wire Line
+	6750 1700 6850 1800
+Wire Wire Line
+	6750 1000 6600 1000
+Wire Wire Line
+	6750 1100 6600 1100
+Wire Wire Line
+	6750 1200 6600 1200
+Wire Wire Line
+	6750 1300 6600 1300
+Wire Wire Line
+	6750 1400 6600 1400
+Wire Wire Line
+	6750 1500 6600 1500
+Wire Wire Line
+	6750 1600 6600 1600
+Wire Wire Line
+	6750 1700 6600 1700
+Text Label 6750 1000 2    50   ~ 0
+PD0
+Text Label 6750 1100 2    50   ~ 0
+PD1
+Text Label 6750 1200 2    50   ~ 0
+PD2
+Text Label 6750 1300 2    50   ~ 0
+PD3
+Text Label 6750 1400 2    50   ~ 0
+PD4
+Text Label 6750 1500 2    50   ~ 0
+PD5
+Text Label 6750 1600 2    50   ~ 0
+PD6
+Text Label 6750 1700 2    50   ~ 0
+PD7
+Entry Wire Line
+	4650 1000 4750 1100
+Entry Wire Line
+	4650 1100 4750 1200
+Entry Wire Line
+	4650 1200 4750 1300
+Entry Wire Line
+	4650 1300 4750 1400
+Entry Wire Line
+	4650 1400 4750 1500
+Entry Wire Line
+	4650 1500 4750 1600
+Entry Wire Line
+	4650 1600 4750 1700
+Entry Wire Line
+	4650 1700 4750 1800
+Wire Wire Line
+	4650 1000 4500 1000
+Wire Wire Line
+	4650 1100 4500 1100
+Wire Wire Line
+	4650 1200 4500 1200
+Wire Wire Line
+	4650 1300 4500 1300
+Wire Wire Line
+	4650 1400 4500 1400
+Wire Wire Line
+	4650 1500 4500 1500
+Wire Wire Line
+	4650 1600 4500 1600
+Wire Wire Line
+	4650 1700 4500 1700
+Text Label 4650 1000 2    50   ~ 0
+PD0
+Text Label 4650 1100 2    50   ~ 0
+PD1
+Text Label 4650 1200 2    50   ~ 0
+PD2
+Text Label 4650 1300 2    50   ~ 0
+PD3
+Text Label 4650 1400 2    50   ~ 0
+PD4
+Text Label 4650 1500 2    50   ~ 0
+PD5
+Text Label 4650 1600 2    50   ~ 0
+PD6
+Text Label 4650 1700 2    50   ~ 0
+PD7
+Wire Bus Line
+	4750 1800 5800 1800
+Wire Bus Line
+	5800 1800 6850 1800
+Connection ~ 5800 1800
+Connection ~ 4750 1800
+Entry Wire Line
+	2800 1900 2900 1800
+Entry Wire Line
+	2900 1900 3000 1800
+Entry Wire Line
+	3000 1900 3100 1800
+Entry Wire Line
+	3100 1900 3200 1800
+Entry Wire Line
+	3300 1900 3400 1800
+Entry Wire Line
+	3300 1900 3400 1800
+Wire Wire Line
+	3300 1900 3300 2000
+Connection ~ 3300 2000
+Wire Wire Line
+	3100 1900 3100 2000
+Wire Wire Line
+	3000 1900 3000 2000
+Wire Wire Line
+	2900 1900 2900 2000
+Wire Wire Line
+	2800 1900 2800 2000
+Text Label 2800 2000 1    50   ~ 0
+PD0
+Text Label 2900 2000 1    50   ~ 0
+PD1
+Text Label 3000 2000 1    50   ~ 0
+PD2
+Text Label 3100 2000 1    50   ~ 0
+PD3
+Text Label 3250 2000 1    50   ~ 0
+PD7
+Wire Wire Line
+	3700 2000 3700 1000
+Wire Wire Line
+	3700 1000 4000 1000
+Wire Wire Line
+	4000 1700 4000 1900
+Wire Wire Line
+	4000 2500 4000 3250
+Connection ~ 4000 2500
+Connection ~ 4000 3250
+Wire Wire Line
+	4000 3250 4600 3250
+$Comp
+L power:+5V #PWR?
+U 1 1 629F2F72
+P 5050 1000
+F 0 "#PWR?" H 5050 850 50  0001 C CNN
+F 1 "+5V" V 5065 1128 50  0000 L CNN
+F 2 "" H 5050 1000 50  0001 C CNN
+F 3 "" H 5050 1000 50  0001 C CNN
+	1    5050 1000
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:+5V #PWR?
+U 1 1 629F3068
+P 6100 1000
+F 0 "#PWR?" H 6100 850 50  0001 C CNN
+F 1 "+5V" V 6115 1128 50  0000 L CNN
+F 2 "" H 6100 1000 50  0001 C CNN
+F 3 "" H 6100 1000 50  0001 C CNN
+	1    6100 1000
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	4000 1900 5050 1900
+Wire Wire Line
+	5050 1900 5050 1700
+Connection ~ 4000 1900
+Wire Wire Line
+	4000 1900 4000 2500
+Wire Wire Line
+	5050 1900 6100 1900
+Wire Wire Line
+	6100 1900 6100 1700
+Connection ~ 5050 1900
+Wire Bus Line
+	2900 1800 4750 1800
+Wire Bus Line
+	5800 1100 5800 1800
+Wire Bus Line
+	6850 1100 6850 1800
+Wire Bus Line
+	4750 1100 4750 1800
 $EndSCHEMATC

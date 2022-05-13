@@ -1,4 +1,5 @@
 EESchema Schematic File Version 4
+LIBS:keyboard-cache
 EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
@@ -223,10 +224,10 @@ F 3 "~" H 2450 5800 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Switch:SW_Push_45deg SWF44
+L Switch:SW_Push_45deg SW44
 U 1 1 627F6497
 P 2700 5800
-F 0 "SWF44" H 2700 6081 50  0000 C CNN
+F 0 "SW44" H 2700 6081 50  0000 C CNN
 F 1 "R" H 2700 5990 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH-12mm" H 2700 5800 50  0001 C CNN
 F 3 "~" H 2700 5800 50  0001 C CNN
@@ -1602,13 +1603,317 @@ Wire Wire Line
 $Comp
 L power:PWR_FLAG #FLG0102
 U 1 1 629E3CD6
-P 4600 3750
-F 0 "#FLG0102" H 4600 3825 50  0001 C CNN
-F 1 "PWR_FLAG" H 4600 3923 50  0000 C CNN
-F 2 "" H 4600 3750 50  0001 C CNN
-F 3 "~" H 4600 3750 50  0001 C CNN
-	1    4600 3750
+P 4600 3250
+F 0 "#FLG0102" H 4600 3325 50  0001 C CNN
+F 1 "PWR_FLAG" H 4600 3423 50  0000 C CNN
+F 2 "" H 4600 3250 50  0001 C CNN
+F 3 "~" H 4600 3250 50  0001 C CNN
+	1    4600 3250
 	1    0    0    -1  
 $EndComp
+Wire Wire Line
+	3300 3250 3400 3250
+Connection ~ 3400 3250
+Wire Wire Line
+	3400 3250 4000 3250
+Wire Wire Line
+	4600 3750 4600 3250
 Connection ~ 4600 3750
+Connection ~ 4600 3250
+$Comp
+L 74xx:74LS174 U?
+U 1 1 62809879
+P 3200 2050
+F 0 "U?" V 3154 1206 50  0000 R CNN
+F 1 "74LS174" V 3245 1206 50  0000 R CNN
+F 2 "" H 3200 2050 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS174" H 3200 2050 50  0001 C CNN
+	1    3200 2050
+	0    -1   1    0   
+$EndComp
+Wire Wire Line
+	2500 2050 2500 3750
+Connection ~ 2500 3750
+Wire Wire Line
+	2800 2550 2800 3250
+Wire Wire Line
+	2900 2550 2900 3250
+Wire Wire Line
+	3000 2550 3000 3250
+Wire Wire Line
+	3100 2550 3100 3250
+Wire Wire Line
+	3200 2550 3300 2550
+Wire Wire Line
+	3200 1550 3300 1550
+$Comp
+L Connector_Generic:Conn_02x08_Odd_Even J1
+U 1 1 628A1D51
+P 4200 850
+F 0 "J1" H 4250 300 50  0000 C CNN
+F 1 "IOx" H 4250 200 50  0000 C CNN
+F 2 "" H 4200 850 50  0001 C CNN
+F 3 "~" H 4200 850 50  0001 C CNN
+	1    4200 850 
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_02x08_Odd_Even J2
+U 1 1 628A4791
+P 5250 850
+F 0 "J2" H 5300 300 50  0000 C CNN
+F 1 "IOx" H 5300 200 50  0000 C CNN
+F 2 "" H 5250 850 50  0001 C CNN
+F 3 "~" H 5250 850 50  0001 C CNN
+	1    5250 850 
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_02x08_Odd_Even J3
+U 1 1 628A52CA
+P 6300 850
+F 0 "J3" H 6350 300 50  0000 C CNN
+F 1 "IOx" H 6350 200 50  0000 C CNN
+F 2 "" H 6300 850 50  0001 C CNN
+F 3 "~" H 6300 850 50  0001 C CNN
+	1    6300 850 
+	1    0    0    -1  
+$EndComp
+Entry Wire Line
+	5700 550  5800 650 
+Entry Wire Line
+	5700 650  5800 750 
+Entry Wire Line
+	5700 750  5800 850 
+Entry Wire Line
+	5700 850  5800 950 
+Entry Wire Line
+	5700 950  5800 1050
+Entry Wire Line
+	5700 1050 5800 1150
+Entry Wire Line
+	5700 1150 5800 1250
+Entry Wire Line
+	5700 1250 5800 1350
+Wire Wire Line
+	5700 550  5550 550 
+Wire Wire Line
+	5700 650  5550 650 
+Wire Wire Line
+	5700 750  5550 750 
+Wire Wire Line
+	5700 850  5550 850 
+Wire Wire Line
+	5700 950  5550 950 
+Wire Wire Line
+	5700 1050 5550 1050
+Wire Wire Line
+	5700 1150 5550 1150
+Wire Wire Line
+	5700 1250 5550 1250
+Text Label 5700 550  2    50   ~ 0
+PD0
+Text Label 5700 650  2    50   ~ 0
+PD1
+Text Label 5700 750  2    50   ~ 0
+PD2
+Text Label 5700 850  2    50   ~ 0
+PD3
+Text Label 5700 950  2    50   ~ 0
+PD4
+Text Label 5700 1050 2    50   ~ 0
+PD5
+Text Label 5700 1150 2    50   ~ 0
+PD6
+Text Label 5700 1250 2    50   ~ 0
+PD7
+Entry Wire Line
+	6750 550  6850 650 
+Entry Wire Line
+	6750 650  6850 750 
+Entry Wire Line
+	6750 750  6850 850 
+Entry Wire Line
+	6750 850  6850 950 
+Entry Wire Line
+	6750 950  6850 1050
+Entry Wire Line
+	6750 1050 6850 1150
+Entry Wire Line
+	6750 1150 6850 1250
+Entry Wire Line
+	6750 1250 6850 1350
+Wire Wire Line
+	6750 550  6600 550 
+Wire Wire Line
+	6750 650  6600 650 
+Wire Wire Line
+	6750 750  6600 750 
+Wire Wire Line
+	6750 850  6600 850 
+Wire Wire Line
+	6750 950  6600 950 
+Wire Wire Line
+	6750 1050 6600 1050
+Wire Wire Line
+	6750 1150 6600 1150
+Wire Wire Line
+	6750 1250 6600 1250
+Text Label 6750 550  2    50   ~ 0
+PD0
+Text Label 6750 650  2    50   ~ 0
+PD1
+Text Label 6750 750  2    50   ~ 0
+PD2
+Text Label 6750 850  2    50   ~ 0
+PD3
+Text Label 6750 950  2    50   ~ 0
+PD4
+Text Label 6750 1050 2    50   ~ 0
+PD5
+Text Label 6750 1150 2    50   ~ 0
+PD6
+Text Label 6750 1250 2    50   ~ 0
+PD7
+Entry Wire Line
+	4650 550  4750 650 
+Entry Wire Line
+	4650 650  4750 750 
+Entry Wire Line
+	4650 750  4750 850 
+Entry Wire Line
+	4650 850  4750 950 
+Entry Wire Line
+	4650 950  4750 1050
+Entry Wire Line
+	4650 1050 4750 1150
+Entry Wire Line
+	4650 1150 4750 1250
+Entry Wire Line
+	4650 1250 4750 1350
+Wire Wire Line
+	4650 550  4500 550 
+Wire Wire Line
+	4650 650  4500 650 
+Wire Wire Line
+	4650 750  4500 750 
+Wire Wire Line
+	4650 850  4500 850 
+Wire Wire Line
+	4650 950  4500 950 
+Wire Wire Line
+	4650 1050 4500 1050
+Wire Wire Line
+	4650 1150 4500 1150
+Wire Wire Line
+	4650 1250 4500 1250
+Text Label 4650 550  2    50   ~ 0
+PD0
+Text Label 4650 650  2    50   ~ 0
+PD1
+Text Label 4650 750  2    50   ~ 0
+PD2
+Text Label 4650 850  2    50   ~ 0
+PD3
+Text Label 4650 950  2    50   ~ 0
+PD4
+Text Label 4650 1050 2    50   ~ 0
+PD5
+Text Label 4650 1150 2    50   ~ 0
+PD6
+Text Label 4650 1250 2    50   ~ 0
+PD7
+Wire Bus Line
+	4750 1350 5800 1350
+Wire Bus Line
+	5800 1350 6850 1350
+Connection ~ 5800 1350
+Connection ~ 4750 1350
+Entry Wire Line
+	2800 1450 2900 1350
+Entry Wire Line
+	2900 1450 3000 1350
+Entry Wire Line
+	3000 1450 3100 1350
+Entry Wire Line
+	3100 1450 3200 1350
+Entry Wire Line
+	3300 1450 3400 1350
+Entry Wire Line
+	3300 1450 3400 1350
+Wire Wire Line
+	3300 1450 3300 1550
+Connection ~ 3300 1550
+Wire Wire Line
+	3100 1450 3100 1550
+Wire Wire Line
+	3000 1450 3000 1550
+Wire Wire Line
+	2900 1450 2900 1550
+Wire Wire Line
+	2800 1450 2800 1550
+Text Label 2800 1550 1    50   ~ 0
+PD0
+Text Label 2900 1550 1    50   ~ 0
+PD1
+Text Label 3000 1550 1    50   ~ 0
+PD2
+Text Label 3100 1550 1    50   ~ 0
+PD3
+Text Label 3250 1550 1    50   ~ 0
+PD7
+Wire Wire Line
+	3700 1550 3700 550 
+Wire Wire Line
+	3700 550  4000 550 
+Wire Wire Line
+	4000 1250 4000 1450
+Wire Wire Line
+	4000 2050 4000 3250
+Connection ~ 4000 2050
+Connection ~ 4000 3250
+Wire Wire Line
+	4000 3250 4600 3250
+$Comp
+L power:+5V #PWR?
+U 1 1 629F2F72
+P 5050 550
+F 0 "#PWR?" H 5050 400 50  0001 C CNN
+F 1 "+5V" V 5065 678 50  0000 L CNN
+F 2 "" H 5050 550 50  0001 C CNN
+F 3 "" H 5050 550 50  0001 C CNN
+	1    5050 550 
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:+5V #PWR?
+U 1 1 629F3068
+P 6100 550
+F 0 "#PWR?" H 6100 400 50  0001 C CNN
+F 1 "+5V" V 6115 678 50  0000 L CNN
+F 2 "" H 6100 550 50  0001 C CNN
+F 3 "" H 6100 550 50  0001 C CNN
+	1    6100 550 
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	4000 1450 5050 1450
+Wire Wire Line
+	5050 1450 5050 1250
+Connection ~ 4000 1450
+Wire Wire Line
+	4000 1450 4000 2050
+Wire Wire Line
+	5050 1450 6100 1450
+Wire Wire Line
+	6100 1450 6100 1250
+Wire Bus Line
+	2900 1350 4750 1350
+Wire Bus Line
+	5800 650  5800 1350
+Wire Bus Line
+	6850 650  6850 1350
+Wire Bus Line
+	4750 650  4750 1350
+Connection ~ 5050 1450
 $EndSCHEMATC
