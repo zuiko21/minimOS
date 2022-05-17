@@ -1364,7 +1364,7 @@ F 3 "" H 3050 3450 50  0001 C CNN
 	1    3050 3450
 	0    -1   -1   0   
 $EndComp
-Text Label 2500 4200 0    50   ~ 0
+Text Label 2100 4200 0    50   ~ 0
 HDOT
 Wire Wire Line
 	2750 1300 2750 2900
@@ -1479,30 +1479,8 @@ Text GLabel 2950 4100 2    50   Input ~ 0
 VCLK
 Text Label 2800 6800 0    50   ~ 0
 EV~ODD
-$Comp
-L Device:R R127
-U 1 1 614B20D9
-P 3350 6800
-F 0 "R127" V 3250 6800 50  0000 C CNN
-F 1 "1K8" V 3350 6800 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 3280 6800 50  0001 C CNN
-F 3 "~" H 3350 6800 50  0001 C CNN
-	1    3350 6800
-	0    1    1    0   
-$EndComp
 Wire Wire Line
 	6900 6500 6900 7050
-$Comp
-L Device:R R128
-U 1 1 615883A5
-P 10450 6350
-F 0 "R128" H 10200 6300 50  0000 L CNN
-F 1 "1K8" V 10450 6300 50  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 6350 50  0001 C CNN
-F 3 "~" H 10450 6350 50  0001 C CNN
-	1    10450 6350
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	10450 6200 10450 4400
 Text Label 7050 4250 0    50   ~ 0
@@ -1667,7 +1645,7 @@ Text Label 4100 4500 2    50   ~ 0
 HPIX
 Wire Wire Line
 	3500 6800 3850 6800
-Text Label 3500 6800 0    50   ~ 0
+Text Label 3550 6800 0    50   ~ 0
 DEV~ODD
 Wire Wire Line
 	2400 3450 3050 3450
@@ -1746,8 +1724,6 @@ Text GLabel 10950 1950 2    50   Input ~ 0
 SC1
 Wire Wire Line
 	10950 1950 10450 1950
-Text Notes 2950 6950 0    50   ~ 0
-LOWER FOR INVERSE?
 $Comp
 L power:+5V #PWR0151
 U 1 1 6156618F
@@ -1948,21 +1924,6 @@ F 3 "http://www.ti.com/lit/gpn/sn74hct02" H 2500 3800 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	2600 2800 2600 3500
-$Comp
-L Device:R R232
-U 1 1 62770BF6
-P 2250 4200
-F 0 "R232" V 2150 4200 50  0000 C CNN
-F 1 "0" V 2250 4200 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 2180 4200 50  0001 C CNN
-F 3 "~" H 2250 4200 50  0001 C CNN
-	1    2250 4200
-	0    1    1    0   
-$EndComp
-Wire Wire Line
-	2100 4200 1900 4200
-Wire Wire Line
-	2400 4200 2500 4200
 Wire Wire Line
 	2500 4200 2500 4100
 Text Label 4900 5600 1    50   ~ 0
@@ -1981,8 +1942,6 @@ Text Label 5600 6200 0    50   ~ 0
 IR
 Text Label 5650 6500 1    50   ~ 0
 IGH
-Text Label 1900 4200 0    50   ~ 0
-DDOT
 Text Label 8400 5250 0    50   ~ 0
 RMIX
 Text Notes 9500 850  0    50   ~ 0
@@ -2139,7 +2098,7 @@ Connection ~ 8300 5050
 Wire Wire Line
 	8300 5050 8300 5500
 Wire Wire Line
-	6900 6500 10450 6500
+	6900 6500 10300 6500
 Wire Wire Line
 	8400 6100 8400 6300
 Text GLabel 8400 6300 2    50   Input ~ 0
@@ -2315,12 +2274,6 @@ Wire Wire Line
 Wire Wire Line
 	3600 2750 4200 2750
 Connection ~ 5050 2550
-Wire Bus Line
-	8800 550  10750 550 
-Wire Bus Line
-	4100 550  8050 550 
-Wire Bus Line
-	800  4350 3700 4350
 Text Label 7650 3650 1    50   ~ 0
 VA10
 Text Label 7550 3650 1    50   ~ 0
@@ -2329,4 +2282,44 @@ Text Label 7450 3650 1    50   ~ 0
 ~FRAME
 Text Label 7350 3650 1    50   ~ 0
 VA9
+Wire Wire Line
+	1900 4200 2500 4200
+$Comp
+L Device:R_POT_TRIM RV127
+U 1 1 628F2E8C
+P 3350 6800
+F 0 "RV127" V 3250 6800 50  0000 C CNN
+F 1 "5K (PIXEL DELAY)" V 3550 6800 50  0000 C CNN
+F 2 "Potentiometer_THT:Potentiometer_Piher_PT-10-V10_Vertical" H 3350 6800 50  0001 C CNN
+F 3 "~" H 3350 6800 50  0001 C CNN
+	1    3350 6800
+	0    -1   1    0   
+$EndComp
+$Comp
+L Device:R_POT_TRIM RV128
+U 1 1 6292D03A
+P 10450 6350
+F 0 "RV128" H 10380 6396 50  0000 R CNN
+F 1 "5K (ENABLE DLY)" H 10380 6305 50  0000 R CNN
+F 2 "Potentiometer_THT:Potentiometer_Piher_PT-10-V10_Vertical" H 10450 6350 50  0001 C CNN
+F 3 "~" H 10450 6350 50  0001 C CNN
+	1    10450 6350
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	3350 6950 3500 6950
+Wire Wire Line
+	3500 6950 3500 6800
+Connection ~ 3500 6800
+Wire Wire Line
+	10300 6350 10300 6500
+Wire Bus Line
+	8800 550  10750 550 
+Wire Bus Line
+	4100 550  8050 550 
+Wire Bus Line
+	800  4350 3700 4350
+Connection ~ 10300 6500
+Wire Wire Line
+	10300 6500 10450 6500
 $EndSCHEMATC
