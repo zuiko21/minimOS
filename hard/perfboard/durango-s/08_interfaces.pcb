@@ -964,6 +964,83 @@ Element["" "Dual in-line package, narrow (300 mil)" "" "DIP20" 545.00mil 1411.00
 	ElementArc [-50.00mil -150.00mil 50.00mil 50.00mil 90.000000 180.000000 10.00mil]
 
 	)
+
+Element["" "Dual in-line package, narrow (300 mil)" "" "DIP14" 1945.00mil 2611.00mil 50.00mil -170.00mil 0 100 ""]
+(
+	Pin[0.0000 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "1" "1" "square,edge2"]
+	Pin[100.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "2" "2" "edge2"]
+	Pin[200.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "3" "3" "edge2"]
+	Pin[300.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "4" "4" "edge2"]
+	Pin[400.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "5" "5" "edge2"]
+	Pin[500.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "6" "6" "edge2"]
+	Pin[600.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "7" "7" "edge2"]
+	Pin[600.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "8" "8" "edge2"]
+	Pin[500.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "9" "9" "edge2"]
+	Pin[400.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "10" "10" "edge2"]
+	Pin[300.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "11" "11" "edge2"]
+	Pin[200.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "12" "12" "edge2"]
+	Pin[100.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "13" "13" "edge2"]
+	Pin[0.0000 -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "14" "14" "edge2"]
+	ElementLine [-50.00mil 50.00mil 650.00mil 50.00mil 10.00mil]
+	ElementLine [650.00mil -350.00mil 650.00mil 50.00mil 10.00mil]
+	ElementLine [-50.00mil -350.00mil 650.00mil -350.00mil 10.00mil]
+	ElementLine [-50.00mil -100.00mil -50.00mil 50.00mil 10.00mil]
+	ElementLine [-50.00mil -350.00mil -50.00mil -200.00mil 10.00mil]
+	ElementArc [-50.00mil -150.00mil 50.00mil 50.00mil 90.000000 180.000000 10.00mil]
+
+	)
+
+Element["" "Dual in-line package, narrow (300 mil)" "" "DIP14" 1945.00mil 2111.00mil 50.00mil -170.00mil 0 100 ""]
+(
+	Pin[0.0000 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "1" "1" "square,edge2"]
+	Pin[100.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "2" "2" "edge2"]
+	Pin[200.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "3" "3" "edge2"]
+	Pin[300.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "4" "4" "edge2"]
+	Pin[400.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "5" "5" "edge2"]
+	Pin[500.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "6" "6" "edge2"]
+	Pin[600.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "7" "7" "edge2"]
+	Pin[600.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "8" "8" "edge2"]
+	Pin[500.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "9" "9" "edge2"]
+	Pin[400.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "10" "10" "edge2"]
+	Pin[300.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "11" "11" "edge2"]
+	Pin[200.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "12" "12" "edge2"]
+	Pin[100.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "13" "13" "edge2"]
+	Pin[0.0000 -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "14" "14" "edge2"]
+	ElementLine [-50.00mil 50.00mil 650.00mil 50.00mil 10.00mil]
+	ElementLine [650.00mil -350.00mil 650.00mil 50.00mil 10.00mil]
+	ElementLine [-50.00mil -350.00mil 650.00mil -350.00mil 10.00mil]
+	ElementLine [-50.00mil -100.00mil -50.00mil 50.00mil 10.00mil]
+	ElementLine [-50.00mil -350.00mil -50.00mil -200.00mil 10.00mil]
+	ElementArc [-50.00mil -150.00mil 50.00mil 50.00mil 90.000000 180.000000 10.00mil]
+
+	)
+
+Element["" "Dual in-line package, narrow (300 mil)" "" "DIP16" 1845.00mil 1311.00mil 50.00mil -170.00mil 0 100 ""]
+(
+	Pin[0.0000 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "1" "1" "square,edge2"]
+	Pin[100.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "2" "2" "edge2"]
+	Pin[200.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "3" "3" "edge2"]
+	Pin[300.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "4" "4" "edge2"]
+	Pin[400.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "5" "5" "edge2"]
+	Pin[500.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "6" "6" "edge2"]
+	Pin[600.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "7" "7" "edge2"]
+	Pin[700.00mil 0.0000 60.00mil 30.00mil 66.00mil 28.00mil "8" "8" "edge2"]
+	Pin[700.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "9" "9" "edge2"]
+	Pin[600.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "10" "10" "edge2"]
+	Pin[500.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "11" "11" "edge2"]
+	Pin[400.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "12" "12" "edge2"]
+	Pin[300.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "13" "13" "edge2"]
+	Pin[200.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "14" "14" "edge2"]
+	Pin[100.00mil -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "15" "15" "edge2"]
+	Pin[0.0000 -300.00mil 60.00mil 30.00mil 66.00mil 28.00mil "16" "16" "edge2"]
+	ElementLine [-50.00mil 50.00mil 750.00mil 50.00mil 10.00mil]
+	ElementLine [750.00mil -350.00mil 750.00mil 50.00mil 10.00mil]
+	ElementLine [-50.00mil -350.00mil 750.00mil -350.00mil 10.00mil]
+	ElementLine [-50.00mil -100.00mil -50.00mil 50.00mil 10.00mil]
+	ElementLine [-50.00mil -350.00mil -50.00mil -200.00mil 10.00mil]
+	ElementArc [-50.00mil -150.00mil 50.00mil 50.00mil 90.000000 180.000000 10.00mil]
+
+	)
 Layer(1 "back" "copper")
 (
 	Line[1345.00mil 711.00mil 1345.00mil 1111.00mil 10.00mil 20.00mil "clearline"]
@@ -1037,6 +1114,9 @@ Layer(1 "back" "copper")
 	Text[3345.00mil 2311.00mil 1 100 "VCC" "clearline"]
 	Text[545.00mil 2611.00mil 0 100 "U32" "clearline"]
 	Text[1245.00mil 2611.00mil 0 100 "74HC245" "clearline"]
+	Text[2345.00mil 2511.00mil 0 100 "74HC08" "clearline"]
+	Text[2345.00mil 2011.00mil 0 100 "74HC125" "clearline"]
+	Text[2345.00mil 1211.00mil 0 100 "74HC139" "clearline"]
 )
 Layer(2 "bridge" "copper")
 (
