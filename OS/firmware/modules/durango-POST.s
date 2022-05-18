@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; system checker routine 0.9.6a6
+; system checker routine 0.9.6b2
 ; for Durango-X, both ROMmable and DOWNLOADable
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20211230-0045
+; last modified 20220518-1650
 
 #ifdef	TESTING
 #include "../../macros.h"
@@ -93,8 +93,8 @@ mt_5:
 	STA mxmem				; store in a safe place (needed afterwards)
 ; the address test needs mxmem in a bit-position format (An+1)
 	LDY #8					; limit in case of a 256-byte RAM!
-#ifdef	NMOS
-	INC						; CMOS only
+#ifndef	NMOS
+	INC						; CMOS only EEEEEEEK
 #else
 	CLC
 	ADC #1
@@ -264,7 +264,7 @@ vr_ok:
 	JSR rle_dec				; direct firmware call, don't care about errors
 #endif
 
-; * NMI test in nonsense *
+; * no NMI test *
 
 ; * IRQ test *
 irq_test:
@@ -331,7 +331,7 @@ bit_l:
 
 ; *** RLE-compressed banner ***
 banner:
-	.bin	0, 536, "../other/data/durango-x.rle"	; check path ***
+	.bin	0, 534, "../other/data/durango-x.rle"	; check path ***
 
 ; ***************************
 ; *** all OK, end of test ***
