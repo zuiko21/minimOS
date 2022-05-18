@@ -1,18 +1,18 @@
 ; Delay test for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220517-1905
+; last modified 20220518-1311
 
-#include "../../macros.h"
-#include "../../zeropage.h"
+;#include "../../macros.h"
+;#include "../../zeropage.h"
 
 ; *** some global definitions ***
 IO8flags	= $DF80
 
 ; *** zeropage variables ***
 .zero
-*	= uz
+*	= $80					; was uz
 
-pt			.word	0		; (screen pointer), 3
+pt			.word	0		; screen pointer
 colour		.byt	0		; ink colour
 
 ; *** test code ***
@@ -38,7 +38,7 @@ clear:
 	LDX #$60				; restore pointer
 	STX pt+1
 ; finish init
-	LDA #15*16				; white at MSB
+	LDA #%11110000			; white at MSB
 	STA colour				; preset first ink colour
 ; pattern loop
 loop:
@@ -48,8 +48,8 @@ lwide:
 			STA (pt), Y		; set this pattern
 			INY				; leave one or three blank bytes
 			INY
-			CPX #4			; within first half?
-			BCS lskip
+			CPX #5			; within first half?
+			BCC lskip
 				INY			; skip three then
 				INY
 lskip:
@@ -73,8 +73,8 @@ rwide:
 			STA (pt), Y		; set this pattern
 			INY				; leave one or three blank bytes
 			INY
-			CPX #2			; within last half?
-			BCC lskip
+			CPX #3			; within last half?
+			BCS lskip
 				INY			; skip three then
 				INY
 lskip:
@@ -97,8 +97,6 @@ lhalf:
 			BPL lhalf
 		LDY #64				; next raster to the left
 		STA (pt), Y
-		INY
-		STA (pt), Y			; two bytes
 		LDY #160			; right half, third raster
 rhalf:
 			STA (pt), Y
@@ -113,7 +111,7 @@ rhalf:
 		INC pt+1
 		LDA colour
 		SEC
-		SBC #1
+		SBC #$10			; eeeeeeek, it's MSN
 		STA colour
 		BNE loop			; continue (black is not used)
 lock:
