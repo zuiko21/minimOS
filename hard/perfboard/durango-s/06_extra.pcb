@@ -966,7 +966,7 @@ Layer(1 "back" "copper")
 	Line[3345.00mil 2511.00mil 3345.00mil 2011.00mil 10.00mil 20.00mil "clearline"]
 	Line[3345.00mil 2011.00mil 3745.00mil 2011.00mil 10.00mil 20.00mil "clearline"]
 	Line[4145.00mil 2311.00mil 4145.00mil 2511.00mil 10.00mil 20.00mil "clearline"]
-	Line[4145.00mil 2511.00mil 4345.00mil 2511.00mil 10.00mil 20.00mil "clearline"]
+	Line[4145.00mil 2511.00mil 4445.00mil 2511.00mil 10.00mil 20.00mil "clearline"]
 	Line[3845.00mil 2311.00mil 3845.00mil 3911.00mil 10.00mil 20.00mil "clearline"]
 	Line[3945.00mil 2211.00mil 3945.00mil 3911.00mil 10.00mil 20.00mil "clearline"]
 	Line[4145.00mil 2811.00mil 4145.00mil 3911.00mil 10.00mil 20.00mil "clearline"]
