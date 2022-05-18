@@ -1367,25 +1367,25 @@ F 1 "74HC00" V 3495 4020 50  0000 R CNN
 F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3450 4200 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74hct00" H 3450 4200 50  0001 C CNN
 	1    3450 4200
-	0    -1   1    0   
+	0    1    1    0   
 $EndComp
 $Comp
 L 74xx:74HCT00 U9
 U 2 1 60E15C13
-P 3750 4700
-F 0 "U9" H 3400 4500 50  0000 L CNN
-F 1 "74HC00" H 3650 4500 50  0000 L CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3750 4700 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74hct00" H 3750 4700 50  0001 C CNN
-	2    3750 4700
-	1    0    0    -1  
+P 6450 7000
+F 0 "U9" H 6350 7200 50  0000 L CNN
+F 1 "74HC00" H 6300 6800 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 6450 7000 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74hct00" H 6450 7000 50  0001 C CNN
+	2    6450 7000
+	-1   0    0    -1  
 $EndComp
 $Comp
 L 74xx:74HCT00 U9
 U 3 1 60E5980E
 P 3650 5450
-F 0 "U9" H 3950 5600 50  0000 R CNN
-F 1 "74HC00" H 3950 5700 50  0000 R CNN
+F 0 "U9" H 3900 5600 50  0000 R CNN
+F 1 "74HC00" H 3550 5250 50  0000 R CNN
 F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3650 5450 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74hct00" H 3650 5450 50  0001 C CNN
 	3    3650 5450
@@ -2261,25 +2261,14 @@ Wire Wire Line
 $Comp
 L 74xx:74HC00 U?
 U 4 1 616824B6
-P 6450 7000
+P 3750 4700
 AR Path="/60C42E7C/616824B6" Ref="U?"  Part="4" 
 AR Path="/616824B6" Ref="U9"  Part="4" 
-F 0 "U9" H 6350 6800 50  0000 L CNN
-F 1 "74HC00" H 6300 7200 50  0000 L CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 6450 7000 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74hc00" H 6450 7000 50  0001 C CNN
-	4    6450 7000
-	-1   0    0    1   
-$EndComp
-$Comp
-L power:+5V #PWR0152
-U 1 1 615A5F05
-P 6750 6900
-F 0 "#PWR0152" H 6750 6750 50  0001 C CNN
-F 1 "+5V" H 6600 7050 50  0000 L CNN
-F 2 "" H 6750 6900 50  0001 C CNN
-F 3 "" H 6750 6900 50  0001 C CNN
-	1    6750 6900
+F 0 "U9" H 3500 4500 50  0000 L CNN
+F 1 "74HC00" H 3750 4500 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3750 4700 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74hc00" H 3750 4700 50  0001 C CNN
+	4    3750 4700
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
@@ -2391,11 +2380,7 @@ Connection ~ 4400 6850
 Wire Wire Line
 	7700 4500 7700 6450
 Wire Wire Line
-	7700 6450 6900 6450
-Wire Wire Line
-	6900 6450 6900 7100
-Wire Wire Line
-	6900 7100 6750 7100
+	6750 6450 6750 6900
 Connection ~ 7700 4500
 Wire Wire Line
 	2600 5350 2600 5450
@@ -2885,6 +2870,11 @@ Wire Wire Line
 	7400 2700 9200 2700
 Wire Wire Line
 	9200 2700 9200 2650
+Wire Wire Line
+	6750 6900 6750 7100
+Connection ~ 6750 6900
+Wire Wire Line
+	6750 6450 7700 6450
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Bus Line
