@@ -264,10 +264,6 @@ Text Label 5750 4400 0    50   ~ 0
 UHS
 Text Label 9400 4400 0    50   ~ 0
 UVS
-Text Label 8050 2200 0    50   ~ 0
-~DEH
-Text Label 8050 2750 0    50   ~ 0
-~DEV
 Wire Wire Line
 	8050 3400 8050 2650
 $Comp
@@ -330,7 +326,7 @@ L power:GND #PWR0123
 U 1 1 608EF4C1
 P 8350 3350
 F 0 "#PWR0123" H 8350 3100 50  0001 C CNN
-F 1 "GND" V 8355 3222 50  0000 R CNN
+F 1 "GND" V 8450 3350 50  0000 R CNN
 F 2 "" H 8350 3350 50  0001 C CNN
 F 3 "" H 8350 3350 50  0001 C CNN
 	1    8350 3350
@@ -963,14 +959,12 @@ Wire Wire Line
 Connection ~ 6650 5800
 Wire Wire Line
 	8650 1950 8650 2550
-Text Label 2950 4200 2    50   ~ 0
-~Q3
 Wire Wire Line
 	2950 4250 4350 4250
 Wire Wire Line
 	4350 4250 4350 2850
-Text Label 5950 2850 0    50   ~ 0
-~Q3
+Text Label 5850 2850 0    50   ~ 0
+VCLK
 Text Label 6900 7000 1    50   ~ 0
 ~DCDE
 Wire Wire Line
@@ -1017,8 +1011,6 @@ Wire Wire Line
 	9250 2200 9550 2200
 Wire Wire Line
 	9550 2200 9550 2050
-Text Label 9950 2200 1    50   ~ 0
-EV~ODD
 Text Label 9850 2200 2    50   ~ 0
 ~LOST
 Wire Wire Line
@@ -1477,8 +1469,6 @@ Wire Wire Line
 	2600 6800 3200 6800
 Text GLabel 2950 4100 2    50   Input ~ 0
 VCLK
-Text Label 2800 6800 0    50   ~ 0
-EV~ODD
 Wire Wire Line
 	6900 6500 6900 7050
 Wire Wire Line
@@ -1499,8 +1489,6 @@ Text Notes 9550 5600 0    50   ~ 0
 *MIGHT CONNECT E-C\nIF ONLY COLOUR MODE
 Text Notes 9050 6100 0    50   Italic 10
 *
-Text Label 8250 6300 0    50   ~ 0
-VBS
 $Comp
 L Device:R R107
 U 1 1 60B1D57F
@@ -1955,8 +1943,6 @@ Wire Bus Line
 	600  5850 600  5900
 Text GLabel 750  5900 1    50   Input ~ 0
 R~W
-Text Label 2900 4450 2    50   ~ 0
-EV~ODD
 $Comp
 L Connector_Generic:Conn_01x01 J4
 U 1 1 6271F029
@@ -2003,8 +1989,6 @@ Wire Wire Line
 	9100 5850 9100 6100
 Wire Wire Line
 	8400 6050 8400 6100
-Wire Wire Line
-	8400 6300 8250 6300
 Wire Wire Line
 	8250 6100 8800 6100
 Wire Wire Line
@@ -2313,13 +2297,25 @@ Wire Wire Line
 Connection ~ 3500 6800
 Wire Wire Line
 	10300 6350 10300 6500
+Connection ~ 10300 6500
+Wire Wire Line
+	10300 6500 10450 6500
 Wire Bus Line
 	8800 550  10750 550 
 Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
-Connection ~ 10300 6500
+Text Notes 3000 4250 0    50   ~ 0
+=EV~ODD
+Text Notes 2650 6800 0    50   ~ 0
+=EV~ODD
+Text Notes 8050 2200 0    50   ~ 0
+= ~DEH
+Text Notes 8050 3250 0    50   ~ 0
+= ~DEV
+Text Notes 9950 2250 1    50   ~ 0
+EV~ODD
 Wire Wire Line
-	10300 6500 10450 6500
+	8400 6300 8250 6300
 $EndSCHEMATC
