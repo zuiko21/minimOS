@@ -691,10 +691,6 @@ Text Label 3750 4500 0    50   ~ 0
 BA2
 Text Label 3750 4600 0    50   ~ 0
 BA3
-Text Label 3750 4700 0    50   ~ 0
-BA4
-Text Label 3950 4700 3    50   ~ 0
-~BWR
 Wire Wire Line
 	3950 4300 3750 4300
 Wire Wire Line
@@ -863,4 +859,8 @@ Wire Bus Line
 	900  2150 900  5700
 Wire Bus Line
 	750  2150 750  5750
+Text Label 3750 4700 0    50   ~ 0
+BA4
+Text Notes 3950 4700 3    50   ~ 0
+=~BWR
 $EndSCHEMATC

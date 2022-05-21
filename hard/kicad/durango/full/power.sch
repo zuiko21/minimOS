@@ -252,13 +252,13 @@ $EndComp
 $Comp
 L power:+5V #PWR0155
 U 1 1 60AD9E8C
-P 1350 2150
-F 0 "#PWR0155" H 1350 2000 50  0001 C CNN
-F 1 "+5V" V 1365 2278 50  0000 L CNN
-F 2 "" H 1350 2150 50  0001 C CNN
-F 3 "" H 1350 2150 50  0001 C CNN
-	1    1350 2150
-	0    -1   -1   0   
+P 1200 1750
+F 0 "#PWR0155" H 1200 1600 50  0001 C CNN
+F 1 "+5V" H 1000 1850 50  0000 L CNN
+F 2 "" H 1200 1750 50  0001 C CNN
+F 3 "" H 1200 1750 50  0001 C CNN
+	1    1200 1750
+	1    0    0    -1  
 $EndComp
 Text GLabel 1350 2050 1    50   Input ~ 0
 VCLK
@@ -420,11 +420,6 @@ Text GLabel 2250 2500 0    50   Input ~ 0
 SC0
 Text GLabel 2250 2600 0    50   Input ~ 0
 SC1
-Wire Wire Line
-	1350 2150 2750 2150
-Wire Wire Line
-	2750 2150 2750 2200
-Connection ~ 1350 2150
 $Comp
 L Connector:USB_B J7
 U 1 1 61A5663E
@@ -691,10 +686,6 @@ Text Label 3750 4500 0    50   ~ 0
 BA2
 Text Label 3750 4600 0    50   ~ 0
 BA3
-Text Label 3750 4700 0    50   ~ 0
-BA4
-Text Label 3950 4700 3    50   ~ 0
-~BWR
 Wire Wire Line
 	3950 4300 3750 4300
 Wire Wire Line
@@ -809,8 +800,8 @@ L Connector:Conn_Coaxial J?
 U 1 1 631CCF99
 P 3550 3550
 AR Path="/60C42E7C/631CCF99" Ref="J?"  Part="1" 
-AR Path="/6310B9C7/631CCF99" Ref="J206"  Part="1" 
-F 0 "J206" H 3650 3550 50  0000 L CNN
+AR Path="/6310B9C7/631CCF99" Ref="J006"  Part="1" 
+F 0 "J006" H 3650 3550 50  0000 L CNN
 F 1 "VIDEO/Y" H 3600 3450 50  0000 L CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 3550 3550 50  0001 C CNN
 F 3 " ~" H 3550 3550 50  0001 C CNN
@@ -849,6 +840,18 @@ Wire Wire Line
 Connection ~ 3350 2700
 Wire Wire Line
 	3350 2700 3600 2700
+Text Label 3750 4700 0    50   ~ 0
+BA4
+Text Notes 3950 4700 3    50   ~ 0
+=~BWR
+Wire Wire Line
+	1200 1750 1200 2150
+Wire Wire Line
+	1200 2150 1350 2150
+Wire Wire Line
+	1200 1750 2750 1750
+Wire Wire Line
+	2750 1750 2750 2200
 Wire Wire Line
 	850  5100 1350 5100
 Wire Bus Line
@@ -863,4 +866,5 @@ Wire Bus Line
 	900  2150 900  5700
 Wire Bus Line
 	750  2150 750  5750
+Connection ~ 1200 1750
 $EndSCHEMATC

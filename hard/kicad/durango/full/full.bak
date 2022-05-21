@@ -1015,8 +1015,6 @@ Wire Wire Line
 	4400 4750 4400 6850
 Wire Wire Line
 	4400 6850 4500 6850
-Text Label 7700 4300 3    50   ~ 0
-~LOW
 Wire Wire Line
 	7800 2350 7700 2350
 Wire Wire Line
@@ -1264,7 +1262,7 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS132" H 1200 4550 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 Text Label 3800 5250 0    50   ~ 0
-ROM_~CS
+~ROM_CS
 $Comp
 L 74xx:74LS132 U8
 U 2 1 609BC055
@@ -1292,8 +1290,6 @@ Wire Wire Line
 Wire Wire Line
 	3450 4500 3450 4600
 Connection ~ 3450 4500
-Text Label 3700 4500 0    50   ~ 0
-~OE
 Text Label 4050 4200 2    50   ~ 0
 ~WE
 $Comp
@@ -1614,7 +1610,7 @@ Wire Wire Line
 Wire Wire Line
 	1200 1950 1550 1950
 Text Label 6000 5300 0    50   ~ 0
-PHI0
+VCLK
 Wire Wire Line
 	9400 2750 9350 2750
 Wire Wire Line
@@ -1804,8 +1800,6 @@ F 3 "" H 3300 7450 50  0001 C CNN
 $EndComp
 Text Label 3800 7500 2    50   ~ 0
 ~IO9Q
-Text Label 3100 7600 1    50   ~ 0
-~BWR
 Connection ~ 2800 5250
 $Comp
 L power:+5V #PWR0159
@@ -1929,12 +1923,10 @@ Text Label 5800 4750 2    50   ~ 0
 MA[0..14]
 Text Label 7450 2350 2    50   ~ 0
 MA[0..14]
-Text Label 3000 4800 0    50   ~ 0
-PHI0
 Wire Wire Line
 	3550 3800 3550 3900
 Text Label 3000 3900 0    50   ~ 0
-PHI0
+VCLK
 $Comp
 L Device:D D5
 U 1 1 615D1EEA
@@ -2600,8 +2592,8 @@ Wire Wire Line
 Wire Wire Line
 	6000 5200 6000 5300
 Connection ~ 2950 4800
-Text Label 3450 5050 0    50   ~ 0
-PHI0
+Text Label 4550 5050 0    50   ~ 0
+VCLK
 $Comp
 L Device:R R23
 U 1 1 6223ED95
@@ -2774,7 +2766,7 @@ Text Label 850  4550 3    50   ~ 0
 ~250HZ
 Text Notes 5600 2650 1    50   ~ 0
 ACTUALLY IN CARTRIDGE!\nREMOVE FOOTPRINT FROM PCB
-Text Label 10000 5400 0    50   ~ 0
+Text Label 10000 5400 1    50   ~ 0
 AFB
 Entry Wire Line
 	2600 5250 2700 5350
@@ -2909,4 +2901,12 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
+Text Notes 3250 7600 0    50   ~ 0
+=~BWR
+Text Label 3650 4500 0    50   ~ 0
+~ROM_OE
+Text Label 7700 4700 1    50   ~ 0
+HIRES
+Text Notes 7700 2600 1    50   ~ 0
+= ~LOW
 $EndSCHEMATC
