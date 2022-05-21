@@ -1336,7 +1336,6 @@ Layer(1 "back" "copper")
 	Text[4545.00mil 2711.00mil 1 100 "GCC" "clearline"]
 	Text[345.00mil 2711.00mil 1 100 "GCC" "clearline"]
 	Text[4645.00mil 2911.00mil 1 100 "VCC" "clearline"]
-	Text[2370.00mil 1211.00mil 0 100 "74HTC4040" "clearline"]
 	Text[1920.00mil 1211.00mil 0 100 "U15" "clearline"]
 	Text[1120.00mil 1211.00mil 0 100 "Clock" "clearline"]
 	Text[620.00mil 1211.00mil 0 100 "X1" "clearline"]
@@ -1361,6 +1360,7 @@ Layer(1 "back" "copper")
 	Text[3745.00mil 2086.00mil 1 100 "VA13" "clearline"]
 	Text[2370.00mil 2336.00mil 0 100 "U20" "clearline"]
 	Text[2820.00mil 2336.00mil 0 100 "74HC85" "clearline"]
+	Text[2345.00mil 1211.00mil 0 100 "74HC4040" "clearline"]
 )
 Layer(2 "bridge" "copper")
 (
