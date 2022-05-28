@@ -1,3 +1,6 @@
+// Palomita 6502 emulator (crude)
+// (c)2007-2022 Carlos J. Santisteban
+
 #include <stdio.h>
 
 class _65c02
