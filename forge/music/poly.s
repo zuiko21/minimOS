@@ -28,11 +28,11 @@ IOBeep	= $DFB0
 #endif
 
 ; really needs pointers to note lists
-pptarr		.dsb	2/Pingendo/pingendo/releases/download/v4.3.2/Pingendo-4.3.2-x86_64.AppImage*MAXVOICE, 0	; 4 pointers to pitch lists, $5FE0-$5FE7
+pptarr		.dsb	2*MAXVOICE, 0	; 4 pointers to pitch lists, $5FE0-$5FE7
 dptarr		.dsb	2*MAXVOICE, 0	; 4 pointers to duration lists, $5FE8-$5FEF
 
 ; user parameters
-voices/Pingendo/pingendo/releases/download/v4.3.2/Pingendo-4.3.2-x86_64.AppImage		.byt	0		; $5FF0/$310 number of active voices (set 0 to disable and reset all channels)
+voices		.byt	0		; $5FF0/$310 number of active voices (set 0 to disable and reset all channels)
 tempo		.byt	0		; $5FF1/$311 tempo setting (number of 4ms interrupts between semiquavers, 31 means b=119)
 
 ; *** local variables ***
@@ -137,8 +137,7 @@ cont:
 cyloop:
 				TAX			; retrieve pitch cycles
 ploop:
-					D/Pingendo/pingendo/releases/download/v4.3.2/Pingendo-4.3.2-x86_64.AppImageEX
-	/Pingendo/pingendo/releases/download/v4.3.2/Pingendo-4.3.2-x86_64.AppImage				JSR delay		; 12t extra
+					JSR delay		; 12t extra
 					BNE ploop		; this takes (17X+10)t per semicycle (min ~177 Hz)
 				DEY
 				STY IOBeep	; toggle speaker 
