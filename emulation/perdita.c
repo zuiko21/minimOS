@@ -1,88 +1,102 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220528-1251
+ * last modified 20220530-1902
  * */
 
 #include <stdio.h>
 
+/* type definitions */
+	typedef u_int8_t byte;
+	typedef u_int16_t word;
+
 /* global variables */
-		int mem[65536]		// unified memory map
+	byte mem[65536]			// unified memory map
 
-		int a, x, y, s, p;	// 8-bit registers
-		long pc;			// program counter
-		int run, ver;		// emulator control
-				
-/* old hardware methods, just for reference
- * 
-		void cargarROM(void);			// eso...
-		int peek(long dir);				// acceso memoria
-		void poke(long dir, int v);
-		void put(int c)		{ term[indi++] = c; }	// puerto serie
+	byte a, x, y, s, p;		// 8-bit registers
+	word pc;				// program counter
+	int run, ver;			// emulator control
 
-		// depuración
-		
-		void vdu(void);					// ver pantalla
-		void serie(void);				// ver lo que salió por ACIA
+	const char flag[8]="NV·BDIZC";	// flag names
 
-// *** keep this! ***
-		void stat(void)		{ printf("<PC=%d (%p), A=%d, X=%d, Y=%d>\n", pc-1, pc-1, a, x, y); }
+/* function prototypes */
+	void stat(void);
+	byte peek(word dir);
+	void poke(word dir, byte v);
+	void push(byte b);	{ poke(0x100 + s--, b); }
+	byte pop(void);		{ return peek(++s + 0x100); }
 
+	void rel(byte off);
+	void bits_nz(byte b);
+	void lrot_p(byte *d);
+	void adc(byte d);
+	void asl(byte *d);
+	void cmp(byte d);
+	void lsr(byte *d);
+	void rol(byte *d);
+	void ror(byte *d);
+	void sbc(byte d);
 
-		// señales externas
-		
-		void reset(void);
-		void nmi(void);
-		void irq(void);
-		
-		// operaciones internas
-		
+	int exec(void);
+	void reset(void);
+	void nmi(void);
+	void irq(void);
 
-// *** keep these! ***
-		void push(int b)	{ poke(0x100 + s--, b); }
-		int pop(void)		{ return peek(++s + 0x100); }
-
-
-		void rel(int off);
-		void bits_nz(int b);
-		void lrot_p(int *d);
-		void adc(int d);
-		void asl(int *d);
-		void cmp(int d);
-		void lsr(int *d);
-		void rol(int *d);
-		void ror(int *d);
-		void sbc(int d);
-
-		int exec(void);	// ejecuta lo que esté en (PC), devuelve número de períodos
-};
+/* convert these to functions, or inline them
+	op_l = peek(pc);
+	op_w = peek(pc + 1);
+	
+	am_a = op_l + 256*op_h;
+	am_ix = peek(op_l + x) + 256*peek(op_l + x + 1);
+	am_iy = peek(op_l) + 256*peek(op_l + 1) + y;
+	am_zx = op_l + x;
+	am_zy = op_l + y;
+	am_ax = am_a + x;
+	am_ay = am_a + y;
+	am_ai = peek(am_a) + 256*peek(am_a + 1);
+	am_aix = peek(am_a + x) + 256*peek(am_a + x + 1);
+	am_iz = am_iy - y;
 */
 
 /* ******************* startup ******************* */
 int main (int argc, char * const argv[]) {
-	long t, periodos = 0;
+	long cont = 0;			// total elapsed cycles
+	int cyc, t=0;			// instruction and interrupt cycle counter
 	
 	reset();
 	
 	do
 	{
-		periodos += exec();	// velocidad emulador: x2.2
-		if (periodos >= 10240000)		// t++ cada 6200 son unos 50 Hz
+		cyc = exec();		// count elapsed clock cycles
+		cont += cyc;
+		t += cyc;
+		if (t >= 6144)		// 250 Hz interrupt @ 1.536 MHz
 		{
-			run = t = 0;
-			printf("\nTIMOTEO!! ");
-			// irq();
-			// vdu();
+			t -= 6144;		// restore for next
+			if (mem[0xDFA0] & 1) {	// are hardware interrupts enabled?
+				irq();				// maybe update screen as well
+			}
 		}
 	} while (run);
 	
-	printf(" CPU detenida: %d períodos ejecutados\n", periodos);
-	stat();		
-	vdu();
-	serie();
-	
-    return 0;
+	printf(" *** CPU halted after %d clock cycles ***\n", cont);
+	stat();					// display end status
+
+	return 0;
 }
-//***********************************************
+
+/* support function definitions */
+void stat(void)	{
+	int psr = p;			// copy status
+	int i;
+
+	printf("<PC=%04X, A=%02X, X=%02X, Y=%02X, S=%02X>\n<PSR: ", pc-1, a, x, y, s);
+	for (i=0; i<8; i++) {
+		if (psr&128)	printf("%c", flags[i]);
+		else			printf("·");
+		p<sr<=1;			// next flag
+	}
+	printf(">\n");
+}
 
 /* constructor is no more
 _65c02(void)
@@ -125,11 +139,11 @@ void cargarROM(void)	// kernel.rom  y  monitor.rom
 	
 /*	mem[32768+0x16] = 0xA9; // LDA #
 	mem[32768+0x17] = '=';
-	mem[32768+0x18] = 0x8D; // STA abs
+	mem[32768+0x18] = 0x8D; // STA am_a
 	mem[32768+0x19] = 0xA0; // donde
 	mem[32768+0x1A] = 0xDF;
 	mem[32768+0x1B] = 0xAA; // TAX
-	mem[32768+0x1C] = 0x9D;	// STA abs, X
+	mem[32768+0x1C] = 0x9D;	// STA am_a, X
 	mem[32768+0x1D] = 0x00;	//
 	mem[32768+0x1E] = 0x40;	//
 	mem[32768+0x1F] = 0xCA;	// DEX
@@ -143,161 +157,55 @@ void cargarROM(void)	// kernel.rom  y  monitor.rom
 		
 }
 
-int peek(long dir)
-{
-	long db, cb, rom, reg6845, mex;
-	int d = 0xEA;
-	
-	db = dir - 16384;
-	cb = dir - 32768;
-	rom = dir - 49152;
-	
-	mex = rom - 0x1F80;
-	
-	if (dir>=0 && dir<16384)				// RAM estática 16 KB
-		d = mem[dir];
-	
-	if (db>=0 && db<16384)					// dBank
-	{
-		if (pia1[0] == 0 && pia1[1] == 32)	// bloque $20 => VRAM
-			if (db < 2048)
-				d = vram[db];
-		if (pia1[0] < 2 && pia1[1] == 0)	// bloque $00, bancos 0...1 => 32K RAM expandida
-			d = mem_exp[db + 16384 * pia1[0]];
+byte peek(word dir) {
+	byte d = 0xFF;				// supposed floating databus value?
+
+	if (dir>=0xDF80 && dir<=0xDFFF) {	// I/O
+		if (dir<=0xDF87)		// video mode (readable)
+			d = mem[0xDF80];
+		else if (dir<=0xDF8F)	// sync flags
+			d = mem[0xDF88];
+		else if (dir<=0xDF9F)	// expansion port
+			d = mem[dir];		// *** is this OK?
+// interrupt control and beeper are NOT readable
+		else if (dir>=0xDFC0)	// cartridge I/O
+			d = mem[dir];		// *** is this OK?
+	} else {
+		d = mem[dir];			// default memory read, either RAM or ROM
 	}
 
-	if (cb>=0 && cb<16384)					// cBank
-	{
-		if (pia2[0] == 0 && pia2[1] == 47)	// bloque $2F => control VDU
-		{
-			d = vdu_ctl[cb];
-			if (cb == 16383)				// lectura regsitro CRTC
-			{
-				reg6845 = vdu_ctl[16382];
-				d = crtc[reg6845];
-			}
-		}
-		if (pia2[0] < 2 && pia2[1] == 0)	// bloque $00, bancos 0...1 => 32K RAM expandida
-			d = mem_exp[cb + 16384 * pia2[0]];
-	}
-	
-	if (rom>=0 && rom<16384)	// EPROM
-	{
-		d = mem[32768+rom];
-		if (mex >= 0 && mex < 128)		// área E/S
-		{
-			if (mex < 16)				// VIA 6522
-				d = via[mex];
-			if (mex >= 32 && mex < 36)	// ACIA 6551
-			{
-				d = acia[mex - 32];
-				if (mex == 32)		acia[1] &= 0xF7;	// listo para recibir otra vez...
-			}
-			if (mex >= 64 && mex < 68)	// PIA 6821 (A)
-				d = pia1[mex - 64];
-			if (mex >= 80 && mex < 84)	// PIA 6821 (B)
-				d = pia1[mex - 80];
-		}
-	}
-	
 	return d;
 }
 
 void poke(long dir, int v)
 {
-	long db, cb, reg6845, mex;
-	
-	db = dir - 16384;
-	cb = dir - 32768;
-	mex = dir - 0xDF80;
-	
-	if (dir>=0 && dir<16384)
+	if (dir>=0 && dir<32768)			// 32 KiB static RAM
 		mem[dir] = v;
-	
-	if (db>=0 && db<16384)					// dBank
-	{
-		if (pia1[0] == 0 && pia1[1] == 32)	// bloque $20 => VRAM
-			if (db < 2048)
-			{
-				vram[db] = v;
-				if (ver > 1)	printf("(%c)", v);		// enviado a la VRAM
-			}
-		if (pia1[0] < 2 && pia1[1] == 0)	// bloque $00, bancos 0...1 => 32K RAM expandida
-			mem_exp[db + 16384 * pia1[0]] = v;
 
-	}
-	
-
-	if (cb>=0 && cb<16384)					// cBank
-	{
-		if (pia2[0] == 0 && pia2[1] == 47)	// bloque $2F => control VDU
-		{
-			if (cb == 16383)				// escritura registro CRTC
-			{
-				reg6845 = vdu_ctl[16382];
-				crtc[reg6845] = v;
-			}
-			else	vdu_ctl[cb] = v;
-		}
-		if (pia2[0] < 2 && pia2[1] == 0)	// bloque $00, bancos 0...1 => 32K RAM expandida
-			mem_exp[cb + 16384 * pia2[0]] = v;
-
-	}
-	
-	if (mex >= 0 && mex < 128)		// área E/S
-	{
-		if (mex < 16)				// VIA 6522
-			via[mex] = v;
-		if (mex >= 32 && mex < 36)	// ACIA 6551
-		{
-			if (mex == 33)		// RESET
-			{
-				acia[1] = 0x10;
-				acia[0] = acia [2] = acia[3] = 0;
-			}
-			else	acia[mex - 32] = v;
-			if (mex == 32)
-			{
-				put(v);				// sale por ACIA
-				if (ver > 1)	printf("{%c}", v);
-				acia[1] |= 0x10;	// libre otra vez
-			}
-			
-		}
-		if (mex >= 64 && mex < 68)	// PIA 6821 (A) *** controlar registros internos...
-			pia1[mex - 64] = v;
-		if (mex >= 80 && mex < 84)	// PIA 6821 (B) *** controlar registros internos...
-			pia2[mex - 80] = v;
+	if (dir>=0xDF80 && dir<=0xDFFF) {	// I/O
+		if (dir<=0xDF87)				// video mode?
+			mem[0xDF80] = v;			// canonical address
+		else if (dir<=0xDF8F)			// sync flags?
+// *** not writable
+		else if (dir<=0xDF9F)			// expansion port?
+			mem[dir] = v;				// *** is this OK?
+		else if (dir<=0xDFAF)			// interrupt control?
+			mem[0xDFA0] = v;			// canonical address, only D0 matters
+		else if (dir<=0xDFBF)			// beeper?
+			mem[0xDFB0] = v;			// canonical address, only D0 matters *** anything else?
+		else
+			mem[dir] = v;				// otherwise is cartridge I/O *** anything else?
 	}
 }
 
 void reset(void)
 {
-	int i;
-	
-	a &= 0xFF;		// sólo 8 bits
-	x &= 0xFF;
-	y &= 0xFF;
-	s &= 0xFF;
-	
-	pc = peek(0xfffc) + 256*peek(0xfffd);	// vector RESET
-	
-	printf(" RESET: PC=%d (%p)\n", pc, pc);
-	
-	p &= 0xF7;		// CLD en 65C02
-	p |= 0x20;		// siempre a 1
-	
-	for (i = 0; i < 17; i++)	crtc[i] = 0;
-	for (i = 0; i < 16; i++)	via[i] = 0;
-	for (i = 0; i < 4; i++)		acia[i] = 0;
-	acia[1] = 0x10;	// libre pa transmitir
-	
-/*	pia1[0] = 0;	// *** para que funcione el miniDock ***
-	pia1[1] = 32;
-	pia2[0] = 0;	// *** para que funcione el miniDock ***
-	pia2[1] = 47;
-	for (i = 2; i < 4; i++)		pia1[i] = pia2[i] = 0;
-*/	
+	pc = peek(0xFFFC) + 256*peek(0xFFFD);	// RESET vector
+
+	printf(" RESET: PC=>%04X\n", pc);
+
+	p &= 0b11110011;						// CLD & SEI on 65C02
+	p |= 0b00110000;						// these always 1
 }
 
 void nmi(void)
@@ -418,155 +326,155 @@ void sbc(int d)
 
 int exec(void)
 {
-	int opcode, b1, b2, temp, per = 2;
-	long abs, ix, iy, zx, zy, ax, ay;
-	long ai, aix, iz; 
+	int opcode, op_l, op_h, temp, per = 2;
+	long am_a, am_ix, am_iy, am_zx, am_zy, am_ax, am_ay;
+	long am_ai, am_aix, am_iz; 
 	
 	opcode = peek(pc++);
+//inline these?	
+	op_l = peek(pc);
+	op_h = peek(pc + 1);
 	
-	b1 = peek(pc);
-	b2 = peek(pc + 1);
-	
-	abs = b1 + 256*b2;
-	ix = peek(b1 + x) + 256*peek(b1 + x + 1);
-	iy = peek(b1) + 256*peek(b1 + 1) + y;
-	zx = b1 + x;
-	zy = b1 + y;
-	ax = abs + x;
-	ay = abs + y;
-	ai = peek(abs) + 256*peek(abs + 1);
-	aix = peek(abs + x) + 256*peek(abs + x + 1);
-	iz = iy - y;
+	am_a = op_l + 256*op_h;
+	am_ix = peek(op_l + x) + 256*peek(op_l + x + 1);
+	am_iy = peek(op_l) + 256*peek(op_l + 1) + y;
+	am_zx = op_l + x;
+	am_zy = op_l + y;
+	am_ax = am_a + x;
+	am_ay = am_a + y;
+	am_ai = peek(am_a) + 256*peek(am_a + 1);
+	am_aix = peek(am_a + x) + 256*peek(am_a + x + 1);
+	am_iz = am_iy - y;
 	
 	switch(opcode)
 	{
 		case 0x69:						// *** ADC: Add Memory to Accumulator with Carry ***
-			adc(b1);
+			adc(op_l);
 			if (ver > 1) printf("[ADC#]");
 			pc++;
 			break;
 		case 0x6D:
-			adc(peek(abs));
+			adc(peek(am_a));
 			if (ver > 1) printf("[ADCa]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x65:
-			adc(peek(b1));
+			adc(peek(op_l));
 			if (ver > 1) printf("[ADCz]");
 			pc++;
 			per = 3;
 			break;
 		case 0x61:
-			adc(peek(ix));
+			adc(peek(am_ix));
 			if (ver > 1) printf("[ADC(x)]");
 			pc++;
 			per = 6;
 			break;
 		case 0x71:
-			adc(peek(iy));
+			adc(peek(am_iy));
 			if (ver > 1) printf("[ADC(y)]");
 			pc++;
 			per = 5;
 			break;
 		case 0x75:
-			adc(peek(zx));
+			adc(peek(am_zx));
 			if (ver > 1) printf("[ADCzx]");
 			pc++;
 			per = 4;
 			break;
 		case 0x7D:
-			adc(peek(ax));
+			adc(peek(am_ax));
 			if (ver > 1) printf("[ADCx]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x79:
-			adc(peek(ay));
+			adc(peek(am_ay));
 			if (ver > 1) printf("[ADCy]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x72:	// exclusiva CMOS
-			adc(peek(iz));
+			adc(peek(am_iz));
 			if (ver > 1) printf("[ADC(z)]");
 				pc++;
 			per = 5;
 			break;
 		case 0x29:						// *** AND: "And" Memory with Accumulator ***
-			a &= b1;
+			a &= op_l;
 			bits_nz(a);
 			if (ver > 1) printf("[AND#]");
 			pc++;
 			break;
 		case 0x2D:
-			a &= peek(abs);
+			a &= peek(am_a);
 			bits_nz(a);
 			if (ver > 1) printf("[ANDa]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x25:
-			a &= peek(b1);
+			a &= peek(op_l);
 			bits_nz(a);
 			if (ver > 1) printf("[ANDz]");
 			pc++;
 			per = 3;
 			break;
 		case 0x21:
-			a &= peek(ix);
+			a &= peek(am_ix);
 			bits_nz(a);
 			if (ver > 1) printf("[AND(x)]");
 			pc++;
 			per = 6;
 			break;
 		case 0x31:
-			a &= peek(iy);
+			a &= peek(am_iy);
 			bits_nz(a);
 			if (ver > 1) printf("[AND(y)]");
 			pc++;
 			per = 5;
 			break;
 		case 0x35:
-			a &= peek(zx);
+			a &= peek(am_zx);
 			bits_nz(a);
 			if (ver > 1) printf("[ANDzx]");
 			pc++;
 			per = 4;
 			break;
 		case 0x3D:
-			a &= peek(ax);
+			a &= peek(am_ax);
 			bits_nz(a);
 			if (ver > 1) printf("[ANDx]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x39:
-			a &= peek(ay);
+			a &= peek(am_ay);
 			bits_nz(a);
 			if (ver > 1) printf("[ANDy]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x32:	// exclusiva CMOS
-			a &= peek(iz);
+			a &= peek(am_iz);
 			bits_nz(a);
 			if (ver > 1) printf("[AND(z)]");
 				pc++;
 			per = 5;
 			break;
 		case 0x0E:						// *** ASL: Shift Left one Bit (Memory or Accumulator) ***
-			temp = peek(abs);
+			temp = peek(am_a);
 			asl(&temp);
-			poke(abs, temp);
+			poke(am_a, temp);
 			if (ver > 1) printf("[ASLa]");
 			pc += 2;
 			per = 6;
 			break;
 		case 0x06:
-			temp = peek(b1);
+			temp = peek(op_l);
 			asl(&temp);
-			poke(b1, temp);
+			poke(op_l, temp);
 			if (ver > 1) printf("[ASLz]");
 			pc++;
 			per = 5;
@@ -576,17 +484,17 @@ int exec(void)
 			if (ver > 1) printf("[ASL]");
 			break;
 		case 0x16:
-			temp = peek(zx);
+			temp = peek(am_zx);
 			asl(&temp);
-			poke(zx, temp);
+			poke(am_zx, temp);
 			if (ver > 1) printf("[ASLzx]");
 			pc++;
 			per = 6;
 			break;
 		case 0x1E:
-			temp = peek(ax);
+			temp = peek(am_ax);
 			asl(&temp);
-			poke(ax, temp);
+			poke(am_ax, temp);
 			if (ver > 1) printf("[ASLx]");
 			pc += 2;
 			per = 6;	// 7 en el 6502 NMOS
@@ -595,7 +503,7 @@ int exec(void)
 			pc++;
 			if(!(p & 0x01))
 			{
-				rel(b1);
+				rel(op_l);
 				per = 3;
 			}
 			else if (ver == 1)	ver = 2;
@@ -605,7 +513,7 @@ int exec(void)
 			pc++;
 			if(p & 0x01)
 			{
-				rel(b1);
+				rel(op_l);
 				per = 3;
 			}
 			else if (ver == 1)	ver = 2;
@@ -615,14 +523,14 @@ int exec(void)
 			pc++;
 			if(p & 0x02)
 			{
-				rel(b1);
+				rel(op_l);
 				per = 3;
 			}				
 			else if (ver == 1)	ver = 2;
 			if (ver > 1) printf("[BEQ]");
 			break;
 		case 0x2C:						// *** BIT: Test Bits in Memory with Accumulator (?) ***
-			temp = peek(abs);
+			temp = peek(am_a);
 			if (temp & 0x80)
 				p |= 0x80;
 			else
@@ -637,7 +545,7 @@ int exec(void)
 			per = 4;
 			break;
 		case 0x24:
-			temp = peek(b1);
+			temp = peek(op_l);
 			if (temp & 0x80)
 				p |= 0x80;
 			else
@@ -652,7 +560,7 @@ int exec(void)
 			per = 3;
 			break;
 		case 0x89:	// exclusiva CMOS
-			temp = b1;
+			temp = op_l;
 			if (temp & 0x80)
 				p |= 0x80;
 			else
@@ -666,7 +574,7 @@ int exec(void)
 			pc++;
 			break;
 		case 0x3C:	// exclusiva CMOS
-			temp = peek(ax);
+			temp = peek(am_ax);
 			if (temp & 0x80)
 				p |= 0x80;
 			else
@@ -681,7 +589,7 @@ int exec(void)
 			per = 4;
 			break;
 		case 0x34:	// exclusiva CMOS
-			temp = peek(zx);
+			temp = peek(am_zx);
 			if (temp & 0x80)
 				p |= 0x80;
 			else
@@ -699,7 +607,7 @@ int exec(void)
 			pc++;
 			if(p & 0x80)
 			{
-				rel(b1);
+				rel(op_l);
 				per = 3;
 			}		
 			else if (ver == 1)	ver = 2;
@@ -709,7 +617,7 @@ int exec(void)
 			pc++;
 			if(!(p & 0x02))
 			{
-				rel(b1);
+				rel(op_l);
 				per = 3;
 			}				
 			else if (ver == 1)	ver = 2;
@@ -719,7 +627,7 @@ int exec(void)
 			pc++;
 			if(!(p & 0x80))
 			{
-				rel(b1);
+				rel(op_l);
 				per = 3;
 			}			
 			else if (ver == 1)	ver = 2;
@@ -727,7 +635,7 @@ int exec(void)
 			break;
 		case 0x80:						// exclusiva CMOS: *** BRA ***
 			pc++;
-			rel(b1);
+			rel(op_l);
 			per = 3;
 			if (ver > 1) printf("[BRA]");
 			break;
@@ -742,7 +650,7 @@ int exec(void)
 			pc++;
 			if(!(p & 0x40))
 			{
-				rel(b1);
+				rel(op_l);
 				per = 3;
 			}
 			else if (ver == 1)	ver = 2;
@@ -752,7 +660,7 @@ int exec(void)
 			pc++;
 			if(p & 0x40)
 			{
-				rel(b1);
+				rel(op_l);
 				per = 3;
 			}
 			else if (ver == 1)	ver = 2;
@@ -775,143 +683,143 @@ int exec(void)
 			if (ver > 1) printf("[CLV]");
 			break;
 		case 0xC9:						// *** CMP: Compare Memory And Accumulator ***		¿¿¿ o al revés ???
-			cmp(a - b1);
+			cmp(a - op_l);
 			if (ver > 1) printf("[CMP#]");
 			pc++;
 			break;
 		case 0xCD:
-			temp = peek(abs);
+			temp = peek(am_a);
 			cmp(a - temp);
 			if (ver > 1) printf("[CMPa]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0xC5:
-			temp = peek(b1);
+			temp = peek(op_l);
 			cmp(a - temp);
 			if (ver > 1) printf("[CMPz]");
 			per = 3;
 			pc++;
 			break;
 		case 0xC1:
-			temp = peek(ix);
+			temp = peek(am_ix);
 			cmp(a - temp);
 			if (ver > 1) printf("[CMP(x)]");
 			pc++;
 			per = 6;
 			break;
 		case 0xD1:
-			temp = peek(iy);
+			temp = peek(am_iy);
 			cmp(a - temp);
 			if (ver > 1) printf("[CMP(y)]");
 			pc++;
 			per = 5;
 			break;
 		case 0xD5:
-			temp = peek(zx);
+			temp = peek(am_zx);
 			cmp(a - temp);
 			if (ver > 1) printf("[CMPzx]");
 			pc++;
 			per = 4;
 			break;
 		case 0xDD:
-			temp = peek(ax);
+			temp = peek(am_ax);
 			cmp(a - temp);
 			if (ver > 1) printf("[CMPx]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0xD9:
-			temp = peek(ay);
+			temp = peek(am_ay);
 			cmp(a - temp);
 			if (ver > 1) printf("[CMPy]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0xD2:	// exclusiva CMOS
-			temp = peek(iz);
+			temp = peek(am_iz);
 			cmp(a - temp);
 			if (ver > 1) printf("[CMP(z)]");
 			pc++;
 			per = 5;
 			break;
 		case 0xE0:						// *** CPX: Compare Memory And Index X ***			¿¿¿ o al revés ???
-			cmp(x - b1);
+			cmp(x - op_l);
 			if (ver > 1) printf("[CPX#]");
 			pc++;
 			break;
 		case 0xEC:
-			temp = peek(abs);
+			temp = peek(am_a);
 			cmp(x - temp);
 			if (ver > 1) printf("[CPXa]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0xE4:
-			temp = peek(b1);
+			temp = peek(op_l);
 			cmp(x - temp);
 			if (ver > 1) printf("[CPXz]");
 			pc++;
 			per = 3;
 			break;
 		case 0xC0:						// *** CPY: Compare Memory And Index Y ***				¿¿¿ o al revés ???
-			cmp(y - b1);
+			cmp(y - op_l);
 			if (ver > 1) printf("[CPY#]");
 			pc++;
 			break;
 		case 0xCC:
-			temp = peek(abs);
+			temp = peek(am_a);
 			cmp(y - temp);
 			if (ver > 1) printf("[CPYa]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0xC4:
-			temp = peek(b1);
+			temp = peek(op_l);
 			cmp(y - temp);
 			if (ver > 1) printf("[CPYz]");
 			pc++;
 			per = 3;
 			break;
 		case 0xCE:						// *** DEC: Decrement Memory (or Accumulator) by One ***
-			temp = peek(abs);
+			temp = peek(am_a);
 			temp--;
 			if (temp == -1)
 				temp = 255;
-			poke(abs, temp);
+			poke(am_a, temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[DECa]");
 			pc += 2;
 			per = 6;
 			break;
 		case 0xC6:
-			temp = peek(b1);
+			temp = peek(op_l);
 			temp--;
 			if (temp == -1)
 				temp = 255;
-			poke(b1, temp);
+			poke(op_l, temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[DECz]");
 			pc++;
 			per = 5;
 			break;
 		case 0xD6:
-			temp = peek(zx);
+			temp = peek(am_zx);
 			temp--;
 			if (temp == -1)
 				temp = 255;
-			poke(zx, temp);
+			poke(am_zx, temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[DECzx]");
 			pc += 2;
 			per = 6;
 			break;
 		case 0xDE:
-			temp = peek(ax);
+			temp = peek(am_ax);
 			temp--;
 			if (temp == -1)
 				temp = 255;
-			poke(ax, temp);
+			poke(am_ax, temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[DECx]");
 			pc += 2;
@@ -939,106 +847,106 @@ int exec(void)
 			if (ver > 1) printf("[DEY]");
 			break;
 		case 0x49:						// *** EOR: "Exclusive Or" Memory with Accumulator ***
-			a ^= b1;
+			a ^= op_l;
 			bits_nz(a);
 			if (ver > 1) printf("[EOR#]");
 			pc++;
 			break;
 		case 0x4D:
-			a ^= peek(abs);
+			a ^= peek(am_a);
 			bits_nz(a);
 			if (ver > 1) printf("[EORa]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x45:
-			a ^= peek(b1);
+			a ^= peek(op_l);
 			bits_nz(a);
 			if (ver > 1) printf("[EORz]");
 			pc++;
 			per = 3;
 			break;
 		case 0x41:
-			a ^= peek(ix);
+			a ^= peek(am_ix);
 			bits_nz(a);
 			if (ver > 1) printf("[EOR(x)]");
 			pc++;
 			per = 6;
 			break;
 		case 0x51:
-			a ^= peek(iy);
+			a ^= peek(am_iy);
 			bits_nz(a);
 			if (ver > 1) printf("[EOR(y)]");
 			pc++;
 			per = 5;
 			break;
 		case 0x55:
-			a ^= peek(zx);
+			a ^= peek(am_zx);
 			bits_nz(a);
 			if (ver > 1) printf("[EORzx]");
 			pc++;
 			per = 4;
 			break;
 		case 0x5D:
-			a ^= peek(ax);
+			a ^= peek(am_ax);
 			bits_nz(a);
 			if (ver > 1) printf("[EORx]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x59:
-			a ^= peek(ay);
+			a ^= peek(am_ay);
 			bits_nz(a);
 			if (ver > 1) printf("[EORy]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x52:	// exclusiva CMOS
-			a ^= peek(iz);
+			a ^= peek(am_iz);
 			bits_nz(a);
 			if (ver > 1) printf("[EOR(z)]");
 				pc++;
 			per = 5;
 			break;
 		case 0xEE:						// *** INC: Increment Memory (or Accumulator) by One ***
-			temp = peek(abs);
+			temp = peek(am_a);
 			temp++;
 			if (temp == 256)
 				temp = 0;
-			poke(abs, temp);
+			poke(am_a, temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[INCa]");
 			pc += 2;
 			per = 6;
 			break;
 		case 0xE6:
-			temp = peek(b1);
+			temp = peek(op_l);
 			temp++;
 			if (temp == 256)
 				temp = 0;
-			poke(b1, temp);
+			poke(op_l, temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[INCz]");
 			pc++;
 			per = 5;
 			break;
 		case 0xF6:
-			temp = peek(zx);
+			temp = peek(am_zx);
 			temp++;
 			if (temp == 256)
 				temp = 0;
-			poke(zx, temp);
+			poke(am_zx, temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[INCzx]");
 			pc++;
 			per = 6;
 			break;
 		case 0xFE:
-			temp = peek(ax);
+			temp = peek(am_ax);
 			temp++;
 			if (temp == 256)
 				temp = 0;
-			poke(ax, temp);
+			poke(am_ax, temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[INCx]");
 			pc += 2;
@@ -1066,172 +974,172 @@ int exec(void)
 			if (ver > 1) printf("[INY]");
 			break;
 		case 0x4C:						// *** JMP: Jump to New Location ***
-			pc = abs;
+			pc = am_a;
 			if (ver)	printf("[JMP]");
 			per = 3;
 			break;
 		case 0x6C:
-			pc = ai;
+			pc = am_ai;
 			if (ver)	printf("[JMP*]");
 			per = 6;	// ¿¿¿ 5 en el 6502 NMOS ???
 			break;
 		case 0x7C:	// exclusiva CMOS
-			pc = aix;
+			pc = am_aix;
 			if (ver)	printf("[JMP(x)]");
 			per = 6;
 			break;
 		case 0x20:						// *** JSR: Jump to New Location Saving Return Address ***
 			pc++;						// se queda en el MSB
-			b1 = pc % 256;
-			b2 = pc / 256;
-			push(b2);
-			push(b1);
-			pc = abs;
+			op_l = pc % 256;
+			op_h = pc / 256;
+			push(op_h);
+			push(op_l);
+			pc = am_a;
 			if (ver)	printf("[JSR]");
 			per = 6;
 			break;
 		case 0xA9:						// *** LDA: Load Accumulator with Memory ***
-			a = b1;
+			a = op_l;
 			bits_nz(a);
 			if (ver > 1) printf("[LDA#]");
 			pc++;
 			break;
 		case 0xAD:
-			a = peek(abs);
+			a = peek(am_a);
 			bits_nz(a);
 			if (ver > 1) printf("[LDAa]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0xA5:
-			a = peek(b1);
+			a = peek(op_l);
 			bits_nz(a);
 			if (ver > 1) printf("[LDAz]");
 			pc++;
 			per = 3;
 			break;
 		case 0xA1:
-			a = peek(ix);
+			a = peek(am_ix);
 			bits_nz(a);
 			if (ver > 1) printf("[LDA(x)]");
 			pc++;
 			per = 6;
 			break;
 		case 0xB1:
-			a = peek(iy);
+			a = peek(am_iy);
 			bits_nz(a);
 			if (ver > 1) printf("[LDA(y)]");
 			pc++;
 			per = 5;
 			break;
 		case 0xB5:
-			a = peek(zx);
+			a = peek(am_zx);
 			bits_nz(a);
 			if (ver > 1) printf("[LDAzx]");
 			pc++;
 			per = 4;
 			break;
 		case 0xBD:
-			a = peek(ax);
+			a = peek(am_ax);
 			bits_nz(a);
 			if (ver > 1) printf("[LDAx]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0xB9:
-			a = peek(ay);
+			a = peek(am_ay);
 			bits_nz(a);
 			if (ver > 1) printf("[LDAy]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0xB2:	// exclusiva CMOS
-			a = peek(iz);
+			a = peek(am_iz);
 			bits_nz(a);
 			if (ver > 1) printf("[LDA(z)]");
 			pc++;
 			per = 5;
 			break;
 		case 0xA2:						// *** LDX: Load Index X with Memory ***
-			x = b1;
+			x = op_l;
 			bits_nz(x);
 			if (ver > 1) printf("[LDX#]");
 			pc++;
 			break;
 		case 0xAE:
-			x = peek(abs);
+			x = peek(am_a);
 			bits_nz(x);
 			if (ver > 1) printf("[LDXa]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0xA6:
-			x = peek(b1);
+			x = peek(op_l);
 			bits_nz(x);
 			if (ver > 1) printf("[LDXz]");
 			pc++;
 			per = 3;
 			break;
 		case 0xB6:
-			x = peek(zy);
+			x = peek(am_zy);
 			bits_nz(x);
 			if (ver > 1) printf("[LDXzy]");
 			pc++;
 			per = 4;
 			break;
 		case 0xBE:
-			x = peek(ay);
+			x = peek(am_ay);
 			bits_nz(x);
 			if (ver > 1) printf("[LDXy]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0xA0:						// *** LDY: Load Index Y with Memory ***
-			y = b1;
+			y = op_l;
 			bits_nz(y);
 			if (ver > 1) printf("[LDY#]");
 			pc++;
 			break;
 		case 0xAC:
-			y = peek(abs);
+			y = peek(am_a);
 			bits_nz(y);
 			if (ver > 1) printf("[LDYa]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0xA4:
-			y = peek(b1);
+			y = peek(op_l);
 			bits_nz(y);
 			if (ver > 1) printf("[LDYz]");
 			pc++;
 			per = 3;
 			break;
 		case 0xB4:
-			y = peek(zx);
+			y = peek(am_zx);
 			bits_nz(y);
 			if (ver > 1) printf("[LDYzx]");
 			pc++;
 			per = 4;
 			break;
 		case 0xBC:
-			y = peek(ax);
+			y = peek(am_ax);
 			bits_nz(y);
 			if (ver > 1) printf("[LDYx]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x4E:						// *** LSR: Shift One Bit Right (Memory or Accumulator) ***
-			temp = peek(abs);
+			temp = peek(am_a);
 			lsr(&temp);
-			poke(abs, temp);
+			poke(am_a, temp);
 			if (ver > 1) printf("[LSRa]");
 			pc += 2;
 			per = 6;
 			break;
 		case 0x46:
-			temp = peek(b1);
+			temp = peek(op_l);
 			lsr(&temp);
-			poke(abs, temp);
+			poke(am_a, temp);
 			if (ver > 1) printf("[LSRz]");
 			pc++;
 			per = 5;
@@ -1241,17 +1149,17 @@ int exec(void)
 			printf("[LSR]");
 			break;
 		case 0x56:
-			temp = peek(zx);
+			temp = peek(am_zx);
 			lsr(&temp);
-			poke(abs, temp);
+			poke(am_a, temp);
 			if (ver > 1) printf("[LSRzx]");
 			pc++;
 			per = 6;
 			break;
 		case 0x5E:
-			temp = peek(ax);
+			temp = peek(am_ax);
 			lsr(&temp);
-			poke(abs, temp);
+			poke(am_a, temp);
 			if (ver > 1) printf("[LSRx]");
 			pc += 2;
 			per = 6;	// 7 en el 6502 NMOS
@@ -1260,62 +1168,62 @@ int exec(void)
 			if (ver) printf("[NOP]");
 			break;
 		case 0x09:						// *** ORA: "Or" Memory with Accumulator ***
-			a |= b1;
+			a |= op_l;
 			bits_nz(a);
 			if (ver > 1) printf("[ORA#]");
 			pc++;
 			break;
 		case 0x0D:
-			a |= peek(abs);
+			a |= peek(am_a);
 			bits_nz(a);
 			if (ver > 1) printf("[ORAa]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x05:
-			a |= peek(b1);
+			a |= peek(op_l);
 			bits_nz(a);
 			if (ver > 1) printf("[ORAz]");
 			pc++;
 			per = 3;
 			break;
 		case 0x01:
-			a |= peek(ix);
+			a |= peek(am_ix);
 			bits_nz(a);
 			if (ver > 1) printf("[ORA(x)]");
 			pc++;
 			per = 6;
 			break;
 		case 0x11:
-			a |= peek(iy);
+			a |= peek(am_iy);
 			bits_nz(a);
 			if (ver > 1) printf("[ORA(y)]");
 			pc++;
 			per = 5;
 			break;
 		case 0x15:
-			a |= peek(zx);
+			a |= peek(am_zx);
 			bits_nz(a);
 			if (ver > 1) printf("[ORAzx]");
 			pc++;
 			per = 4;
 			break;
 		case 0x1D:
-			a |= peek(ax);
+			a |= peek(am_ax);
 			bits_nz(a);
 			if (ver > 1) printf("[ORAx]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x19:
-			a |= peek(ay);
+			a |= peek(am_ay);
 			bits_nz(a);
 			if (ver > 1) printf("[ORAy]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x12:	// exclusiva CMOS
-			a |= peek(iz);
+			a |= peek(am_iz);
 			bits_nz(a);
 			if (ver > 1) printf("[ORA(z)]");
 			pc++;
@@ -1363,33 +1271,33 @@ int exec(void)
 			per = 4;
 			break;
 		case 0x2E:						// *** ROL: Rotate One Bit Left (Memory or Accumulator) ***
-			temp = peek(abs);
+			temp = peek(am_a);
 			rol(&temp);
-			poke(abs, temp);
+			poke(am_a, temp);
 			if (ver > 1) printf("[ROLa]");
 			pc += 2;
 			per = 6;
 			break;
 		case 0x26:
-			temp = peek(b1);
+			temp = peek(op_l);
 			rol(&temp);
-			poke(b1, temp);
+			poke(op_l, temp);
 			if (ver > 1) printf("[ROLz]");
 			pc++;
 			per = 5;
 			break;
 		case 0x36:
-			temp = peek(zx);
+			temp = peek(am_zx);
 			rol(&temp);
-			poke(zx, temp);
+			poke(am_zx, temp);
 			if (ver > 1) printf("[ROLzx]");
 			pc++;
 			per = 6;
 			break;
 		case 0x3E:
-			temp = peek(ax);
+			temp = peek(am_ax);
 			rol(&temp);
-			poke(ax, temp);
+			poke(am_ax, temp);
 			if (ver > 1) printf("[ROLx]");
 			pc += 2;
 			per = 6;	// 7 en el 6502 NMOS
@@ -1400,17 +1308,17 @@ int exec(void)
 			pc++;
 			break;
 		case 0x6E:						// *** ROR: Rotate One Bit Right (Memory or Accumulator) ***
-			temp = peek(abs);
+			temp = peek(am_a);
 			ror(&temp);
-			poke(abs, temp);
+			poke(am_a, temp);
 			if (ver > 1) printf("[RORa]");
 			pc += 2;
 			per = 6;
 			break;
 		case 0x66:
-			temp = peek(b1);
+			temp = peek(op_l);
 			ror(&temp);
-			poke(b1, temp);
+			poke(op_l, temp);
 			if (ver > 1) printf("[RORz]");
 			pc++;
 			per = 5;
@@ -1421,85 +1329,85 @@ int exec(void)
 			pc++;
 			break;			
 		case 0x76:
-			temp = peek(zx);
+			temp = peek(am_zx);
 			ror(&temp);
-			poke(zx, temp);
+			poke(am_zx, temp);
 			if (ver > 1) printf("[RORzx]");
 			pc++;
 			per = 6;
 			break;
 		case 0x7E:
-			temp = peek(ax);
+			temp = peek(am_ax);
 			ror(&temp);
-			poke(ax, temp);
+			poke(am_ax, temp);
 			if (ver > 1) printf("[RORx]");
 			pc += 2;
 			per = 6;	// 7 en el 6502 NMOS
 			break;
 		case 0x40:						// *** RTI: Return from Interrupt ***
 			p = pop();
-			b1 = pop();
-			b2 = pop();
-			pc = b1 + 256*b2 + 1;		// ojo que se quedó en MSB
+			op_l = pop();
+			op_h = pop();
+			pc = op_l + 256*op_h + 1;		// ojo que se quedó en MSB
 			if (ver)	printf("[RTI]");
 			per = 6;
 			break;
 		case 0x60:						// *** RTS: Return from Subroutine ***
-			b1 = pop();
-			b2 = pop();
-			pc = b1 + 256*b2 + 1;		// ojo que se quedó en MSB
+			op_l = pop();
+			op_h = pop();
+			pc = op_l + 256*op_h + 1;		// ojo que se quedó en MSB
 			if (ver)	printf("[RTS]");
 			per = 6;
 			break;
 		case 0xE9:						// *** SBC: Subtract Memory from Accumulator with Borrow ***
-			sbc(b1);
+			sbc(op_l);
 			if (ver > 1) printf("[SBC#]");
 			pc++;
 			break;
 		case 0xED:
-			sbc(peek(abs));
+			sbc(peek(am_a));
 			if (ver > 1) printf("[SBCa]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0xE5:
-			sbc(peek(b1));
+			sbc(peek(op_l));
 			if (ver > 1) printf("[SBCz]");
 			pc++;
 			per = 3;
 			break;
 		case 0xE1:
-			sbc(peek(ix));
+			sbc(peek(am_ix));
 			if (ver > 1) printf("[SBC(x)]");
 			pc++;
 			per = 6;
 			break;
 		case 0xF1:
-			sbc(peek(iy));
+			sbc(peek(am_iy));
 			if (ver > 1) printf("[SBC(y)]");
 			pc++;
 			per = 5;
 			break;
 		case 0xF5:
-			sbc(peek(zx));
+			sbc(peek(am_zx));
 			if (ver > 1) printf("[SBCzx]");
 			pc++;
 			per = 4;
 			break;
 		case 0xFD:
-			sbc(peek(ax));
+			sbc(peek(am_ax));
 			if (ver > 1) printf("[SBCx]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0xF9:
-			sbc(peek(ay));
+			sbc(peek(am_ay));
 			if (ver > 1) printf("[SBCy]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0xF2:	// exclusiva CMOS
-			sbc(peek(iz));
+			sbc(peek(am_iz));
 			if (ver > 1) printf("[SBC(z)]");
 			pc++;
 			per = 5;
@@ -1517,109 +1425,109 @@ int exec(void)
 			if (ver > 1) printf("[SEI]");
 			break;
 		case 0x8D:						// *** STA: Store Accumulator in Memory ***
-			poke(abs, a);
+			poke(am_a, a);
 			if (ver > 1) printf("[STAa]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x85:
-			poke(b1, a);
+			poke(op_l, a);
 			if (ver > 1) printf("[STAz]");
 			pc++;
 			per = 3;
 			break;
 		case 0x81:
-			poke(ix, a);
+			poke(am_ix, a);
 			if (ver > 1) printf("[STA(x)]");
 			pc++;
 			per = 6;
 			break;
 		case 0x91:
-			poke(iy, a);
+			poke(am_iy, a);
 			if (ver > 1) printf("[STA(y)]");
 			pc++;
 			per = 6;	// ...y no 5, como sería lógico
 			break;
 		case 0x95:
-			poke(zx, a);
+			poke(am_zx, a);
 			if (ver > 1) printf("[STAzx]");
 			pc++;
 			per = 4;
 			break;
 		case 0x9D:
-			poke(ax, a);
+			poke(am_ax, a);
 			if (ver > 1) printf("[STAx]");
 			pc += 2;
 			per = 5;	// ...y no 4, como sería lógico
 			break;
 		case 0x99:
-			poke(ay, a);
+			poke(am_ay, a);
 			if (ver > 1) printf("[STAy]");
 			pc += 2;
 			per = 5;	// ...y no 4, como sería lógico
 			break;
 		case 0x92:	// exclusiva CMOS
-			poke(iz, a);
+			poke(am_iz, a);
 			if (ver > 1) printf("[STA(z)]");
 			pc++;
 			per = 5;
 			break;
 		case 0x8E:						// *** STX: Store Index X in Memory ***
-			poke(abs, x);
+			poke(am_a, x);
 			if (ver > 1) printf("[STXa]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x86:
-			poke(b1, x);
+			poke(op_l, x);
 			if (ver > 1) printf("[STXz]");
 			pc++;
 			per = 3;
 			break;
 		case 0x96:
-			poke(zy, x);
+			poke(am_zy, x);
 			if (ver > 1) printf("[STXzy]");
 			pc++;
 			per = 4;
 			break;
 		case 0x8C:						// *** STY: Store Index Y in Memory ***
-			poke(abs, y);
+			poke(am_a, y);
 			if (ver > 1) printf("[STYa]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x84:
-			poke(b1, y);
+			poke(op_l, y);
 			if (ver > 1) printf("[STYz]");
 			pc++;
 			per = 3;
 			break;
 		case 0x94:
-			poke(zx, y);
+			poke(am_zx, y);
 			if (ver > 1) printf("[STYzx]");
 			pc++;
 			per = 4;
 			break;
 		case 0x9C:						// exclusiva CMOS: *** STZ ***
-			poke(abs, 0);
+			poke(am_a, 0);
 			if (ver > 1) printf("[STZa]");
 			pc += 2;
 			per = 4;
 			break;
 		case 0x64:
-			poke(b1, 0);
+			poke(op_l, 0);
 			if (ver > 1) printf("[STZz]");
 			pc++;
 			per = 3;
 			break;
 		case 0x74:
-			poke(zx, 0);
+			poke(am_zx, 0);
 			if (ver > 1) printf("[STZzx]");
 			pc++;
 			per = 4;
 			break;
 		case 0x9E:
-			poke(ax, 0);
+			poke(am_ax, 0);
 			if (ver > 1) printf("[STZx]");
 			pc += 2;
 			per = 5;	// ...y no 4, como sería lógico
@@ -1635,9 +1543,9 @@ int exec(void)
 			if (ver > 1) printf("[TAY]");
 			break;
 		case 0x1C:						// exclusiva CMOS: *** TRB ***
-			temp = peek(abs);
+			temp = peek(am_a);
 			temp &= !a;
-			poke(abs, temp);
+			poke(am_a, temp);
 			if (temp == 0)
 				p |= 0x02;
 			else
@@ -1647,9 +1555,9 @@ int exec(void)
 			per = 6;
 			break;
 		case 0x14:
-			temp = peek(b1);
+			temp = peek(op_l);
 			temp &= !a;
-			poke(b1, temp);
+			poke(op_l, temp);
 			if (temp == 0)
 				p |= 0x02;
 			else
@@ -1659,9 +1567,9 @@ int exec(void)
 			per = 5;
 			break;
 		case 0x0C:						// exclusiva CMOS: *** TSB ***
-			temp = peek(abs);
+			temp = peek(am_a);
 			temp |= a;
-			poke(abs, temp);
+			poke(am_a, temp);
 			if (temp == 0)
 				p |= 0x02;
 			else
@@ -1671,9 +1579,9 @@ int exec(void)
 			per = 6;
 			break;
 		case 0x04:
-			temp = peek(b1);
+			temp = peek(op_l);
 			temp |= a;
-			poke(b1, temp);
+			poke(op_l, temp);
 			if (temp == 0)
 				p |= 0x02;
 			else
