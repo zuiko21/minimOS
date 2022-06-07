@@ -2867,6 +2867,14 @@ Wire Wire Line
 Connection ~ 6750 6900
 Wire Wire Line
 	6750 6450 7700 6450
+Text Notes 3250 7600 0    50   ~ 0
+=~BWR
+Text Label 3650 4500 0    50   ~ 0
+~ROM_OE
+Text Label 7700 4700 1    50   ~ 0
+HIRES
+Text Notes 7700 2600 1    50   ~ 0
+= ~LOW
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Bus Line
@@ -2901,12 +2909,4 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Text Notes 3250 7600 0    50   ~ 0
-=~BWR
-Text Label 3650 4500 0    50   ~ 0
-~ROM_OE
-Text Label 7700 4700 1    50   ~ 0
-HIRES
-Text Notes 7700 2600 1    50   ~ 0
-= ~LOW
 $EndSCHEMATC
