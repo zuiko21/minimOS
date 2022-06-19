@@ -1,6 +1,6 @@
 ; split-screen resolution switcher for devX development suite
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220619-1743
+; last modified 20220619-1804
 
 
 ; *** I/O addresses ***
@@ -22,7 +22,7 @@ wait:
 		BIT IO8sync			; wait until the end of vertical blank in order to count lines
 		BVS wait
 ; a new frame is about to be displayed, thus count 128 raster lines (half the screen height)
-; *** not sure if the BMP/BPL sequence below does lose one raster, but will switch faster
+; *** not sure if the BMI/BPL sequence below does lose one raster, but will switch faster
 	LDX #127				; number of lines to be displayed in original mode***
 blank:
 			BIT IO8sync		; wait for the end of H-blanking, if still on it
