@@ -1,7 +1,7 @@
 ; devX cartridge NMI handler
 ; 128K RAM + 64K ROM
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220620-1624
+; last modified 20220620-1653
 
 #include "../../OS/macros.h"
 #include "../../OS/zeropage.h"
@@ -25,22 +25,13 @@
 ; *** NMI handler ***
 ; *******************
 
-	*	= $C000				; placeholder address
+	*	= $FF00				; placeholder address
 
 dx_nmi:
 ; *******************************************
 ; *** common NMI handler in all ROM banks *** over $C000
 ; usual status saving
 	PHA						; easiest way to keep original stack frame
-#ifdef	DEBOUNCE
-	LDA #$65				; look for magic constant in memory
-	CMP nmi_deb				; are we already executing NMI?
-	BNE do_nmi				; no, set lock and proceed
-		PLA					; otherwise, forget it
-		RTI
-do_nmi:
-	STA nmi_deb				; this will prevent calling another NMI on top of this one
-#endif
 ; EEEEEEK! must store bankswitching register, try using an *unused* stack address in order to retain the standard stack frame
 	LDA IOCbank				; switch banks...
 	STA IOCold				; ...hopefully $0100 is not used... EEEEK
@@ -51,6 +42,15 @@ do_nmi:
 ; ***********************************************************
 
 dx_cont:
+#ifdef	DEBOUNCE
+	LDA #$65				; look for magic constant in memory
+	CMP nmi_deb				; are we already executing NMI?
+	BNE do_nmi				; no, set lock and proceed
+		PLA					; otherwise, forget it
+		RTI
+do_nmi:
+	STA nmi_deb				; this will prevent calling another NMI on top of this one
+#endif
 	_PHX
 	_PHY					; continue saving status
 
@@ -90,10 +90,13 @@ mem_save:
 		BNE hi_blk			; no need for BRA
 saved:
 
-; *** tweak firmware CONIO with $70 as top page - TBD
+; *** tweak firmware CONIO with $70 as top page ***
+	LDA #$70
+	STA fw_vbot				; actually TOP of screen...
 
 ; store old (gameplay) and set new (debugging) video mode
 	LDA IO8attr				; get current mode
+	ORA #%00001000			; *** may assume RGB mode?
 	STA oldat				; store for resolution switcher! sys_sp no longer in use
 	LDA #newat				; new debug screen mode (usually HIRES)
 	STA IO8attr				; and set new mode for debugging
@@ -101,7 +104,8 @@ saved:
 ; ***********************
 ; *** main debug loop ***
 ; ***********************
-; may initialise monitor *** TBD
+
+	JSR init				; initialise debugger, or at least clear screen with new limits
 db_loop:
 		JSR switch			; try to display top half of the screen in colour, bottom in HIRES
 		JSR debug			; invoke (on inline) miniMoDA or similar monitor (hopefully less than 11.7 ms)
@@ -152,15 +156,18 @@ zp_rst:
 	_PLX
 	LDA IOCold				; retrieve old banks...
 	STA IOCbank
-
-dx_exit:
-; *****************************************************
-; *** this must be at a common address in all banks ***
 #ifdef	DEBOUNCE
 	INC nmi_deb				; ugly, but will allow next NMI invocation, may use STZ as well
 #endif
+	_BRA dx_exit			; advance to common exit point!
+
+	.dsb	$FFBE-*, $FF	; filler
+
+dx_exit:
+; *****************************************************
+; *** this must be at a common address in all banks *** usually $FFBE, savvy dx_exit address
 	PLA
 	RTI
-; *** end of common NMI handler ***
+; *** end of common NMI handler *** usually at minimOS-savvy $FFC0
 ; *********************************
 dx_end:
