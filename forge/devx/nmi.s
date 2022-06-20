@@ -1,7 +1,7 @@
 ; devX cartridge NMI handler
 ; 128K RAM + 64K ROM
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220619-1919
+; last modified 20220620-0758
 
 ; *** I/O addresses ***
 	IO8attr	= $DF80			; resolution settings as always (D7=HIRES, D6=INVERT, D5-4=SCREEN, D3=RGB)
@@ -20,7 +20,7 @@
 ; *** NMI handler ***
 ; *******************
 dx_nmi:
-; usual status save
+; usual status save *** common NMI handler in all ROM banks ***
 	PHA						; easiest way to keep original stack frame
 #ifdef	DEBOUNCE
 	LDA #$65				; look for magic constant in memory
@@ -37,11 +37,11 @@ do_nmi:
 ; save extended status *** TBD
 
 ; EEEEEEK! must store bankswitching register, try using an *unused* stack address in order to retain the standard stack frame
-	LDA IOCbank				; switch low bank...
-	PHA						; ...saving previos setting...
-	AND #%11111000			; ...to zero (may use ORA afterwards)
+	LDA IOCbank				; switch banks...
+	STA IOCold				; ...hopefully $0100 is not used... EEEEK
+	AND #%10001000			; ...to zero (may use ORA afterwards)
 	STA IOCbank
-	STA IOCold				; hopefully $0100 is not used...
+; *** code afterwards doesn't need to be in all ROM banks ***
 
 ; *** make a full memory dump on bankswitched RAM ***
 ; first goes specific zeropage code, won't need any pointers
@@ -145,6 +145,7 @@ zp_rst:
 ; memory is restored, now the registers
 	LDA IOCold				; retreive old banks...
 	STA IOCbank
+; *** this must be at a common address in all banks ***
 	_PLY					; usual end of restore sequence
 	_PLX
 #ifdef	DEBOUNCE
