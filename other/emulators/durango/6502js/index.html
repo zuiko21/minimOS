@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+  <head>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <title>6502 assembler/simulator</title>
+  </head>
+  <body>
+
+    <div class="widget">
+      <div class="buttons">
+        <input type="button" value="Assemble" class="assembleButton" />
+        <input type="button" value="Run" class="runButton" />
+        <input type="button" value="Reset" class="resetButton" />
+        <input type="button" value="Hexdump" class="hexdumpButton" />
+        <input type="button" value="Disassemble" class="disassembleButton" />
+        <input type="button" value="Notes" class="notesButton" />
+      </div>
+
+      <textarea class="code"></textarea>
+
+      <canvas class="screen" width="256" height="256"></canvas>
+
+      <div class="debugger">
+        <input type="checkbox" class="debug" name="debug" />
+        <label for="debug">Debugger</label>
+        <div class="minidebugger"></div>
+        <div class="buttons">
+          <input type="button" value="Step" class="stepButton" />
+          <input type="button" value="Jump to ..." class="gotoButton" />
+        </div>
+      </div>
+
+      <div class="monitorControls">
+        <label for="monitoring">Monitor</label>
+        <input type="checkbox" class="monitoring" name="monitoring" />
+
+        <label for="start">Start: $</label>
+        <input type="text" value="0" class="start" name="start" />
+        <label for="length">Length: $</label>
+        <input type="text" value="ff" class="length" name="length" />
+      </div>
+      <div class="monitor"><pre><code></code></pre></div>
+      <div class="messages"><pre><code></code></pre></div>
+
+      <div class="notes" style="display: none">Notes:
+
+Memory location $fe contains a new random byte on every instruction.
+Memory location $ff contains the ascii code of the last key pressed.
+
+Memory locations $6000 to $7fff map to the screen pixels. Different values will
+draw different colour pixels. The colours are:
+
+$0: negro (00aa00#)
+$1: verde (#00aa00)
+$2: rojo (#ff00ff)
+$3: naranja (#ffaa00)
+$4: botella (#005500)
+$5: lima (#00ff00)
+$6: ladrillo (#ff5500)
+$7: amarillo (#ffff00)
+$8: azul (#0000ff)
+$9: celeste (#00aaff)
+$a: magenta (#ff00ff)
+$b: rosita (#ffaaff)
+$c: azur (#0055ff)
+$d: cian (#00ffff)
+$e: fucsia (#ff55ff)
+$f: blanco (#ffffff)
+    </div>
+
+    <script src="es5-shim.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script src="assembler.js"></script>
+  </body>
+</html>
