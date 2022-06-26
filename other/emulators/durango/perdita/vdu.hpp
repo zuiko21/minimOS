@@ -7,6 +7,9 @@ using namespace std;
 
 class Vdu {
     private:
+        // Durango main memory
+        unsigned char *memory;
+        // Quit flag
         bool quit;
         //Screen dimension constants
         int SCREEN_WIDTH;
@@ -23,6 +26,7 @@ class Vdu {
         void close(void);
         void sync_render(void);
         void render(void);
+        void durango_render(void);
         void process_input_internal(SDL_Event *e);
     protected:
     public:

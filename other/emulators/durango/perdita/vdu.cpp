@@ -150,10 +150,17 @@ void Vdu::render() {
     SDL_RenderClear( sdl_renderer );
   
     // Actual rendering
-    //render_game();
+    durango_render();
   
     //Update screen
     SDL_RenderPresent(sdl_renderer);
+}
+
+void Vdu::durango_render() {
+    //Render red filled quad
+    SDL_Rect fillRect = { SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
+    SDL_SetRenderDrawColor( sdl_renderer, 0xFF, 0x00, 0x00, 0xFF );        
+    SDL_RenderFillRect( sdl_renderer, &fillRect );
 }
 
 void Vdu::process_input_internal(SDL_Event *e)
