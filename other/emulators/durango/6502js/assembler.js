@@ -207,13 +207,26 @@ function SimulatorWidget(node) {
       ctx.fillRect(0, 0, width, height);
     }
 
+    /**
+     * Draw supplied memory address in screen
+     */
     function updatePixel(addr) {
-      var y = Math.floor((addr - 0x6000) * 2 / 128);
-      var x = ((addr - 0x6000) *2) % 128;
-      // Pixel Izq
+      // Read video mode [HiRes Invert S1 S0 RGB LED NC NC]
+      var videoMode = memory.get(0xdf80);
+      
+      // Read video memory possition used
+      var videoPosition = (videoMode & 0x30)>>4;
+      var videoMemoryAdr = videoPosition*0x2000;
+      console.log(videoPosition + " -> 0x"+videoMemoryAdr.toString(16));
+      
+      // Calculate screen y coord
+      var y = Math.floor((addr - videoMemoryAdr) * 2 / 128);
+      // Calculate screen x coord
+      var x = ((addr - videoMemoryAdr) *2) % 128;
+      // Draw Left Pixel
       ctx.fillStyle = palette[memory.get(addr) & 0x0f];
       ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
-      // Pixel Dcho
+      // Draw Right Pixel
       ctx.fillStyle = palette[(memory.get(addr) & 0xf0)>>4];
       ctx.fillRect((x+1) * pixelSize, y * pixelSize, pixelSize, pixelSize);
     }
@@ -244,8 +257,12 @@ function SimulatorWidget(node) {
 
     function storeByte(addr, value) {
       set(addr, value & 0xff);
-      // Update screen if video map has been updated
-      if ((addr >= 0x6000) && (addr <= 0x7fff)) {
+      
+      /* Update screen if video map has been updated */
+      // Get video memory position      
+      var screenAddress = ((memory.get(0xdf80) & 0x30)>>4)*0x2000;
+      var screenAddressEnd = screenAddress + 0x2000;
+      if ((addr >= screenAddress) && (addr < screenAddressEnd)) {
         display.updatePixel(addr);
       }
     }
