@@ -211,24 +211,36 @@ function SimulatorWidget(node) {
      * Draw supplied memory address in screen
      */
     function updatePixel(addr) {
-      // Read video mode [HiRes Invert S1 S0 RGB LED NC NC]
-      var videoMode = memory.get(0xdf80);
+      // Read video mode [HiRes Invert S1 S0    RGB LED NC NC]
+      var videoModeReg = memory.get(0xdf80);
       
-      // Read video memory possition used
-      var videoPosition = (videoMode & 0x30)>>4;
-      var videoMemoryAdr = videoPosition*0x2000;
-      console.log(videoPosition + " -> 0x"+videoMemoryAdr.toString(16));
+      // Read video mode (HiRes or Colour)
+      var videoMode = (videoModeReg & 0x80)>>7;
       
+      if(videoMode == 0) {
+        drawColorPixel(addr);
+      }
+      else if(videoMode == 1) {
+        drawHiResPixel(addr);
+      }      
+    }
+    
+    function drawColorPixel(addr) {
+      // Calculate screen address
+      var screenAddress = ((memory.get(0xdf80) & 0x30)>>4)*0x2000;
       // Calculate screen y coord
-      var y = Math.floor((addr - videoMemoryAdr) * 2 / 128);
+      var y = Math.floor((addr - screenAddress) * 2 / 128);
       // Calculate screen x coord
-      var x = ((addr - videoMemoryAdr) *2) % 128;
+      var x = ((addr - screenAddress) *2) % 128;
       // Draw Left Pixel
       ctx.fillStyle = palette[memory.get(addr) & 0x0f];
       ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
       // Draw Right Pixel
       ctx.fillStyle = palette[(memory.get(addr) & 0xf0)>>4];
       ctx.fillRect((x+1) * pixelSize, y * pixelSize, pixelSize, pixelSize);
+    }
+    
+    function drawHiResPixel(addr) {
     }
 
     return {
