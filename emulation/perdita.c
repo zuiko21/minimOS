@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220530-1902
+ * last modified 20220627-2023
  * */
 
 #include <stdio.h>
@@ -19,21 +19,21 @@
 	const char flag[8]="NV·BDIZC";	// flag names
 
 /* function prototypes */
-	void stat(void);
-	byte peek(word dir);
-	void poke(word dir, byte v);
-	void push(byte b);	{ poke(0x100 + s--, b); }
-	byte pop(void);		{ return peek(++s + 0x100); }
+	void stat(byte psr);	// display processor status
+	byte peek(word dir);			// read memory or I/O
+	void poke(word dir, byte v);	// write memory or I/O
+	void push(byte b);		{ poke(0x100 + s--, b); }		// standard stack ops
+	byte pop(void);			{ return peek(++s + 0x100); }
 
-	void rel(byte off);
-	void bits_nz(byte b);
-	void lrot_p(byte *d);
-	void adc(byte d);
-	void asl(byte *d);
-	void cmp(byte d);
-	void lsr(byte *d);
-	void rol(byte *d);
-	void ror(byte *d);
+	void rel(byte off);		// relative branches
+	void bits_nz(byte b);	// set N&Z flags
+	void lrot_p(byte *d);	// ??? 
+	void adc(byte d);		// add with carry
+	void asl(byte *d);		// shift left
+	void cmp(byte d);		// compare
+	void lsr(byte *d);		// shift right
+	void rol(byte *d);		// rotate left
+	void ror(byte *d);		// rotate right
 	void sbc(byte d);
 
 	int exec(void);
@@ -79,21 +79,20 @@ int main (int argc, char * const argv[]) {
 	} while (run);
 	
 	printf(" *** CPU halted after %d clock cycles ***\n", cont);
-	stat();					// display end status
+	stat(p);					// display end status
 
 	return 0;
 }
 
 /* support function definitions */
-void stat(void)	{
-	int psr = p;			// copy status
+void stat(byte psr)	{		// display CPU status
 	int i;
 
 	printf("<PC=%04X, A=%02X, X=%02X, Y=%02X, S=%02X>\n<PSR: ", pc-1, a, x, y, s);
 	for (i=0; i<8; i++) {
 		if (psr&128)	printf("%c", flags[i]);
 		else			printf("·");
-		p<sr<=1;			// next flag
+		psr<=1;				// next flag
 	}
 	printf(">\n");
 }
@@ -110,7 +109,7 @@ _65c02(void)
 	
 // *** take these into main() ***
 	run = 1;
-	ver = 0;					// 0 = nada, 1 = saltos, 2 = auto, 3 = todo 
+	ver = 0;					// verbosity mode, 0 = none, 1 = jumps, 2 = auto?, 3 = all 
 }
 * */
 
@@ -395,7 +394,7 @@ int exec(void)
 			pc += 2;
 			per = 4;
 			break;
-		case 0x72:	// exclusiva CMOS
+		case 0x72:	// CMOS only
 			adc(peek(am_iz));
 			if (ver > 1) printf("[ADC(z)]");
 				pc++;
@@ -456,7 +455,7 @@ int exec(void)
 			pc += 2;
 			per = 4;
 			break;
-		case 0x32:	// exclusiva CMOS
+		case 0x32:	// CMOS only
 			a &= peek(am_iz);
 			bits_nz(a);
 			if (ver > 1) printf("[AND(z)]");
@@ -497,7 +496,7 @@ int exec(void)
 			poke(am_ax, temp);
 			if (ver > 1) printf("[ASLx]");
 			pc += 2;
-			per = 6;	// 7 en el 6502 NMOS
+			per = 6;		// 7 for NMOS
 			break;
 		case 0x90:						// *** BCC: Branch on Carry Clear ***
 			pc++;
@@ -539,7 +538,7 @@ int exec(void)
 				p |= 0x40;
 			else
 				p &= 0xBF;
-// *** acabar el bit ***
+// *** finish BIT ***
 			printf("[BITa]");
 			pc += 2;
 			per = 4;
@@ -554,12 +553,12 @@ int exec(void)
 				p |= 0x40;
 			else
 				p &= 0xBF;
-// *** acabar el bit ***
+// *** finish BIT ***
 			printf("[BITz]");
 			pc++;
 			per = 3;
 			break;
-		case 0x89:	// exclusiva CMOS
+		case 0x89:			// CMOS only
 			temp = op_l;
 			if (temp & 0x80)
 				p |= 0x80;
@@ -569,11 +568,11 @@ int exec(void)
 				p |= 0x40;
 			else
 				p &= 0xBF;
-// *** acabar el bit ***
+// *** finish BIT ***
 			printf("[BIT#]");
 			pc++;
 			break;
-		case 0x3C:	// exclusiva CMOS
+		case 0x3C:			// CMOS only
 			temp = peek(am_ax);
 			if (temp & 0x80)
 				p |= 0x80;
@@ -583,12 +582,12 @@ int exec(void)
 				p |= 0x40;
 			else
 				p &= 0xBF;
-// *** acabar el bit ***
+// *** finish BIT ***
 			printf("[BITx]");
 			pc += 2;
 			per = 4;
 			break;
-		case 0x34:	// exclusiva CMOS
+		case 0x34:			// CMOS only
 			temp = peek(am_zx);
 			if (temp & 0x80)
 				p |= 0x80;
@@ -598,7 +597,7 @@ int exec(void)
 				p |= 0x40;
 			else
 				p &= 0xBF;
-			// *** acabar el bit ***
+			// *** finish BIT ***
 			printf("[BITzx]");
 			pc++;
 			per = 4;
@@ -633,7 +632,7 @@ int exec(void)
 			else if (ver == 1)	ver = 2;
 			if (ver > 1) printf("[BPL]");
 			break;
-		case 0x80:						// exclusiva CMOS: *** BRA ***
+		case 0x80:						// CMOS only: *** BRA ***
 			pc++;
 			rel(op_l);
 			per = 3;
@@ -641,9 +640,8 @@ int exec(void)
 			break;
 		case 0x00:						// *** BRK: Force Break ***
 			printf("[BRK]");
-// **** hacerla ****
+// **** TBD ****
 			run = 0;
-// ¿qué pasa con PC?
 			per = 7;
 			break;
 		case 0x50:						// *** BVC: Branch on Overflow Clear ***
@@ -736,14 +734,14 @@ int exec(void)
 			pc += 2;
 			per = 4;
 			break;
-		case 0xD2:	// exclusiva CMOS
+		case 0xD2:			// CMOS only
 			temp = peek(am_iz);
 			cmp(a - temp);
 			if (ver > 1) printf("[CMP(z)]");
 			pc++;
 			per = 5;
 			break;
-		case 0xE0:						// *** CPX: Compare Memory And Index X ***			¿¿¿ o al revés ???
+		case 0xE0:						// *** CPX: Compare Memory And Index X ***
 			cmp(x - op_l);
 			if (ver > 1) printf("[CPX#]");
 			pc++;
@@ -762,7 +760,7 @@ int exec(void)
 			pc++;
 			per = 3;
 			break;
-		case 0xC0:						// *** CPY: Compare Memory And Index Y ***				¿¿¿ o al revés ???
+		case 0xC0:						// *** CPY: Compare Memory And Index Y ***
 			cmp(y - op_l);
 			if (ver > 1) printf("[CPY#]");
 			pc++;
@@ -825,7 +823,7 @@ int exec(void)
 			pc += 2;
 			per = 6;	// 7 en el 6502 NMOS
 			break;
-		case 0x3A:	// exclusiva CMOS
+		case 0x3A:	// CMOS only
 			a--;
 			if (a == -1)
 				a = 255;
@@ -901,7 +899,7 @@ int exec(void)
 			pc += 2;
 			per = 4;
 			break;
-		case 0x52:	// exclusiva CMOS
+		case 0x52:			// CMOS only
 			a ^= peek(am_iz);
 			bits_nz(a);
 			if (ver > 1) printf("[EOR(z)]");
@@ -952,7 +950,7 @@ int exec(void)
 			pc += 2;
 			per = 6;	// 7 en el 6502 NMOS
 			break;
-		case 0x1A:	// exclusiva CMOS
+		case 0x1A:	// CMOS only
 			a++;
 			if (a == 256)
 				a = 0;
@@ -981,17 +979,17 @@ int exec(void)
 		case 0x6C:
 			pc = am_ai;
 			if (ver)	printf("[JMP*]");
-			per = 6;	// ¿¿¿ 5 en el 6502 NMOS ???
+			per = 6;		// 5 for NMOS!
 			break;
-		case 0x7C:	// exclusiva CMOS
+		case 0x7C:			// CMOS only
 			pc = am_aix;
 			if (ver)	printf("[JMP(x)]");
 			per = 6;
 			break;
 		case 0x20:						// *** JSR: Jump to New Location Saving Return Address ***
 			pc++;						// se queda en el MSB
-			op_l = pc % 256;
-			op_h = pc / 256;
+			op_l = pc & 255;
+			op_h = pc >> 8;
 			push(op_h);
 			push(op_l);
 			pc = am_a;
@@ -1053,7 +1051,7 @@ int exec(void)
 			pc += 2;
 			per = 4;
 			break;
-		case 0xB2:	// exclusiva CMOS
+		case 0xB2:	// CMOS only
 			a = peek(am_iz);
 			bits_nz(a);
 			if (ver > 1) printf("[LDA(z)]");
@@ -1162,7 +1160,7 @@ int exec(void)
 			poke(am_a, temp);
 			if (ver > 1) printf("[LSRx]");
 			pc += 2;
-			per = 6;	// 7 en el 6502 NMOS
+			per = 6;		// 7 for NMOS
 			break;
 		case 0xEA:						// *** NOP: No Operation ***
 			if (ver) printf("[NOP]");
@@ -1222,7 +1220,7 @@ int exec(void)
 			pc += 2;
 			per = 4;
 			break;
-		case 0x12:	// exclusiva CMOS
+		case 0x12:			// CMOS only
 			a |= peek(am_iz);
 			bits_nz(a);
 			if (ver > 1) printf("[ORA(z)]");
@@ -1239,12 +1237,12 @@ int exec(void)
 			if (ver > 1) printf("[PHP]");
 			per = 3;
 			break;
-		case 0xDA:						// exclusiva CMOS: *** PHX ***
+		case 0xDA:						// CMOS only: *** PHX ***
 			push(x);
 			if (ver > 1) printf("[PHX]");
 			per = 3;
 			break;
-		case 0x5A:						// exclusiva CMOS: *** PHY ***
+		case 0x5A:						// CMOS only: *** PHY ***
 			push(y);
 			if (ver > 1) printf("[PHY]");
 			per = 3;
@@ -1260,12 +1258,12 @@ int exec(void)
 			if (ver > 1) printf("[PLP]");
 			per = 4;
 			break;
-		case 0xFA:						// exclusiva CMOS: *** PLX ***
+		case 0xFA:						// CMOS only: *** PLX ***
 			x = pop();
 			if (ver > 1) printf("[PLX]");
 			per = 4;
 			break;
-		case 0x7A:						// exclusiva CMOS: *** PLY ***
+		case 0x7A:						// CMOS only: *** PLY ***
 			y = pop();
 			if (ver > 1) printf("[PLY]");
 			per = 4;
@@ -1300,7 +1298,7 @@ int exec(void)
 			poke(am_ax, temp);
 			if (ver > 1) printf("[ROLx]");
 			pc += 2;
-			per = 6;	// 7 en el 6502 NMOS
+			per = 6;		// 7 for NMOS
 			break;
 		case 0x2A:
 			rol(&a);
@@ -1342,7 +1340,7 @@ int exec(void)
 			poke(am_ax, temp);
 			if (ver > 1) printf("[RORx]");
 			pc += 2;
-			per = 6;	// 7 en el 6502 NMOS
+			per = 6;		// 7 for NMOS
 			break;
 		case 0x40:						// *** RTI: Return from Interrupt ***
 			p = pop();
@@ -1406,7 +1404,7 @@ int exec(void)
 			pc += 2;
 			per = 4;
 			break;
-		case 0xF2:	// exclusiva CMOS
+		case 0xF2:			// CMOS only
 			sbc(peek(am_iz));
 			if (ver > 1) printf("[SBC(z)]");
 			pc++;
@@ -1446,7 +1444,7 @@ int exec(void)
 			poke(am_iy, a);
 			if (ver > 1) printf("[STA(y)]");
 			pc++;
-			per = 6;	// ...y no 5, como sería lógico
+			per = 6;	// ...and not 5, as expected
 			break;
 		case 0x95:
 			poke(am_zx, a);
@@ -1458,15 +1456,15 @@ int exec(void)
 			poke(am_ax, a);
 			if (ver > 1) printf("[STAx]");
 			pc += 2;
-			per = 5;	// ...y no 4, como sería lógico
+			per = 5;	// ...and not 4, as expected
 			break;
 		case 0x99:
 			poke(am_ay, a);
 			if (ver > 1) printf("[STAy]");
 			pc += 2;
-			per = 5;	// ...y no 4, como sería lógico
+			per = 5;	// ...and not 4, as expected
 			break;
-		case 0x92:	// exclusiva CMOS
+		case 0x92:	// CMOS only
 			poke(am_iz, a);
 			if (ver > 1) printf("[STA(z)]");
 			pc++;
@@ -1508,7 +1506,7 @@ int exec(void)
 			pc++;
 			per = 4;
 			break;
-		case 0x9C:						// exclusiva CMOS: *** STZ ***
+		case 0x9C:						// CMOS only: *** STZ ***
 			poke(am_a, 0);
 			if (ver > 1) printf("[STZa]");
 			pc += 2;
@@ -1542,7 +1540,7 @@ int exec(void)
 			bits_nz(y);
 			if (ver > 1) printf("[TAY]");
 			break;
-		case 0x1C:						// exclusiva CMOS: *** TRB ***
+		case 0x1C:						// CMOS only: *** TRB ***
 			temp = peek(am_a);
 			temp &= !a;
 			poke(am_a, temp);
@@ -1566,7 +1564,7 @@ int exec(void)
 			pc++;
 			per = 5;
 			break;
-		case 0x0C:						// exclusiva CMOS: *** TSB ***
+		case 0x0C:						// CMOS only: *** TSB ***
 			temp = peek(am_a);
 			temp |= a;
 			poke(am_a, temp);
@@ -1610,12 +1608,12 @@ int exec(void)
 			bits_nz(a);
 			if (ver > 1) printf("[TYA]");
 			break;
-		case 0xFF:						// ******** muestra estado ********
-			printf(" ...estado ");
-			stat();
+		case 0xFF:						// ******** display status ******** Rockwell opcodes NOT supported
+			printf(" ...status:");
+			stat(p);
 			break;
 		default:						// ******** parar CPU ********
-			printf("\n*** (%p) opcode ilegal %p ***\n", pc-1, opcode);
+			printf("\n*** ($%04X) Illegal opcode $%02X ***\n", pc-1, opcode);
 			run = 0;
 	}
 	if (pc>=65536)
