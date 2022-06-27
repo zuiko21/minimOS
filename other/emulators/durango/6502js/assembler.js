@@ -171,7 +171,7 @@ function SimulatorWidget(node) {
     var palette = [
       "#000000", // 0
       "#00aa00", // 1
-      "#ff00ff", // 2
+      "#ff0000", // 2
       "#ffaa00", // 3
       "#005500", // 4
       "#00ff00", // 5
@@ -233,10 +233,10 @@ function SimulatorWidget(node) {
       // Calculate screen x coord
       var x = ((addr - screenAddress) *2) % 128;
       // Draw Left Pixel
-      ctx.fillStyle = palette[memory.get(addr) & 0x0f];
-      ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
-      // Draw Right Pixel
       ctx.fillStyle = palette[(memory.get(addr) & 0xf0)>>4];
+      ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+      // Draw Right Pixel      
+      ctx.fillStyle = palette[memory.get(addr) & 0x0f];
       ctx.fillRect((x+1) * pixelSize, y * pixelSize, pixelSize, pixelSize);
     }
     
