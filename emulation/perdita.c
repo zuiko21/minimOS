@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220627-2023
+ * last modified 20220628-1956
  * */
 
 #include <stdio.h>
@@ -15,6 +15,7 @@
 	byte a, x, y, s, p;		// 8-bit registers
 	word pc;				// program counter
 	int run, ver;			// emulator control
+	long cont = 0;			// total elapsed cycles
 
 	const char flag[8]="NV·BDIZC";	// flag names
 
@@ -22,6 +23,7 @@
 	void stat(byte psr);	// display processor status
 	byte peek(word dir);			// read memory or I/O
 	void poke(word dir, byte v);	// write memory or I/O
+
 	void push(byte b);		{ poke(0x100 + s--, b); }		// standard stack ops
 	byte pop(void);			{ return peek(++s + 0x100); }
 
@@ -36,8 +38,10 @@
 	void ror(byte *d);		// rotate right
 	void sbc(byte d);
 
-	int exec(void);
-	void reset(void);
+	int exec(void);			// execute one opcode, returning number of cycles
+	void load(cost char name[], word adr);					// load firmware
+
+	void reset(void);		// RESET & hardware interrupts
 	void nmi(void);
 	void irq(void);
 
@@ -59,33 +63,48 @@
 
 /* ******************* startup ******************* */
 int main (int argc, char * const argv[]) {
-	long cont = 0;			// total elapsed cycles
-	int cyc, t=0;			// instruction and interrupt cycle counter
-	
-	reset();
-	
-	do
-	{
-		cyc = exec();		// count elapsed clock cycles
-		cont += cyc;
+	int cyc=0, t=0;			// instruction and interrupt cycle counter
+
+	run = 1;				// allow execution
+	ver = 0;				// verbosity mode, 0 = none, 1 = jumps, 2 = auto?, 3 = all 
+
+	load("rom.bin", 0x8000);		// preload 32K firmware at ROM area
+
+	reset();				// startup!
+
+	while (run) {
+		cont += cyc;		// add last instruction cycle count
 		t += cyc;
+		cyc = exec();		// count elapsed clock cycles for this instruction
 		if (t >= 6144)		// 250 Hz interrupt @ 1.536 MHz
 		{
 			t -= 6144;		// restore for next
 			if (mem[0xDFA0] & 1) {	// are hardware interrupts enabled?
-				irq();				// maybe update screen as well
+// maybe get keypresses from SDL here
+				if (!(p & 4)) {		// are interrupts masked?
+					cyc += 7;		// interrupt acknowledge time
+					irq();
+				}
 			}
 		}
-	} while (run);
-	
+		if (nmi_flag) {		// *** get somewhere from SDL
+			cyc += 7;		// interrupt acknowledge time
+			nmi();			// NMI gets executed always
+		}
+	}
+
 	printf(" *** CPU halted after %d clock cycles ***\n", cont);
-	stat(p);					// display end status
+	stat(p);				// display end status
 
 	return 0;
 }
 
+/* **************************** */
 /* support function definitions */
-void stat(byte psr)	{		// display CPU status
+/* **************************** */
+
+/* display any value as CPU status */
+void stat(byte psr)	{ 
 	int i;
 
 	printf("<PC=%04X, A=%02X, X=%02X, Y=%02X, S=%02X>\n<PSR: ", pc-1, a, x, y, s);
@@ -97,65 +116,28 @@ void stat(byte psr)	{		// display CPU status
 	printf(">\n");
 }
 
-/* constructor is no more
-_65c02(void)
-{
-	int i;
-	cargarROM();
-	
-	vdu_ctl[0] = 0;				// VDU estándar
-	for(i=1; i<16382; i++)
-		vdu_ctl[i] = 0xEA;		// zona VDU al aire
-	
-// *** take these into main() ***
-	run = 1;
-	ver = 0;					// verbosity mode, 0 = none, 1 = jumps, 2 = auto?, 3 = all 
-}
-* */
-
-void cargarROM(void)	// kernel.rom  y  monitor.rom
-{
+/* load firmware, usually into ROM area */
+void load(cost char name[], word adr) {
 	FILE *f;
 	int c, b = 0;
 	
-	f = fopen("a.o65", "rb");	// será 'kernel.rom'
-	if(f != NULL)
-	{
-		do
-		{
+	f = fopen(name, "rb");
+	if(f != NULL) {
+		do {
 			c = fgetc(f);
-			//printf("%p ",c);
-			mem[32768+b++] = c;
+			mem[adr+(b++)] = c;	// load one byte
 		} while( c != EOF);
+
 		fclose(f);
-		printf("kernel.rom: %d bytes cargados\n", b);
+		printf("%s: %d bytes loaded at %04X\n", name, b, adr);
 	}
-	else	printf("*** No he podido cargar 'kernel.rom' ***\n");
-	
-	mem[32768+0x3ffc] = 0x16; // vector RESET, provisional
-	mem[32768+0x3ffd] = 0xc0; // vector RESET, provisional
-	mem[32768+0x3ffe] = 0x00;//FF; // depurador
-	
-/*	mem[32768+0x16] = 0xA9; // LDA #
-	mem[32768+0x17] = '=';
-	mem[32768+0x18] = 0x8D; // STA am_a
-	mem[32768+0x19] = 0xA0; // donde
-	mem[32768+0x1A] = 0xDF;
-	mem[32768+0x1B] = 0xAA; // TAX
-	mem[32768+0x1C] = 0x9D;	// STA am_a, X
-	mem[32768+0x1D] = 0x00;	//
-	mem[32768+0x1E] = 0x40;	//
-	mem[32768+0x1F] = 0xCA;	// DEX
-	mem[32768+0x20] = 0xD0;	// BNE
-	mem[32768+0x21] = 0xFA;	//
-	// provisional
-	mem[32768+0x22] = 0x4C; // JMP ***infinito***
-	mem[32768+0x23] = 0x22;
-	mem[32768+0x24] = 0xc0;
-*/
-		
+	else {
+		printf("*** Could not load ROM ***\n");
+		run = 0;
+	}
 }
 
+/* read from memory or I/O */
 byte peek(word dir) {
 	byte d = 0xFF;				// supposed floating databus value?
 
@@ -176,8 +158,8 @@ byte peek(word dir) {
 	return d;
 }
 
-void poke(long dir, int v)
-{
+/* write to memory or I/O */
+void poke(long dir, int v) {
 	if (dir>=0 && dir<32768)			// 32 KiB static RAM
 		mem[dir] = v;
 
@@ -185,7 +167,7 @@ void poke(long dir, int v)
 		if (dir<=0xDF87)				// video mode?
 			mem[0xDF80] = v;			// canonical address
 		else if (dir<=0xDF8F)			// sync flags?
-// *** not writable
+			;							// *** not writable
 		else if (dir<=0xDF9F)			// expansion port?
 			mem[dir] = v;				// *** is this OK?
 		else if (dir<=0xDFAF)			// interrupt control?
@@ -194,12 +176,12 @@ void poke(long dir, int v)
 			mem[0xDFB0] = v;			// canonical address, only D0 matters *** anything else?
 		else
 			mem[dir] = v;				// otherwise is cartridge I/O *** anything else?
-	}
+	}									// any other address is ROM, thus no much sense writing there?
 }
 
-void reset(void)
-{
-	pc = peek(0xFFFC) + 256*peek(0xFFFD);	// RESET vector
+/* reset CPU, like !RES signal */
+void reset(void) {
+	pc = peek(0xFFFC) | peek(0xFFFD)<<8;	// RESET vector
 
 	printf(" RESET: PC=>%04X\n", pc);
 
@@ -207,44 +189,55 @@ void reset(void)
 	p |= 0b00110000;						// these always 1
 }
 
-void nmi(void)
-{
-	if (ver)	printf("<NMI>");
-	// implementar...
-	//pc = peek(0xfffa) + 256*peek(0xfffb);	// vector NMI
+/* emulate !NMI signal */
+void nmi(void) {
+	push(pc >> 8);							// stack standard status
+	push(pc & 255);
+	push(p);
+
+	pc = peek(0xFFFA) | peek(0xFFFB)<<8;	// NMI vector
+	if (ver)	printf(" NMI: PC=>%04X\n", pc);
+
+	p |= 0b00000100;						// set interrupt mask
 }
 
-void irq(void)
-{
-	if (ver)	printf("<IRQ>");
-	// implementar...
-	//pc = peek(0xfffe) + 256*peek(0xffff);	// vector IRQ/BRK
+/* emulate !IRQ signal, assuming interrupts are NOT masked */
+void irq(void) {
+	push(pc >> 8);							// stack standard status
+	push(pc & 255);
+	push(p);
+
+	pc = peek(0xFFFE) | peek(0xFFFF)<<8;	// IRQ/BRK vector
+	if (ver)	printf(" IRQ: PC=>%04X\n", pc);
+
+	p |= 0b00000100;						// set interrupt mask
 }
 
-void rel(int off)
-{
+/* relative branch */
+void rel(byte off) {
 	pc += off;
-	if (off >= 128)
-	{
+	if (off & 128) {		// negative displacement
 		pc -= 256;
-		if (ver) printf(".");
-		if (ver == 2)	ver = 1;
+	}
+//		if (ver) printf(".");	// *** NO IDEA ABOUT THESE
+//		if (ver == 2)	ver = 1;
 	}
 }
 
-void bits_nz(int b)
-{
-	if (b >= 0x80)
-		p |= 0x80;
+/* compute usual N & Z flags from value */
+void bits_nz(byte b) {
+	if (b & 128)
+		p |= 0x80;			// N flag on
 	else
-		p &= 0x7F;
+		p &= 0x7F;			// N flag off
 	if (b == 0)
-		p |= 0x02;
+		p |= 0x02;			// Z flag on
 	else
-		p &= 0xFD;
+		p &= 0xFD;			// Z flag off
 }
 
-void lrot_p(int *d)
+// **** **** **** continue here
+void lrot_p(byte *d)
 {
 	if (*d >= 256)
 	{
@@ -255,7 +248,7 @@ void lrot_p(int *d)
 	bits_nz(*d);
 }
 
-void adc(int d)	// ¿¿¿ OVERFLOW, aquí ???
+void adc(byte d)	// ¿¿¿ OVERFLOW, aquí ???
 {
 	a += d;
 	if (p & 0x01)	a++;
@@ -268,13 +261,13 @@ void adc(int d)	// ¿¿¿ OVERFLOW, aquí ???
 	bits_nz(a);
 }	
 
-void asl(int *d)
+void asl(byte *d)
 {
 	(*d) << 1;
 	lrot_p(d);
 }
 
-void cmp(int d)
+void cmp(byte d)
 {
 	bits_nz(d);
 	if (d < 0)
@@ -283,7 +276,7 @@ void cmp(int d)
 		p &= 0xFE;
 }
 
-void lsr(int *d)
+void lsr(byte *d)
 {
 	if ((*d) & 0x01)
 		p |= 0x01;
@@ -294,14 +287,14 @@ void lsr(int *d)
 
 }
 
-void rol(int *d)
+void rol(byte *d)
 {
 	(*d) << 1;
 	(*d) |= (p & 0x01);
 	lrot_p(d);
 }
 
-void ror(int *d)
+void ror(byte *d)
 {
 	if (p & 0x01)		(*d) |= 0x100;
 	if ((*d) & 0x01)	p |= 0x01;
@@ -310,7 +303,7 @@ void ror(int *d)
 	bits_nz(*d);
 }
 
-void sbc(int d)
+void sbc(byte d)
 {
 	a -= d;
 	if (p & 0x01)	a--;
