@@ -25,15 +25,19 @@ class Vdu {
         void init(void);
         void close(void);
         void sync_render(void);
+        void process_input_internal(SDL_Event *e);
         void render(void);
         void durango_render(void);
-        void process_input_internal(SDL_Event *e);
+        void durango_render_mem(unsigned long addr);
+        void drawColorPixel(unsigned long addr);
+        void drawHiResPixel(unsigned long addr);
+        void setColor(unsigned char);
     protected:
     public:
         Vdu(void);
         ~Vdu(void);
-        void run(void); 
-        
+        void setMemory(unsigned char*);
+        void run(void);         
 };
 
 
