@@ -25,7 +25,7 @@ loop2:
     LDA $12
 
     ; Iterate over less significative memory address
-    LDY $00
+    LDY #$00
 loop:
     STA ($10), Y
     INY
