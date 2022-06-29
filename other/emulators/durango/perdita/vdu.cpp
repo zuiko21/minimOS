@@ -1,4 +1,6 @@
 #include <SDL2/SDL.h>
+#include <cmath>
+#include <iostream>
 #include "perdita_exception.hpp"
 #include "vdu.hpp"
 
@@ -9,6 +11,10 @@ Vdu::Vdu() {
 }
 
 Vdu::~Vdu() {  
+}
+
+void Vdu::setMemory(unsigned char *memory) {
+  this->memory=memory;
 }
 
 void Vdu::init() {
@@ -157,10 +163,82 @@ void Vdu::render() {
 }
 
 void Vdu::durango_render() {
+    unsigned long i;
     //Render red filled quad
-    SDL_Rect fillRect = { SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 };
-    SDL_SetRenderDrawColor( sdl_renderer, 0xFF, 0x00, 0x00, 0xFF );        
-    SDL_RenderFillRect( sdl_renderer, &fillRect );
+    //SDL_Rect fillRect = { 10, 10, 10, 10 };
+    //SDL_SetRenderDrawColor( sdl_renderer, 0xFF, 0x00, 0x00, 0xFF );        
+    //SDL_RenderFillRect( sdl_renderer, &fillRect );
+    
+    /*for(i=0x0; i<0x10000; i++) {
+      durango_render_mem(i);
+    }*/
+    durango_render_mem(0x6000);
+}
+
+void Vdu::durango_render_mem(unsigned long addr) {
+  // video mode [HiRes Invert S1 S0    RGB LED NC NC]
+  
+  // Read video mode (HiRes or Colour)
+  unsigned char videoMode = (this->memory[0xdf80] & 0x80)>>7;
+  
+  unsigned int screenAddress = ((this->memory[0xdf80] & 0x30)>>4)*0x2000;
+  unsigned int screenAddressEnd = screenAddress + 0x2000;
+ 
+  if(addr >= screenAddress && addr < screenAddressEnd) {   
+    if(videoMode == 0) {
+      drawColorPixel(addr);
+    }
+    else if(videoMode == 1) {
+      drawHiResPixel(addr);
+    }
+  }
+}
+
+
+void Vdu::setColor(unsigned char index) {
+  if(index!=0)
+    
+  switch(index) {
+    case 0x00: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0x00, 0x00, 0xff ); break; // 0
+    case 0x01: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0xaa, 0x00, 0xff ); break; // 1
+    case 0x02: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0x00, 0x00, 0xff ); break; // 2
+    case 0x03: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0xaa, 0x00, 0xff ); break; // 3
+    case 0x04: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0x55, 0x00, 0xff ); break; // 4
+    case 0x05: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0xff, 0x00, 0xff ); break; // 5
+    case 0x06: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0x55, 0x00, 0xff ); break; // 6
+    case 0x07: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0xff, 0x00, 0xff ); break; // 7
+    case 0x08: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0x00, 0xff, 0xff ); break; // 8
+    case 0x09: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0xaa, 0xff, 0xff ); break; // 9
+    case 0x0a: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0x00, 0xff, 0xff ); break; // 10
+    case 0x0b: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0xaa, 0xff, 0xff ); break; // 11
+    case 0x0c: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0x55, 0xff, 0xff ); break; // 12
+    case 0x0d: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0xff, 0xff, 0xff ); break; // 13
+    case 0x0e: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0x55, 0xff, 0xff ); break; // 14
+    case 0x0f: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0xff, 0xff, 0xff ); break; // 15
+  }
+}
+
+void Vdu::drawColorPixel(unsigned long addr) {
+  int pixelSize=SCREEN_WIDTH/128;
+  // Calculate screen address
+  unsigned long  screenAddress = ((this->memory[0xdf80] & 0x30)>>4)*0x2000;
+  // Calculate screen y coord
+  int y = floor((addr - screenAddress) * 2 / 128);
+  // Calculate screen x coord
+  int x = ((addr - screenAddress) *2) % 128;
+  // Draw Left Pixel
+  setColor((this->memory[addr] & 0xf0)>>4);
+  SDL_Rect fillRect = { x * pixelSize, y * pixelSize, pixelSize, pixelSize };
+  SDL_RenderFillRect( sdl_renderer, &fillRect );
+  
+  
+  // Draw Right Pixel      
+  setColor(this->memory[addr] & 0x0f);
+  fillRect = { (x+1) * pixelSize, y * pixelSize, pixelSize, pixelSize };
+  SDL_RenderFillRect( sdl_renderer, &fillRect );
+}
+
+void Vdu::drawHiResPixel(unsigned long addr) {
 }
 
 void Vdu::process_input_internal(SDL_Event *e)
