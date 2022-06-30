@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220630-1210
+ * last modified 20220630-1254
  * */
 
 #include <stdio.h>
@@ -70,23 +70,26 @@ int main (int argc, char * const argv[]) {
 	reset();				// startup!
 
 	while (run) {
-		cont += cyc;		// add last instruction cycle count
-		t += cyc;
 		cyc = exec();		// count elapsed clock cycles for this instruction
+		cont += cyc;		// add last instruction cycle count
+		t += cyc;			// advance interrupt counter
 		if (t >= 6144)		// 250 Hz interrupt @ 1.536 MHz
 		{
 			t -= 6144;		// restore for next
-			if (mem[0xDFA0] & 1) {	// are hardware interrupts enabled?
-// maybe get keypresses from SDL here
-				if (!(p & 4)) {		// are interrupts masked?
-					cyc += 7;		// interrupt acknowledge time
-					irq();
-				}
+// *** maybe get keypresses from SDL here
+			if (mem[0xDFA0] & 1) {
+				irq();		// if hardware interrupts are enabled, send signal to CPU
 			}
 		}
+/*		if (irq_flag) {		// 'spurious' cartridge interrupt emulation!
+ 			irq();
+ 		}
+*/
 		if (nmi_flag) {		// *** get somewhere from SDL
-			cyc += 7;		// interrupt acknowledge time
 			nmi();			// NMI gets executed always
+		}
+		if (stat_flag) {	// *** get from SDL
+			stat(p);
 		}
 	}
 
@@ -183,6 +186,8 @@ void intack(void) {
 	push(p);
 
 	p |= 0b00000100;						// set interrupt mask
+
+	cont += 7;								// interrupt acknowledge time
 }
 
 /* reset CPU, like !RES signal */
@@ -193,6 +198,8 @@ void reset(void) {
 
 	p &= 0b11110011;						// CLD & SEI on 65C02
 	p |= 0b00110000;						// these always 1
+
+	cont = 0;								// reset global cycle counter?
 }
 
 /* emulate !NMI signal */
@@ -203,16 +210,18 @@ void nmi(void) {
 	if (ver)	printf(" NMI: PC=>%04X\n", pc);
 }
 
-/* emulate !IRQ signal, assuming interrupts are NOT masked */
+/* emulate !IRQ signal */
 void irq(void) {
-	intack();								// acknowledge and save
+	if (!(p & 4)) {								// if not masked...
+		intack();								// acknowledge and save
 
-	pc = peek(0xFFFE) | peek(0xFFFF)<<8;	// IRQ/BRK vector
-	if (ver)	printf(" IRQ: PC=>%04X\n", pc);
+		pc = peek(0xFFFE) | peek(0xFFFF)<<8;	// IRQ/BRK vector
+		if (ver)	printf(" IRQ: PC=>%04X\n", pc);
+	}
 }
 
 /* relative branch */
-void rel(byte off) {
+void rel(byte off) {//***may supress parameter
 	pc += off;
 	pc -= (off & 128)?256:0;				// check negative displacement
 }
@@ -713,7 +722,7 @@ int exec(void)
 			bits_nz(temp);
 			if (ver > 1) printf("[DECx]");
 			pc += 2;
-			per = 6;	// 7 en el 6502 NMOS
+			per = 6;	// 7 for NMOS
 			break;
 		case 0x3A:	// CMOS only
 			a--;
@@ -827,7 +836,7 @@ int exec(void)
 			poke(am_ax(), temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[INCx]");
-			per = 6;	// 7 en el 6502 NMOS
+			per = 6;	// 7 for NMOS
 			break;
 		case 0x1A:	// CMOS only
 			a++;
@@ -857,7 +866,7 @@ int exec(void)
 			break;
 		case 0x6C:
 			pc = am_ai();
-			if (ver)	printf("[JMP*]");
+			if (ver)	printf("[JMP()]");
 			per = 6;		// 5 for NMOS!
 			break;
 		case 0x7C:			// CMOS only
@@ -866,12 +875,9 @@ int exec(void)
 			per = 6;
 			break;
 		case 0x20:						// *** JSR: Jump to New Location Saving Return Address ***
-			pc++;						// se queda en el MSB
-			peek(pc) = pc & 255;//***************
-			peek(pc+1) = pc >> 8;
-			push(peek(pc+1));
-			push(peek(pc));
-			pc = am_a();
+			push((pc+1)>>8);			// stack one byte before return address, right at MSB
+			push((pc+1)&255);
+			pc = am_a();				// determine operand
 			if (ver)	printf("[JSR]");
 			per = 6;
 			break;
@@ -1190,16 +1196,15 @@ int exec(void)
 			break;
 		case 0x40:						// *** RTI: Return from Interrupt ***
 			p = pop();
-			peek(pc) = pop();
-			peek(pc+1) = pop();
-			pc = peek(pc) + 256*peek(pc+1) + 1;		// ojo que se quedó en MSB*********
+			pc = pop();					// extract LSB...
+			pc |= (pop() << 8);			// ...and MSB, address is correct
 			if (ver)	printf("[RTI]");
 			per = 6;
 			break;
 		case 0x60:						// *** RTS: Return from Subroutine ***
-			peek(pc) = pop();
-			peek(pc+1) = pop();
-			pc = peek(pc) + 256*peek(pc+1) + 1;		// ojo que se quedó en MSB
+			pc = pop();					// extract LSB...
+			pc |= (pop() << 8);			// ...and MSB, but is one byte off
+			pc++;						// return instruction address
 			if (ver)	printf("[RTS]");
 			per = 6;
 			break;
