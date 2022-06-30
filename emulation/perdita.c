@@ -1,13 +1,14 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220630-1254
+ * last modified 20220630-1940
  * */
 
 #include <stdio.h>
+#include <stdint.h>
 
 /* type definitions */
-	typedef u_int8_t byte;
-	typedef u_int16_t word;
+	typedef uint8_t byte;
+	typedef uint16_t word;
 
 /* global variables */
 	byte mem[65536]			// unified memory map
@@ -15,12 +16,15 @@
 	byte a, x, y, s, p;		// 8-bit registers
 	word pc;				// program counter
 	int run, ver;			// emulator control
+	int stat_flag = 0;		// external control
+	int nmi_flag = 0;		// interrupt control
+	int irq_flag = 0;
 	long cont = 0;			// total elapsed cycles
 
 	const char flag[8]="NV·BDIZC";	// flag names
 
 /* function prototypes */
-	void stat(byte psr);	// display processor status
+	void stat(void);		// display processor status
 	byte peek(word dir);			// read memory or I/O
 	void poke(word dir, byte v);	// write memory or I/O
 
@@ -32,7 +36,7 @@
 	void nmi(void);
 	void irq(void);
 
-	void rel(byte off);		// relative branches
+	void rel(void);			// relative branches
 	void bits_nz(byte b);	// set N&Z flags
 
 	void asl(byte *d);		// shift left
@@ -103,9 +107,10 @@ int main (int argc, char * const argv[]) {
 /* support function definitions */
 /* **************************** */
 
-/* display any value as CPU status */
-void stat(byte psr)	{ 
+/* display CPU status */
+void stat(void)	{ 
 	int i;
+	byte psr = p;			// local copy of status
 
 	printf("<PC=%04X, A=%02X, X=%02X, Y=%02X, S=%02X>\n<PSR: ", pc-1, a, x, y, s);
 	for (i=0; i<8; i++) {
@@ -221,7 +226,9 @@ void irq(void) {
 }
 
 /* relative branch */
-void rel(byte off) {//***may supress parameter
+void rel(void) {			// do NOT postincrement pc!
+	byte off = peek(pc++);	// read offset and skip operand
+
 	pc += off;
 	pc -= (off & 128)?256:0;				// check negative displacement
 }
@@ -234,8 +241,7 @@ void bits_nz(byte b) {
 }
 
 /* ASL, shift left */
-void asl(byte *d)
-{
+void asl(byte *d) {
 	p &= 0b11111110;		// clear C
 	p |= ((*d) & 128) >> 7;	// will take previous bit 7
 	(*d) <<= 1;				// EEEEEEEEK
@@ -243,8 +249,7 @@ void asl(byte *d)
 }
 
 /* LSR, shift right */
-void lsr(byte *d)
-{
+void lsr(byte *d) {
 	p &= 0b11111110;		// clear C
 	p |= (*d) & 1;			// will take previous bit 0
 	(*d) >>= 1;				// eeeek
@@ -252,8 +257,7 @@ void lsr(byte *d)
 }
 
 /* ROL, rotate left */
-void rol(byte *d)
-{
+void rol(byte *d) {
 	byte temp = (p & 1);	// keep previous C
 
 	p &= 0b11111110;		// clear C
@@ -264,8 +268,7 @@ void rol(byte *d)
 }
 
 /* ROR, rotate right */
-void ror(byte *d)
-{
+void ror(byte *d) {
 	byte temp = (p & 1)<<7;	// keep previous C (shifted)
 
 	p &= 0b11111110;		// clear C
@@ -275,7 +278,7 @@ void ror(byte *d)
 	bits_nz(*d);
 }
 
-void adc(byte d)	// ¿¿¿ OVERFLOW, aquí ???***
+void adc(byte d)	// ¿¿¿ OVERFLOW, aquí ???********************
 {
 
 	a += d;
@@ -311,16 +314,17 @@ void cmp(byte d)
 		p &= 0xFE;
 }
 
-int exec(void)
-{
+/* execute a single opcode, returning cycle count */
+int exec(void) {
 	int per = 2;			// base cycle count
-	byte opcode;
+	byte opcode, temp;
 	word adr;
 
 	opcode = peek(pc++);	// get opcode and point to next one (or operand)
 	switch(opcode)
 	{
-		case 0x69:						// *** ADC: Add Memory to Accumulator with Carry ***
+/* *** ADC: Add Memory to Accumulator with Carry *** */
+		case 0x69:
 			adc(peek(pc++));
 			if (ver > 1) printf("[ADC#]");
 			break;
@@ -364,7 +368,8 @@ int exec(void)
 			if (ver > 1) printf("[ADC(z)]");
 			per = 5;
 			break;
-		case 0x29:						// *** AND: "And" Memory with Accumulator ***
+/* *** AND: "And" Memory with Accumulator *** */
+		case 0x29:
 			a &= peek(pc++);
 			bits_nz(a);
 			if (ver > 1) printf("[AND#]");
@@ -411,13 +416,14 @@ int exec(void)
 			if (ver > 1) printf("[ANDy]");
 			per = 4;
 			break;
-		case 0x32:	// CMOS only
+		case 0x32:			// CMOS only
 			a &= peek(am_iz());
 			bits_nz(a);
 			if (ver > 1) printf("[AND(z)]");
 			per = 5;
 			break;
-		case 0x0E:						// *** ASL: Shift Left one Bit (Memory or Accumulator) ***
+/* *** ASL: Shift Left one Bit (Memory or Accumulator) *** */
+		case 0x0E:
 			adr = am_a();
 			temp = peek(adr);
 			asl(&temp);
@@ -452,34 +458,30 @@ int exec(void)
 			if (ver > 1) printf("[ASLx]");
 			per = 6;		// 7 for NMOS
 			break;
-		case 0x90:						// *** BCC: Branch on Carry Clear ***
-			if(!(p & 0x01))
-			{
-				rel(peek(pc));//********maybe without parameter
+/* *** Bxx: Branch on flag condition *** */
+		case 0x90:
+			if(!(p & 0b00000001)) {
+				rel();
 				per = 3;
+				if (ver) printf("[BCC]");
 			}
-			else if (ver == 1)	ver = 2;
-			if (ver > 1) printf("[BCC]");
 			break;
-		case 0xB0:						// *** BCS: Branch on Carry Set ***
-			if(p & 0x01)
-			{
-				rel(peek(pc));
+		case 0xB0:
+			if(p & 0b00000001) {
+				rel();
 				per = 3;
+				if (ver) printf("[BCS]");
 			}
-			else if (ver == 1)	ver = 2;
-			if (ver > 1) printf("[BCS]");
 			break;
-		case 0xF0:						// *** BEQ: Branch on Result Zero ***
-			if(p & 0x02)
-			{
-				rel(peek(pc));
+		case 0xF0:
+			if(p & 0b00000010) {
+				rel();
 				per = 3;
-			}				
-			else if (ver == 1)	ver = 2;
-			if (ver > 1) printf("[BEQ]");
+				if (ver) printf("[BEQ]");
+			}
 			break;
-		case 0x2C:						// *** BIT: Test Bits in Memory with Accumulator ***
+/* *** BIT: Test Bits in Memory with Accumulator *** */
+		case 0x2C:
 			temp = peek(am_a());
 			p &= 0b00111101;			// pre-clear N, V & Z
 			p |= (temp & 0b11000000);	// copy bits 7 & 6 as N & Z
@@ -497,7 +499,7 @@ int exec(void)
 			break;
 		case 0x89:			// CMOS only
 			temp = peek(pc++);
-			p &= 0b11111101;			// pre-clear Z only
+			p &= 0b11111101;			// pre-clear Z only, is this OK?
 			p |= (a & temp)?0:2;		// set Z accordingly
 			if (ver > 1) printf("[BIT#]");
 			break;
@@ -517,41 +519,32 @@ int exec(void)
 			if (ver > 1) printf("[BITzx]");
 			per = 4;
 			break;
-		case 0x30:						// *** BMI: Branch on Result Minus ***
-			pc++;
-			if(p & 0x80)
-			{
-				rel(peek(pc));
+/* *** Bxx: Branch on flag condition *** */
+		case 0x30:
+			if(p & 0b10000000) {
+				rel();
 				per = 3;
 			}		
-			else if (ver == 1)	ver = 2;
-			if (ver > 1) printf("[BMI]");
+			if (ver) printf("[BMI]");
 			break;
-		case 0xD0:						// *** BNE: Branch on Result Not Zero ***
-			pc++;
-			if(!(p & 0x02))
-			{
-				rel(peek(pc));
+		case 0xD0:
+			if(!(p & 0b00000010)) {
+				rel();
 				per = 3;
 			}				
-			else if (ver == 1)	ver = 2;
-			if (ver > 1) printf("[BNE]");
+			if (ver) printf("[BNE]");
 			break;
-		case 0x10:						// *** BPL: Branch on Result Plus ***
-			pc++;
-			if(!(p & 0x80))
-			{
-				rel(peek(pc));
+		case 0x10:
+			if(!(p & 0b10000000)) {
+				rel();
 				per = 3;
 			}			
-			else if (ver == 1)	ver = 2;
-			if (ver > 1) printf("[BPL]");
+			if (ver) printf("[BPL]");
 			break;
-		case 0x80:						// CMOS only: *** BRA ***
-			pc++;
-			rel(peek(pc));
+		case 0x80:			// CMOS only
+			rel();
 			per = 3;
-			if (ver > 1) printf("[BRA]");
+			if (ver) printf("[BRA]");
 			break;
 		case 0x00:						// *** BRK: Force Break ***
 			printf("[BRK]");
@@ -559,43 +552,40 @@ int exec(void)
 			run = 0;
 			per = 7;
 			break;
-		case 0x50:						// *** BVC: Branch on Overflow Clear ***
-			pc++;
-			if(!(p & 0x40))
-			{
-				rel(peek(pc));
+/* *** Bxx: Branch on flag condition *** */
+		case 0x50:
+			if(!(p & 0b01000000)) {
+				rel();
 				per = 3;
 			}
-			else if (ver == 1)	ver = 2;
-			if (ver > 1) printf("[BVC]");
+			if (ver) printf("[BVC]");
 			break;
-		case 0x70:						// *** BVC: Branch on Overflow Set ***
-			pc++;
-			if(p & 0x40)
-			{
-				rel(peek(pc));
+		case 0x70:
+			if(p & 0b01000000) {
+				rel();
 				per = 3;
 			}
-			else if (ver == 1)	ver = 2;
-			if (ver > 1) printf("[BVS]");
+			if (ver) printf("[BVS]");
 			break;
-		case 0x18:						// *** CLC: Clear Carry Flag ***
+/* *** CLx: Clear flags *** */
+		case 0x18:
 			p &= 0b11111110;
 			if (ver > 1) printf("[CLC]");
 			break;
-		case 0xD8:						// *** CLD: Clear Decimal Mode ***
+		case 0xD8:
 			p &= 0b11110111;
 			if (ver > 1) printf("[CLD]");
 			break;
-		case 0x58:						// *** CLI: Clear Interrupt Disable Bit ***
+		case 0x58:
 			p &= 0b11111011;
 			if (ver > 1) printf("[CLI]");
 			break;
-		case 0xB8:						// *** CLV: Clear Overflow Flag ***
+		case 0xB8:
 			p &= 0b10111111;
 			if (ver > 1) printf("[CLV]");
 			break;
-		case 0xC9:						// *** CMP: Compare Memory And Accumulator ***		¿¿¿ o al revés ???
+/* *** CMP: Compare Memory And Accumulator *** */ // TBD TBD TBD
+		case 0xC9:						
 			cmp(a - peek(pc));//****************
 			if (ver > 1) printf("[CMP#]");
 			pc++;
@@ -648,7 +638,8 @@ int exec(void)
 			if (ver > 1) printf("[CMP(z)]");
 			per = 5;
 			break;
-		case 0xE0:						// *** CPX: Compare Memory And Index X ***
+/* *** CPX: Compare Memory And Index X *** */ // TBD TBD TBD
+		case 0xE0:						
 			cmp(x - peek(pc++));
 			if (ver > 1) printf("[CPX#]");
 			break;
@@ -664,7 +655,8 @@ int exec(void)
 			if (ver > 1) printf("[CPXz]");
 			per = 3;
 			break;
-		case 0xC0:						// *** CPY: Compare Memory And Index Y ***
+/* *** CPY: Compare Memory And Index Y *** */ // TBD TBD TBD
+		case 0xC0:
 			cmp(y - peek(pc++));
 			if (ver > 1) printf("[CPY#]");
 			break;
@@ -680,7 +672,8 @@ int exec(void)
 			if (ver > 1) printf("[CPYz]");
 			per = 3;
 			break;
-		case 0xCE:						// *** DEC: Decrement Memory (or Accumulator) by One ***
+/* *** DEC: Decrement Memory (or Accumulator) by One *** */ // TBD TBD
+		case 0xCE:						
 			temp = peek(am_a());//***********
 			temp--;
 			if (temp == -1)
@@ -722,30 +715,27 @@ int exec(void)
 			bits_nz(temp);
 			if (ver > 1) printf("[DECx]");
 			pc += 2;
-			per = 6;	// 7 for NMOS
+			per = 6;		// 7 for NMOS
 			break;
-		case 0x3A:	// CMOS only
+		case 0x3A:			// CMOS only (OK)
 			a--;
-			if (a == -1)
-				a = 255;
 			bits_nz(a);
 			if (ver > 1) printf("[DEC]");
 			break;
-		case 0xCA:						// *** DEX: Decrement Index X by One ***
+/* *** DEX: Decrement Index X by One *** */
+		case 0xCA:
 			x--;
-			if (x == -1)
-				x = 255;
 			bits_nz(x);
 			if (ver > 1) printf("[DEX]");
 			break;
-		case 0x88:						// *** DEY: Decrement Index Y by One ***
+/* *** DEY: Decrement Index Y by One *** */
+		case 0x88:
 			y--;
-			if (y == -1)
-				y = 255;
 			bits_nz(y);
 			if (ver > 1) printf("[DEY]");
 			break;
-		case 0x49:						// *** EOR: "Exclusive Or" Memory with Accumulator ***
+/* *** EOR: "Exclusive Or" Memory with Accumulator *** */
+		case 0x49:
 			a ^= peek(pc++);
 			bits_nz(a);
 			if (ver > 1) printf("[EOR#]");
@@ -798,11 +788,10 @@ int exec(void)
 			if (ver > 1) printf("[EOR(z)]");
 			per = 5;
 			break;
-		case 0xEE:						// *** INC: Increment Memory (or Accumulator) by One ***
-			temp = peek(am_a());//*****************
+/* *** INC: Increment Memory (or Accumulator) by One *** */
+		case 0xEE:						
+			temp = peek(am_a());//***************** TBD
 			temp++;
-			if (temp == 256)
-				temp = 0;
 			poke(am_a(), temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[INCa]");
@@ -811,8 +800,6 @@ int exec(void)
 		case 0xE6:
 			temp = peek(peek(pc));
 			temp++;
-			if (temp == 256)
-				temp = 0;
 			poke(peek(pc++), temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[INCz]");
@@ -821,8 +808,6 @@ int exec(void)
 		case 0xF6:
 			temp = peek(am_zx());
 			temp++;
-			if (temp == 256)
-				temp = 0;
 			poke(am_zx(), temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[INCzx]");
@@ -831,35 +816,30 @@ int exec(void)
 		case 0xFE:
 			temp = peek(am_ax());
 			temp++;
-			if (temp == 256)
-				temp = 0;
 			poke(am_ax(), temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[INCx]");
-			per = 6;	// 7 for NMOS
+			per = 6;		// 7 for NMOS
 			break;
-		case 0x1A:	// CMOS only
+		case 0x1A:			// CMOS only
 			a++;
-			if (a == 256)
-				a = 0;
 			bits_nz(a);
 			if (ver > 1) printf("[INC]");
 			break;
-		case 0xE8:						// *** INX: Increment Index X by One ***
+/* *** INX: Increment Index X by One *** */
+		case 0xE8:
 			x++;
-			if (x == 256)
-				x = 0;
 			bits_nz(x);
 			if (ver > 1) printf("[INX]");
 			break;
-		case 0xC8:						// *** INY: Increment Index Y by One ***
+/* *** INY: Increment Index Y by One *** */
+		case 0xC8:
 			y++;
-			if (y == 256)
-				y = 0;
 			bits_nz(y);
 			if (ver > 1) printf("[INY]");
 			break;
-		case 0x4C:						// *** JMP: Jump to New Location ***
+/* *** JMP: Jump to New Location *** */
+		case 0x4C:
 			pc = am_a();
 			if (ver)	printf("[JMP]");
 			per = 3;
@@ -874,14 +854,16 @@ int exec(void)
 			if (ver)	printf("[JMP(x)]");
 			per = 6;
 			break;
-		case 0x20:						// *** JSR: Jump to New Location Saving Return Address ***
-			push((pc+1)>>8);			// stack one byte before return address, right at MSB
+/* *** JSR: Jump to New Location Saving Return Address *** */
+		case 0x20:
+			push((pc+1)>>8);		// stack one byte before return address, right at MSB
 			push((pc+1)&255);
-			pc = am_a();				// determine operand
+			pc = am_a();			// get operand
 			if (ver)	printf("[JSR]");
 			per = 6;
 			break;
-		case 0xA9:						// *** LDA: Load Accumulator with Memory ***
+/* *** LDA: Load Accumulator with Memory *** */
+		case 0xA9:
 			a = peek(pc++);
 			bits_nz(a);
 			if (ver > 1) printf("[LDA#]");
@@ -928,13 +910,14 @@ int exec(void)
 			if (ver > 1) printf("[LDAy]");
 			per = 4;
 			break;
-		case 0xB2:	// CMOS only
+		case 0xB2:			// CMOS only
 			a = peek(am_iz());
 			bits_nz(a);
 			if (ver > 1) printf("[LDA(z)]");
 			per = 5;
 			break;
-		case 0xA2:						// *** LDX: Load Index X with Memory ***
+/* *** LDX: Load Index X with Memory *** */
+		case 0xA2:
 			x = peek(pc++);
 			bits_nz(x);
 			if (ver > 1) printf("[LDX#]");
@@ -963,7 +946,8 @@ int exec(void)
 			if (ver > 1) printf("[LDXy]");
 			per = 4;
 			break;
-		case 0xA0:						// *** LDY: Load Index Y with Memory ***
+/* *** LDY: Load Index Y with Memory *** */
+		case 0xA0:
 			y = peek(pc++);
 			bits_nz(y);
 			if (ver > 1) printf("[LDY#]");
@@ -992,7 +976,8 @@ int exec(void)
 			if (ver > 1) printf("[LDYx]");
 			per = 4;
 			break;
-		case 0x4E:						// *** LSR: Shift One Bit Right (Memory or Accumulator) ***
+/* *** LSR: Shift One Bit Right (Memory or Accumulator) *** */
+		case 0x4E:
 			adr=am_a();
 			temp = peek(adr);
 			lsr(&temp);
@@ -1027,10 +1012,12 @@ int exec(void)
 			if (ver > 1) printf("[LSRx]");
 			per = 6;		// 7 for NMOS
 			break;
-		case 0xEA:						// *** NOP: No Operation ***
+/* *** NOP: No Operation *** */
+		case 0xEA:
 			if (ver > 1) printf("[NOP]");
 			break;
-		case 0x09:						// *** ORA: "Or" Memory with Accumulator ***
+/* *** ORA: "Or" Memory with Accumulator *** */
+		case 0x09:
 			a |= peek(pc++);
 			bits_nz(a);
 			if (ver > 1) printf("[ORA#]");
@@ -1083,48 +1070,57 @@ int exec(void)
 			if (ver > 1) printf("[ORA(z)]");
 			per = 5;
 			break;
-		case 0x48:						// *** PHA: Push Accumulator on Stack ***
+/* *** PHA: Push Accumulator on Stack *** */
+		case 0x48:
 			push(a);
 			if (ver > 1) printf("[PHA]");
 			per = 3;
 			break;
-		case 0x08:						// *** PHP: Push Processor Status on Stack ***
+/* *** PHP: Push Processor Status on Stack *** */
+		case 0x08:
 			push(p);
 			if (ver > 1) printf("[PHP]");
 			per = 3;
 			break;
-		case 0xDA:						// CMOS only: *** PHX ***
+/* *** PHX: Push Index X on Stack *** */
+		case 0xDA:			// CMOS only
 			push(x);
 			if (ver > 1) printf("[PHX]");
 			per = 3;
 			break;
-		case 0x5A:						// CMOS only: *** PHY ***
+/* *** PHY: Push Index Y on Stack *** */
+		case 0x5A:			// CMOS only
 			push(y);
 			if (ver > 1) printf("[PHY]");
 			per = 3;
 			break;
-		case 0x68:						// *** PLA: Pull Accumulator from Stack ***
+/* *** PLA: Pull Accumulator from Stack *** */
+		case 0x68:
 			a = pop();
 			if (ver > 1) printf("[PLA]");
 			bits_nz(a);
 			per = 4;
 			break;
-		case 0x28:						// *** PLP: Pull Processor Status from Stack ***
+/* *** PLP: Pull Processor Status from Stack *** */
+		case 0x28:
 			p = pop();
 			if (ver > 1) printf("[PLP]");
 			per = 4;
 			break;
-		case 0xFA:						// CMOS only: *** PLX ***
+/* *** PLX: Pull Index X from Stack *** */
+		case 0xFA:			// CMOS only
 			x = pop();
 			if (ver > 1) printf("[PLX]");
 			per = 4;
 			break;
-		case 0x7A:						// CMOS only: *** PLY ***
+/* *** PLX: Pull Index X from Stack *** */
+		case 0x7A:			// CMOS only
 			y = pop();
 			if (ver > 1) printf("[PLY]");
 			per = 4;
 			break;
-		case 0x2E:						// *** ROL: Rotate One Bit Left (Memory or Accumulator) ***
+/* *** ROL: Rotate One Bit Left (Memory or Accumulator) *** */
+		case 0x2E:
 			adr = am_a();
 			temp = peek(adr);
 			rol(&temp);
@@ -1159,7 +1155,8 @@ int exec(void)
 			rol(&a);
 			if (ver > 1) printf("[ROL]");
 			break;
-		case 0x6E:						// *** ROR: Rotate One Bit Right (Memory or Accumulator) ***
+/* *** ROR: Rotate One Bit Right (Memory or Accumulator) *** */
+		case 0x6E:
 			adr = am_a();
 			temp = peek(adr);
 			ror(&temp);
@@ -1177,7 +1174,7 @@ int exec(void)
 		case 0x6A:
 			ror(&a);
 			if (ver > 1) printf("[ROR]");
-			break;			
+			break;
 		case 0x76:
 			adr = am_zx();
 			temp = peek(adr);
@@ -1194,21 +1191,24 @@ int exec(void)
 			if (ver > 1) printf("[RORx]");
 			per = 6;		// 7 for NMOS
 			break;
-		case 0x40:						// *** RTI: Return from Interrupt ***
-			p = pop();
+/* *** RTI: Return from Interrupt *** */
+		case 0x40:
+			p = pop();					// retrieve status
 			pc = pop();					// extract LSB...
 			pc |= (pop() << 8);			// ...and MSB, address is correct
 			if (ver)	printf("[RTI]");
 			per = 6;
 			break;
-		case 0x60:						// *** RTS: Return from Subroutine ***
+/* *** RTS: Return from Subroutine *** */
+		case 0x60:
 			pc = pop();					// extract LSB...
 			pc |= (pop() << 8);			// ...and MSB, but is one byte off
 			pc++;						// return instruction address
 			if (ver)	printf("[RTS]");
 			per = 6;
 			break;
-		case 0xE9:						// *** SBC: Subtract Memory from Accumulator with Borrow ***
+/* *** SBC: Subtract Memory from Accumulator with Borrow *** */
+		case 0xE9:
 			sbc(peek(pc++));
 			if (ver > 1) printf("[SBC#]");
 			break;
@@ -1252,19 +1252,21 @@ int exec(void)
 			if (ver > 1) printf("[SBC(z)]");
 			per = 5;
 			break;
-		case 0x38:						// *** SEC: Set Carry Flag ***
+// *** SEx: Set Flags *** */
+		case 0x38:
 			p |= 0b00000001;
 			if (ver > 1) printf("[SEC]");
 			break;
-		case 0xF8:						// *** SEC: Set Decimal Mode ***
+		case 0xF8:
 			p |= 0b00001000;
 			if (ver > 1) printf("[SED]");
 			break;
-		case 0x78:						// *** SEI: Set Interrupt Disable Status ***
+		case 0x78:
 			p |= 0b00000100;
 			if (ver > 1) printf("[SEI]");
 			break;
-		case 0x8D:						// *** STA: Store Accumulator in Memory ***
+/* *** STA: Store Accumulator in Memory *** */
+		case 0x8D:
 			poke(am_a(), a);
 			if (ver > 1) printf("[STAa]");
 			per = 4;
@@ -1282,7 +1284,7 @@ int exec(void)
 		case 0x91:
 			poke(am_iy(), a);
 			if (ver > 1) printf("[STA(y)]");
-			per = 6;	// ...and not 5, as expected
+			per = 6;		// ...and not 5, as expected
 			break;
 		case 0x95:
 			poke(am_zx(), a);
@@ -1293,19 +1295,20 @@ int exec(void)
 		case 0x9D:
 			poke(am_ax(), a);
 			if (ver > 1) printf("[STAx]");
-			per = 5;	// ...and not 4, as expected
+			per = 5;		// ...and not 4, as expected
 			break;
 		case 0x99:
 			poke(am_ay(), a);
 			if (ver > 1) printf("[STAy]");
-			per = 5;	// ...and not 4, as expected
+			per = 5;		// ...and not 4, as expected
 			break;
-		case 0x92:	// CMOS only
+		case 0x92:			// CMOS only
 			poke(am_iz(), a);
 			if (ver > 1) printf("[STA(z)]");
 			per = 5;
 			break;
-		case 0x8E:						// *** STX: Store Index X in Memory ***
+/* *** STX: Store Index X in Memory *** */
+		case 0x8E:
 			poke(am_a(), x);
 			if (ver > 1) printf("[STXa]");
 			per = 4;
@@ -1320,7 +1323,8 @@ int exec(void)
 			if (ver > 1) printf("[STXzy]");
 			per = 4;
 			break;
-		case 0x8C:						// *** STY: Store Index Y in Memory ***
+/* *** STY: Store Index Y in Memory *** */
+		case 0x8C:
 			poke(am_a(), y);
 			if (ver > 1) printf("[STYa]");
 			per = 4;
@@ -1335,7 +1339,8 @@ int exec(void)
 			if (ver > 1) printf("[STYzx]");
 			per = 4;
 			break;
-		case 0x9C:						// CMOS only: *** STZ ***
+// *** STZ: Store Zero in Memory, CMOS only ***
+		case 0x9C:
 			poke(am_a(), 0);
 			if (ver > 1) printf("[STZa]");
 			per = 4;
@@ -1353,19 +1358,22 @@ int exec(void)
 		case 0x9E:
 			poke(am_ax(), 0);
 			if (ver > 1) printf("[STZx]");
-			per = 5;	// ...and not 4, as expected
+			per = 5;		// ...and not 4, as expected
 			break;
-		case 0xAA:						// *** TAX: Transfer Accumulator to Index X ***
+/* *** TAX: Transfer Accumulator to Index X *** */
+		case 0xAA:
 			x = a;
 			bits_nz(x);
 			if (ver > 1) printf("[TAX]");
 			break;
-		case 0xA8:						// *** TAY: Transfer Accumulator to Index Y ***
+/* *** TAY: Transfer Accumulator to Index Y *** */
+		case 0xA8:
 			y = a;
 			bits_nz(y);
 			if (ver > 1) printf("[TAY]");
 			break;
-		case 0x1C:						// CMOS only: *** TRB ***
+/* *** TRB: Test and Reset Bits, CMOS only *** */ // TBD TBD
+		case 0x1C:
 			adr = am_a();
 			temp = peek(adr);//***************
 			temp &= !a;
@@ -1384,11 +1392,12 @@ int exec(void)
 			if (temp == 0)
 				p |= 0x02;
 			else
-				p &= 0xFD;			
+				p &= 0xFD;
 			if (ver > 1) printf("[TRBz]");
 			per = 5;
 			break;
-		case 0x0C:						// CMOS only: *** TSB ***
+/* *** TSB: Test and Set Bits, CMOS only *** */ // TBD TBD
+		case 0x0C:
 			adr = am_a();
 			temp = peek(am_a());
 			temp |= a;
@@ -1396,7 +1405,7 @@ int exec(void)
 			if (temp == 0)
 				p |= 0x02;
 			else
-				p &= 0xFD;			
+				p &= 0xFD;
 			if (ver > 1) printf("[TSBa]");
 			per = 6;
 			break;
@@ -1407,37 +1416,43 @@ int exec(void)
 			if (temp == 0)
 				p |= 0x02;
 			else
-				p &= 0xFD;			
+				p &= 0xFD;
 			if (ver > 1) printf("[TSBz]");
 			per = 5;
 			break;
-		case 0xBA:						// *** TSX: Transfer Stack Ponter to Index X ***
+/* *** TSX: Transfer Stack Pointer to Index X *** */
+		case 0xBA:
 			x = s;
 			bits_nz(x);
 			if (ver > 1) printf("[TSX]");
 			break;
-		case 0x8A:						// *** TXA: Transfer Index X to Accumulator ***
+/* *** TXA: Transfer Index X to Accumulator *** */
+		case 0x8A:
 			a = x;
 			bits_nz(a);
 			if (ver > 1) printf("[TXA]");
 			break;
-		case 0x9A:						// *** TXS: Transfer Index X to Stack Register ***
+/* *** TXS: Transfer Index X to Stack Pointer *** */
+		case 0x9A:
 			s = x;
 			bits_nz(s);
 			if (ver > 1) printf("[TXS]");
 			break;
-		case 0x98:						// *** TYA: Transfer Index Y to Accumulator ***
+/* *** TYA: Transfer Index Y to Accumulator *** */
+		case 0x98:
 			a = y;
 			bits_nz(a);
 			if (ver > 1) printf("[TYA]");
 			break;
-		case 0xFF:						// ******** display status ******** Rockwell opcodes NOT supported
+/* *** Display Status (WAI on WDC) *** */
+		case 0xCB:
 			printf(" ...status:");
-			stat(p);
+			stat();
 			break;
-		default:						// ******** halt CPU on illegal opcodes ********
+/* *** *** *** halt CPU on illegal opcodes *** *** *** */
+		default:
 			printf("\n*** ($%04X) Illegal opcode $%02X ***\n", pc-1, opcode);
-			run = 0;
+			run = per = 0;
 	}
 
 	return per;
