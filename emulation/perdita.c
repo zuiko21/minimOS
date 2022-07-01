@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220701-2058
+ * last modified 20220702-0042
  * */
 
 #include <stdio.h>
@@ -26,22 +26,28 @@
 
 	const char flag[8]="NV-BDIZC";	// flag names
 
+/* ******************* */
 /* function prototypes */
-	int exec(void);			// execute one opcode, returning number of cycles
+/* ******************* */
+
+/* emulator control */
 	void load(const char name[], word adr);		// load firmware
 	void stat(void);		// display processor status
 	void dump(word dir);	// display 16 bytes of memory
 
+/* memory management */
 	byte peek(word dir);			// read memory or I/O
 	void poke(word dir, byte v);	// write memory or I/O
 	void push(byte b)		{ poke(0x100 + s--, b); }		// standard stack ops
 	byte pop(void)			{ return peek(++s + 0x100); }
 
+/* interrupt support */
 	void intack(void);		// save status for interrupt acknowledge
 	void reset(void);		// RESET & hardware interrupts
 	void nmi(void);
 	void irq(void);
 
+/* opcode support */
 	void bits_nz(byte b);	// set N&Z flags
 
 	void asl(byte *d);		// shift left
@@ -51,20 +57,22 @@
 
 	void adc(byte d);		// add to A with carry
 	void sbc(byte d);		// subtract from A with borrow, 6502-style
-	void cmp(byte d);		// compare, based on subtraction result, is this OK?
+	void cmp(byte reg, byte d);		// compare, based on subtraction result
 
 /* addressing modes */
 	word am_a(void);		// absolute
-	word am_ax(int*);		// absolute indexed X
-	word am_ay(int*);		// absolute indexed Y
+	word am_ax(int*);		// absolute indexed X, possible penalty
+	word am_ay(int*);		// absolute indexed Y, possible penalty
 	byte am_zx(void)		{ return (peek(pc++) + x) & 255; }	// ZeroPage indexed X
 	byte am_zy(void)		{ return (peek(pc++) + y) & 255; }	// ZeroPage indexed Y (rare)
 	word am_ix(void);		// pre-indexed indirect X (rare)
-	word am_iy(int*);		// indirect post-indexed Y
+	word am_iy(int*);		// indirect post-indexed Y, possible penalty
 	word am_iz(void);		// indirect (CMOS only)
 	word am_ai(void)		{ word j=am_a(); return peek(j)  |(peek(j+1)  <<8); }	// absolute indirect, not broken
 	word am_aix(void)		{ word j=am_a(); return peek(j+x)|(peek(j+x+1)<<8); }	// absolute pre-indexed indirect (CMOS only)
-	void rel(int*);			// relative branches
+	void rel(int*);			// relative branches, possible penalty
+
+	int exec(void);			// execute one opcode, returning number of cycles
 
 /* ************************************************* */
 /* ******************* main loop ******************* */
@@ -74,18 +82,18 @@ int main (int argc, char * const argv[]) {
 	int ht=0;				// horizontal counter
 	int vsync=0;			// vertical retrace flag
 	run = 1;				// allow execution
-	ver = 0;				// verbosity mode, 0 = none, 1 = jumps, 2 = all 
-ver=0;
+	ver = 0;				// verbosity mode, 0 = none, 1 = jumps, 2 = all; will stop on BRK unless 0
+ver=2;
 //	load("rom.bin", 0x8000);		// preload 32K firmware at ROM area
-mem[0xffee]=0xa9;//LDA #0
-mem[0xffef]=0x00;
-mem[0xfff0]=0xaa;//TAX
-mem[0xfff1]=0xa8;//TAY
-mem[0xfff2]=0xe8;//loop: INX
-mem[0xfff3]=0xd0;//BNE loop
-mem[0xfff4]=0xfd;
-mem[0xfff5]=0xc8;//INY
-mem[0xfff6]=0xd0;//BNE loop
+mem[0xffee]=0xa9;//LDA #$A6
+mem[0xffef]=0xa6;
+mem[0xfff0]=0x85;//STA $00
+mem[0xfff1]=0x00;
+mem[0xfff2]=0xa9;//LDA #$33
+mem[0xfff3]=0x33;
+mem[0xfff4]=0x04;//TSB $00
+mem[0xfff5]=0x00;
+mem[0xfff6]=0xdb;//BRK
 mem[0xfff7]=0xfa;
 mem[0xfff8]=0x1a;//INC
 mem[0xfff9]=0xd0;//BNE loop
@@ -163,7 +171,7 @@ void dump(word dir) {
 	int i;
 
 	printf("$%04X: ", dir);
-	for (i=0; i<16; i++)	printf("%02X ", mem[dir+i]);
+	for (i=0; i<16; i++)		printf("%02X ", mem[dir+i]);
 	printf ("[");
 	for (i=0; i<16; i++)
 		if ((mem[dir+i]>31)&&(mem[dir+i]<127))	printf("%c", mem[dir+i]);
@@ -175,7 +183,7 @@ void dump(word dir) {
 void load(const char name[], word adr) {
 	FILE *f;
 	int c, b = 0;
-	
+
 	f = fopen(name, "rb");
 	if(f != NULL) {
 		do {
@@ -192,6 +200,7 @@ void load(const char name[], word adr) {
 	}
 }
 
+/* *** memory management *** */
 /* read from memory or I/O */
 byte peek(word dir) {
 	byte d = 0xFF;				// supposed floating databus value?
@@ -228,7 +237,7 @@ void poke(word dir, byte v) {
 			screen = (v & 0b00110000) << 9;		// screen switching
 			// VDU-redraw all VRAM at selected screen!
 			// may add more flags for VDU
-		} else if (dir<=0xDF8F) {				// sync flags? *** not writable
+		} else if (dir<=0xDF8F) {				// sync flags not writable!
 			printf("\n*** Writing to Read-only ports at $%04X ***\n", pc);
 		} else if (dir<=0xDF9F) {				// expansion port?
 			mem[dir] = v;		// *** is this OK?
@@ -244,6 +253,7 @@ void poke(word dir, byte v) {
 	}
 }
 
+/* *** interrupt support *** */
 /* acknowledge interrupt and save status */
 void intack(void) {
 	push(pc >> 8);							// stack standard status
@@ -353,6 +363,7 @@ void rel(int *bound) {
 	*bound = ((old & 0xFF00)==(pc & 0xFF00))?0:1;	// check page crossing
 }
 
+/* *** opcode assistants *** */
 /* compute usual N & Z flags from value */
 void bits_nz(byte b) {
 	p &= 0b01111101;		// pre-clear N & Z
@@ -428,7 +439,7 @@ void sbc(byte d) {
 	byte old = a;
 	word big = a;
 
-	big += d;				// basic subtract, 6502-style... but check for Decimal mode!
+	big += ~d;				// basic subtract, 6502-style... but check for Decimal mode!
 	big += (p & 1);			// add with Carry
 	a = big & 255;
 
@@ -448,7 +459,15 @@ void sbc(byte d) {
 	bits_nz(a);									// set N & Z as usual
 }
 
-void cmp(byte d) {
+/* CMP/CPX/CPY compare register to memory */
+void cmp(byte reg, byte d) {
+	word big = reg;
+
+	big -= d;				// apparent subtract, always binary
+
+	if (big & 256)			p &= 0b11111110;	// set Carry if needed (note inversion)
+	else					p |= 0b00000001;
+	bits_nz(reg - d);							// set N & Z as usual
 }
 
 /* execute a single opcode, returning cycle count */
@@ -595,7 +614,7 @@ int exec(void) {
 			asl(&temp);
 			poke(adr, temp);
 			if (ver > 1) printf("[ASLx]");
-			per = 7;		// 6+page on WDC?
+			per = 6 + page;	// 7 on NMOS
 			break;
 /* *** Bxx: Branch on flag condition *** */
 		case 0x90:
@@ -685,12 +704,18 @@ int exec(void) {
 			per = 3 + page;
 			if (ver) printf("[BRA]");
 			break;
-		case 0x00:						// *** BRK: Force Break ***
-			printf("[BRK]");
-// **** TBD ****
-			run = 0;
-			per = 7;
+/* *** BRK: force break *** */
+		case 0x00:
 			pc++;
+			printf("[BRK]");
+			if (ver)	run = 0;
+			else {
+				p |= 0b00010000;		// set B, just in case
+				intack();
+				p &= 0b11101111;		// clear B, just in case
+				pc = peek(0xFFFE) | peek(0xFFFF)<<8;	// IRQ/BRK vector
+				printf("\b PC=>%04X]", pc);
+			}
 			break;
 /* *** Bxx: Branch on flag condition *** */
 		case 0x50:
@@ -725,91 +750,78 @@ int exec(void) {
 			p &= 0b10111111;
 			if (ver > 1) printf("[CLV]");
 			break;
-/* *** CMP: Compare Memory And Accumulator *** */ // TBD TBD TBD
-		case 0xC9:						
-			cmp(a - peek(pc));//****************
+/* *** CMP: Compare Memory And Accumulator *** */
+		case 0xC9:
+			cmp(a, peek(pc++));
 			if (ver > 1) printf("[CMP#]");
-			pc++;
 			break;
 		case 0xCD:
-			temp = peek(am_a());
-			cmp(a - temp);
+			cmp(a, peek(am_a()));
 			if (ver > 1) printf("[CMPa]");
 			per = 4;
 			break;
 		case 0xC5:
-			temp = peek(peek(pc++));
-			cmp(a - temp);
+			cmp(a, peek(peek(pc++)));
 			if (ver > 1) printf("[CMPz]");
 			per = 3;
 			break;
 		case 0xC1:
-			temp = peek(am_ix());
-			cmp(a - temp);
+			cmp(a, peek(am_ix()));
 			if (ver > 1) printf("[CMP(x)]");
 			per = 6;
 			break;
 		case 0xD1:
-			temp = peek(am_iy(&page));
-			cmp(a - temp);
+			cmp(a, peek(am_iy(&page)));
 			if (ver > 1) printf("[CMP(y)]");
 			per = 5 + page;
 			break;
 		case 0xD5:
-			temp = peek(am_zx());
-			cmp(a - temp);
+			cmp(a, peek(am_zx()));
 			if (ver > 1) printf("[CMPzx]");
 			per = 4;
 			break;
 		case 0xDD:
-			temp = peek(am_ax(&page));
-			cmp(a - temp);
+			cmp(a, peek(am_ax(&page)));
 			if (ver > 1) printf("[CMPx]");
 			per = 4 + page;
 			break;
 		case 0xD9:
-			temp = peek(am_ay(&page));
-			cmp(a - temp);
+			cmp(a, peek(am_ay(&page)));
 			if (ver > 1) printf("[CMPy]");
 			per = 4 + page;
 			break;
 		case 0xD2:			// CMOS only
-			temp = peek(am_iz());
-			cmp(a - temp);
+			cmp(a, peek(am_iz()));
 			if (ver > 1) printf("[CMP(z)]");
 			per = 5;
 			break;
-/* *** CPX: Compare Memory And Index X *** */ // TBD TBD TBD
-		case 0xE0:						
-			cmp(x - peek(pc++));
+/* *** CPX: Compare Memory And Index X *** */
+		case 0xE0:
+			cmp(x, peek(pc++));
 			if (ver > 1) printf("[CPX#]");
 			break;
 		case 0xEC:
-			temp = peek(am_a());
-			cmp(x - temp);
+			cmp(x, peek(am_a()));
 			if (ver > 1) printf("[CPXa]");
 			per = 4;
 			break;
 		case 0xE4:
-			temp = peek(peek(pc++));
-			cmp(x - temp);
+			cmp(x, peek(peek(pc++)));
 			if (ver > 1) printf("[CPXz]");
 			per = 3;
 			break;
-/* *** CPY: Compare Memory And Index Y *** */ // TBD TBD TBD
+/* *** CPY: Compare Memory And Index Y *** */
 		case 0xC0:
-			cmp(y - peek(pc++));
+			cmp(y, peek(pc++));
 			if (ver > 1) printf("[CPY#]");
 			break;
 		case 0xCC:
-			temp = peek(am_a());
-			cmp(y - temp);
+			cmp(y, peek(am_a()));
 			if (ver > 1) printf("[CPYa]");
 			per = 4;
 			break;
 		case 0xC4:
-			temp = peek(peek(pc++));
-			cmp(y - temp);
+			cmp(y, peek(peek(pc++)));
 			if (ver > 1) printf("[CPYz]");
 			per = 3;
 			break;
@@ -1139,7 +1151,7 @@ int exec(void) {
 			lsr(&temp);
 			poke(adr, temp);
 			if (ver > 1) printf("[LSRx]");
-			per = 7;		// 6+page for WDC?
+			per = 6 + page;	// 7 for NMOS
 			break;
 /* *** NOP: No Operation *** */
 		case 0xEA:
@@ -1280,7 +1292,7 @@ int exec(void) {
 			rol(&temp);
 			poke(adr, temp);
 			if (ver > 1) printf("[ROLx]");
-			per = 7;		// 6+page for WDC?
+			per = 6 + page;	// 7 for NMOS
 			break;
 		case 0x2A:
 			rol(&a);
@@ -1320,7 +1332,7 @@ int exec(void) {
 			ror(&temp);
 			poke(adr, temp);
 			if (ver > 1) printf("[RORx]");
-			per = 7;		// 6+page for WDC?
+			per = 6 + page;	// 7 for NMOS
 			break;
 /* *** RTI: Return from Interrupt *** */
 		case 0x40:
@@ -1505,51 +1517,41 @@ int exec(void) {
 			bits_nz(y);
 			if (ver > 1) printf("[TAY]");
 			break;
-/* *** TRB: Test and Reset Bits, CMOS only *** */ // TBD TBD
+/* *** TRB: Test and Reset Bits, CMOS only *** */
 		case 0x1C:
 			adr = am_a();
-			temp = peek(adr);//***************
-			temp &= !a;
-			poke(adr, temp);
-			if (temp == 0)//*********
-				p |= 0x02;
-			else
-				p &= 0xFD;
+			temp = peek(adr);
+			if (temp & a)		p &= 0b11111101;	// set Z accordingly
+			else 				p |= 0b00000010;
+			poke(adr, temp & ~a);
 			if (ver > 1) printf("[TRBa]");
 			per = 6;
 			break;
 		case 0x14:
-			temp = peek(peek(pc));
-			temp &= !a;
-			poke(peek(pc++), temp);
-			if (temp == 0)
-				p |= 0x02;
-			else
-				p &= 0xFD;
+			adr = peek(pc++);
+			temp = peek(adr);
+			if (temp & a)		p &= 0b11111101;	// set Z accordingly
+			else 				p |= 0b00000010;
+			poke(adr, temp & ~a);
 			if (ver > 1) printf("[TRBz]");
 			per = 5;
 			break;
-/* *** TSB: Test and Set Bits, CMOS only *** */ // TBD TBD
+/* *** TSB: Test and Set Bits, CMOS only *** */
 		case 0x0C:
 			adr = am_a();
-			temp = peek(am_a());
-			temp |= a;
-			poke(adr, temp);
-			if (temp == 0)
-				p |= 0x02;
-			else
-				p &= 0xFD;
+			temp = peek(adr);
+			if (temp & a)		p &= 0b11111101;	// set Z accordingly
+			else 				p |= 0b00000010;
+			poke(adr, temp | a);
 			if (ver > 1) printf("[TSBa]");
 			per = 6;
 			break;
 		case 0x04:
-			temp = peek(peek(pc));
-			temp |= a;
-			poke(peek(pc++), temp);
-			if (temp == 0)
-				p |= 0x02;
-			else
-				p &= 0xFD;
+			adr = peek(pc++);
+			temp = peek(adr);
+			if (temp & a)		p &= 0b11111101;	// set Z accordingly
+			else 				p |= 0b00000010;
+			poke(adr, temp | a);
 			if (ver > 1) printf("[TSBz]");
 			per = 5;
 			break;
@@ -1582,7 +1584,7 @@ int exec(void) {
 			printf(" ...status?");
 			stat();
 			break;
-/* *** Graceful stop (STP on WDC) *** */
+/* *** Graceful Halt (STP on WDC) *** */
 		case 0xDB:
 			printf(" ...HALT!");
 			run = per = 0;
