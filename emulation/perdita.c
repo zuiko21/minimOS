@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220701-1428
+ * last modified 20220701-1740
  * */
 
 #include <stdio.h>
@@ -11,7 +11,7 @@
 	typedef uint16_t word;
 
 /* global variables */
-	byte mem[65536]			// unified memory map
+	byte mem[65536];		// unified memory map
 
 	byte a, x, y, s, p;		// 8-bit registers
 	word pc;				// program counter
@@ -22,15 +22,15 @@
 	int irq_flag = 0;
 	long cont = 0;			// total elapsed cycles
 
-	const char flag[8]="NV·BDIZC";	// flag names
+	const char flag[8]="NV-BDIZC";	// flag names
 
 /* function prototypes */
 	void stat(void);		// display processor status
 	byte peek(word dir);			// read memory or I/O
 	void poke(word dir, byte v);	// write memory or I/O
 
-	void push(byte b);		{ poke(0x100 + s--, b); }		// standard stack ops
-	byte pop(void);			{ return peek(++s + 0x100); }
+	void push(byte b)		{ poke(0x100 + s--, b); }		// standard stack ops
+	byte pop(void)			{ return peek(++s + 0x100); }
 
 	void intack(void);		// save status for interrupt acknowledge
 	void reset(void);		// RESET & hardware interrupts
@@ -50,7 +50,7 @@
 	void cmp(byte d);		// compare, based on subtraction result, is this OK?
 
 	int exec(void);			// execute one opcode, returning number of cycles
-	void load(cost char name[], word adr);		// load firmware
+	void load(const char name[], word adr);		// load firmware
 
 	word am_a(void)			{ return  peek(pc) | (peek(pc+1) <<8);      pc+=2; }
 	word am_ax(void)		{ return (peek(pc) | (peek(pc+1) <<8)) + x; pc+=2; }		// add penalty unless STore
@@ -109,12 +109,12 @@ int main (int argc, char * const argv[]) {
 			nmi();			// NMI gets executed always
 		}
 		if (stat_flag) {	// *** get from SDL
-			stat(p);
+			stat();
 		}
 	}
 
-	printf(" *** CPU halted after %d clock cycles ***\n", cont);
-	stat(p);				// display final status
+	printf(" *** CPU halted after %ld clock cycles ***\n", cont);
+	stat();					// display final status
 
 	return 0;
 }
@@ -128,17 +128,18 @@ void stat(void)	{
 	int i;
 	byte psr = p;			// local copy of status
 
-	printf("<PC=%04X, A=%02X, X=%02X, Y=%02X, S=%02X>\n<PSR: ", pc-1, a, x, y, s);
+	pc--;
+	printf("<PC=$%04X, A=$%02X, X=$%02X, Y=$%02X, S=$%02X>\n<PSR: ", pc, a, x, y, s);
 	for (i=0; i<8; i++) {
-		if (psr&128)	printf("%c", flags[i]);
+		if (psr&128)	printf("%c", flag[i]);
 		else			printf("·");
-		psr<=1;				// next flag
+		psr<<=1;			// next flag
 	}
 	printf(">\n");
 }
 
 /* load firmware, usually into ROM area */
-void load(cost char name[], word adr) {
+void load(const char name[], word adr) {
 	FILE *f;
 	int c, b = 0;
 	
@@ -182,7 +183,7 @@ byte peek(word dir) {
 }
 
 /* write to memory or I/O */
-void poke(word dir, int v) {
+void poke(word dir, byte v) {
 	if (dir<=0x7FFF)			// 32 KiB static RAM
 		mem[dir] = v;
 	else if (dir>=0xDF80 && dir<=0xDFFF) {	// *** I/O ***
@@ -260,9 +261,9 @@ void rel(void) {			// do NOT postincrement pc!
 
 /* compute usual N & Z flags from value */
 void bits_nz(byte b) {
-	p &= 0b01111101			// pre-clear N & Z
-	p |= (b & 128)			// set N as bit 7
-	p |= (b==0)?2:0			// set Z accordingly
+	p &= 0b01111101;		// pre-clear N & Z
+	p |= (b & 128);			// set N as bit 7
+	p |= (b==0)?2:0;		// set Z accordingly
 }
 
 /* ASL, shift left */
@@ -591,6 +592,7 @@ int exec(void) {
 // **** TBD ****
 			run = 0;
 			per = 7;
+			pc++;
 			break;
 /* *** Bxx: Branch on flag condition *** */
 		case 0x50:
@@ -1263,7 +1265,7 @@ int exec(void) {
 		case 0xF1:
 			sbc(peek(am_iy()));
 			if (ver > 1) printf("[SBC(y)]");
-			per = 5 + dec + flag;
+			per = 5 + dec + page;
 			break;
 		case 0xF5:
 			sbc(peek(am_zx()));
@@ -1273,12 +1275,12 @@ int exec(void) {
 		case 0xFD:
 			sbc(peek(am_ax()));
 			if (ver > 1) printf("[SBCx]");
-			per = 4 + dec + flag;
+			per = 4 + dec + page;
 			break;
 		case 0xF9:
 			sbc(peek(am_ay()));
 			if (ver > 1) printf("[SBCy]");
-			per = 4 + dec + flag;
+			per = 4 + dec + page;
 			break;
 		case 0xF2:			// CMOS only
 			sbc(peek(am_iz()));
