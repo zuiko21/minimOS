@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220701-1740
+ * last modified 20220701-1858
  * */
 
 #include <stdio.h>
@@ -25,6 +25,9 @@
 	const char flag[8]="NV-BDIZC";	// flag names
 
 /* function prototypes */
+	int exec(void);			// execute one opcode, returning number of cycles
+	void load(const char name[], word adr);		// load firmware
+
 	void stat(void);		// display processor status
 	byte peek(word dir);			// read memory or I/O
 	void poke(word dir, byte v);	// write memory or I/O
@@ -37,7 +40,6 @@
 	void nmi(void);
 	void irq(void);
 
-	void rel(void);			// relative branches
 	void bits_nz(byte b);	// set N&Z flags
 
 	void asl(byte *d);		// shift left
@@ -49,19 +51,18 @@
 	void sbc(byte d);		// subtract from A with borrow, 6502-style
 	void cmp(byte d);		// compare, based on subtraction result, is this OK?
 
-	int exec(void);			// execute one opcode, returning number of cycles
-	void load(const char name[], word adr);		// load firmware
-
-	word am_a(void)			{ return  peek(pc) | (peek(pc+1) <<8);      pc+=2; }
-	word am_ax(void)		{ return (peek(pc) | (peek(pc+1) <<8)) + x; pc+=2; }		// add penalty unless STore
-	word am_ay(void)		{ return (peek(pc) | (peek(pc+1) <<8)) + y; pc+=2; }		// add penalty unless STore
-	byte am_zx(void)		{ return (peek(pc++) + x) & 255; }
-	byte am_zy(void)		{ return (peek(pc++) + y) & 255; }
-	word am_ix(void)		{ return (peek(peek(pc)+x)|(peek(peek(pc)+x+1)<<8));     pc++; }	// wrap?***plus penalty unless STore?
-	word am_iy(void)		{ return (peek(peek(pc))  |(peek(peek(pc)+1)  <<8)) + y; pc++; }	// plus penalty unless STore
-	word am_iz(void)		{ return  peek(peek(pc))  |(peek(peek(pc)+1)  <<8) ;     pc++; }
-	word am_ai(void)		{ word j=am_a(); return peek(j)  |(peek(j+1)  <<8) ; }		// not broken
-	word am_aix(void)		{ word j=am_a(); return peek(j+x)|(peek(j+x+1)<<8) ; }
+/* addressing modes */
+	word am_a(void);		// absolute
+	word am_ax(int*);		// absolute indexed X
+	word am_ay(int*);		// absolute indexed Y
+	byte am_zx(void)		{ return (peek(pc++) + x) & 255; }	// ZeroPage indexed X
+	byte am_zy(void)		{ return (peek(pc++) + y) & 255; }	// ZeroPage indexed Y (rare)
+	word am_ix(void);		// pre-indexed indirect X (rare)
+	word am_iy(int*);		// indirect post-indexed Y
+	word am_iz(void);		// indirect (CMOS only)
+	word am_ai(void)		{ word j=am_a(); return peek(j)  |(peek(j+1)  <<8); }	// absolute indirect, not broken
+	word am_aix(void)		{ word j=am_a(); return peek(j+x)|(peek(j+x+1)<<8); }	// absolute pre-indexed indirect (CMOS only)
+	void rel(int*);			// relative branches
 
 /* ************************************************* */
 /* ******************* main loop ******************* */
@@ -73,7 +74,20 @@ int main (int argc, char * const argv[]) {
 	run = 1;				// allow execution
 	ver = 0;				// verbosity mode, 0 = none, 1 = jumps, 2 = all 
 
-	load("rom.bin", 0x8000);		// preload 32K firmware at ROM area
+//	load("rom.bin", 0x8000);		// preload 32K firmware at ROM area
+mem[0xfff3]=0xa2;
+mem[0xfff4]=0x65;
+mem[0xfff5]=0xa0;
+mem[0xfff6]=0x02;
+mem[0xfff7]=0x86;
+mem[0xfff8]=0x00;
+mem[0xfff9]=0x84;
+mem[0xfffa]=0x01;
+mem[0xfffb]=0x00;
+mem[0xfffc]=0xf3;
+mem[0xfffd]=0xff;
+mem[0xfffe]=0xf3;
+mem[0xffff]=0xff;
 
 	reset();				// startup!
 
@@ -136,6 +150,7 @@ void stat(void)	{
 		psr<<=1;			// next flag
 	}
 	printf(">\n");
+printf("Memory @0 %02X, @1 %02X\n",mem[0],mem[1]);
 }
 
 /* load firmware, usually into ROM area */
@@ -251,12 +266,67 @@ void irq(void) {
 	}
 }
 
+/* *** addressing modes *** */
+/* absolute */
+word am_a(void) {
+	word pt = peek(pc) | (peek(pc+1) <<8);
+	pc += 2;
+
+	return pt;
+}
+
+/* absolute indexed X */
+word am_ax(int *bound) {
+	word ba = am_a();		// pick base address and skip operand
+	word pt = ba + x;		// add offset
+	*bound = ((pt & 0xFF00)==(ba & 0xFF00))?0:1;	// check page crossing
+
+	return pt;
+}
+
+/* absolute indexed Y */
+word am_ay(int *bound) {
+	word ba = am_a();		// pick base address and skip operand
+	word pt = ba + y;		// add offset
+	*bound = ((pt & 0xFF00)==(ba & 0xFF00))?0:1;	// check page crossing
+
+	return pt;
+}
+
+/* indirect */
+word am_iz(void) {
+	word pt = peek(peek(pc)) | (peek(peek(pc)+1)<<8);
+	pc++;
+
+	return pt;
+}
+
+/* indirect post-indexed */
+word am_iy(int *bound) {
+	word ba = am_iz();		// pick base address and skip operand
+	word pt = ba + y;		// add offset
+	*bound = ((pt & 0xFF00)==(ba & 0xFF00))?0:1;	// check page crossing
+
+	return pt;
+}
+
+/* pre-indexed indirect */
+word am_ix(void) {
+	word pt = (peek(peek(pc)+x)|(peek(peek(pc)+x+1)<<8));
+	pc++;
+
+	return pt;
+}
+
 /* relative branch */
-void rel(void) {			// do NOT postincrement pc!
+void rel(int *bound) {
 	byte off = peek(pc++);	// read offset and skip operand
+	word old = pc;
 
 	pc += off;
-	pc -= (off & 128)?256:0;				// check negative displacement
+	pc -= (off & 128)?256:0;						// check negative displacement
+
+	*bound = ((old & 0xFF00)==(pc & 0xFF00))?0:1;	// check page crossing
 }
 
 /* compute usual N & Z flags from value */
@@ -385,7 +455,7 @@ int exec(void) {
 			per = 6 + dec;
 			break;
 		case 0x71:
-			adc(peek(am_iy()));
+			adc(peek(am_iy(&page)));
 			if (ver > 1) printf("[ADC(y)]");
 			per = 5 + dec + page;
 			break;
@@ -395,12 +465,12 @@ int exec(void) {
 			per = 4 + dec;
 			break;
 		case 0x7D:
-			adc(peek(am_ax()));
+			adc(peek(am_ax(&page)));
 			if (ver > 1) printf("[ADCx]");
 			per = 4 + dec + page;
 			break;
 		case 0x79:
-			adc(peek(am_ay()));
+			adc(peek(am_ay(&page)));
 			if (ver > 1) printf("[ADCy]");
 			per = 4 + dec + page;
 			break;
@@ -434,7 +504,7 @@ int exec(void) {
 			per = 6;
 			break;
 		case 0x31:
-			a &= peek(am_iy());
+			a &= peek(am_iy(&page));
 			bits_nz(a);
 			if (ver > 1) printf("[AND(y)]");
 			per = 5 + page;
@@ -446,13 +516,13 @@ int exec(void) {
 			per = 4;
 			break;
 		case 0x3D:
-			a &= peek(am_ax());
+			a &= peek(am_ax(&page));
 			bits_nz(a);
 			if (ver > 1) printf("[ANDx]");
 			per = 4 + page;
 			break;
 		case 0x39:
-			a &= peek(am_ay());
+			a &= peek(am_ay(&page));
 			bits_nz(a);
 			if (ver > 1) printf("[ANDy]");
 			per = 4 + page;
@@ -492,7 +562,7 @@ int exec(void) {
 			per = 6;
 			break;
 		case 0x1E:
-			adr = am_ax();
+			adr = am_ax(&page);
 			temp = peek(adr);
 			asl(&temp);
 			poke(adr, temp);
@@ -502,21 +572,21 @@ int exec(void) {
 /* *** Bxx: Branch on flag condition *** */
 		case 0x90:
 			if(!(p & 0b00000001)) {
-				rel();
+				rel(&page);
 				per = 3 + page;
 				if (ver) printf("[BCC]");
 			}
 			break;
 		case 0xB0:
 			if(p & 0b00000001) {
-				rel();
+				rel(&page);
 				per = 3 + page;
 				if (ver) printf("[BCS]");
 			}
 			break;
 		case 0xF0:
 			if(p & 0b00000010) {
-				rel();
+				rel(&page);
 				per = 3 + page;
 				if (ver) printf("[BEQ]");
 			}
@@ -545,7 +615,7 @@ int exec(void) {
 			if (ver > 1) printf("[BIT#]");
 			break;
 		case 0x3C:			// CMOS only
-			temp = peek(am_ax());
+			temp = peek(am_ax(&page));
 			p &= 0b00111101;			// pre-clear N, V & Z
 			p |= (temp & 0b11000000);	// copy bits 7 & 6 as N & Z
 			p |= (a & temp)?0:2;		// set Z accordingly
@@ -563,27 +633,27 @@ int exec(void) {
 /* *** Bxx: Branch on flag condition *** */
 		case 0x30:
 			if(p & 0b10000000) {
-				rel();
+				rel(&page);
 				per = 3 + page;
 			}		
 			if (ver) printf("[BMI]");
 			break;
 		case 0xD0:
 			if(!(p & 0b00000010)) {
-				rel();
+				rel(&page);
 				per = 3 + page;
 			}				
 			if (ver) printf("[BNE]");
 			break;
 		case 0x10:
 			if(!(p & 0b10000000)) {
-				rel();
+				rel(&page);
 				per = 3 + page;
 			}			
 			if (ver) printf("[BPL]");
 			break;
 		case 0x80:			// CMOS only
-			rel();
+			rel(&page);
 			per = 3 + page;
 			if (ver) printf("[BRA]");
 			break;
@@ -597,14 +667,14 @@ int exec(void) {
 /* *** Bxx: Branch on flag condition *** */
 		case 0x50:
 			if(!(p & 0b01000000)) {
-				rel();
+				rel(&page);
 				per = 3 + page;
 			}
 			if (ver) printf("[BVC]");
 			break;
 		case 0x70:
 			if(p & 0b01000000) {
-				rel();
+				rel(&page);
 				per = 3 + page;
 			}
 			if (ver) printf("[BVS]");
@@ -652,7 +722,7 @@ int exec(void) {
 			per = 6;
 			break;
 		case 0xD1:
-			temp = peek(am_iy());
+			temp = peek(am_iy(&page));
 			cmp(a - temp);
 			if (ver > 1) printf("[CMP(y)]");
 			per = 5 + page;
@@ -664,13 +734,13 @@ int exec(void) {
 			per = 4;
 			break;
 		case 0xDD:
-			temp = peek(am_ax());
+			temp = peek(am_ax(&page));
 			cmp(a - temp);
 			if (ver > 1) printf("[CMPx]");
 			per = 4 + page;
 			break;
 		case 0xD9:
-			temp = peek(am_ay());
+			temp = peek(am_ay(&page));
 			cmp(a - temp);
 			if (ver > 1) printf("[CMPy]");
 			per = 4 + page;
@@ -741,9 +811,9 @@ int exec(void) {
 			per = 6;
 			break;
 		case 0xDE:
-			temp = peek(am_ax());
+			temp = peek(am_ax(&page));
 			temp--;
-			poke(am_ax(), temp);
+			poke(am_ax(&page), temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[DECx]");
 			per = 7;		// 6+page for WDC?
@@ -790,7 +860,7 @@ int exec(void) {
 			per = 6;
 			break;
 		case 0x51:
-			a ^= peek(am_iy());
+			a ^= peek(am_iy(&page));
 			bits_nz(a);
 			if (ver > 1) printf("[EOR(y)]");
 			per = 5 + page;
@@ -802,13 +872,13 @@ int exec(void) {
 			per = 4;
 			break;
 		case 0x5D:
-			a ^= peek(am_ax());
+			a ^= peek(am_ax(&page));
 			bits_nz(a);
 			if (ver > 1) printf("[EORx]");
 			per = 4 + page;
 			break;
 		case 0x59:
-			a ^= peek(am_ay());
+			a ^= peek(am_ay(&page));
 			bits_nz(a);
 			if (ver > 1) printf("[EORy]");
 			per = 4 + page;
@@ -845,9 +915,9 @@ int exec(void) {
 			per = 6;
 			break;
 		case 0xFE:
-			temp = peek(am_ax());
+			temp = peek(am_ax(&page));
 			temp++;
-			poke(am_ax(), temp);
+			poke(am_ax(&page), temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[INCx]");
 			per = 7;		// 6+page for WDC?
@@ -918,7 +988,7 @@ int exec(void) {
 			per = 6;
 			break;
 		case 0xB1:
-			a = peek(am_iy());
+			a = peek(am_iy(&page));
 			bits_nz(a);
 			if (ver > 1) printf("[LDA(y)]");
 			per = 5 + page;
@@ -930,13 +1000,13 @@ int exec(void) {
 			per = 4;
 			break;
 		case 0xBD:
-			a = peek(am_ax());
+			a = peek(am_ax(&page));
 			bits_nz(a);
 			if (ver > 1) printf("[LDAx]");
 			per = 4 + page;
 			break;
 		case 0xB9:
-			a = peek(am_ay());
+			a = peek(am_ay(&page));
 			bits_nz(a);
 			if (ver > 1) printf("[LDAy]");
 			per = 4 + page;
@@ -972,7 +1042,7 @@ int exec(void) {
 			per = 4;
 			break;
 		case 0xBE:
-			x = peek(am_ay());
+			x = peek(am_ay(&page));
 			bits_nz(x);
 			if (ver > 1) printf("[LDXy]");
 			per = 4 + page;
@@ -1002,7 +1072,7 @@ int exec(void) {
 			per = 4;
 			break;
 		case 0xBC:
-			y = peek(am_ax());
+			y = peek(am_ax(&page));
 			bits_nz(y);
 			if (ver > 1) printf("[LDYx]");
 			per = 4 + page;
@@ -1036,7 +1106,7 @@ int exec(void) {
 			per = 6;
 			break;
 		case 0x5E:
-			adr = am_ax();
+			adr = am_ax(&page);
 			temp = peek(adr);
 			lsr(&temp);
 			poke(adr, temp);
@@ -1072,7 +1142,7 @@ int exec(void) {
 			per = 6;
 			break;
 		case 0x11:
-			a |= peek(am_iy());
+			a |= peek(am_iy(&page));
 			bits_nz(a);
 			if (ver > 1) printf("[ORA(y)]");
 			per = 5 + page;
@@ -1084,13 +1154,13 @@ int exec(void) {
 			per = 4;
 			break;
 		case 0x1D:
-			a |= peek(am_ax());
+			a |= peek(am_ax(&page));
 			bits_nz(a);
 			if (ver > 1) printf("[ORAx]");
 			per = 4 + page;
 			break;
 		case 0x19:
-			a |= peek(am_ay());
+			a |= peek(am_ay(&page));
 			bits_nz(a);
 			if (ver > 1) printf("[ORAy]");
 			per = 4 + page;
@@ -1177,7 +1247,7 @@ int exec(void) {
 			per = 6;
 			break;
 		case 0x3E:
-			adr = am_ax();
+			adr = am_ax(&page);
 			temp = peek(adr);
 			rol(&temp);
 			poke(adr, temp);
@@ -1217,7 +1287,7 @@ int exec(void) {
 			per = 6;
 			break;
 		case 0x7E:
-			adr = am_ax();
+			adr = am_ax(&page);
 			temp = peek(adr);
 			ror(&temp);
 			poke(adr, temp);
@@ -1263,7 +1333,7 @@ int exec(void) {
 			per = 6 + dec;
 			break;
 		case 0xF1:
-			sbc(peek(am_iy()));
+			sbc(peek(am_iy(&page)));
 			if (ver > 1) printf("[SBC(y)]");
 			per = 5 + dec + page;
 			break;
@@ -1273,12 +1343,12 @@ int exec(void) {
 			per = 4 + dec;
 			break;
 		case 0xFD:
-			sbc(peek(am_ax()));
+			sbc(peek(am_ax(&page)));
 			if (ver > 1) printf("[SBCx]");
 			per = 4 + dec + page;
 			break;
 		case 0xF9:
-			sbc(peek(am_ay()));
+			sbc(peek(am_ay(&page)));
 			if (ver > 1) printf("[SBCy]");
 			per = 4 + dec + page;
 			break;
@@ -1318,7 +1388,7 @@ int exec(void) {
 			per = 6;
 			break;
 		case 0x91:
-			poke(am_iy(), a);
+			poke(am_iy(&page), a);
 			if (ver > 1) printf("[STA(y)]");
 			per = 6;		// ...and not 5, as expected
 			break;
@@ -1329,12 +1399,12 @@ int exec(void) {
 			per = 4;
 			break;
 		case 0x9D:
-			poke(am_ax(), a);
+			poke(am_ax(&page), a);
 			if (ver > 1) printf("[STAx]");
 			per = 5;		// ...and not 4, as expected
 			break;
 		case 0x99:
-			poke(am_ay(), a);
+			poke(am_ay(&page), a);
 			if (ver > 1) printf("[STAy]");
 			per = 5;		// ...and not 4, as expected
 			break;
@@ -1392,7 +1462,7 @@ int exec(void) {
 			per = 4;
 			break;
 		case 0x9E:
-			poke(am_ax(), 0);
+			poke(am_ax(&page), 0);
 			if (ver > 1) printf("[STZx]");
 			per = 5;		// ...and not 4, as expected
 			break;
