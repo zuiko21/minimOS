@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220630-1940
+ * last modified 20220701-1428
  * */
 
 #include <stdio.h>
@@ -15,6 +15,7 @@
 
 	byte a, x, y, s, p;		// 8-bit registers
 	word pc;				// program counter
+	int dec;				// decimal flag for speed penalties (CMOS only)
 	int run, ver;			// emulator control
 	int stat_flag = 0;		// external control
 	int nmi_flag = 0;		// interrupt control
@@ -44,12 +45,12 @@
 	void rol(byte *d);		// rotate left
 	void ror(byte *d);		// rotate right
 
-	void adc(byte d);		// add with carry
-	void sbc(byte d);
-	void cmp(byte d);		// compare
+	void adc(byte d);		// add to A with carry
+	void sbc(byte d);		// subtract from A with borrow, 6502-style
+	void cmp(byte d);		// compare, based on subtraction result, is this OK?
 
 	int exec(void);			// execute one opcode, returning number of cycles
-	void load(cost char name[], word adr);					// load firmware
+	void load(cost char name[], word adr);		// load firmware
 
 	word am_a(void)			{ return  peek(pc) | (peek(pc+1) <<8);      pc+=2; }
 	word am_ax(void)		{ return (peek(pc) | (peek(pc+1) <<8)) + x; pc+=2; }		// add penalty unless STore
@@ -62,33 +63,48 @@
 	word am_ai(void)		{ word j=am_a(); return peek(j)  |(peek(j+1)  <<8) ; }		// not broken
 	word am_aix(void)		{ word j=am_a(); return peek(j+x)|(peek(j+x+1)<<8) ; }
 
-/* ******************* startup ******************* */
+/* ************************************************* */
+/* ******************* main loop ******************* */
+/* ************************************************* */
 int main (int argc, char * const argv[]) {
-	int cyc=0, t=0;			// instruction and interrupt cycle counter
-
+	int cyc=0, it=0;		// instruction and interrupt cycle counter
+	int ht=0;				// horizontal counter
+	int vsync=0;			// vertical retrace flag
 	run = 1;				// allow execution
-	ver = 0;				// verbosity mode, 0 = none, 1 = jumps, 2 = auto?, 3 = all 
+	ver = 0;				// verbosity mode, 0 = none, 1 = jumps, 2 = all 
 
 	load("rom.bin", 0x8000);		// preload 32K firmware at ROM area
 
 	reset();				// startup!
 
 	while (run) {
+/* execute current opcode */
 		cyc = exec();		// count elapsed clock cycles for this instruction
 		cont += cyc;		// add last instruction cycle count
-		t += cyc;			// advance interrupt counter
-		if (t >= 6144)		// 250 Hz interrupt @ 1.536 MHz
+		it += cyc;			// advance interrupt counter
+		ht += cyc;			// both get slightly out-of-sync during interrupts, but...
+/* check horizontal counter for HSYNC flag, could use count%98, but... */
+		if (ht >= 98)		ht -= 98;
+		if (ht <  64)		mem[0xDF88] &= 0b01111111;	// clear HSYNC flag while line display
+		else				mem[0xDF88] |= 0b10000000;	// set HSYNC flag during line retrace
+/* check hardware interrupt counter */
+		if (it >= 6144)		// 250 Hz interrupt @ 1.536 MHz
 		{
-			t -= 6144;		// restore for next
-// *** maybe get keypresses from SDL here
+			it -= 6144;		// restore for next
+// *** may get keypresses from SDL here, as this get executed every 4 ms ***
+/* update at least VSYNC flag (off for 3, on for 2) */
+			if (vsync == 5)		vsync = 0;
+			if ((vsync++) < 3)	mem[0xDF88] &= 0b10111111;	// clear VSYNC flag while display
+			else				mem[0xDF88] |= 0b01000000;	// set VSYNC flag during retrace
+/* generate periodic interrupt */ 
 			if (mem[0xDFA0] & 1) {
 				irq();		// if hardware interrupts are enabled, send signal to CPU
 			}
 		}
-/*		if (irq_flag) {		// 'spurious' cartridge interrupt emulation!
+/* generate asynchronous interrupts */ 
+		if (irq_flag) {		// 'spurious' cartridge interrupt emulation!
  			irq();
  		}
-*/
 		if (nmi_flag) {		// *** get somewhere from SDL
 			nmi();			// NMI gets executed always
 		}
@@ -98,13 +114,13 @@ int main (int argc, char * const argv[]) {
 	}
 
 	printf(" *** CPU halted after %d clock cycles ***\n", cont);
-	stat(p);				// display end status
+	stat(p);				// display final status
 
 	return 0;
 }
 
 /* **************************** */
-/* support function definitions */
+/* support functions definition */
 /* **************************** */
 
 /* display CPU status */
@@ -146,16 +162,18 @@ void load(cost char name[], word adr) {
 byte peek(word dir) {
 	byte d = 0xFF;				// supposed floating databus value?
 
-	if (dir>=0xDF80 && dir<=0xDFFF) {	// I/O
+	if (dir>=0xDF80 && dir<=0xDFFF) {	// *** I/O ***
 		if (dir<=0xDF87)		// video mode (readable)
 			d = mem[0xDF80];
 		else if (dir<=0xDF8F)	// sync flags
 			d = mem[0xDF88];
-		else if (dir<=0xDF9F)	// expansion port
+		else if (dir<=0xDF9F) {	// expansion port
 			d = mem[dir];		// *** is this OK?
-// interrupt control and beeper are NOT readable
-		else if (dir>=0xDFC0)	// cartridge I/O
+		} else if (dir<=0xDFBF) {		// interrupt control and beeper are NOT readable and WILL be corrupted otherwise
+			printf("\n*** Reading from Write-only ports at $%04X ***\n", pc);
+		} else {				// cartridge I/O
 			d = mem[dir];		// *** is this OK?
+		}
 	} else {
 		d = mem[dir];			// default memory read, either RAM or ROM
 	}
@@ -164,24 +182,26 @@ byte peek(word dir) {
 }
 
 /* write to memory or I/O */
-void poke(long dir, int v) {
-	if (dir>=0 && dir<32768)			// 32 KiB static RAM
+void poke(word dir, int v) {
+	if (dir<=0x7FFF)			// 32 KiB static RAM
 		mem[dir] = v;
-
-	if (dir>=0xDF80 && dir<=0xDFFF) {	// I/O
-		if (dir<=0xDF87)				// video mode?
-			mem[0xDF80] = v;			// canonical address
-		else if (dir<=0xDF8F)			// sync flags?
-			;							// *** not writable
-		else if (dir<=0xDF9F)			// expansion port?
-			mem[dir] = v;				// *** is this OK?
-		else if (dir<=0xDFAF)			// interrupt control?
-			mem[0xDFA0] = v;			// canonical address, only D0 matters
-		else if (dir<=0xDFBF)			// beeper?
-			mem[0xDFB0] = v;			// canonical address, only D0 matters *** anything else?
-		else
-			mem[dir] = v;				// otherwise is cartridge I/O *** anything else?
-	}									// any other address is ROM, thus no much sense writing there?
+	else if (dir>=0xDF80 && dir<=0xDFFF) {	// *** I/O ***
+		if (dir<=0xDF87)		// video mode?
+			mem[0xDF80] = v;	// canonical address
+		else if (dir<=0xDF8F) {	// sync flags? *** not writable
+			printf("\n*** Writing to Read-only ports at $%04X ***\n", pc);
+		} else if (dir<=0xDF9F) {		// expansion port?
+			mem[dir] = v;		// *** is this OK?
+		} else if (dir<=0xDFAF)	// interrupt control?
+			mem[0xDFA0] = v;	// canonical address, only D0 matters
+		else if (dir<=0xDFBF) {	// beeper?
+			mem[0xDFB0] = v;	// canonical address, only D0 matters *** anything else for SDL audio?
+		} else {
+			mem[dir] = v;		// otherwise is cartridge I/O *** anything else?
+		}
+	} else {					// any other address is ROM, thus no much sense writing there?
+		printf("\n*** Writing to ROM at $%04X ***\n", pc);
+	}
 }
 
 /* acknowledge interrupt and save status */
@@ -191,6 +211,8 @@ void intack(void) {
 	push(p);
 
 	p |= 0b00000100;						// set interrupt mask
+	p &= 0b11110111;						// and clear Decimal mode (CMOS only)
+	dec = 0;
 
 	cont += 7;								// interrupt acknowledge time
 }
@@ -203,6 +225,7 @@ void reset(void) {
 
 	p &= 0b11110011;						// CLD & SEI on 65C02
 	p |= 0b00110000;						// these always 1
+	dec = 0;								// per CLD above
 
 	cont = 0;								// reset global cycle counter?
 }
@@ -218,7 +241,9 @@ void nmi(void) {
 /* emulate !IRQ signal */
 void irq(void) {
 	if (!(p & 4)) {								// if not masked...
+		p &= 0b11101111;						// clear B, as this is IRQ!
 		intack();								// acknowledge and save
+		p |= 0b00010000;						// retrieve current status
 
 		pc = peek(0xFFFE) | peek(0xFFFF)<<8;	// IRQ/BRK vector
 		if (ver)	printf(" IRQ: PC=>%04X\n", pc);
@@ -258,115 +283,130 @@ void lsr(byte *d) {
 
 /* ROL, rotate left */
 void rol(byte *d) {
-	byte temp = (p & 1);	// keep previous C
+	byte tmp = (p & 1);		// keep previous C
 
 	p &= 0b11111110;		// clear C
 	p |= ((*d) & 128) >> 7;	// will take previous bit 7
 	(*d) <<= 1;				// eeeeeek
-	(*d) |= temp;			// rotate C
+	(*d) |= tmp;			// rotate C
 	bits_nz(*d);
 }
 
 /* ROR, rotate right */
 void ror(byte *d) {
-	byte temp = (p & 1)<<7;	// keep previous C (shifted)
+	byte tmp = (p & 1)<<7;	// keep previous C (shifted)
 
 	p &= 0b11111110;		// clear C
 	p |= (*d) & 1;			// will take previous bit 0
 	(*d) >>= 1;				// eeeek
-	(*d) |= temp;			// rotate C
+	(*d) |= tmp;			// rotate C
 	bits_nz(*d);
 }
 
-void adc(byte d)	// ¿¿¿ OVERFLOW, aquí ???********************
-{
+/* ADC, add with carry */
+void adc(byte d) {
+	byte old = a;
 
-	a += d;
-	if (p & 0x01)	a++;
-	if (a >= 256)
-	{
-		a -= 256;
-		p |= 0x01;
-	}
-	else	p &= 0xFE;
-	bits_nz(a);
-}	
+	a += d;					// basic add... but check for Decimal mode!
+	a += (p & 1);			// add with Carry
 
-void sbc(byte d)
-{
-	a -= d;
-	if (p & 0x01)	a--;
-	if (a < 0)
-	{
-		a += 256;
-		p |= 0x01;
+	if (p & 0b00001000) {						// Decimal mode!
+		if ((a & 0x0F) > 9) {					// LSN overflow?
+			a += 6;								// get into next decade
+		}
+		if ((a & 0xF0) > 0x90) {				// MSN overflow?
+			a += 0x60;							// correct it
+		}
 	}
-	else	p &= 0xFE;
-	bits_nz(a);
+
+	if (a < old)			p |= 0b00000001;	// set Carry if needed
+	else					p &= 0b11111110;
+	if ((a&128)^(old&128))	p |= 0b01000000;	// set oVerflow if needed
+	else					p &= 0b10111111;
+	bits_nz(a);									// set N & Z as usual
 }
 
-void cmp(byte d)
-{
-	bits_nz(d);
-	if (d < 0)
-		p |= 0x01;
-	else
-		p &= 0xFE;
+/* SBC, sutract with borrow */	// *** check
+void sbc(byte d) {
+	byte old = a;
+
+	a += ~d;				// basic subtract, 6502-style... but check for Decimal mode!
+	a += (p & 1);			// with borrow
+
+	if (p & 0b00001000) {						// Decimal mode!
+		if ((a & 0x0F) > 9) {					// LSN overflow?
+			a -= 6;								// get into next decade *** check
+		}
+		if ((a & 0xF0) > 0x90) {				// MSN overflow?
+			a -= 0x60;							// correct it
+		}
+	}
+
+	if (a >= old)			p |= 0b00000001;	// set Carry if needed
+	else					p &= 0b11111110;
+	if ((a&128)^(old&128))	p |= 0b01000000;	// set oVerflow if needed
+	else					p &= 0b10111111;
+	bits_nz(a);									// set N & Z as usual
+}
+
+void cmp(byte d) {
 }
 
 /* execute a single opcode, returning cycle count */
 int exec(void) {
 	int per = 2;			// base cycle count
+	int page = 0;			// page boundary flag, for speed penalties
 	byte opcode, temp;
 	word adr;
 
 	opcode = peek(pc++);	// get opcode and point to next one (or operand)
-	switch(opcode)
-	{
+
+	switch(opcode) {
 /* *** ADC: Add Memory to Accumulator with Carry *** */
 		case 0x69:
 			adc(peek(pc++));
 			if (ver > 1) printf("[ADC#]");
+			per += dec;
 			break;
 		case 0x6D:
 			adc(peek(am_a()));
 			if (ver > 1) printf("[ADCa]");
-			per = 4;
+			per = 4 + dec;
 			break;
 		case 0x65:
 			adc(peek(peek(pc++)));
 			if (ver > 1) printf("[ADCz]");
-			per = 3;
+			per = 3 + dec;
 			break;
 		case 0x61:
 			adc(peek(am_ix()));
 			if (ver > 1) printf("[ADC(x)]");
-			per = 6;
+			per = 6 + dec;
 			break;
 		case 0x71:
 			adc(peek(am_iy()));
 			if (ver > 1) printf("[ADC(y)]");
-			per = 5;
+			per = 5 + dec + page;
 			break;
 		case 0x75:
 			adc(peek(am_zx()));
 			if (ver > 1) printf("[ADCzx]");
-			per = 4;
+			per = 4 + dec;
 			break;
 		case 0x7D:
 			adc(peek(am_ax()));
 			if (ver > 1) printf("[ADCx]");
-			per = 4;
+			per = 4 + dec + page;
 			break;
 		case 0x79:
 			adc(peek(am_ay()));
 			if (ver > 1) printf("[ADCy]");
-			per = 4;
+			per = 4 + dec + page;
 			break;
 		case 0x72:			// CMOS only
 			adc(peek(am_iz()));
 			if (ver > 1) printf("[ADC(z)]");
-			per = 5;
+			per = 5 + dec;
 			break;
 /* *** AND: "And" Memory with Accumulator *** */
 		case 0x29:
@@ -396,7 +436,7 @@ int exec(void) {
 			a &= peek(am_iy());
 			bits_nz(a);
 			if (ver > 1) printf("[AND(y)]");
-			per = 5;
+			per = 5 + page;
 			break;
 		case 0x35:
 			a &= peek(am_zx());
@@ -408,13 +448,13 @@ int exec(void) {
 			a &= peek(am_ax());
 			bits_nz(a);
 			if (ver > 1) printf("[ANDx]");
-			per = 4;
+			per = 4 + page;
 			break;
 		case 0x39:
 			a &= peek(am_ay());
 			bits_nz(a);
 			if (ver > 1) printf("[ANDy]");
-			per = 4;
+			per = 4 + page;
 			break;
 		case 0x32:			// CMOS only
 			a &= peek(am_iz());
@@ -456,27 +496,27 @@ int exec(void) {
 			asl(&temp);
 			poke(adr, temp);
 			if (ver > 1) printf("[ASLx]");
-			per = 6;		// 7 for NMOS
+			per = 7;		// 6+page on WDC?
 			break;
 /* *** Bxx: Branch on flag condition *** */
 		case 0x90:
 			if(!(p & 0b00000001)) {
 				rel();
-				per = 3;
+				per = 3 + page;
 				if (ver) printf("[BCC]");
 			}
 			break;
 		case 0xB0:
 			if(p & 0b00000001) {
 				rel();
-				per = 3;
+				per = 3 + page;
 				if (ver) printf("[BCS]");
 			}
 			break;
 		case 0xF0:
 			if(p & 0b00000010) {
 				rel();
-				per = 3;
+				per = 3 + page;
 				if (ver) printf("[BEQ]");
 			}
 			break;
@@ -509,7 +549,7 @@ int exec(void) {
 			p |= (temp & 0b11000000);	// copy bits 7 & 6 as N & Z
 			p |= (a & temp)?0:2;		// set Z accordingly
 			if (ver > 1) printf("[BITx]");
-			per = 4;
+			per = 4 + page;
 			break;
 		case 0x34:			// CMOS only
 			temp = peek(am_zx());
@@ -523,27 +563,27 @@ int exec(void) {
 		case 0x30:
 			if(p & 0b10000000) {
 				rel();
-				per = 3;
+				per = 3 + page;
 			}		
 			if (ver) printf("[BMI]");
 			break;
 		case 0xD0:
 			if(!(p & 0b00000010)) {
 				rel();
-				per = 3;
+				per = 3 + page;
 			}				
 			if (ver) printf("[BNE]");
 			break;
 		case 0x10:
 			if(!(p & 0b10000000)) {
 				rel();
-				per = 3;
+				per = 3 + page;
 			}			
 			if (ver) printf("[BPL]");
 			break;
 		case 0x80:			// CMOS only
 			rel();
-			per = 3;
+			per = 3 + page;
 			if (ver) printf("[BRA]");
 			break;
 		case 0x00:						// *** BRK: Force Break ***
@@ -556,14 +596,14 @@ int exec(void) {
 		case 0x50:
 			if(!(p & 0b01000000)) {
 				rel();
-				per = 3;
+				per = 3 + page;
 			}
 			if (ver) printf("[BVC]");
 			break;
 		case 0x70:
 			if(p & 0b01000000) {
 				rel();
-				per = 3;
+				per = 3 + page;
 			}
 			if (ver) printf("[BVS]");
 			break;
@@ -574,6 +614,7 @@ int exec(void) {
 			break;
 		case 0xD8:
 			p &= 0b11110111;
+			dec = 0;
 			if (ver > 1) printf("[CLD]");
 			break;
 		case 0x58:
@@ -612,7 +653,7 @@ int exec(void) {
 			temp = peek(am_iy());
 			cmp(a - temp);
 			if (ver > 1) printf("[CMP(y)]");
-			per = 5;
+			per = 5 + page;
 			break;
 		case 0xD5:
 			temp = peek(am_zx());
@@ -624,13 +665,13 @@ int exec(void) {
 			temp = peek(am_ax());
 			cmp(a - temp);
 			if (ver > 1) printf("[CMPx]");
-			per = 4;
+			per = 4 + page;
 			break;
 		case 0xD9:
 			temp = peek(am_ay());
 			cmp(a - temp);
 			if (ver > 1) printf("[CMPy]");
-			per = 4;
+			per = 4 + page;
 			break;
 		case 0xD2:			// CMOS only
 			temp = peek(am_iz());
@@ -672,50 +713,38 @@ int exec(void) {
 			if (ver > 1) printf("[CPYz]");
 			per = 3;
 			break;
-/* *** DEC: Decrement Memory (or Accumulator) by One *** */ // TBD TBD
-		case 0xCE:						
-			temp = peek(am_a());//***********
+/* *** DEC: Decrement Memory (or Accumulator) by One *** */
+		case 0xCE:
+			temp = peek(am_a());
 			temp--;
-			if (temp == -1)
-				temp = 255;
 			poke(am_a(), temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[DECa]");
-			pc += 2;
 			per = 6;
 			break;
 		case 0xC6:
 			temp = peek(peek(pc));
 			temp--;
-			if (temp == -1)
-				temp = 255;
-			poke(peek(pc), temp);
+			poke(peek(pc++), temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[DECz]");
-			pc++;
 			per = 5;
 			break;
 		case 0xD6:
 			temp = peek(am_zx());
 			temp--;
-			if (temp == -1)
-				temp = 255;
 			poke(am_zx(), temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[DECzx]");
-			pc += 2;
 			per = 6;
 			break;
 		case 0xDE:
 			temp = peek(am_ax());
 			temp--;
-			if (temp == -1)
-				temp = 255;
 			poke(am_ax(), temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[DECx]");
-			pc += 2;
-			per = 6;		// 7 for NMOS
+			per = 7;		// 6+page for WDC?
 			break;
 		case 0x3A:			// CMOS only (OK)
 			a--;
@@ -762,7 +791,7 @@ int exec(void) {
 			a ^= peek(am_iy());
 			bits_nz(a);
 			if (ver > 1) printf("[EOR(y)]");
-			per = 5;
+			per = 5 + page;
 			break;
 		case 0x55:
 			a ^= peek(am_zx());
@@ -774,13 +803,13 @@ int exec(void) {
 			a ^= peek(am_ax());
 			bits_nz(a);
 			if (ver > 1) printf("[EORx]");
-			per = 4;
+			per = 4 + page;
 			break;
 		case 0x59:
 			a ^= peek(am_ay());
 			bits_nz(a);
 			if (ver > 1) printf("[EORy]");
-			per = 4;
+			per = 4 + page;
 			break;
 		case 0x52:			// CMOS only
 			a ^= peek(am_iz());
@@ -789,8 +818,8 @@ int exec(void) {
 			per = 5;
 			break;
 /* *** INC: Increment Memory (or Accumulator) by One *** */
-		case 0xEE:						
-			temp = peek(am_a());//***************** TBD
+		case 0xEE:
+			temp = peek(am_a());
 			temp++;
 			poke(am_a(), temp);
 			bits_nz(temp);
@@ -819,7 +848,7 @@ int exec(void) {
 			poke(am_ax(), temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[INCx]");
-			per = 6;		// 7 for NMOS
+			per = 7;		// 6+page for WDC?
 			break;
 		case 0x1A:			// CMOS only
 			a++;
@@ -890,7 +919,7 @@ int exec(void) {
 			a = peek(am_iy());
 			bits_nz(a);
 			if (ver > 1) printf("[LDA(y)]");
-			per = 5;
+			per = 5 + page;
 			break;
 		case 0xB5:
 			a = peek(am_zx());
@@ -902,13 +931,13 @@ int exec(void) {
 			a = peek(am_ax());
 			bits_nz(a);
 			if (ver > 1) printf("[LDAx]");
-			per = 4;
+			per = 4 + page;
 			break;
 		case 0xB9:
 			a = peek(am_ay());
 			bits_nz(a);
 			if (ver > 1) printf("[LDAy]");
-			per = 4;
+			per = 4 + page;
 			break;
 		case 0xB2:			// CMOS only
 			a = peek(am_iz());
@@ -944,7 +973,7 @@ int exec(void) {
 			x = peek(am_ay());
 			bits_nz(x);
 			if (ver > 1) printf("[LDXy]");
-			per = 4;
+			per = 4 + page;
 			break;
 /* *** LDY: Load Index Y with Memory *** */
 		case 0xA0:
@@ -974,7 +1003,7 @@ int exec(void) {
 			y = peek(am_ax());
 			bits_nz(y);
 			if (ver > 1) printf("[LDYx]");
-			per = 4;
+			per = 4 + page;
 			break;
 /* *** LSR: Shift One Bit Right (Memory or Accumulator) *** */
 		case 0x4E:
@@ -1010,7 +1039,7 @@ int exec(void) {
 			lsr(&temp);
 			poke(adr, temp);
 			if (ver > 1) printf("[LSRx]");
-			per = 6;		// 7 for NMOS
+			per = 7;		// 6+page for WDC?
 			break;
 /* *** NOP: No Operation *** */
 		case 0xEA:
@@ -1044,7 +1073,7 @@ int exec(void) {
 			a |= peek(am_iy());
 			bits_nz(a);
 			if (ver > 1) printf("[ORA(y)]");
-			per = 5;
+			per = 5 + page;
 			break;
 		case 0x15:
 			a |= peek(am_zx());
@@ -1056,13 +1085,13 @@ int exec(void) {
 			a |= peek(am_ax());
 			bits_nz(a);
 			if (ver > 1) printf("[ORAx]");
-			per = 4;
+			per = 4 + page;
 			break;
 		case 0x19:
 			a |= peek(am_ay());
 			bits_nz(a);
 			if (ver > 1) printf("[ORAy]");
-			per = 4;
+			per = 4 + page;
 			break;
 		case 0x12:			// CMOS only
 			a |= peek(am_iz());
@@ -1104,6 +1133,8 @@ int exec(void) {
 /* *** PLP: Pull Processor Status from Stack *** */
 		case 0x28:
 			p = pop();
+			if (p & 0b00001000)	dec = 1;	// check for decimal flag
+			else				dec = 0;
 			if (ver > 1) printf("[PLP]");
 			per = 4;
 			break;
@@ -1149,7 +1180,7 @@ int exec(void) {
 			rol(&temp);
 			poke(adr, temp);
 			if (ver > 1) printf("[ROLx]");
-			per = 6;		// 7 for NMOS
+			per = 7;		// 6+page for WDC?
 			break;
 		case 0x2A:
 			rol(&a);
@@ -1189,11 +1220,12 @@ int exec(void) {
 			ror(&temp);
 			poke(adr, temp);
 			if (ver > 1) printf("[RORx]");
-			per = 6;		// 7 for NMOS
+			per = 7;		// 6+page for WDC?
 			break;
 /* *** RTI: Return from Interrupt *** */
 		case 0x40:
 			p = pop();					// retrieve status
+			p |= 0b00010000;			// forget possible B flag
 			pc = pop();					// extract LSB...
 			pc |= (pop() << 8);			// ...and MSB, address is correct
 			if (ver)	printf("[RTI]");
@@ -1211,46 +1243,47 @@ int exec(void) {
 		case 0xE9:
 			sbc(peek(pc++));
 			if (ver > 1) printf("[SBC#]");
+			per += dec;
 			break;
 		case 0xED:
 			sbc(peek(am_a()));
 			if (ver > 1) printf("[SBCa]");
-			per = 4;
+			per = 4 + dec;
 			break;
 		case 0xE5:
 			sbc(peek(peek(pc++)));
 			if (ver > 1) printf("[SBCz]");
-			per = 3;
+			per = 3 + dec;
 			break;
 		case 0xE1:
 			sbc(peek(am_ix()));
 			if (ver > 1) printf("[SBC(x)]");
-			per = 6;
+			per = 6 + dec;
 			break;
 		case 0xF1:
 			sbc(peek(am_iy()));
 			if (ver > 1) printf("[SBC(y)]");
-			per = 5;
+			per = 5 + dec + flag;
 			break;
 		case 0xF5:
 			sbc(peek(am_zx()));
 			if (ver > 1) printf("[SBCzx]");
-			per = 4;
+			per = 4 + dec;
 			break;
 		case 0xFD:
 			sbc(peek(am_ax()));
 			if (ver > 1) printf("[SBCx]");
-			per = 4;
+			per = 4 + dec + flag;
 			break;
 		case 0xF9:
 			sbc(peek(am_ay()));
 			if (ver > 1) printf("[SBCy]");
-			per = 4;
+			per = 4 + dec + flag;
 			break;
 		case 0xF2:			// CMOS only
 			sbc(peek(am_iz()));
 			if (ver > 1) printf("[SBC(z)]");
-			per = 5;
+			per = 5 + dec;
 			break;
 // *** SEx: Set Flags *** */
 		case 0x38:
@@ -1259,6 +1292,7 @@ int exec(void) {
 			break;
 		case 0xF8:
 			p |= 0b00001000;
+			dec = 1;
 			if (ver > 1) printf("[SED]");
 			break;
 		case 0x78:
