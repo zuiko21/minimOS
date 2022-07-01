@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220701-1858
+ * last modified 20220701-2058
  * */
 
 #include <stdio.h>
@@ -15,6 +15,8 @@
 
 	byte a, x, y, s, p;		// 8-bit registers
 	word pc;				// program counter
+
+	word screen = 0;		// Durango screen switcher, xSSxxxxx xxxxxxxx
 	int dec;				// decimal flag for speed penalties (CMOS only)
 	int run, ver;			// emulator control
 	int stat_flag = 0;		// external control
@@ -27,11 +29,11 @@
 /* function prototypes */
 	int exec(void);			// execute one opcode, returning number of cycles
 	void load(const char name[], word adr);		// load firmware
-
 	void stat(void);		// display processor status
+	void dump(word dir);	// display 16 bytes of memory
+
 	byte peek(word dir);			// read memory or I/O
 	void poke(word dir, byte v);	// write memory or I/O
-
 	void push(byte b)		{ poke(0x100 + s--, b); }		// standard stack ops
 	byte pop(void)			{ return peek(++s + 0x100); }
 
@@ -73,21 +75,24 @@ int main (int argc, char * const argv[]) {
 	int vsync=0;			// vertical retrace flag
 	run = 1;				// allow execution
 	ver = 0;				// verbosity mode, 0 = none, 1 = jumps, 2 = all 
-
+ver=0;
 //	load("rom.bin", 0x8000);		// preload 32K firmware at ROM area
-mem[0xfff3]=0xa2;
-mem[0xfff4]=0x65;
-mem[0xfff5]=0xa0;
-mem[0xfff6]=0x02;
-mem[0xfff7]=0x86;
-mem[0xfff8]=0x00;
-mem[0xfff9]=0x84;
-mem[0xfffa]=0x01;
-mem[0xfffb]=0x00;
-mem[0xfffc]=0xf3;
+mem[0xffee]=0xa9;//LDA #0
+mem[0xffef]=0x00;
+mem[0xfff0]=0xaa;//TAX
+mem[0xfff1]=0xa8;//TAY
+mem[0xfff2]=0xe8;//loop: INX
+mem[0xfff3]=0xd0;//BNE loop
+mem[0xfff4]=0xfd;
+mem[0xfff5]=0xc8;//INY
+mem[0xfff6]=0xd0;//BNE loop
+mem[0xfff7]=0xfa;
+mem[0xfff8]=0x1a;//INC
+mem[0xfff9]=0xd0;//BNE loop
+mem[0xfffa]=0xf7;
+mem[0xfffb]=0x00;//BRK
+mem[0xfffc]=0xee;//RESET vector
 mem[0xfffd]=0xff;
-mem[0xfffe]=0xf3;
-mem[0xffff]=0xff;
 
 	reset();				// startup!
 
@@ -150,7 +155,20 @@ void stat(void)	{
 		psr<<=1;			// next flag
 	}
 	printf(">\n");
-printf("Memory @0 %02X, @1 %02X\n",mem[0],mem[1]);
+dump(0);
+}
+
+/* display 16 bytes of memory */
+void dump(word dir) {
+	int i;
+
+	printf("$%04X: ", dir);
+	for (i=0; i<16; i++)	printf("%02X ", mem[dir+i]);
+	printf ("[");
+	for (i=0; i<16; i++)
+		if ((mem[dir+i]>31)&&(mem[dir+i]<127))	printf("%c", mem[dir+i]);
+		else 									printf("·");
+	printf ("]\n");
 }
 
 /* load firmware, usually into ROM area */
@@ -179,8 +197,8 @@ byte peek(word dir) {
 	byte d = 0xFF;				// supposed floating databus value?
 
 	if (dir>=0xDF80 && dir<=0xDFFF) {	// *** I/O ***
-		if (dir<=0xDF87)		// video mode (readable)
-			d = mem[0xDF80];
+		if (dir<=0xDF87)		// video mode (high nibble readable)
+			d = mem[0xDF80] | 0x0F;		// assume RGB mode and $FF floating value
 		else if (dir<=0xDF8F)	// sync flags
 			d = mem[0xDF88];
 		else if (dir<=0xDF9F) {	// expansion port
@@ -199,14 +217,20 @@ byte peek(word dir) {
 
 /* write to memory or I/O */
 void poke(word dir, byte v) {
-	if (dir<=0x7FFF)			// 32 KiB static RAM
+	if (dir<=0x7FFF) {			// 32 KiB static RAM
 		mem[dir] = v;
-	else if (dir>=0xDF80 && dir<=0xDFFF) {	// *** I/O ***
-		if (dir<=0xDF87)		// video mode?
+		if ((dir & 0x6000) == screen) {			// VRAM area
+			// send (dir&0x1FFF, v) to VDU
+		}
+	} else if (dir>=0xDF80 && dir<=0xDFFF) {	// *** I/O ***
+		if (dir<=0xDF87) {		// video mode?
 			mem[0xDF80] = v;	// canonical address
-		else if (dir<=0xDF8F) {	// sync flags? *** not writable
+			screen = (v & 0b00110000) << 9;		// screen switching
+			// VDU-redraw all VRAM at selected screen!
+			// may add more flags for VDU
+		} else if (dir<=0xDF8F) {				// sync flags? *** not writable
 			printf("\n*** Writing to Read-only ports at $%04X ***\n", pc);
-		} else if (dir<=0xDF9F) {		// expansion port?
+		} else if (dir<=0xDF9F) {				// expansion port?
 			mem[dir] = v;		// *** is this OK?
 		} else if (dir<=0xDFAF)	// interrupt control?
 			mem[0xDFA0] = v;	// canonical address, only D0 matters
@@ -239,8 +263,8 @@ void reset(void) {
 
 	printf(" RESET: PC=>%04X\n", pc);
 
-	p &= 0b11110011;						// CLD & SEI on 65C02
-	p |= 0b00110000;						// these always 1
+	p &= 0b11110111;						// CLD on 65C02
+	p |= 0b00110100;						// these always 1, includes SEI
 	dec = 0;								// per CLD above
 
 	cont = 0;								// reset global cycle counter?
@@ -377,9 +401,11 @@ void ror(byte *d) {
 /* ADC, add with carry */
 void adc(byte d) {
 	byte old = a;
+	word big = a;
 
-	a += d;					// basic add... but check for Decimal mode!
-	a += (p & 1);			// add with Carry
+	big += d;				// basic add... but check for Decimal mode!
+	big += (p & 1);			// add with Carry
+	a = big & 255;
 
 	if (p & 0b00001000) {						// Decimal mode!
 		if ((a & 0x0F) > 9) {					// LSN overflow?
@@ -390,7 +416,7 @@ void adc(byte d) {
 		}
 	}
 
-	if (a < old)			p |= 0b00000001;	// set Carry if needed
+	if (big & 256)			p |= 0b00000001;	// set Carry if needed
 	else					p &= 0b11111110;
 	if ((a&128)^(old&128))	p |= 0b01000000;	// set oVerflow if needed
 	else					p &= 0b10111111;
@@ -400,9 +426,11 @@ void adc(byte d) {
 /* SBC, sutract with borrow */	// *** check
 void sbc(byte d) {
 	byte old = a;
+	word big = a;
 
-	a += ~d;				// basic subtract, 6502-style... but check for Decimal mode!
-	a += (p & 1);			// with borrow
+	big += d;				// basic subtract, 6502-style... but check for Decimal mode!
+	big += (p & 1);			// add with Carry
+	a = big & 255;
 
 	if (p & 0b00001000) {						// Decimal mode!
 		if ((a & 0x0F) > 9) {					// LSN overflow?
@@ -413,7 +441,7 @@ void sbc(byte d) {
 		}
 	}
 
-	if (a >= old)			p |= 0b00000001;	// set Carry if needed
+	if (big & 256)			p |= 0b00000001;	// set Carry if needed
 	else					p &= 0b11111110;
 	if ((a&128)^(old&128))	p |= 0b01000000;	// set oVerflow if needed
 	else					p &= 0b10111111;
@@ -575,21 +603,21 @@ int exec(void) {
 				rel(&page);
 				per = 3 + page;
 				if (ver) printf("[BCC]");
-			}
+			} else pc++;	// must skip offset if not done EEEEEK
 			break;
 		case 0xB0:
 			if(p & 0b00000001) {
 				rel(&page);
 				per = 3 + page;
 				if (ver) printf("[BCS]");
-			}
+			} else pc++;	// must skip offset if not done EEEEEK
 			break;
 		case 0xF0:
 			if(p & 0b00000010) {
 				rel(&page);
 				per = 3 + page;
 				if (ver) printf("[BEQ]");
-			}
+			} else pc++;	// must skip offset if not done EEEEEK
 			break;
 /* *** BIT: Test Bits in Memory with Accumulator *** */
 		case 0x2C:
@@ -635,21 +663,21 @@ int exec(void) {
 			if(p & 0b10000000) {
 				rel(&page);
 				per = 3 + page;
-			}		
+			} else pc++;	// must skip offset if not done EEEEEK
 			if (ver) printf("[BMI]");
 			break;
 		case 0xD0:
 			if(!(p & 0b00000010)) {
 				rel(&page);
 				per = 3 + page;
-			}				
+			} else pc++;	// must skip offset if not done EEEEEK
 			if (ver) printf("[BNE]");
 			break;
 		case 0x10:
 			if(!(p & 0b10000000)) {
 				rel(&page);
 				per = 3 + page;
-			}			
+			} else pc++;	// must skip offset if not done EEEEEK
 			if (ver) printf("[BPL]");
 			break;
 		case 0x80:			// CMOS only
@@ -669,14 +697,14 @@ int exec(void) {
 			if(!(p & 0b01000000)) {
 				rel(&page);
 				per = 3 + page;
-			}
+			} else pc++;	// must skip offset if not done EEEEEK
 			if (ver) printf("[BVC]");
 			break;
 		case 0x70:
 			if(p & 0b01000000) {
 				rel(&page);
 				per = 3 + page;
-			}
+			} else pc++;	// must skip offset if not done EEEEEK
 			if (ver) printf("[BVS]");
 			break;
 /* *** CLx: Clear flags *** */
@@ -1395,7 +1423,6 @@ int exec(void) {
 		case 0x95:
 			poke(am_zx(), a);
 			if (ver > 1) printf("[STAzx]");
-			pc++;
 			per = 4;
 			break;
 		case 0x9D:
@@ -1552,8 +1579,13 @@ int exec(void) {
 			break;
 /* *** Display Status (WAI on WDC) *** */
 		case 0xCB:
-			printf(" ...status:");
+			printf(" ...status?");
 			stat();
+			break;
+/* *** Graceful stop (STP on WDC) *** */
+		case 0xDB:
+			printf(" ...HALT!");
+			run = per = 0;
 			break;
 /* *** *** *** halt CPU on illegal opcodes *** *** *** */
 		default:
