@@ -98,7 +98,6 @@
 	void close_vdu();
 	// Draw full screen
 	void vdu_draw_full();
-	void vdu_draw_byte(word addr);
 /* vdu internal functions */
 	void vdu_set_color_pixel(byte);
 	void vdu_draw_color_pixel(word);
@@ -1792,23 +1791,5 @@ void vdu_draw_full() {
 	}
 
 	//Update screen
-    SDL_RenderPresent(sdl_renderer);
+	SDL_RenderPresent(sdl_renderer);
 }
-
-void vdu_draw_byte(word addr) {
-  byte hires_flag = (mem[0xdf80] & 0x80)>>7;
-  unsigned int screen_address = ((mem[0xdf80] & 0x30)>>4)*0x2000;
-  unsigned int screen_address_end = screen_address + 0x2000;
-
-  if(addr >= screen_address && addr < screen_address_end) {
-    // Read video mode (HiRes or Colour)
-    if(hires_flag == 0) {
-      vdu_draw_color_pixel(addr);
-    }
-    else if(hires_flag == 1) {
-      vdu_draw_hires_pixel(addr);
-    }
-  }
-}
-
-
