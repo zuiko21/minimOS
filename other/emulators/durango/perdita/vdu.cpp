@@ -162,33 +162,39 @@ void Vdu::render() {
     SDL_RenderPresent(sdl_renderer);
 }
 
+/**
+ * Render Durango screen.
+ */
 void Vdu::durango_render() {
     unsigned long i;
-    //Render red filled quad
-    //SDL_Rect fillRect = { 10, 10, 10, 10 };
-    //SDL_SetRenderDrawColor( sdl_renderer, 0xFF, 0x00, 0x00, 0xFF );        
-    //SDL_RenderFillRect( sdl_renderer, &fillRect );
     
-    /*for(i=0x0; i<0x10000; i++) {
+    unsigned int screenAddress = ((this->memory[0xdf80] & 0x30)>>4)*0x2000;
+    unsigned int screenAddressEnd = screenAddress + 0x2000;
+  
+    for(i=screenAddress; i<screenAddressEnd; i++) {
       durango_render_mem(i);
-    }*/
-    durango_render_mem(0x6000);
+    }
 }
 
+/**
+ * Render a single memory position into screen.
+ */
 void Vdu::durango_render_mem(unsigned long addr) {
   // video mode [HiRes Invert S1 S0    RGB LED NC NC]
   
-  // Read video mode (HiRes or Colour)
-  unsigned char videoMode = (this->memory[0xdf80] & 0x80)>>7;
+  // HiRes flag
+  unsigned char hiRes;
   
   unsigned int screenAddress = ((this->memory[0xdf80] & 0x30)>>4)*0x2000;
   unsigned int screenAddressEnd = screenAddress + 0x2000;
  
   if(addr >= screenAddress && addr < screenAddressEnd) {   
-    if(videoMode == 0) {
+    // Read video mode (HiRes or Colour)
+    hiRes = (this->memory[0xdf80] & 0x80)>>7;
+    if(hiRes == 0) {
       drawColorPixel(addr);
     }
-    else if(videoMode == 1) {
+    else if(hiRes == 1) {
       drawHiResPixel(addr);
     }
   }
@@ -196,25 +202,28 @@ void Vdu::durango_render_mem(unsigned long addr) {
 
 
 void Vdu::setColor(unsigned char index) {
-  if(index!=0)
-    
-  switch(index) {
-    case 0x00: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0x00, 0x00, 0xff ); break; // 0
-    case 0x01: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0xaa, 0x00, 0xff ); break; // 1
-    case 0x02: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0x00, 0x00, 0xff ); break; // 2
-    case 0x03: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0xaa, 0x00, 0xff ); break; // 3
-    case 0x04: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0x55, 0x00, 0xff ); break; // 4
-    case 0x05: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0xff, 0x00, 0xff ); break; // 5
-    case 0x06: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0x55, 0x00, 0xff ); break; // 6
-    case 0x07: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0xff, 0x00, 0xff ); break; // 7
-    case 0x08: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0x00, 0xff, 0xff ); break; // 8
-    case 0x09: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0xaa, 0xff, 0xff ); break; // 9
-    case 0x0a: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0x00, 0xff, 0xff ); break; // 10
-    case 0x0b: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0xaa, 0xff, 0xff ); break; // 11
-    case 0x0c: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0x55, 0xff, 0xff ); break; // 12
-    case 0x0d: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0xff, 0xff, 0xff ); break; // 13
-    case 0x0e: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0x55, 0xff, 0xff ); break; // 14
-    case 0x0f: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0xff, 0xff, 0xff ); break; // 15
+  unsigned char hiRes = (this->memory[0xdf80] & 0x80)>>7;
+  
+  
+  if(hiRes == 0) {
+    switch(index) {
+      case 0x00: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0x00, 0x00, 0xff ); break; // 0
+      case 0x01: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0xaa, 0x00, 0xff ); break; // 1
+      case 0x02: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0x00, 0x00, 0xff ); break; // 2
+      case 0x03: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0xaa, 0x00, 0xff ); break; // 3
+      case 0x04: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0x55, 0x00, 0xff ); break; // 4
+      case 0x05: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0xff, 0x00, 0xff ); break; // 5
+      case 0x06: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0x55, 0x00, 0xff ); break; // 6
+      case 0x07: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0xff, 0x00, 0xff ); break; // 7
+      case 0x08: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0x00, 0xff, 0xff ); break; // 8
+      case 0x09: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0xaa, 0xff, 0xff ); break; // 9
+      case 0x0a: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0x00, 0xff, 0xff ); break; // 10
+      case 0x0b: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0xaa, 0xff, 0xff ); break; // 11
+      case 0x0c: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0x55, 0xff, 0xff ); break; // 12
+      case 0x0d: SDL_SetRenderDrawColor( sdl_renderer, 0x00, 0xff, 0xff, 0xff ); break; // 13
+      case 0x0e: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0x55, 0xff, 0xff ); break; // 14
+      case 0x0f: SDL_SetRenderDrawColor( sdl_renderer, 0xff, 0xff, 0xff, 0xff ); break; // 15
+    }
   }
 }
 

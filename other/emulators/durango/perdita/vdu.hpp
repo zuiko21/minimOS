@@ -27,8 +27,7 @@ class Vdu {
         void sync_render(void);
         void process_input_internal(SDL_Event *e);
         void render(void);
-        void durango_render(void);
-        void durango_render_mem(unsigned long addr);
+        void durango_render(void);        
         void drawColorPixel(unsigned long addr);
         void drawHiResPixel(unsigned long addr);
         void setColor(unsigned char);
@@ -37,7 +36,8 @@ class Vdu {
         Vdu(void);
         ~Vdu(void);
         void setMemory(unsigned char*);
-        void run(void);         
+        void run(void);
+        void durango_render_mem(unsigned long addr);
 };
 
 
