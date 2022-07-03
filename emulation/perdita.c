@@ -5,6 +5,8 @@
 
 #include <stdio.h>
 #include <stdint.h>
+// SDL Install: apt-get install libsdl2-dev. Build with -lSDL2 flag
+#include <SDL2/SDL.h>
 
 /* type definitions */
 	typedef uint8_t byte;
@@ -26,10 +28,23 @@
 
 	const char flag[8]="NV-BDIZC";	// flag names
 
+/* global vdu variables */
+	// Screen width in pixels
+	int VDU_SCREEN_WIDTH;
+	// Screen height in pixels
+	int VDU_SCREEN_HEIGHT;
+	//The window we'll be rendering to
+	SDL_Window *sdl_window;
+	//The window renderer
+	SDL_Renderer* sdl_renderer;
+	// Display mode
+	SDL_DisplayMode sdl_display_mode;
+	// Game Controllers
+	SDL_Joystick *sdl_gamepads[2];
+
 /* ******************* */
 /* function prototypes */
 /* ******************* */
-
 /* emulator control */
 	void load(const char name[], word adr);		// load firmware
 	void stat(void);		// display processor status
@@ -74,6 +89,14 @@
 
 	int exec(void);			// execute one opcode, returning number of cycles
 
+/* *********************** */
+/* vdu function prototypes */
+/* *********************** */
+	// Initialize vdu display window
+	int init_vdu();
+	// Close vdu display window
+	void close_vdu();
+
 /* ************************************************* */
 /* ******************* main loop ******************* */
 /* ************************************************* */
@@ -103,6 +126,7 @@ mem[0xfffc]=0xee;//RESET vector
 mem[0xfffd]=0xff;
 
 	reset();				// startup!
+	init_vdu();
 
 	while (run) {
 /* execute current opcode */
@@ -142,6 +166,7 @@ mem[0xfffd]=0xff;
 
 	printf(" *** CPU halted after %ld clock cycles ***\n", cont);
 	stat();					// display final status
+	close_vdu();
 
 	return 0;
 }
@@ -1596,4 +1621,82 @@ int exec(void) {
 	}
 
 	return per;
+}
+
+/* *** *** VDU SECTION *** *** */
+
+/* Initialize vdu display window */
+int init_vdu() {
+	//Initialize SDL
+	if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_JOYSTICK ) < 0 )
+	{
+		printf("SDL could not be initialized! SDL Error: %s\n", SDL_GetError());
+		return -1;
+	}
+
+	//Set texture filtering to linear
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
+
+	//Check for joysticks
+	for(int i=0; i<2 && i<SDL_NumJoysticks(); i++)
+	{
+		//Load joystick
+		sdl_gamepads[i] = SDL_JoystickOpen(i);
+		if(sdl_gamepads[i] == NULL)
+		{
+		 printf("Unable to open game controller #%d! SDL Error: %s\n", i, SDL_GetError());
+		 return -2;
+		}
+	}
+
+	// Get display mode
+	if (SDL_GetDesktopDisplayMode(0, &sdl_display_mode) != 0) {
+		printf("SDL_GetDesktopDisplayMode faile! SDL Error: %s\n", SDL_GetError());
+		return -3;
+	}
+	VDU_SCREEN_WIDTH=128*4;
+	VDU_SCREEN_HEIGHT=VDU_SCREEN_WIDTH;
+
+	//Create window
+	sdl_window = SDL_CreateWindow("Durango", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, VDU_SCREEN_WIDTH, VDU_SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
+	if( sdl_window == NULL )
+	{
+		printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
+		return -4;
+	}
+
+	//Create renderer for window
+	sdl_renderer = SDL_CreateRenderer( sdl_window, -1, SDL_RENDERER_ACCELERATED );
+	if(sdl_renderer == NULL)
+	{
+		printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
+		return -5;
+	}
+}
+
+/* Close vdu display window */
+void close_vdu() {
+	//Destroy renderer
+	if(sdl_renderer!=NULL)
+	{
+		SDL_DestroyRenderer(sdl_renderer);
+		sdl_renderer=NULL;
+	}
+
+	if(sdl_window != NULL)
+	{
+		// Destroy window
+		SDL_DestroyWindow(sdl_window);
+		sdl_window=NULL;
+	}
+
+	// Close gamepads
+	for(int i=0; i<2 && i<SDL_NumJoysticks(); i++)
+	{
+		SDL_JoystickClose(sdl_gamepads[i]);
+		sdl_gamepads[i]=NULL;
+	}
+
+	// Close SDL
+	SDL_Quit();
 }
