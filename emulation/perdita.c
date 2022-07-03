@@ -96,6 +96,14 @@
 	int init_vdu();
 	// Close vdu display window
 	void close_vdu();
+	// Draw full screen
+	void vdu_draw_full();
+	void vdu_draw_byte(word addr);
+/* vdu internal functions */
+	void vdu_set_color_pixel(byte);
+	void vdu_draw_color_pixel(word);
+	void vdu_draw_hires_pixel(word addr);
+
 
 /* ************************************************* */
 /* ******************* main loop ******************* */
@@ -124,6 +132,10 @@ mem[0xfffa]=0xf7;
 mem[0xfffb]=0x00;//BRK
 mem[0xfffc]=0xee;//RESET vector
 mem[0xfffd]=0xff;
+// Set video mode
+mem[0xdf80]=0x3f;
+// Set image data
+mem[0x6000]=0x01;mem[0x6001]=0x23;mem[0x6002]=0x45;mem[0x6003]=0x67;mem[0x6004]=0x89;mem[0x6005]=0xab;mem[0x6006]=0xcd;mem[0x6007]=0xef;
 
 	reset();				// startup!
 	init_vdu();
@@ -166,6 +178,12 @@ mem[0xfffd]=0xff;
 
 	printf(" *** CPU halted after %ld clock cycles ***\n", cont);
 	stat();					// display final status
+
+    vdu_draw_full();
+
+    printf("Press ENTER key to exit\n");
+    getchar();
+
 	close_vdu();
 
 	return 0;
@@ -1672,6 +1690,11 @@ int init_vdu() {
 		printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
 		return -5;
 	}
+
+    //Clear screen
+    SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xFF);
+    SDL_RenderClear(sdl_renderer);
+    SDL_RenderPresent(sdl_renderer);
 }
 
 /* Close vdu display window */
@@ -1700,3 +1723,92 @@ void close_vdu() {
 	// Close SDL
 	SDL_Quit();
 }
+
+/* Set current color in SDL from palette */
+void vdu_set_color_pixel(byte color_index) {
+	switch(color_index) {
+		case 0x00: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xff); break; // 0
+		case 0x01: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xaa, 0x00, 0xff); break; // 1
+		case 0x02: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x00, 0x00, 0xff); break; // 2
+		case 0x03: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xaa, 0x00, 0xff); break; // 3
+		case 0x04: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x55, 0x00, 0xff); break; // 4
+		case 0x05: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xff, 0x00, 0xff); break; // 5
+		case 0x06: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x55, 0x00, 0xff); break; // 6
+		case 0x07: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0x00, 0xff); break; // 7
+		case 0x08: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0xff, 0xff); break; // 8
+		case 0x09: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xaa, 0xff, 0xff); break; // 9
+		case 0x0a: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x00, 0xff, 0xff); break; // 10
+		case 0x0b: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xaa, 0xff, 0xff); break; // 11
+		case 0x0c: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x55, 0xff, 0xff); break; // 12
+		case 0x0d: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xff, 0xff, 0xff); break; // 13
+		case 0x0e: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x55, 0xff, 0xff); break; // 14
+		case 0x0f: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0xff, 0xff); break; // 15
+	}
+}
+
+/* Draw color pixel in supplied address */
+void vdu_draw_color_pixel(word addr) {
+	SDL_Rect fill_rect;
+	int pixel_size=VDU_SCREEN_WIDTH/128;
+	// Calculate screen address
+	unsigned int screen_address = ((mem[0xdf80] & 0x30)>>4)*0x2000;
+
+	// Calculate screen y coord
+	int y = floor((addr - screen_address) * 2 / 128);
+	// Calculate screen x coord
+	int x = ((addr - screen_address) *2) % 128;
+
+	// Draw Left Pixel
+	vdu_set_color_pixel((mem[addr] & 0xf0)>>4);
+	fill_rect.x = x * pixel_size;
+	fill_rect.y = y * pixel_size;
+	fill_rect.w = pixel_size;
+	fill_rect.h = pixel_size;
+	SDL_RenderFillRect(sdl_renderer, &fill_rect);
+	// Draw Right Pixel
+	vdu_set_color_pixel(mem[addr] & 0x0f);
+	fill_rect.x = (x+1) * pixel_size;
+	SDL_RenderFillRect(sdl_renderer, &fill_rect);
+}
+
+void vdu_draw_hires_pixel(word addr) {
+}
+
+/* Render Durango screen. */
+void vdu_draw_full() {
+	word i;
+	byte hires_flag = (mem[0xdf80] & 0x80)>>7;
+	word screen_address = ((mem[0xdf80] & 0x30)>>4)*0x2000;
+	word screen_address_end = screen_address + 0x2000;
+
+	//Clear screen
+    SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xFF);
+    SDL_RenderClear(sdl_renderer);
+
+	if(hires_flag==0) {
+		for(i=screen_address; i<screen_address_end; i++) {
+			vdu_draw_color_pixel(i);
+		}
+	}
+
+	//Update screen
+    SDL_RenderPresent(sdl_renderer);
+}
+
+void vdu_draw_byte(word addr) {
+  byte hires_flag = (mem[0xdf80] & 0x80)>>7;
+  unsigned int screen_address = ((mem[0xdf80] & 0x30)>>4)*0x2000;
+  unsigned int screen_address_end = screen_address + 0x2000;
+
+  if(addr >= screen_address && addr < screen_address_end) {
+    // Read video mode (HiRes or Colour)
+    if(hires_flag == 0) {
+      vdu_draw_color_pixel(addr);
+    }
+    else if(hires_flag == 1) {
+      vdu_draw_hires_pixel(addr);
+    }
+  }
+}
+
+
