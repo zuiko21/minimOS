@@ -117,7 +117,8 @@ int main(int argc, char *argv[])
 	int arg_index;
 	int c;
 	char *filename;
-	char *rom_addr;
+	char *rom_addr="0x8000";
+	int rom_addr_int;
 
 	opterr = 0;
 
@@ -142,6 +143,22 @@ int main(int argc, char *argv[])
 			case 0: filename = argv[index]; break;
 		}		
 	}
+
+	if(arg_index == 0) {
+		printf("Filename is mandatory\n");
+		return 1;
+	}
+
+	if(strlen(rom_addr) != 6 || rom_addr[0]!='0' || rom_addr[1]!='x') {
+		printf("Rom address format: 0x0000\n");
+		return 1;
+	}
+
+	rom_addr_int = (int)strtol(rom_addr, NULL, 0);
+	load(filename, rom_addr_int);
+
+	run_emulation();
+
 	return 0;
 }
 
