@@ -118,8 +118,16 @@ int main(int argc, char *argv[])
 	int arg_index;
 	int c;
 	char *filename;
-	char *rom_addr="0x8000";
+	char *rom_addr=NULL;
 	int rom_addr_int;
+	
+	if(argc==1) {
+		printf("usage: perdita [-a rom_address] [-ve] rom_file\n");
+		printf("-a: load rom at supplied address, example 0x8000\n");
+		printf("-e load rom at memory end\n");
+		printf("-v verbose\n");
+		return 1;
+	}
 
 	opterr = 0;
 
@@ -131,9 +139,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'v':
 			//verbose_flag = 1;
-			break;
+			break;		
 		case '?':
-			fprintf (stderr, "Unknown option character `\\x%x'.\n", optopt);
+			fprintf (stderr, "Unknown option\n", optopt);
 			return 1;
 		default:
 			abort ();
@@ -150,14 +158,19 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	
-	if(rom_addr == NULL || strlen(rom_addr) != 6 || rom_addr[0]!='0' || rom_addr[1]!='x') {
+	if(rom_addr != NULL && (strlen(rom_addr) != 6 || rom_addr[0]!='0' || rom_addr[1]!='x')) {
 		printf("Rom address format: 0x0000\n");
 		return 1;
 	}
 
-	rom_addr_int = (int)strtol(rom_addr, NULL, 0);
-	load(filename, rom_addr_int);
-
+	if(rom_addr == NULL) {
+		ROMload(filename);
+	}
+	else {
+		rom_addr_int = (int)strtol(rom_addr, NULL, 0);
+		load(filename, rom_addr_int);
+	}
+	
 	run_emulation();
 
 	return 0;
@@ -170,7 +183,7 @@ void run_emulation () {
 	run = 1;				// allow execution
 	ver = 0;				// verbosity mode, 0 = none, 1 = jumps, 2 = all; will stop on BRK unless 0
 
-	ROMload("rom.bin");		// preload firmware at ROM area
+//	ROMload("rom.bin");		// preload firmware at ROM area
 
 /*mem[0xffe2]=0xa9;//LDA #$38
 mem[0xffe3]=0x38;
