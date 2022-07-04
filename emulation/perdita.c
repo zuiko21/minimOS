@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220703-1930
+ * last modified 20220704-1426
  * */
 
 #include <stdio.h>
@@ -49,6 +49,7 @@
 /* ******************* */
 /* emulator control */
 	void load(const char name[], word adr);		// load firmware
+	void ROMload(const char name[]);			// load ROM at the end, calling load()
 	void stat(void);		// display processor status
 	void dump(word dir);	// display 16 bytes of memory
 	void run_emulation();				// Run emulator
@@ -168,9 +169,10 @@ void run_emulation () {
 	int vsync=0;			// vertical retrace flag
 	run = 1;				// allow execution
 	ver = 0;				// verbosity mode, 0 = none, 1 = jumps, 2 = all; will stop on BRK unless 0
-ver=0;
-//	load("rom.bin", 0x8000);		// preload 32K firmware at ROM area
-mem[0xffe2]=0xa9;//LDA #$38
+
+	ROMload("rom.bin");		// preload firmware at ROM area
+
+/*mem[0xffe2]=0xa9;//LDA #$38
 mem[0xffe3]=0x38;
 mem[0xffe4]=0x8d;//STA $DF80
 mem[0xffe5]=0x80;
@@ -197,14 +199,15 @@ mem[0xfff9]=0xd0;//BNE start
 mem[0xfffa]=0xec;//
 mem[0xfffb]=0xdb;//***STP***
 mem[0xfffc]=0xe2;//RESET vector
-mem[0xfffd]=0xff;
+mem[0xfffd]=0xff;*/
 // Set video mode
 //mem[0xdf80]=0x3f;
 // Set image data
 //mem[0x6000]=0x01;mem[0x6001]=0x23;mem[0x6002]=0x45;mem[0x6003]=0x67;mem[0x6004]=0x89;mem[0x6005]=0xab;mem[0x6006]=0xcd;mem[0x6007]=0xef;
 
-	reset();				// startup!
 	init_vdu();
+	ver=0;
+	reset();				// startup!
 
 	while (run) {
 /* execute current opcode */
@@ -224,7 +227,7 @@ mem[0xfffd]=0xff;
 /* update at least VSYNC flag (off for 3, on for 2) */
 			if (vsync == 5) {
 				vsync = 0;
-vdu_draw_full();
+				vdu_draw_full();	// seems worth updating screen every VSYNC
 			}
 			if ((vsync++) < 3)	mem[0xDF88] &= 0b10111111;	// clear VSYNC flag while display
 			else				mem[0xDF88] |= 0b01000000;	// set VSYNC flag during retrace
@@ -245,14 +248,12 @@ vdu_draw_full();
 		}
 	}
 
+	vdu_draw_full();		// last screen update
 	printf(" *** CPU halted after %ld clock cycles ***\n", cont);
 	stat();					// display final status
 
-    vdu_draw_full();
-
-    printf("Press ENTER key to exit\n");
-    getchar();
-
+	printf("Press ENTER key to exit\n");
+	getchar();
 	close_vdu();
 
 }
@@ -274,7 +275,7 @@ void stat(void)	{
 		psr<<=1;			// next flag
 	}
 	printf(">\n");
-dump(0);
+//dump(0);
 }
 
 /* display 16 bytes of memory */
@@ -290,13 +291,13 @@ void dump(word dir) {
 	printf ("]\n");
 }
 
-/* load firmware, usually into ROM area */
+/* load firmware, arbitrary position */
 void load(const char name[], word adr) {
 	FILE *f;
 	int c, b = 0;
 
 	f = fopen(name, "rb");
-	if(f != NULL) {
+	if (f != NULL) {
 		do {
 			c = fgetc(f);
 			mem[adr+(b++)] = c;	// load one byte
@@ -304,6 +305,32 @@ void load(const char name[], word adr) {
 
 		fclose(f);
 		printf("%s: %d bytes loaded at %04X\n", name, b, adr);
+	}
+	else {
+		printf("*** Could not load image ***\n");
+		run = 0;
+	}
+}
+
+/* load ROM at the end of memory map */
+void ROMload(const char name[]) {
+	FILE *f;
+	word pos = 0;
+	long siz;
+
+	f = fopen(name, "rb");
+	if (f != NULL) {
+		fseek(f, 0, SEEK_END);	// go to end of file
+		siz = ftell(f);			// get size
+		fclose(f);				// done for now, load() will reopen
+		if (siz > 32768) {
+			printf("*** ROM too large! ***\n");
+			run = 0;
+		} else {
+			pos -= siz;
+			printf("Loading %s... (%ld K ROM image)\n", name, siz>>10);
+			load(name, pos);	// get actual ROM image
+		}
 	}
 	else {
 		printf("*** Could not load ROM ***\n");
