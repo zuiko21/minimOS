@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220704-1401
+ * last modified 20220704-1426
  * */
 
 #include <stdio.h>
@@ -151,6 +151,7 @@ mem[0xfffd]=0xff;*/
 //mem[0x6000]=0x01;mem[0x6001]=0x23;mem[0x6002]=0x45;mem[0x6003]=0x67;mem[0x6004]=0x89;mem[0x6005]=0xab;mem[0x6006]=0xcd;mem[0x6007]=0xef;
 
 	init_vdu();
+	ver=0;
 	reset();				// startup!
 
 	while (run) {
@@ -195,7 +196,6 @@ mem[0xfffd]=0xff;*/
 	vdu_draw_full();		// last screen update
 	printf(" *** CPU halted after %ld clock cycles ***\n", cont);
 	stat();					// display final status
-
 
 	printf("Press ENTER key to exit\n");
 	getchar();
@@ -269,12 +269,12 @@ void ROMload(const char name[]) {
 		fseek(f, 0, SEEK_END);	// go to end of file
 		siz = ftell(f);			// get size
 		fclose(f);				// done for now, load() will reopen
-		if (siz > 32767) {
+		if (siz > 32768) {
 			printf("*** ROM too large! ***\n");
 			run = 0;
 		} else {
 			pos -= siz;
-			printf("Loading %s... (%d K ROM image)\n", name, siz>>10;
+			printf("Loading %s... (%ld K ROM image)\n", name, siz>>10);
 			load(name, pos);	// get actual ROM image
 		}
 	}
