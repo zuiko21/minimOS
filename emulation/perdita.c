@@ -7,6 +7,8 @@
 #include <stdint.h>
 // SDL Install: apt-get install libsdl2-dev. Build with -lSDL2 flag
 #include <SDL2/SDL.h>
+// arguments parser
+#include <unistd.h>
 
 /* type definitions */
 	typedef uint8_t byte;
@@ -25,6 +27,7 @@
 	int nmi_flag = 0;		// interrupt control
 	int irq_flag = 0;
 	long cont = 0;			// total elapsed cycles
+	int verbosity = 0;		// Verbosity level
 
 	const char flag[8]="NV-BDIZC";	// flag names
 
@@ -50,6 +53,7 @@
 	void ROMload(const char name[]);			// load ROM at the end, calling load()
 	void stat(void);		// display processor status
 	void dump(word dir);	// display 16 bytes of memory
+	void run_emulation();				// Run emulator
 
 /* memory management */
 	byte peek(word dir);			// read memory or I/O
@@ -108,14 +112,78 @@
 /* ************************************************* */
 /* ******************* main loop ******************* */
 /* ************************************************* */
-int main (int argc, char * const argv[]) {
+int main(int argc, char *argv[])
+{
+	int index;
+	int arg_index;
+	int c;
+	char *filename;
+	char *rom_addr=NULL;
+	int rom_addr_int;
+	
+	if(argc==1) {
+		printf("usage: perdita [-a rom_address] [-ve] rom_file\n");
+		printf("-a: load rom at supplied address, example 0x8000\n");
+		printf("-e load rom at memory end\n");
+		printf("-v verbose\n");
+		return 1;
+	}
+
+	opterr = 0;
+
+
+	while ((c = getopt (argc, argv, "a:v")) != -1)
+	switch (c) {
+		case 'a':
+			rom_addr = optarg;
+			break;
+		case 'v':
+			verbosity++;
+			break;		
+		case '?':
+			fprintf (stderr, "Unknown option\n");
+			return 1;
+		default:
+			abort ();
+	}
+
+	for (arg_index = 0, index = optind; index < argc; index++, arg_index++) {
+		switch(arg_index) {
+			case 0: filename = argv[index]; break;
+		}		
+	}
+
+	if(arg_index == 0) {
+		printf("Filename is mandatory\n");
+		return 1;
+	}
+	
+	if(rom_addr != NULL && (strlen(rom_addr) != 6 || rom_addr[0]!='0' || rom_addr[1]!='x')) {
+		printf("Rom address format: 0x0000\n");
+		return 1;
+	}
+
+	if(rom_addr == NULL) {
+		ROMload(filename);
+	}
+	else {
+		rom_addr_int = (int)strtol(rom_addr, NULL, 0);
+		load(filename, rom_addr_int);
+	}
+	
+	run_emulation();
+
+	return 0;
+}
+
+void run_emulation () {
 	int cyc=0, it=0;		// instruction and interrupt cycle counter
 	int ht=0;				// horizontal counter
 	int vsync=0;			// vertical retrace flag
 	run = 1;				// allow execution
 	ver = 0;				// verbosity mode, 0 = none, 1 = jumps, 2 = all; will stop on BRK unless 0
 
-	ROMload("rom.bin");		// preload firmware at ROM area
+//	ROMload("rom.bin");		// preload firmware at ROM area
 
 /*mem[0xffe2]=0xa9;//LDA #$38
 mem[0xffe3]=0x38;
@@ -142,7 +210,7 @@ mem[0xfff7]=0xf7;
 mem[0xfff8]=0x1a;//INC
 mem[0xfff9]=0xd0;//BNE start
 mem[0xfffa]=0xec;//
-mem[0xfffb]=0xdb;//***STP***
+mem[0xfffb]=0xdb;// ***STP***
 mem[0xfffc]=0xe2;//RESET vector
 mem[0xfffd]=0xff;*/
 // Set video mode
@@ -201,7 +269,6 @@ mem[0xfffd]=0xff;*/
 	getchar();
 	close_vdu();
 
-	return 0;
 }
 
 /* **************************** */
@@ -1736,6 +1803,8 @@ int init_vdu() {
     SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderClear(sdl_renderer);
     SDL_RenderPresent(sdl_renderer);
+    
+    return 0;
 }
 
 /* Close vdu display window */
