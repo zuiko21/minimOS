@@ -1,10 +1,11 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220704-1426
+ * last modified 20220704-2245
  * */
 
 #include <stdio.h>
 #include <stdint.h>
+#include <time.h>
 // SDL Install: apt-get install libsdl2-dev. Build with -lSDL2 flag
 #include <SDL2/SDL.h>
 // arguments parser
@@ -23,13 +24,14 @@
 	word screen = 0;		// Durango screen switcher, xSSxxxxx xxxxxxxx
 	int dec;				// decimal flag for speed penalties (CMOS only)
 	int run, ver;			// emulator control
+	int fast = 0;			// speed flag
 	int stat_flag = 0;		// external control
 	int nmi_flag = 0;		// interrupt control
 	int irq_flag = 0;
 	long cont = 0;			// total elapsed cycles
 	int verbosity = 0;		// Verbosity level
 
-	const char flag[8]="NV-BDIZC";	// flag names
+	const char flag[8]="NV-bDIZC";	// flag names
 
 /* global vdu variables */
 	// Screen width in pixels
@@ -180,8 +182,11 @@ void run_emulation () {
 	int cyc=0, it=0;		// instruction and interrupt cycle counter
 	int ht=0;				// horizontal counter
 	int vsync=0;			// vertical retrace flag
+	clock_t tix, next;		// speed control
+
 	run = 1;				// allow execution
 	ver = 0;				// verbosity mode, 0 = none, 1 = jumps, 2 = all; will stop on BRK unless 0
+
 
 //	ROMload("rom.bin");		// preload firmware at ROM area
 
@@ -222,6 +227,7 @@ mem[0xfffd]=0xff;*/
 	ver=0;
 	reset();				// startup!
 
+	next=clock()+4000;		// assume CLOCKS_PER_SEC is 1000000!
 	while (run) {
 /* execute current opcode */
 		cyc = exec();		// count elapsed clock cycles for this instruction
@@ -236,6 +242,11 @@ mem[0xfffd]=0xff;*/
 		if (it >= 6144)		// 250 Hz interrupt @ 1.536 MHz
 		{
 			it -= 6144;		// restore for next
+/* make a suitable delay for speed accuracy */
+			if (!fast) {
+				while (clock()<next);
+				next=clock()+4000;
+			}
 // *** may get keypresses from SDL here, as this get executed every 4 ms ***
 /* update at least VSYNC flag (off for 3, on for 2) */
 			if (vsync == 5) {
