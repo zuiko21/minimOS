@@ -7,6 +7,8 @@
 #include <stdint.h>
 // SDL Install: apt-get install libsdl2-dev. Build with -lSDL2 flag
 #include <SDL2/SDL.h>
+// arguments parser
+#include <unistd.h>
 
 /* type definitions */
 	typedef uint8_t byte;
@@ -49,6 +51,7 @@
 	void load(const char name[], word adr);		// load firmware
 	void stat(void);		// display processor status
 	void dump(word dir);	// display 16 bytes of memory
+	void run_emulation();				// Run emulator
 
 /* memory management */
 	byte peek(word dir);			// read memory or I/O
@@ -107,7 +110,42 @@
 /* ************************************************* */
 /* ******************* main loop ******************* */
 /* ************************************************* */
-int main (int argc, char * const argv[]) {
+int main(int argc, char *argv[])
+{
+	//int verbose_flag = 0;
+	int index;
+	int arg_index;
+	int c;
+	char *filename;
+	char *rom_addr;
+
+	opterr = 0;
+
+
+	while ((c = getopt (argc, argv, "av")) != -1)
+	switch (c) {
+		case 'a':
+			rom_addr = optarg;
+			break;
+		case 'v':
+			//verbose_flag = 1;
+			break;
+		case '?':
+			fprintf (stderr, "Unknown option character `\\x%x'.\n", optopt);
+			return 1;
+		default:
+			abort ();
+	}
+	for (arg_index = 0, index = optind; index < argc; index++, arg_index++) {
+		printf ("Non-option argument %d %s\n", arg_index, argv[index]);
+		switch(arg_index) {
+			case 0: filename = argv[index]; break;
+		}		
+	}
+	return 0;
+}
+
+void run_emulation () {
 	int cyc=0, it=0;		// instruction and interrupt cycle counter
 	int ht=0;				// horizontal counter
 	int vsync=0;			// vertical retrace flag
@@ -200,7 +238,6 @@ vdu_draw_full();
 
 	close_vdu();
 
-	return 0;
 }
 
 /* **************************** */
@@ -1709,6 +1746,8 @@ int init_vdu() {
     SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderClear(sdl_renderer);
     SDL_RenderPresent(sdl_renderer);
+    
+    return 0;
 }
 
 /* Close vdu display window */
