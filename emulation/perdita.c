@@ -27,6 +27,7 @@
 	int nmi_flag = 0;		// interrupt control
 	int irq_flag = 0;
 	long cont = 0;			// total elapsed cycles
+	int verbosity = 0;		// Verbosity level
 
 	const char flag[8]="NV-BDIZC";	// flag names
 
@@ -113,7 +114,6 @@
 /* ************************************************* */
 int main(int argc, char *argv[])
 {
-	//int verbose_flag = 0;
 	int index;
 	int arg_index;
 	int c;
@@ -138,10 +138,10 @@ int main(int argc, char *argv[])
 			rom_addr = optarg;
 			break;
 		case 'v':
-			//verbose_flag = 1;
+			verbosity++;
 			break;		
 		case '?':
-			fprintf (stderr, "Unknown option\n", optopt);
+			fprintf (stderr, "Unknown option\n");
 			return 1;
 		default:
 			abort ();
@@ -210,7 +210,7 @@ mem[0xfff7]=0xf7;
 mem[0xfff8]=0x1a;//INC
 mem[0xfff9]=0xd0;//BNE start
 mem[0xfffa]=0xec;//
-mem[0xfffb]=0xdb;//***STP***
+mem[0xfffb]=0xdb;// ***STP***
 mem[0xfffc]=0xe2;//RESET vector
 mem[0xfffd]=0xff;*/
 // Set video mode
