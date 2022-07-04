@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220704-2245
+ * last modified 20220704-2327
  * */
 
 #include <stdio.h>
@@ -23,13 +23,13 @@
 
 	word screen = 0;		// Durango screen switcher, xSSxxxxx xxxxxxxx
 	int dec;				// decimal flag for speed penalties (CMOS only)
-	int run, ver;			// emulator control
+	int run;				// emulator control
+	int ver = 0;			// verbosity mode, 0 = none, 1 = jumps, 2 = all; will stop on BRK unless 0
 	int fast = 0;			// speed flag
 	int stat_flag = 0;		// external control
 	int nmi_flag = 0;		// interrupt control
 	int irq_flag = 0;
 	long cont = 0;			// total elapsed cycles
-	int verbosity = 0;		// Verbosity level
 
 	const char flag[8]="NV-bDIZC";	// flag names
 
@@ -133,15 +133,14 @@ int main(int argc, char *argv[])
 
 	opterr = 0;
 
-
 	while ((c = getopt (argc, argv, "a:v")) != -1)
 	switch (c) {
 		case 'a':
 			rom_addr = optarg;
 			break;
 		case 'v':
-			verbosity++;
-			break;		
+			ver++;			// not that I like this, but...
+			break;
 		case '?':
 			fprintf (stderr, "Unknown option\n");
 			return 1;
@@ -152,7 +151,7 @@ int main(int argc, char *argv[])
 	for (arg_index = 0, index = optind; index < argc; index++, arg_index++) {
 		switch(arg_index) {
 			case 0: filename = argv[index]; break;
-		}		
+		}
 	}
 
 	if(arg_index == 0) {
@@ -172,7 +171,7 @@ int main(int argc, char *argv[])
 		rom_addr_int = (int)strtol(rom_addr, NULL, 0);
 		load(filename, rom_addr_int);
 	}
-	
+
 	run_emulation();
 
 	return 0;
@@ -182,15 +181,11 @@ void run_emulation () {
 	int cyc=0, it=0;		// instruction and interrupt cycle counter
 	int ht=0;				// horizontal counter
 	int vsync=0;			// vertical retrace flag
-	clock_t tix, next;		// speed control
+	clock_t next;			// speed control
 
 	run = 1;				// allow execution
-	ver = 0;				// verbosity mode, 0 = none, 1 = jumps, 2 = all; will stop on BRK unless 0
-
-
-//	ROMload("rom.bin");		// preload firmware at ROM area
-
-/*mem[0xffe2]=0xa9;//LDA #$38
+/*
+mem[0xffe2]=0xa9;//LDA #$38
 mem[0xffe3]=0x38;
 mem[0xffe4]=0x8d;//STA $DF80
 mem[0xffe5]=0x80;
@@ -216,17 +211,17 @@ mem[0xfff8]=0x1a;//INC
 mem[0xfff9]=0xd0;//BNE start
 mem[0xfffa]=0xec;//
 mem[0xfffb]=0xdb;// ***STP***
-mem[0xfffc]=0xe2;//RESET vector
-mem[0xfffd]=0xff;*/
+*/
+//mem[0xfffc]=0x00;//RESET vector
+//mem[0xfffd]=0xd0;
 // Set video mode
 //mem[0xdf80]=0x3f;
 // Set image data
 //mem[0x6000]=0x01;mem[0x6001]=0x23;mem[0x6002]=0x45;mem[0x6003]=0x67;mem[0x6004]=0x89;mem[0x6005]=0xab;mem[0x6006]=0xcd;mem[0x6007]=0xef;
 
 	init_vdu();
-	ver=0;
 	reset();				// startup!
-
+//fast=1;
 	next=clock()+4000;		// assume CLOCKS_PER_SEC is 1000000!
 	while (run) {
 /* execute current opcode */
@@ -1754,7 +1749,8 @@ int exec(void) {
 /* *** *** *** halt CPU on illegal opcodes *** *** *** */
 		default:
 			printf("\n*** ($%04X) Illegal opcode $%02X ***\n", pc-1, opcode);
-			run = per = 0;
+			per = 0;
+			if (ver)	run = 0;		// will only abort in verbose mode
 	}
 
 	return per;
