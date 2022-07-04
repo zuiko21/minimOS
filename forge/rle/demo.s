@@ -1,6 +1,6 @@
 ; RLE decoder DEMO for minimOS
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20211031-1931
+; last modified 20220704-1421
 
 ; *** zeropage variables ***
 .zero
@@ -12,12 +12,16 @@ ptr		.word	0			; pointer to screen output
 
 .text
 
-* = $400					; room enough
+* = $8000					; room enough, was $400
 
 ; *** parameter definitions ***
 dest	= $6000				; Durango-X screen address
 
+; ** UNcompressed 'file' ahead **
+source:
+	.bin	0, 8192, "../../other/data/maze4.sv"
 ; *** actual code ***
+start:
 	LDA #$38
 	STA $DF80				; set videoflags
 ; preload pointers as required
@@ -41,7 +45,13 @@ rle_u:
 
 ; ** test code ahead **
 rle_exit:
-	BRA rle_exit			; just hang after decoding!
-; ** UNcompressed 'file' ahead **
-source:
-	.bin	0, 8192, "../../other/data/maze4.sv"
+	.byt	$DB				; SToP! was bra rle_exit
+
+	.dsb	$FFFA-*, $FF	; ROM filler
+
+* = $FFFA
+
+	.word start				; all vectors are the same
+	.word start
+	.word start
+
