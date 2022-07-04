@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 	opterr = 0;
 
 
-	while ((c = getopt (argc, argv, "av")) != -1)
+	while ((c = getopt (argc, argv, "a:v")) != -1)
 	switch (c) {
 		case 'a':
 			rom_addr = optarg;
@@ -137,8 +137,8 @@ int main(int argc, char *argv[])
 		default:
 			abort ();
 	}
+
 	for (arg_index = 0, index = optind; index < argc; index++, arg_index++) {
-		printf ("Non-option argument %d %s\n", arg_index, argv[index]);
 		switch(arg_index) {
 			case 0: filename = argv[index]; break;
 		}		
@@ -148,8 +148,8 @@ int main(int argc, char *argv[])
 		printf("Filename is mandatory\n");
 		return 1;
 	}
-
-	if(strlen(rom_addr) != 6 || rom_addr[0]!='0' || rom_addr[1]!='x') {
+	
+	if(rom_addr == NULL || strlen(rom_addr) != 6 || rom_addr[0]!='0' || rom_addr[1]!='x') {
 		printf("Rom address format: 0x0000\n");
 		return 1;
 	}
