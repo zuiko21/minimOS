@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220705-1403
+ * last modified 20220705-1757
  * */
 
 #include <stdio.h>
@@ -186,12 +186,12 @@ void run_emulation () {
 
 	run = 1;				// allow execution
 
+	printf("[F1=STOP, F2=NMI, F3=IRQ, F4=RESET, F5=STATUS]\n");
 	init_vdu();
 	reset();				// ready to start!
 
 	next=clock()+4000;		// set delay counter, assumes CLOCKS_PER_SEC is 1000000!
 	while (run) {
-vdu_read_keyboard();
 /* execute current opcode */
 		cyc = exec();		// count elapsed clock cycles for this instruction
 		cont += cyc;		// add last instruction cycle count
@@ -210,8 +210,8 @@ vdu_read_keyboard();
 				while (clock()<next);
 				next=clock()+4000;
 			}
-// *** may get keypresses from SDL here, as this get executed every 4 ms ***
-// also check for emulation STOP (e.g. F1) and others (e.g. F2=NMI, F3=IRQ, F4=RESET...)
+/* get keypresses from SDL here, as this get executed every 4 ms */
+			vdu_read_keyboard();
 /* update at least VSYNC flag (off for 3, on for 2 is not exact at ~188 lines, but close enough) */
 			if (vsync == 5) {
 				vsync = 0;
@@ -226,12 +226,15 @@ vdu_read_keyboard();
 		}
 /* generate asynchronous interrupts */ 
 		if (irq_flag) {		// 'spurious' cartridge interrupt emulation!
+			irq_flag = 0;
  			irq();
  		}
-		if (nmi_flag) {		// *** get somewhere from SDL
+		if (nmi_flag) {
+			nmi_flag = 0;
 			nmi();			// NMI gets executed always
 		}
-		if (stat_flag) {	// *** get from SDL
+		if (stat_flag) {
+			stat_flag = 0;
 			stat();
 		}
 	}
@@ -953,9 +956,10 @@ int exec(void) {
 			break;
 /* *** DEC: Decrement Memory (or Accumulator) by One *** */
 		case 0xCE:
-			temp = peek(am_a());
+			adr = am_a();	// EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
+			temp = peek(adr);
 			temp--;
-			poke(am_a(), temp);
+			poke(adr, temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[DECa]");
 			per = 6;
@@ -1059,9 +1063,10 @@ int exec(void) {
 			break;
 /* *** INC: Increment Memory (or Accumulator) by One *** */
 		case 0xEE:
-			temp = peek(am_a());
+			adr = am_a();	// EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
+			temp = peek(adr);
 			temp++;
-			poke(am_a(), temp);
+			poke(adr, temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[INCa]");
 			per = 6;
@@ -1815,12 +1820,12 @@ void close_vdu() {
 }
 
 /* Set current color in SDL from palette */
-void vdu_set_color_pixel(byte color_index) {
+void vdu_set_color_pixel(byte c) {
 	// Color components
 	int red=0, green=0, blue=0;
 
 	// Durango palette
-	switch(color_index) {
+	switch(c) {
 		case 0x00: red = 0x00; green = 0x00; blue = 0x00; break; // 0
 		case 0x01: red = 0x00; green = 0xaa; blue = 0x00; break; // 1
 		case 0x02: red = 0xff; green = 0x00; blue = 0x00; break; // 2
@@ -1848,9 +1853,10 @@ void vdu_set_color_pixel(byte color_index) {
 
 	// Process RGB flag
 	if((mem[0xdf80] & 0x08)>>3 == 0) {
-		red = (red + green + blue) / 3;
+//		red = (red + green + blue) / 3;	// NOPE!
+		red = (c&1)?0x88:0 | (c&2)?0x44:0 | (c&4)?0x22:0 | (c&8)?0x11:0; 
 		green = red;
-		blue = green;
+		blue = green;	// that, or a switch like above for some sort of gamma correction, note bits are in reverse order!
 	}
 
 	SDL_SetRenderDrawColor(sdl_renderer, red, green, blue, 0xff);
@@ -1858,7 +1864,7 @@ void vdu_set_color_pixel(byte color_index) {
 
 /* Set current color in SDL HiRes mode */
 void vdu_set_hires_pixel(byte color_index) {
-	int color = color_index == 0 ? 0x00 : 0xff;
+	int color = color_index == 0 ? 0x00 : 0xff;	// maybe some parentheses missing?
 
 	// Process invert flag
 	if((mem[0xdf80] & 0x40)>>6 == 1) {
@@ -1961,6 +1967,7 @@ void process_keyboard(SDL_Event *e) {
 	 */
 	if(e->type == SDL_KEYDOWN) {
 		printf("key: %c (%d)\n", e->key.keysym.sym, e->key.keysym.sym);
+		mem[0xDF9A] = e->key.keysym.sym;	// will temporarily store ASCII at 0xDF9A, as per PASK standard :-)
 	}
 }
 
@@ -1976,20 +1983,25 @@ void vdu_read_keyboard() {
 		{
 			run = 0;
 		}
-		// Press F1
+		// Press F1 = STOP
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F1) {
+			run = 0;
 		}
-		// Press F2
+		// Press F2 = NMI
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F2) {
+			nmi_flag = 1;
 		}
-		// Press F3
+		// Press F3 = IRQ?
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F3) {
+			irq_flag = 1;
 		}
-		// Press F4
+		// Press F4 = RESET
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F4) {
+			reset();
 		}
-		// Press F5
+		// Press F5 = STATUS
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F5) {
+			stat_flag = 1;
 		}
 		// Press F6
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F6) {
