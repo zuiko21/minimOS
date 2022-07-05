@@ -55,6 +55,7 @@
 	void dump(word dir);	// display 16 bytes of memory
 	void run_emulation();	// Run emulator
 	int  exec(void);		// execute one opcode, returning number of cycles
+	void process_keyboard(SDL_Event*);
 
 /* memory management */
 	byte peek(word dir);			// read memory or I/O
@@ -100,10 +101,12 @@
 	int  init_vdu();		// Initialize vdu display window
 	void close_vdu();		// Close vdu display window
 	void vdu_draw_full();	// Draw full screen
+	void vdu_read_keyboard();	// Read keyboard
 /* vdu internal functions */
 	void vdu_set_color_pixel(byte);
+	void vdu_set_hires_pixel(byte);
 	void vdu_draw_color_pixel(word);
-	void vdu_draw_hires_pixel(word addr);
+	void vdu_draw_hires_pixel(word);
 
 
 /* ************************************************* */
@@ -128,10 +131,13 @@ int main(int argc, char *argv[])
 
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "a:v")) != -1)
+	while ((c = getopt (argc, argv, "a:fv")) != -1)
 	switch (c) {
 		case 'a':
 			rom_addr = optarg;
+			break;
+		case 'f':
+			fast = 1;
 			break;
 		case 'v':
 			ver++;			// not that I like this, but...
@@ -185,6 +191,7 @@ void run_emulation () {
 
 	next=clock()+4000;		// set delay counter, assumes CLOCKS_PER_SEC is 1000000!
 	while (run) {
+vdu_read_keyboard();
 /* execute current opcode */
 		cyc = exec();		// count elapsed clock cycles for this instruction
 		cont += cyc;		// add last instruction cycle count
@@ -1809,24 +1816,56 @@ void close_vdu() {
 
 /* Set current color in SDL from palette */
 void vdu_set_color_pixel(byte color_index) {
+	// Color components
+	int red=0, green=0, blue=0;
+
+	// Durango palette
 	switch(color_index) {
-		case 0x00: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xff); break; // 0
-		case 0x01: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xaa, 0x00, 0xff); break; // 1
-		case 0x02: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x00, 0x00, 0xff); break; // 2
-		case 0x03: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xaa, 0x00, 0xff); break; // 3
-		case 0x04: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x55, 0x00, 0xff); break; // 4
-		case 0x05: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xff, 0x00, 0xff); break; // 5
-		case 0x06: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x55, 0x00, 0xff); break; // 6
-		case 0x07: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0x00, 0xff); break; // 7
-		case 0x08: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0xff, 0xff); break; // 8
-		case 0x09: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xaa, 0xff, 0xff); break; // 9
-		case 0x0a: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x00, 0xff, 0xff); break; // 10
-		case 0x0b: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xaa, 0xff, 0xff); break; // 11
-		case 0x0c: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x55, 0xff, 0xff); break; // 12
-		case 0x0d: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xff, 0xff, 0xff); break; // 13
-		case 0x0e: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x55, 0xff, 0xff); break; // 14
-		case 0x0f: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0xff, 0xff); break; // 15
+		case 0x00: red = 0x00; green = 0x00; blue = 0x00; break; // 0
+		case 0x01: red = 0x00; green = 0xaa; blue = 0x00; break; // 1
+		case 0x02: red = 0xff; green = 0x00; blue = 0x00; break; // 2
+		case 0x03: red = 0xff; green = 0xaa; blue = 0x00; break; // 3
+		case 0x04: red = 0x00; green = 0x55; blue = 0x00; break; // 4
+		case 0x05: red = 0x00; green = 0xff; blue = 0x00; break; // 5
+		case 0x06: red = 0xff; green = 0x55; blue = 0x00; break; // 6
+		case 0x07: red = 0xff; green = 0xff; blue = 0x00; break; // 7
+		case 0x08: red = 0x00; green = 0x00; blue = 0xff; break; // 8
+		case 0x09: red = 0x00; green = 0xaa; blue = 0xff; break; // 9
+		case 0x0a: red = 0xff; green = 0x00; blue = 0xff; break; // 10
+		case 0x0b: red = 0xff; green = 0xaa; blue = 0xff; break; // 11
+		case 0x0c: red = 0x00; green = 0x55; blue = 0xff; break; // 12
+		case 0x0d: red = 0x00; green = 0xff; blue = 0xff; break; // 13
+		case 0x0e: red = 0xff; green = 0x55; blue = 0xff; break; // 14
+		case 0x0f: red = 0xff; green = 0xff; blue = 0xff; break; // 15
 	}
+
+	// Process invert flag
+	if((mem[0xdf80] & 0x40)>>6 == 1) {
+		red = 0xff-red;
+		green = 0xff - green;
+		blue = 0xff - blue;
+	}
+
+	// Process RGB flag
+	if((mem[0xdf80] & 0x08)>>3 == 0) {
+		red = (red + green + blue) / 3;
+		green = red;
+		blue = green;
+	}
+
+	SDL_SetRenderDrawColor(sdl_renderer, red, green, blue, 0xff);
+}
+
+/* Set current color in SDL HiRes mode */
+void vdu_set_hires_pixel(byte color_index) {
+	int color = color_index == 0 ? 0x00 : 0xff;
+
+	// Process invert flag
+	if((mem[0xdf80] & 0x40)>>6 == 1) {
+		color = 0xff-color;
+	}
+
+	SDL_SetRenderDrawColor(sdl_renderer, color, color, color, 0xff);
 }
 
 /* Draw color pixel in supplied address */
@@ -1855,6 +1894,24 @@ void vdu_draw_color_pixel(word addr) {
 }
 
 void vdu_draw_hires_pixel(word addr) {
+	SDL_Rect fill_rect;
+	int i;
+	int pixel_size=VDU_SCREEN_WIDTH/256;
+	// Calculate screen address
+	unsigned int screen_address = ((mem[0xdf80] & 0x30)>>4)*0x2000;
+	// Calculate screen y coord
+	int y = floor((addr - screen_address) * 8 / 256);
+	// Calculate screen x coord
+	int x = ((addr - screen_address) *8) % 256;
+
+	fill_rect.y = y * pixel_size;
+	fill_rect.w = pixel_size;
+	fill_rect.h = pixel_size;
+	for(i=0; i<8; i++) {
+		vdu_set_hires_pixel((mem[addr]>>i) & 0x01);
+		fill_rect.x = (x+i) * pixel_size;
+		SDL_RenderFillRect(sdl_renderer, &fill_rect);
+	}
 }
 
 /* Render Durango screen. */
@@ -1868,12 +1925,97 @@ void vdu_draw_full() {
     SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderClear(sdl_renderer);
 
+	// Color
 	if(hires_flag==0) {
 		for(i=screen_address; i<screen_address_end; i++) {
 			vdu_draw_color_pixel(i);
 		}
 	}
+	// HiRes
+	else {
+		for(i=screen_address; i<screen_address_end; i++) {
+			vdu_draw_hires_pixel(i);
+		}
+	}
 
 	//Update screen
 	SDL_RenderPresent(sdl_renderer);
+}
+
+/* Process keyboard / mouse events */
+void process_keyboard(SDL_Event *e) {
+	/*
+	 * Type:
+	 * SDL_KEYDOWN
+	 * SDL_KEYUP
+	 * SDL_JOYAXISMOTION
+	 * SDL_JOYBUTTONDOWN
+	 * SDL_JOYBUTTONUP
+	 * SDL_MOUSEMOTION
+	 * SDL_MOUSEBUTTONDOWN
+	 * SDL_MOUSEBUTTONUP
+	 * SDL_MOUSEWHEEL
+	 * 
+	 * Code:
+	 * https://wiki.libsdl.org/SDL_Keycode
+	 */
+	if(e->type == SDL_KEYDOWN) {
+		printf("key: %c (%d)\n", e->key.keysym.sym, e->key.keysym.sym);
+	}
+}
+
+/* Process GUI events in VDU window */
+void vdu_read_keyboard() {
+	//Event handler
+    SDL_Event e;
+	//Handle events on queue
+	while( SDL_PollEvent( &e ) != 0 )
+	{
+		// Vdu window is closed
+		if(e.type == SDL_QUIT)
+		{
+			run = 0;
+		}
+		// Press F1
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F1) {
+		}
+		// Press F2
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F2) {
+		}
+		// Press F3
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F3) {
+		}
+		// Press F4
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F4) {
+		}
+		// Press F5
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F5) {
+		}
+		// Press F6
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F6) {
+		}
+		// Press F7
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F7) {
+		}
+		// Press F8
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F8) {
+		}
+		// Press F9
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F9) {
+		}
+		// Press F10
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F10) {
+		}
+		// Press F11
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F11) {
+		}
+		// Press F12
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F12) {
+			run = 0;
+		}
+		// Event forwarded to Durango
+		else {
+			process_keyboard(&e);
+		}
+	}
 }

@@ -190,6 +190,7 @@ function SimulatorWidget(node) {
     var width;
     var height;
     var pixelSize;
+    var pixelHiResSize
     var numX = 128;
     var numY = 128;
 
@@ -198,6 +199,7 @@ function SimulatorWidget(node) {
       width = canvas.width;
       height = canvas.height;
       pixelSize = width / numX;
+      pixelHiResSize = width / (2 * numX);
       ctx = canvas.getContext('2d');
       reset();
     }
@@ -226,15 +228,71 @@ function SimulatorWidget(node) {
       }      
     }
     
+    function toHexValue(value) {
+      var stringValue = value.toString(16);
+      if(stringValue.length<2) {
+        stringValue = '0'+stringValue;
+      }
+      return stringValue;
+    }
+    
     /** 
      * Get rgb color to display pixel.
      */
     function getColor(index) {
-      var hiRes = (memory.get(0xdf80) & 0x80)>>7;
-      var invert = (memory.get(0xdf80) & 0x40)>>6;
-      if(hiRes==0 && invert ==0) {
-        return palette[index];
+      // Color components
+      var red=0, green=0, blue=0;
+
+      // Durango palette
+      switch(index) {
+        case 0x00: red = 0x00; green = 0x00; blue = 0x00; break; // 0
+        case 0x01: red = 0x00; green = 0xaa; blue = 0x00; break; // 1
+        case 0x02: red = 0xff; green = 0x00; blue = 0x00; break; // 2
+        case 0x03: red = 0xff; green = 0xaa; blue = 0x00; break; // 3
+        case 0x04: red = 0x00; green = 0x55; blue = 0x00; break; // 4
+        case 0x05: red = 0x00; green = 0xff; blue = 0x00; break; // 5
+        case 0x06: red = 0xff; green = 0x55; blue = 0x00; break; // 6
+        case 0x07: red = 0xff; green = 0xff; blue = 0x00; break; // 7
+        case 0x08: red = 0x00; green = 0x00; blue = 0xff; break; // 8
+        case 0x09: red = 0x00; green = 0xaa; blue = 0xff; break; // 9
+        case 0x0a: red = 0xff; green = 0x00; blue = 0xff; break; // 10
+        case 0x0b: red = 0xff; green = 0xaa; blue = 0xff; break; // 11
+        case 0x0c: red = 0x00; green = 0x55; blue = 0xff; break; // 12
+        case 0x0d: red = 0x00; green = 0xff; blue = 0xff; break; // 13
+        case 0x0e: red = 0xff; green = 0x55; blue = 0xff; break; // 14
+        case 0x0f: red = 0xff; green = 0xff; blue = 0xff; break; // 15
       }
+	
+      // Process invert flag
+      if((memory.get(0xdf80) & 0x40)>>6 == 1) {
+        red = 0xff-red;
+        green = 0xff - green;
+        blue = 0xff - blue;
+      }
+	
+      // Process RGB flag
+      if((memory.get(0xdf80) & 0x08)>>3 == 0) {
+        red = (red + green + blue) / 3;
+        green = red;
+        blue = green;
+      }
+    
+      return '#'+toHexValue(red)+toHexValue(green)+toHexValue(blue);
+    }
+    
+    /* Set current color in SDL HiRes mode */
+    function getHiresColor(color_index) {
+      var color = color_index == 0 ? 0x00 : 0xff;
+
+      // Process invert flag
+      if((memory.get(0xdf80) & 0x40)>>6 == 1) {
+        color = 0xff-color;
+      }
+      
+      htmlColor = toHexValue(color);
+      htmlColor = '#'+htmlColor+htmlColor+htmlColor;
+
+      return htmlColor;
     }
     
     /**
@@ -256,6 +314,16 @@ function SimulatorWidget(node) {
     }
     
     function drawHiResPixel(addr) {
+      // Calculate screen address
+      var screenAddress = ((memory.get(0xdf80) & 0x30)>>4)*0x2000;
+      // Calculate screen y coord
+      var y = Math.floor((addr - screenAddress) * 8 / 256);
+      // Calculate screen x coord
+      var x = ((addr - screenAddress) *8) % 256;
+      for(i=0; i<8; i++) {
+        ctx.fillStyle = getHiresColor((memory.get(addr)>>i) & 0x01);
+        ctx.fillRect((x+i) * pixelHiResSize, y * pixelHiResSize, pixelHiResSize, pixelHiResSize);
+      }      
     }
 
     return {
