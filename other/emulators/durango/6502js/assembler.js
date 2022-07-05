@@ -190,6 +190,7 @@ function SimulatorWidget(node) {
     var width;
     var height;
     var pixelSize;
+    var pixelHiResSize
     var numX = 128;
     var numY = 128;
 
@@ -198,6 +199,7 @@ function SimulatorWidget(node) {
       width = canvas.width;
       height = canvas.height;
       pixelSize = width / numX;
+      pixelHiResSize = width / (2 * numX);
       ctx = canvas.getContext('2d');
       reset();
     }
@@ -278,6 +280,21 @@ function SimulatorWidget(node) {
       return '#'+toHexValue(red)+toHexValue(green)+toHexValue(blue);
     }
     
+    /* Set current color in SDL HiRes mode */
+    function getHiresColor(color_index) {
+      var color = color_index == 0 ? 0x00 : 0xff;
+
+      // Process invert flag
+      if((memory.get(0xdf80) & 0x40)>>6 == 1) {
+        color = 0xff-color;
+      }
+      
+      htmlColor = toHexValue(color);
+      htmlColor = '#'+htmlColor+htmlColor+htmlColor;
+
+      return htmlColor;
+    }
+    
     /**
      * Draw memory address in screen.
      */
@@ -297,6 +314,16 @@ function SimulatorWidget(node) {
     }
     
     function drawHiResPixel(addr) {
+      // Calculate screen address
+      var screenAddress = ((memory.get(0xdf80) & 0x30)>>4)*0x2000;
+      // Calculate screen y coord
+      var y = Math.floor((addr - screenAddress) * 8 / 256);
+      // Calculate screen x coord
+      var x = ((addr - screenAddress) *8) % 256;
+      for(i=0; i<8; i++) {
+        ctx.fillStyle = getHiresColor((memory.get(addr)>>i) & 0x01);
+        ctx.fillRect((x+i) * pixelHiResSize, y * pixelHiResSize, pixelHiResSize, pixelHiResSize);
+      }      
     }
 
     return {
