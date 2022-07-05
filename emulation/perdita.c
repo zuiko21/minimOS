@@ -131,10 +131,13 @@ int main(int argc, char *argv[])
 
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "a:v")) != -1)
+	while ((c = getopt (argc, argv, "a:fv")) != -1)
 	switch (c) {
 		case 'a':
 			rom_addr = optarg;
+			break;
+		case 'f':
+			fast = 1;
 			break;
 		case 'v':
 			ver++;			// not that I like this, but...
