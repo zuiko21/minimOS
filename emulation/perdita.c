@@ -368,6 +368,7 @@ void poke(word dir, byte v) {
 		}
 	} else {					// any other address is ROM, thus no much sense writing there?
 		printf("\n*** Writing to ROM at $%04X ***\n", pc);
+run=0;
 	}
 }
 
@@ -1257,7 +1258,7 @@ int exec(void) {
 			break;
 		case 0x4A:
 			lsr(&a);
-			printf("[LSR]");
+			if (ver > 1) printf("[LSR]");
 			break;
 		case 0x56:
 			adr = am_zx();
