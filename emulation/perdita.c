@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220704-2327
+ * last modified 20220705-1403
  * */
 
 #include <stdio.h>
@@ -21,7 +21,7 @@
 	byte a, x, y, s, p;		// 8-bit registers
 	word pc;				// program counter
 
-	word screen = 0;		// Durango screen switcher, xSSxxxxx xxxxxxxx
+	word screen = 0;		// Durango screen switcher, xSSxxxxx xxxxxxxx *** may not use it
 	int dec;				// decimal flag for speed penalties (CMOS only)
 	int run;				// emulator control
 	int ver = 0;			// verbosity mode, 0 = none, 1 = jumps, 2 = all; will stop on BRK unless 0
@@ -30,8 +30,6 @@
 	int nmi_flag = 0;		// interrupt control
 	int irq_flag = 0;
 	long cont = 0;			// total elapsed cycles
-
-	const char flag[8]="NV-bDIZC";	// flag names
 
 /* global vdu variables */
 	// Screen width in pixels
@@ -55,7 +53,8 @@
 	void ROMload(const char name[]);			// load ROM at the end, calling load()
 	void stat(void);		// display processor status
 	void dump(word dir);	// display 16 bytes of memory
-	void run_emulation();				// Run emulator
+	void run_emulation();	// Run emulator
+	int  exec(void);		// execute one opcode, returning number of cycles
 	void process_keyboard(SDL_Event*);
 
 /* memory management */
@@ -95,19 +94,14 @@
 	word am_aix(void)		{ word j=am_a(); return peek(j+x)|(peek(j+x+1)<<8); }	// absolute pre-indexed indirect (CMOS only)
 	void rel(int*);			// relative branches, possible penalty
 
-	int exec(void);			// execute one opcode, returning number of cycles
-
 /* *********************** */
 /* vdu function prototypes */
 /* *********************** */
-	// Initialize vdu display window
-	int init_vdu();
-	// Close vdu display window
-	void close_vdu();
-	// Draw full screen
-	void vdu_draw_full();
-	// Read keyboard
-	void vdu_read_keyboard();
+
+	int  init_vdu();		// Initialize vdu display window
+	void close_vdu();		// Close vdu display window
+	void vdu_draw_full();	// Draw full screen
+	void vdu_read_keyboard();	// Read keyboard
 /* vdu internal functions */
 	void vdu_set_color_pixel(byte);
 	void vdu_set_hires_pixel(byte);
@@ -128,8 +122,9 @@ int main(int argc, char *argv[])
 	int rom_addr_int;
 	
 	if(argc==1) {
-		printf("usage: perdita [-a rom_address] [-ve] rom_file\n");
-		printf("-a: load rom at supplied address, example 0x8000\n");
+		printf("usage: %s [-a rom_address] [-v] rom_file\n", argv[0]);	// in case user renames the executable
+		printf("-a: load ROM at supplied address, example 0x8000\n");
+		printf("-f fast mode\n");
 		printf("-v verbose\n");
 		return 1;
 	}
@@ -163,7 +158,7 @@ int main(int argc, char *argv[])
 	}
 	
 	if(rom_addr != NULL && (strlen(rom_addr) != 6 || rom_addr[0]!='0' || rom_addr[1]!='x')) {
-		printf("Rom address format: 0x0000\n");
+		printf("ROM address format: 0x0000\n");
 		return 1;
 	}
 
@@ -184,48 +179,14 @@ void run_emulation () {
 	int cyc=0, it=0;		// instruction and interrupt cycle counter
 	int ht=0;				// horizontal counter
 	int vsync=0;			// vertical retrace flag
-	clock_t next;			// speed control
+	clock_t next;			// delay counter
 
 	run = 1;				// allow execution
-/*
-mem[0xffe2]=0xa9;//LDA #$38
-mem[0xffe3]=0x38;
-mem[0xffe4]=0x8d;//STA $DF80
-mem[0xffe5]=0x80;
-mem[0xffe6]=0xdf;
-mem[0xffe7]=0xa2;//start: LDX #$60
-mem[0xffe8]=0x60;
-mem[0xffe9]=0xa0;//LDY #$00
-mem[0xffea]=0x00;
-mem[0xffeb]=0x86;//STX $81
-mem[0xffec]=0x81;
-mem[0xffed]=0x84;//STY $80
-mem[0xffee]=0x80;
-mem[0xffef]=0x91;//loop: STA ($80), Y
-mem[0xfff0]=0x80;
-mem[0xfff1]=0xc8;//INY
-mem[0xfff2]=0xd0;//BNE loop
-mem[0xfff3]=0xfb;
-mem[0xfff4]=0xe6;//INC $81
-mem[0xfff5]=0x81;
-mem[0xfff6]=0x10;//BPL loop
-mem[0xfff7]=0xf7;
-mem[0xfff8]=0x1a;//INC
-mem[0xfff9]=0xd0;//BNE start
-mem[0xfffa]=0xec;//
-mem[0xfffb]=0xdb;// ***STP***
-*/
-//mem[0xfffc]=0x00;//RESET vector
-//mem[0xfffd]=0xd0;
-// Set video mode
-//mem[0xdf80]=0x3f;
-// Set image data
-//mem[0x6000]=0x01;mem[0x6001]=0x23;mem[0x6002]=0x45;mem[0x6003]=0x67;mem[0x6004]=0x89;mem[0x6005]=0xab;mem[0x6006]=0xcd;mem[0x6007]=0xef;
 
 	init_vdu();
-	reset();				// startup!
-//fast=1;
-	next=clock()+4000;		// assume CLOCKS_PER_SEC is 1000000!
+	reset();				// ready to start!
+
+	next=clock()+4000;		// set delay counter, assumes CLOCKS_PER_SEC is 1000000!
 	while (run) {
 vdu_read_keyboard();
 /* execute current opcode */
@@ -247,7 +208,8 @@ vdu_read_keyboard();
 				next=clock()+4000;
 			}
 // *** may get keypresses from SDL here, as this get executed every 4 ms ***
-/* update at least VSYNC flag (off for 3, on for 2) */
+// also check for emulation STOP (e.g. F1) and others (e.g. F2=NMI, F3=IRQ, F4=RESET...)
+/* update at least VSYNC flag (off for 3, on for 2 is not exact at ~188 lines, but close enough) */
 			if (vsync == 5) {
 				vsync = 0;
 				vdu_draw_full();	// seems worth updating screen every VSYNC
@@ -275,10 +237,9 @@ vdu_read_keyboard();
 	printf(" *** CPU halted after %ld clock cycles ***\n", cont);
 	stat();					// display final status
 
-	printf("Press ENTER key to exit\n");
+	printf("\nPress ENTER key to exit\n");
 	getchar();
 	close_vdu();
-
 }
 
 /* **************************** */
@@ -289,6 +250,7 @@ vdu_read_keyboard();
 void stat(void)	{ 
 	int i;
 	byte psr = p;			// local copy of status
+	const char flag[8]="NV.bDIZC";	// flag names
 
 	pc--;
 	printf("<PC=$%04X, A=$%02X, X=$%02X, Y=$%02X, S=$%02X>\n<PSR: ", pc, a, x, y, s);
@@ -298,7 +260,6 @@ void stat(void)	{
 		psr<<=1;			// next flag
 	}
 	printf(">\n");
-//dump(0);
 }
 
 /* display 16 bytes of memory */
@@ -389,14 +350,14 @@ byte peek(word dir) {
 void poke(word dir, byte v) {
 	if (dir<=0x7FFF) {			// 32 KiB static RAM
 		mem[dir] = v;
-		if ((dir & 0x6000) == screen) {			// VRAM area
+//		if ((dir & 0x6000) == screen) {			// VRAM area *** no need as whole screen will be updated every frame
 			// send (dir&0x1FFF, v) to VDU
-		}
+//		}
 	} else if (dir>=0xDF80 && dir<=0xDFFF) {	// *** I/O ***
 		if (dir<=0xDF87) {		// video mode?
 			mem[0xDF80] = v;	// canonical address
-			screen = (v & 0b00110000) << 9;		// screen switching
-			// VDU-redraw all VRAM at selected screen!
+			screen = (v & 0b00110000) << 9;		// screen switching *** may not use 'screen' anymore
+			// VDU-redraw all VRAM at selected screen! *** may not need it
 			// may add more flags for VDU
 		} else if (dir<=0xDF8F) {				// sync flags not writable!
 			printf("\n*** Writing to Read-only ports at $%04X ***\n", pc);
@@ -1004,17 +965,19 @@ int exec(void) {
 			per = 5;
 			break;
 		case 0xD6:
-			temp = peek(am_zx());
+			adr = am_zx();	// EEEEEEEEEEK
+			temp = peek(adr);
 			temp--;
-			poke(am_zx(), temp);
+			poke(adr, temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[DECzx]");
 			per = 6;
 			break;
 		case 0xDE:
-			temp = peek(am_ax(&page));
+			adr = am_ax(&page);	// EEEEEEEEK
+			temp = peek(adr);
 			temp--;
-			poke(am_ax(&page), temp);
+			poke(adr, temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[DECx]");
 			per = 7;		// 6+page for WDC?
@@ -1108,17 +1071,19 @@ int exec(void) {
 			per = 5;
 			break;
 		case 0xF6:
-			temp = peek(am_zx());
+			adr = am_zx();	// EEEEEEEEEEK
+			temp = peek(adr);
 			temp++;
-			poke(am_zx(), temp);
+			poke(adr, temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[INCzx]");
 			per = 6;
 			break;
 		case 0xFE:
-			temp = peek(am_ax(&page));
+			adr = am_ax(&page);	// EEEEEEEEEEK
+			temp = peek(adr);
 			temp++;
-			poke(am_ax(&page), temp);
+			poke(adr, temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[INCx]");
 			per = 7;		// 6+page for WDC?
