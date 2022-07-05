@@ -56,6 +56,7 @@
 	void stat(void);		// display processor status
 	void dump(word dir);	// display 16 bytes of memory
 	void run_emulation();				// Run emulator
+	void process_keyboard(SDL_Event*);
 
 /* memory management */
 	byte peek(word dir);			// read memory or I/O
@@ -105,6 +106,8 @@
 	void close_vdu();
 	// Draw full screen
 	void vdu_draw_full();
+	// Read keyboard
+	void vdu_read_keyboard();
 /* vdu internal functions */
 	void vdu_set_color_pixel(byte);
 	void vdu_draw_color_pixel(word);
@@ -126,7 +129,6 @@ int main(int argc, char *argv[])
 	if(argc==1) {
 		printf("usage: perdita [-a rom_address] [-ve] rom_file\n");
 		printf("-a: load rom at supplied address, example 0x8000\n");
-		printf("-e load rom at memory end\n");
 		printf("-v verbose\n");
 		return 1;
 	}
@@ -224,6 +226,7 @@ mem[0xfffb]=0xdb;// ***STP***
 //fast=1;
 	next=clock()+4000;		// assume CLOCKS_PER_SEC is 1000000!
 	while (run) {
+vdu_read_keyboard();
 /* execute current opcode */
 		cyc = exec();		// count elapsed clock cycles for this instruction
 		cont += cyc;		// add last instruction cycle count
@@ -1910,4 +1913,82 @@ void vdu_draw_full() {
 
 	//Update screen
 	SDL_RenderPresent(sdl_renderer);
+}
+
+/* Process keyboard / mouse events */
+void process_keyboard(SDL_Event *e) {
+	/*
+	 * Type:
+	 * SDL_KEYDOWN
+	 * SDL_KEYUP
+	 * SDL_JOYAXISMOTION
+	 * SDL_JOYBUTTONDOWN
+	 * SDL_JOYBUTTONUP
+	 * SDL_MOUSEMOTION
+	 * SDL_MOUSEBUTTONDOWN
+	 * SDL_MOUSEBUTTONUP
+	 * SDL_MOUSEWHEEL
+	 * 
+	 * Code:
+	 * https://wiki.libsdl.org/SDL_Keycode
+	 */
+	if(e->type == SDL_KEYDOWN) {
+		printf("key: %c (%d)\n", e->key.keysym.sym, e->key.keysym.sym);
+	}
+}
+
+/* Process GUI events in VDU window */
+void vdu_read_keyboard() {
+	//Event handler
+    SDL_Event e;
+	//Handle events on queue
+	while( SDL_PollEvent( &e ) != 0 )
+	{
+		// Vdu window is closed
+		if(e.type == SDL_QUIT)
+		{
+			run = 0;
+		}
+		// Press F1
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F1) {
+		}
+		// Press F2
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F2) {
+		}
+		// Press F3
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F3) {
+		}
+		// Press F4
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F4) {
+		}
+		// Press F5
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F5) {
+		}
+		// Press F6
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F6) {
+		}
+		// Press F7
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F7) {
+		}
+		// Press F8
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F8) {
+		}
+		// Press F9
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F9) {
+		}
+		// Press F10
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F10) {
+		}
+		// Press F11
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F11) {
+		}
+		// Press F12
+		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F12) {
+			run = 0;
+		}
+		// Event forwarded to Durango
+		else {
+			process_keyboard(&e);
+		}
+	}
 }
