@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220705-1202
+ * last modified 20220705-1403
  * */
 
 #include <stdio.h>
@@ -970,9 +970,10 @@ int exec(void) {
 			per = 6;
 			break;
 		case 0xDE:
-			temp = peek(am_ax(&page));
+			adr = am_ax(&page);	// EEEEEEEEK
+			temp = peek(adr);
 			temp--;
-			poke(am_ax(&page), temp);
+			poke(adr, temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[DECx]");
 			per = 7;		// 6+page for WDC?
@@ -1075,9 +1076,10 @@ int exec(void) {
 			per = 6;
 			break;
 		case 0xFE:
-			temp = peek(am_ax(&page));
+			adr = am_ax(&page);	// EEEEEEEEEEK
+			temp = peek(adr);
 			temp++;
-			poke(am_ax(&page), temp);
+			poke(adr, temp);
 			bits_nz(temp);
 			if (ver > 1) printf("[INCx]");
 			per = 7;		// 6+page for WDC?
