@@ -1,6 +1,6 @@
 ; Greyscale test of Durango-X (downloadable version)
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20211002-2234
+; last modified 20220705-2329
 
 ; ****************************
 ; *** standard definitions ***
@@ -67,7 +67,9 @@ set:
 		INX
 		INX
 	BNE loop
-	 
+;	BEQ loop				; no need for BRA
+	.byt	$DB				; STP
+
 ; *** greyscale data ***
 scale:
 	.byt	0,	$88,	$44,	$CC,	$22,	$AA,	$66,	$EE,	$11,	$99,	$55,	$DD,	$33,	$BB,	$77,	$FF

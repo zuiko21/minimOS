@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220705-1757
+ * last modified 20220705-2300
  * */
 
 #include <stdio.h>
@@ -171,6 +171,9 @@ int main(int argc, char *argv[])
 	else {
 		rom_addr_int = (int)strtol(rom_addr, NULL, 0);
 		load(filename, rom_addr_int);
+		mem[0xFFFC] = rom_addr_int & 0xFF;	// set RESET vector pointing to loaded code
+		mem[0xFFFD] = rom_addr_int >> 8;
+		mem[0xDF80] = 0x38;					// just in case, set default screen, colour mode
 	}
 
 	run_emulation();
@@ -405,6 +408,7 @@ void reset(void) {
 	p &= 0b11110111;						// CLD on 65C02
 	p |= 0b00110100;						// these always 1, includes SEI
 	dec = 0;								// per CLD above
+	mem[0xDFA0] = 0;						// interrupt gets disabled on RESET!
 
 	cont = 0;								// reset global cycle counter?
 }
@@ -1854,7 +1858,7 @@ void vdu_set_color_pixel(byte c) {
 	// Process RGB flag
 	if((mem[0xdf80] & 0x08)>>3 == 0) {
 //		red = (red + green + blue) / 3;	// NOPE!
-		red = (c&1)?0x88:0 | (c&2)?0x44:0 | (c&4)?0x22:0 | (c&8)?0x11:0; 
+		red = ((c&1)?0x88:0) | ((c&2)?0x44:0) | ((c&4)?0x22:0) | ((c&8)?0x11:0); 
 		green = red;
 		blue = green;	// that, or a switch like above for some sort of gamma correction, note bits are in reverse order!
 	}
@@ -1864,11 +1868,11 @@ void vdu_set_color_pixel(byte c) {
 
 /* Set current color in SDL HiRes mode */
 void vdu_set_hires_pixel(byte color_index) {
-	int color = color_index == 0 ? 0x00 : 0xff;	// maybe some parentheses missing?
+	int color = color_index == 0 ? 0x00 : 0xff;
 
 	// Process invert flag
 	if((mem[0xdf80] & 0x40)>>6 == 1) {
-		color = 0xff-color;
+		color = 0xff-color;				// what about inverse mode?
 	}
 
 	SDL_SetRenderDrawColor(sdl_renderer, color, color, color, 0xff);
@@ -1909,12 +1913,14 @@ void vdu_draw_hires_pixel(word addr) {
 	int y = floor((addr - screen_address) * 8 / 256);
 	// Calculate screen x coord
 	int x = ((addr - screen_address) *8) % 256;
+	byte b = mem[addr];
 
 	fill_rect.y = y * pixel_size;
 	fill_rect.w = pixel_size;
 	fill_rect.h = pixel_size;
 	for(i=0; i<8; i++) {
-		vdu_set_hires_pixel((mem[addr]>>i) & 0x01);
+		vdu_set_hires_pixel(b & 0x80);		// set function doesn't tell any non-zero value
+		b <<= 1;
 		fill_rect.x = (x+i) * pixel_size;
 		SDL_RenderFillRect(sdl_renderer, &fill_rect);
 	}
@@ -1982,6 +1988,10 @@ void vdu_read_keyboard() {
 		if(e.type == SDL_QUIT)
 		{
 			run = 0;
+		}
+		// detect key release for PASK compatibility
+		else if(e.type == SDL_KEYUP) {
+			mem[0xDF9A] = 0;
 		}
 		// Press F1 = STOP
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F1) {
