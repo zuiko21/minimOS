@@ -1846,24 +1846,45 @@ void close_vdu() {
 
 /* Set current color in SDL from palette */
 void vdu_set_color_pixel(byte color_index) {
+	// Color components
+	int red=0, green=0, blue=0;
+
+	// Durango palette
 	switch(color_index) {
-		case 0x00: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xff); break; // 0
-		case 0x01: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xaa, 0x00, 0xff); break; // 1
-		case 0x02: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x00, 0x00, 0xff); break; // 2
-		case 0x03: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xaa, 0x00, 0xff); break; // 3
-		case 0x04: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x55, 0x00, 0xff); break; // 4
-		case 0x05: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xff, 0x00, 0xff); break; // 5
-		case 0x06: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x55, 0x00, 0xff); break; // 6
-		case 0x07: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0x00, 0xff); break; // 7
-		case 0x08: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0xff, 0xff); break; // 8
-		case 0x09: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xaa, 0xff, 0xff); break; // 9
-		case 0x0a: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x00, 0xff, 0xff); break; // 10
-		case 0x0b: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xaa, 0xff, 0xff); break; // 11
-		case 0x0c: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x55, 0xff, 0xff); break; // 12
-		case 0x0d: SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xff, 0xff, 0xff); break; // 13
-		case 0x0e: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x55, 0xff, 0xff); break; // 14
-		case 0x0f: SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0xff, 0xff); break; // 15
+		case 0x00: red = 0x00; green = 0x00; blue = 0x00; break; // 0
+		case 0x01: red = 0x00; green = 0xaa; blue = 0x00; break; // 1
+		case 0x02: red = 0xff; green = 0x00; blue = 0x00; break; // 2
+		case 0x03: red = 0xff; green = 0xaa; blue = 0x00; break; // 3
+		case 0x04: red = 0x00; green = 0x55; blue = 0x00; break; // 4
+		case 0x05: red = 0x00; green = 0xff; blue = 0x00; break; // 5
+		case 0x06: red = 0xff; green = 0x55; blue = 0x00; break; // 6
+		case 0x07: red = 0xff; green = 0xff; blue = 0x00; break; // 7
+		case 0x08: red = 0x00; green = 0x00; blue = 0xff; break; // 8
+		case 0x09: red = 0x00; green = 0xaa; blue = 0xff; break; // 9
+		case 0x0a: red = 0xff; green = 0x00; blue = 0xff; break; // 10
+		case 0x0b: red = 0xff; green = 0xaa; blue = 0xff; break; // 11
+		case 0x0c: red = 0x00; green = 0x55; blue = 0xff; break; // 12
+		case 0x0d: red = 0x00; green = 0xff; blue = 0xff; break; // 13
+		case 0x0e: red = 0xff; green = 0x55; blue = 0xff; break; // 14
+		case 0x0f: red = 0xff; green = 0xff; blue = 0xff; break; // 15
 	}
+	
+	// Read video mode [HiRes Invert S1 S0    RGB LED NC NC]
+	// Process invert flag
+	if((mem[0xdf80] & 0x40)>>6 == 1) {
+		red = 0xff-red;
+		green = 0xff - green;
+		blue = 0xff - blue;
+	}
+	
+	// Process RGB flag
+	if((mem[0xdf80] & 0x08)>>3 == 0) {
+		red = (red + green + blue) / 3;
+		green = red;
+		blue = green;
+	}
+	
+	SDL_SetRenderDrawColor(sdl_renderer, red, green, blue, 0xff);
 }
 
 /* Draw color pixel in supplied address */
