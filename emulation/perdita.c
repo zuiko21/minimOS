@@ -110,8 +110,9 @@
 	void vdu_read_keyboard();
 /* vdu internal functions */
 	void vdu_set_color_pixel(byte);
+	void vdu_set_hires_pixel(byte);
 	void vdu_draw_color_pixel(word);
-	void vdu_draw_hires_pixel(word addr);
+	void vdu_draw_hires_pixel(word);
 
 
 /* ************************************************* */
@@ -1868,23 +1869,34 @@ void vdu_set_color_pixel(byte color_index) {
 		case 0x0e: red = 0xff; green = 0x55; blue = 0xff; break; // 14
 		case 0x0f: red = 0xff; green = 0xff; blue = 0xff; break; // 15
 	}
-	
-	// Read video mode [HiRes Invert S1 S0    RGB LED NC NC]
+
 	// Process invert flag
 	if((mem[0xdf80] & 0x40)>>6 == 1) {
 		red = 0xff-red;
 		green = 0xff - green;
 		blue = 0xff - blue;
 	}
-	
+
 	// Process RGB flag
 	if((mem[0xdf80] & 0x08)>>3 == 0) {
 		red = (red + green + blue) / 3;
 		green = red;
 		blue = green;
 	}
-	
+
 	SDL_SetRenderDrawColor(sdl_renderer, red, green, blue, 0xff);
+}
+
+/* Set current color in SDL HiRes mode */
+void vdu_set_hires_pixel(byte color_index) {
+	int color = color_index == 0 ? 0x00 : 0xff;
+
+	// Process invert flag
+	if((mem[0xdf80] & 0x40)>>6 == 1) {
+		color = 0xff-color;
+	}
+
+	SDL_SetRenderDrawColor(sdl_renderer, color, color, color, 0xff);
 }
 
 /* Draw color pixel in supplied address */
@@ -1913,6 +1925,24 @@ void vdu_draw_color_pixel(word addr) {
 }
 
 void vdu_draw_hires_pixel(word addr) {
+	SDL_Rect fill_rect;
+	int i;
+	int pixel_size=VDU_SCREEN_WIDTH/256;
+	// Calculate screen address
+	unsigned int screen_address = ((mem[0xdf80] & 0x30)>>4)*0x2000;
+	// Calculate screen y coord
+	int y = floor((addr - screen_address) * 8 / 256);
+	// Calculate screen x coord
+	int x = ((addr - screen_address) *8) % 256;
+
+	fill_rect.y = y * pixel_size;
+	fill_rect.w = pixel_size;
+	fill_rect.h = pixel_size;
+	for(i=0; i<8; i++) {
+		vdu_set_hires_pixel((mem[addr]>>i) & 0x01);
+		fill_rect.x = (x+i) * pixel_size;
+		SDL_RenderFillRect(sdl_renderer, &fill_rect);
+	}
 }
 
 /* Render Durango screen. */
@@ -1926,9 +1956,16 @@ void vdu_draw_full() {
     SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderClear(sdl_renderer);
 
+	// Color
 	if(hires_flag==0) {
 		for(i=screen_address; i<screen_address_end; i++) {
 			vdu_draw_color_pixel(i);
+		}
+	}
+	// HiRes
+	else {
+		for(i=screen_address; i<screen_address_end; i++) {
+			vdu_draw_hires_pixel(i);
 		}
 	}
 
