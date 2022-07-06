@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220705-2300
+ * last modified 20220706-1119
  * */
 
 #include <stdio.h>
@@ -2016,13 +2016,17 @@ void process_keyboard(SDL_Event *e) {
 		}
 		if (SDL_GetModState() & KMOD_CTRL)
 		{
-			printf("Control key state is pressed\n");
+//			printf("Control key state is pressed\n");
 		}
 		if (SDL_GetModState() & KMOD_SHIFT)
 		{
-			printf("Control key state is pressed\n");
+//			printf("KMOD_SHIFT is pressed\n");
 		}
 
+		if (SDL_GetModState() & KMOD_CAPS)
+		{
+			printf("KMOD_CAPS is pressed\n");
+		}
 		mem[0xDF9A] = e->key.keysym.sym;	// will temporarily store ASCII at 0xDF9A, as per PASK standard :-)
 	}
 	// detect key release for PASK compatibility
