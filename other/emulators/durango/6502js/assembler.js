@@ -320,9 +320,14 @@ function SimulatorWidget(node) {
       var y = Math.floor((addr - screenAddress) * 8 / 256);
       // Calculate screen x coord
       var x = ((addr - screenAddress) *8) % 256;
+      // 8 pixels to paint
+      var b = memory.get(addr);
       for(i=0; i<8; i++) {
-        ctx.fillStyle = getHiresColor((memory.get(addr)>>i) & 0x01);
+        // paint first pixel
+        ctx.fillStyle = getHiresColor(b & 0x80);
         ctx.fillRect((x+i) * pixelHiResSize, y * pixelHiResSize, pixelHiResSize, pixelHiResSize);
+        // Move to next pixel
+        b <<= 1;
       }      
     }
 
