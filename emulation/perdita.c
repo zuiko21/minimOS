@@ -44,6 +44,8 @@
 	SDL_DisplayMode sdl_display_mode;
 	// Game Controllers
 	SDL_Joystick *sdl_gamepads[2];
+	// Do not close GUI after program end
+	int keep_open = 0;
 
 /* ******************* */
 /* function prototypes */
@@ -125,19 +127,23 @@ int main(int argc, char *argv[])
 		printf("usage: %s [-a rom_address] [-v] rom_file\n", argv[0]);	// in case user renames the executable
 		printf("-a: load ROM at supplied address, example 0x8000\n");
 		printf("-f fast mode\n");
+		printf("-k keep gui open after program end\n");
 		printf("-v verbose\n");
 		return 1;
 	}
 
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "a:fv")) != -1)
+	while ((c = getopt (argc, argv, "a:fvk")) != -1)
 	switch (c) {
 		case 'a':
 			rom_addr = optarg;
 			break;
 		case 'f':
 			fast = 1;
+			break;
+		case 'k':
+			keep_open = 1;
 			break;
 		case 'v':
 			ver++;			// not that I like this, but...
@@ -246,8 +252,11 @@ void run_emulation () {
 	printf(" *** CPU halted after %ld clock cycles ***\n", cont);
 	stat();					// display final status
 
-	printf("\nPress ENTER key to exit\n");
-	getchar();
+	if(keep_open) {
+		printf("\nPress ENTER key to exit\n");
+		getchar();
+	}
+	
 	close_vdu();
 }
 
@@ -1970,10 +1979,55 @@ void process_keyboard(SDL_Event *e) {
 	 * 
 	 * Code:
 	 * https://wiki.libsdl.org/SDL_Keycode
+	 * 
+	 * Modifiers:
+	 * KMOD_NONE -> no modifier is applicable
+	 * KMOD_LSHIFT -> the left Shift key is down
+	 * KMOD_RSHIFT -> the right Shift key is down
+	 * KMOD_LCTRL -> the left Ctrl (Control) key is down
+	 * KMOD_RCTRL -> the right Ctrl (Control) key is down
+	 * KMOD_LALT -> the left Alt key is down
+	 * KMOD_RALT -> the right Alt key is down
+	 * KMOD_CTRL -> any control key is down
+	 * KMOD_SHIFT-> any shift key is down
+	 * KMOD_ALT -> any alt key is down
+	 * KMOD_CAPS -> caps key is down
 	 */
 	if(e->type == SDL_KEYDOWN) {
 		printf("key: %c (%d)\n", e->key.keysym.sym, e->key.keysym.sym);
+		
+		if(SDL_GetModState() & KMOD_LSHIFT) {
+			printf("Left shift key is pressed\n");
+		}
+		if(SDL_GetModState() & KMOD_RSHIFT) {
+			printf("Right shift key is pressed\n");
+		}
+		if(SDL_GetModState() & KMOD_LCTRL) {
+			printf("Left ctrl key is pressed\n");
+		}
+		if(SDL_GetModState() & KMOD_RCTRL) {
+			printf("Right ctrl key is pressed\n");
+		}
+		if(SDL_GetModState() & KMOD_LALT) {
+			printf("Left alt key is pressed\n");
+		}
+		if(SDL_GetModState() & KMOD_RALT) {
+			printf("Right alt key is pressed\n");
+		}
+		if (SDL_GetModState() & KMOD_CTRL)
+		{
+			printf("Control key state is pressed\n");
+		}
+		if (SDL_GetModState() & KMOD_SHIFT)
+		{
+			printf("Control key state is pressed\n");
+		}
+
 		mem[0xDF9A] = e->key.keysym.sym;	// will temporarily store ASCII at 0xDF9A, as per PASK standard :-)
+	}
+	// detect key release for PASK compatibility
+	else if(e->type == SDL_KEYUP) {
+		mem[0xDF9A] = 0;
 	}
 }
 
@@ -1988,10 +2042,6 @@ void vdu_read_keyboard() {
 		if(e.type == SDL_QUIT)
 		{
 			run = 0;
-		}
-		// detect key release for PASK compatibility
-		else if(e.type == SDL_KEYUP) {
-			mem[0xDF9A] = 0;
 		}
 		// Press F1 = STOP
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F1) {
