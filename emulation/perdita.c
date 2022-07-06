@@ -195,7 +195,7 @@ void run_emulation () {
 
 	run = 1;				// allow execution
 
-	printf("[F1=STOP, F2=NMI, F3=IRQ, F4=RESET, F5=STATUS]\n");
+	printf("[F1=STOP, F2=NMI, F3=IRQ, F4=RESET, F5=STATUS, F6=DUMP]\n");
 	init_vdu();
 	reset();				// ready to start!
 
@@ -291,6 +291,22 @@ void dump(word dir) {
 		if ((mem[dir+i]>31)&&(mem[dir+i]<127))	printf("%c", mem[dir+i]);
 		else 									printf("·");
 	printf ("]\n");
+}
+
+void full_dump() {
+	FILE *f;
+	
+	f = fopen("dump.bin", "wb");
+	if (f != NULL) {
+		fwrite(mem, sizeof(byte), 65536, f); 
+
+		fclose(f);
+		printf("dump.bin generated\n");
+	}
+	else {
+		printf("*** Could not write dump ***\n");
+		run = 0;
+	}
 }
 
 /* load firmware, arbitrary position */
@@ -1866,8 +1882,7 @@ void vdu_set_color_pixel(byte c) {
 
 	// Process RGB flag
 	if((mem[0xdf80] & 0x08)>>3 == 0) {
-//		red = (red + green + blue) / 3;	// NOPE!
-		red = ((c&1)?0x88:0) | ((c&2)?0x44:0) | ((c&4)?0x22:0) | ((c&8)?0x11:0); 
+		red = ((c&1)?0x88:0) | ((c&2)?0x44:0) | ((c&4)?0x22:0) | ((c&8)?0x11:0);
 		green = red;
 		blue = green;	// that, or a switch like above for some sort of gamma correction, note bits are in reverse order!
 	}
@@ -2063,8 +2078,9 @@ void vdu_read_keyboard() {
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F5) {
 			stat_flag = 1;
 		}
-		// Press F6
+		// Press F6 = DUMP memory to file
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F6) {
+			full_dump();
 		}
 		// Press F7
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F7) {
