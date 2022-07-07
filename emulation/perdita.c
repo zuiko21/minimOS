@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
+#include <unistd.h>
 // SDL Install: apt-get install libsdl2-dev. Build with -lSDL2 flag
 #include <SDL2/SDL.h>
 // arguments parser
@@ -216,7 +217,7 @@ void run_emulation () {
 			it -= 6144;		// restore for next
 /* make a suitable delay for speed accuracy */
 			if (!fast) {
-				usleep(next-clock());	// My apologies, Emilio! ;-)
+				usleep(next-clock());	// My apologies, Emilio! ;-) **** CHECK
 				next=clock()+4000;
 			}
 /* get keypresses from SDL here, as this get executed every 4 ms */
