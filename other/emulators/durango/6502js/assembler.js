@@ -370,7 +370,7 @@ function SimulatorWidget(node) {
     // storeKeypress() - Store keycode in ZP $ff
     function storeKeypress(e) {
       value = e.which;
-      memory.storeByte(0xff, value);
+      memory.storeByte(0xdf9a, value);
     }
 
     function format(start, length) {
