@@ -1,11 +1,12 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220706-1130
+ * last modified 20220707-1957
  * */
 
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
+#include <unistd.h>
 // SDL Install: apt-get install libsdl2-dev. Build with -lSDL2 flag
 #include <SDL2/SDL.h>
 // arguments parser
@@ -216,7 +217,7 @@ void run_emulation () {
 			it -= 6144;		// restore for next
 /* make a suitable delay for speed accuracy */
 			if (!fast) {
-				while (clock()<next);
+				usleep(next-clock());	// My apologies, Emilio! ;-) **** CHECK
 				next=clock()+4000;
 			}
 /* get keypresses from SDL here, as this get executed every 4 ms */
