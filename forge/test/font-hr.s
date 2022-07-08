@@ -7,7 +7,7 @@ ptr = 0
 org = 2
 
 	LDA #$B0
-	STA $8000				; set hires (later $DF80) 
+;	STA $8000				; set hires (later $DF80) 
 	STA $DF80				; new address 
 	LDY #0
 	STY ptr
@@ -45,7 +45,7 @@ loop:
 	LDA #$B0				; keep hires mode...
 lock:
 ; inverse bars 
-	STA $8000				; set flags
+;	STA $8000				; set flags
 	STA $DF80				; set flags (new address)
 	LDX #23					; originally 4, compensate if using both old and new addresses
 rb_1:
