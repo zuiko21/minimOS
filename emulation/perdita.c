@@ -27,6 +27,7 @@
 	int run;				// emulator control
 	int ver = 0;			// verbosity mode, 0 = none, 1 = jumps, 2 = all; will stop on BRK unless 0
 	int fast = 0;			// speed flag
+	int accuracy =0;		// Emulate with accuracy (high proccessor cost)
 	int stat_flag = 0;		// external control
 	int nmi_flag = 0;		// interrupt control
 	int irq_flag = 0;
@@ -128,6 +129,7 @@ int main(int argc, char *argv[])
 		printf("usage: %s [-a rom_address] [-v] rom_file\n", argv[0]);	// in case user renames the executable
 		printf("-a: load ROM at supplied address, example 0x8000\n");
 		printf("-f fast mode\n");
+		printf("-c accuracy speed mode\n");
 		printf("-k keep gui open after program end\n");
 		printf("-v verbose\n");
 		return 1;
@@ -135,13 +137,16 @@ int main(int argc, char *argv[])
 
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "a:fvk")) != -1)
+	while ((c = getopt (argc, argv, "a:fvkc")) != -1)
 	switch (c) {
 		case 'a':
 			rom_addr = optarg;
 			break;
 		case 'f':
 			fast = 1;
+			break;
+		case 'c':
+			accuracy = 1;
 			break;
 		case 'k':
 			keep_open = 1;
@@ -193,6 +198,7 @@ void run_emulation () {
 	int ht=0;				// horizontal counter
 	int vsync=0;			// vertical retrace flag
 	clock_t next;			// delay counter
+	clock_t sleep_time;		// delay time
 
 	run = 1;				// allow execution
 
@@ -216,8 +222,16 @@ void run_emulation () {
 		{
 			it -= 6144;		// restore for next
 /* make a suitable delay for speed accuracy */
-			if (!fast) {
-				usleep(next-clock());	// My apologies, Emilio! ;-) **** CHECK
+			if (!fast && !accuracy) {
+				sleep_time=next-clock();
+				if(sleep_time>0) {
+					usleep(sleep_time);	// My apologies, Emilio! ;-) **** CHECK
+					//usleep(100000); // test usleep function
+				}
+				next=clock()+4000;
+			}
+			if (!fast && accuracy) {
+				while (clock()<next);
 				next=clock()+4000;
 			}
 /* get keypresses from SDL here, as this get executed every 4 ms */
