@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220708-1721
+ * last modified 20220708-1812
  * */
 
 #include <stdio.h>
@@ -37,6 +37,8 @@
 	int VDU_SCREEN_WIDTH;
 	// Screen height in pixels
 	int VDU_SCREEN_HEIGHT;
+	// Pixel size, both colout and HIRES modes
+	int pixel_size, hpixel_size;
 	//The window we'll be rendering to
 	SDL_Window *sdl_window;
 	//The window renderer
@@ -220,7 +222,7 @@ void run_emulation () {
 			mem[0xDF88] |= (line&256)>>2;		// ...by bit 8 of line number (>=256)
 		}
 		mem[0xDF88] &= 0b01111111;		// replace bit 7 (HSYNC)...
-		mem[0xDF88] |= (ht&64)<<1;		// ...by bit 6 of line number (>=256)
+		mem[0xDF88] |= (ht&64)<<1;		// ...by bit 6 of bye counter (>=64)
 /* check hardware interrupt counter */
 		if (it >= 6144)		// 250 Hz interrupt @ 1.536 MHz
 		{
@@ -231,7 +233,7 @@ void run_emulation () {
 				if(sleep_time>0) {
 					usleep(sleep_time);			// should be accurate enough
 				} else {
-					if (ver)	printf("!");	// not enough CPU power!
+					if (!ver)	printf("!");	// not enough CPU power!
 				}
 				next=clock()+4000;				// set next interrupt time
 			}
@@ -378,7 +380,7 @@ byte peek(word dir) {
 		else if (dir<=0xDF9F) {	// expansion port
 			d = mem[dir];		// *** is this OK?
 		} else if (dir<=0xDFBF) {		// interrupt control and beeper are NOT readable and WILL be corrupted otherwise
-			printf("\n*** Reading from Write-only ports at $%04X ***\n", pc);
+			if (ver)	printf("\n*** Reading from Write-only ports at $%04X ***\n", pc);
 		} else {				// cartridge I/O
 			d = mem[dir];		// *** is this OK?
 		}
@@ -403,7 +405,7 @@ void poke(word dir, byte v) {
 			// VDU-redraw all VRAM at selected screen! *** may not need it
 			// may add more flags for VDU
 		} else if (dir<=0xDF8F) {				// sync flags not writable!
-			printf("\n*** Writing to Read-only ports at $%04X ***\n", pc);
+			if (ver)	printf("\n*** Writing to Read-only ports at $%04X ***\n", pc);
 		} else if (dir<=0xDF9F) {				// expansion port?
 			mem[dir] = v;		// *** is this OK?
 		} else if (dir<=0xDFAF)	// interrupt control?
@@ -414,7 +416,7 @@ void poke(word dir, byte v) {
 			mem[dir] = v;		// otherwise is cartridge I/O *** anything else?
 		}
 	} else {					// any other address is ROM, thus no much sense writing there?
-		printf("\n*** Writing to ROM at $%04X ***\n", pc);
+		if (ver)	printf("\n*** Writing to ROM at $%04X ***\n", pc);
 run=0;
 	}
 }
@@ -1762,11 +1764,43 @@ int exec(void) {
 			printf(" ...HALT!");
 			run = per = 0;
 			break;
+/* *** remaining opcodes (illegal on NMOS) executed as pseudoNOPs, according to 65C02 byte and cycle usage *** */
+		case 0x03, 0x13, 0x23, 0x33, 0x43, 0x53, 0x63, 0x73, 0x83, 0x93, 0xA3, 0xB3, 0xC3, 0xD3, 0xE3, 0xF3:
+		case 0x0B, 0x1B, 0x2B, 0x3B, 0x4B, 0x5B, 0x6B, 0x7B, 0x8B, 0x9B, 0xAB, 0xBB, 0xEB, 0xFB:	// minus WDC opcodes, used for emulator control
+		case 0x07, 0x17, 0x27, 0x37, 0x47, 0x57, 0x67, 0x77, 0x87, 0x97, 0xA7, 0xB7, 0xC7, 0xD7, 0xE7, 0xF7:	// Rockwell RMB/SMB opcodes
+		case 0x0F, 0x1F, 0x2F, 0x3F, 0x4F, 0x5F, 0x6F, 0x7F, 0x8F, 0x9F, 0xAF, 0xBF, 0xCF, 0xDF, 0xEF, 0xFF:	// Rockwell BBR/BBS opcodes
+			per = 1;		// ultra-fast 1 byte NOPs!
+			if (ver > 1) printf("[NOP!]");
+			break;
+		case 0x02, 0x22, 0x42, 0x62, 0x82, 0xC2, 0xE2:
+			pc++;			// 2-byte, 2-cycle NOPs
+			if (ver > 1) printf("[NOP#]");
+			break;
+		case 0x44:
+			pc++;
+			per++;			// only case of 2-byte, 3-cycle NOP
+			if (ver > 1) printf("[NOPz]");
+			break;
+		case 0x44:
+			pc++;
+			per = 4;		// only cases of 2-byte, 4-cycle NOP
+			if (ver > 1) printf("[NOPzx]");
+			break;
+		case 0xDC, 0xFC:
+			pc += 2;
+			per = 4;		// only cases of 3-byte, 4-cycle NOP
+			if (ver > 1) printf("[NOPa]");
+			break;
+		case 0x5C:
+			pc += 2;
+			per = 8;		// extremely slow 8-cycle NOP
+			if (ver > 1) printf("[NOP?]");
+			break;			// not needed as it's the last one, but just in case
 /* *** *** *** halt CPU on illegal opcodes *** *** *** */
-		default:
-			printf("\n*** ($%04X) Illegal opcode $%02X ***\n", pc-1, opcode);
-			per = 0;
-			if (ver)	run = 0;		// will only abort in verbose mode
+//		default:
+//			printf("\n*** ($%04X) Illegal opcode $%02X ***\n", pc-1, opcode);
+//			per = 0;
+//			if (ver)	run = 0;		// will only abort in verbose mode
 	}
 
 	return per;
@@ -1803,7 +1837,10 @@ int init_vdu() {
 		printf("SDL_GetDesktopDisplayMode faile! SDL Error: %s\n", SDL_GetError());
 		return -3;
 	}
-	VDU_SCREEN_WIDTH=128*4;
+
+	pixel_size=4;
+	hpixel_size=2;
+	VDU_SCREEN_WIDTH=128*pixel_size;
 	VDU_SCREEN_HEIGHT=VDU_SCREEN_WIDTH;
 
 	//Create window
@@ -1860,7 +1897,7 @@ void close_vdu() {
 /* Set current color in SDL from palette */
 void vdu_set_color_pixel(byte c) {
 	// Color components
-	int red=0, green=0, blue=0;
+	byte red=0, green=0, blue=0;
 
 	// Durango palette
 	switch(c) {
@@ -1883,17 +1920,17 @@ void vdu_set_color_pixel(byte c) {
 	}
 
 	// Process invert flag
-	if((mem[0xdf80] & 0x40)>>6 == 1) {
-		red = 0xff-red;
-		green = 0xff - green;
-		blue = 0xff - blue;
+	if(mem[0xdf80] & 0x40) {
+		red   = ~red;
+		green = ~green;
+		blue  = ~blue;
 	}
 
 	// Process RGB flag
-	if((mem[0xdf80] & 0x08)>>3 == 0) {
-		red = ((c&1)?0x88:0) | ((c&2)?0x44:0) | ((c&4)?0x22:0) | ((c&8)?0x11:0);
+	if(!(mem[0xdf80] & 0x08)) {
+		red   = ((c&1)?0x88:0) | ((c&2)?0x44:0) | ((c&4)?0x22:0) | ((c&8)?0x11:0);
 		green = red;
-		blue = green;	// that, or a switch like above for some sort of gamma correction, note bits are in reverse order!
+		blue  = green;	// that, or a switch like above for some sort of gamma correction, note bits are in reverse order!
 	}
 
 	SDL_SetRenderDrawColor(sdl_renderer, red, green, blue, 0xff);
@@ -1901,11 +1938,11 @@ void vdu_set_color_pixel(byte c) {
 
 /* Set current color in SDL HiRes mode */
 void vdu_set_hires_pixel(byte color_index) {
-	int color = color_index == 0 ? 0x00 : 0xff;
+	byte color = color_index == 0 ? 0x00 : 0xff;
 
 	// Process invert flag
-	if((mem[0xdf80] & 0x40)>>6 == 1) {
-		color = 0xff-color;				// what about inverse mode?
+	if(mem[0xdf80] & 0x40) {
+		color = ~color;
 	}
 
 	SDL_SetRenderDrawColor(sdl_renderer, color, color, color, 0xff);
@@ -1914,47 +1951,46 @@ void vdu_set_hires_pixel(byte color_index) {
 /* Draw color pixel in supplied address */
 void vdu_draw_color_pixel(word addr) {
 	SDL_Rect fill_rect;
-	int pixel_size=VDU_SCREEN_WIDTH/128;
 	// Calculate screen address
 	unsigned int screen_address = ((mem[0xdf80] & 0x30)>>4)*0x2000;
 
 	// Calculate screen y coord
-	int y = floor((addr - screen_address) * 2 / 128);
+	int y = floor((addr - screen_address) >>6);
 	// Calculate screen x coord
-	int x = ((addr - screen_address) *2) % 128;
+	int x = ((addr - screen_address) <<1) & 127;
 
 	// Draw Left Pixel
 	vdu_set_color_pixel((mem[addr] & 0xf0)>>4);
-	fill_rect.x = x * pixel_size;
+	fill_rect.x = x * pixel_size;	// <<2
 	fill_rect.y = y * pixel_size;
 	fill_rect.w = pixel_size;
 	fill_rect.h = pixel_size;
 	SDL_RenderFillRect(sdl_renderer, &fill_rect);
 	// Draw Right Pixel
 	vdu_set_color_pixel(mem[addr] & 0x0f);
-	fill_rect.x = (x+1) * pixel_size;
+	fill_rect.x += pixel_size;
 	SDL_RenderFillRect(sdl_renderer, &fill_rect);
 }
 
 void vdu_draw_hires_pixel(word addr) {
 	SDL_Rect fill_rect;
 	int i;
-	int pixel_size=VDU_SCREEN_WIDTH/256;
 	// Calculate screen address
 	unsigned int screen_address = ((mem[0xdf80] & 0x30)>>4)*0x2000;
 	// Calculate screen y coord
-	int y = floor((addr - screen_address) * 8 / 256);
+	int y = floor((addr - screen_address) >>5);
 	// Calculate screen x coord
-	int x = ((addr - screen_address) *8) % 256;
+	int x = ((addr - screen_address) <<3) & 255;
 	byte b = mem[addr];
 
-	fill_rect.y = y * pixel_size;
-	fill_rect.w = pixel_size;
-	fill_rect.h = pixel_size;
+	fill_rect.x = x * hpixel_size;
+	fill_rect.y = y * hpixel_size;
+	fill_rect.w = hpixel_size;
+	fill_rect.h = hpixel_size;
 	for(i=0; i<8; i++) {
 		vdu_set_hires_pixel(b & 0x80);		// set function doesn't tell any non-zero value
 		b <<= 1;
-		fill_rect.x = (x+i) * pixel_size;
+		fill_rect.x += hpixel_size;
 		SDL_RenderFillRect(sdl_renderer, &fill_rect);
 	}
 }
@@ -1962,7 +1998,7 @@ void vdu_draw_hires_pixel(word addr) {
 /* Render Durango screen. */
 void vdu_draw_full() {
 	word i;
-	byte hires_flag = (mem[0xdf80] & 0x80)>>7;
+	byte hires_flag = mem[0xdf80] & 0x80;
 	word screen_address = ((mem[0xdf80] & 0x30)>>4)*0x2000;
 	word screen_address_end = screen_address + 0x2000;
 
@@ -1971,7 +2007,7 @@ void vdu_draw_full() {
     SDL_RenderClear(sdl_renderer);
 
 	// Color
-	if(hires_flag==0) {
+	if(!hires_flag) {
 		for(i=screen_address; i<screen_address_end; i++) {
 			vdu_draw_color_pixel(i);
 		}
