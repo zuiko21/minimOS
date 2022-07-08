@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220707-1957
+ * last modified 20220708-1721
  * */
 
 #include <stdio.h>
@@ -27,7 +27,6 @@
 	int run;				// emulator control
 	int ver = 0;			// verbosity mode, 0 = none, 1 = jumps, 2 = all; will stop on BRK unless 0
 	int fast = 0;			// speed flag
-	int accuracy =0;		// Emulate with accuracy (high proccessor cost)
 	int stat_flag = 0;		// external control
 	int nmi_flag = 0;		// interrupt control
 	int irq_flag = 0;
@@ -129,7 +128,6 @@ int main(int argc, char *argv[])
 		printf("usage: %s [-a rom_address] [-v] rom_file\n", argv[0]);	// in case user renames the executable
 		printf("-a: load ROM at supplied address, example 0x8000\n");
 		printf("-f fast mode\n");
-		printf("-c accuracy speed mode\n");
 		printf("-k keep gui open after program end\n");
 		printf("-v verbose\n");
 		return 1;
@@ -144,9 +142,6 @@ int main(int argc, char *argv[])
 			break;
 		case 'f':
 			fast = 1;
-			break;
-		case 'c':
-			accuracy = 1;
 			break;
 		case 'k':
 			keep_open = 1;
@@ -196,7 +191,7 @@ int main(int argc, char *argv[])
 void run_emulation () {
 	int cyc=0, it=0;		// instruction and interrupt cycle counter
 	int ht=0;				// horizontal counter
-	int vsync=0;			// vertical retrace flag
+	int line=0;				// line count for vertical retrace flag
 	clock_t next;			// delay counter
 	clock_t sleep_time;		// delay time
 
@@ -213,36 +208,35 @@ void run_emulation () {
 		cont += cyc;		// add last instruction cycle count
 		it += cyc;			// advance interrupt counter
 		ht += cyc;			// both get slightly out-of-sync during interrupts, but...
-/* check horizontal counter for HSYNC flag, could use count%98, but... */
-		if (ht >= 98)		ht -= 98;
-		if (ht <  64)		mem[0xDF88] &= 0b01111111;	// clear HSYNC flag while line display
-		else				mem[0xDF88] |= 0b10000000;	// set HSYNC flag during line retrace
+/* check horizontal counter for HSYNC flag and count lines for VSYNC */
+		if (ht >= 98) {
+			ht -= 98;
+			line++;
+			if (line >= 312) {
+				line = 0;				// 312-line field limit
+				vdu_draw_full();		// seems worth updating screen every VSYNC
+			}
+			mem[0xDF88] &= 0b10111111;			// replace bit 6 (VSYNC)...
+			mem[0xDF88] |= (line&256)>>2;		// ...by bit 8 of line number (>=256)
+		}
+		mem[0xDF88] &= 0b01111111;		// replace bit 7 (HSYNC)...
+		mem[0xDF88] |= (ht&64)<<1;		// ...by bit 6 of line number (>=256)
 /* check hardware interrupt counter */
 		if (it >= 6144)		// 250 Hz interrupt @ 1.536 MHz
 		{
 			it -= 6144;		// restore for next
 /* make a suitable delay for speed accuracy */
-			if (!fast && !accuracy) {
+			if (!fast) {
 				sleep_time=next-clock();
 				if(sleep_time>0) {
-					usleep(sleep_time);	// My apologies, Emilio! ;-) **** CHECK
-					//usleep(100000); // test usleep function
+					usleep(sleep_time);			// should be accurate enough
+				} else {
+					if (ver)	printf("!");	// not enough CPU power!
 				}
-				next=clock()+4000;
-			}
-			if (!fast && accuracy) {
-				while (clock()<next);
-				next=clock()+4000;
+				next=clock()+4000;				// set next interrupt time
 			}
 /* get keypresses from SDL here, as this get executed every 4 ms */
 			vdu_read_keyboard();
-/* update at least VSYNC flag (off for 3, on for 2 is not exact at ~188 lines, but close enough) */
-			if (vsync == 5) {
-				vsync = 0;
-				vdu_draw_full();	// seems worth updating screen every VSYNC
-			}
-			if ((vsync++) < 3)	mem[0xDF88] &= 0b10111111;	// clear VSYNC flag while display
-			else				mem[0xDF88] |= 0b01000000;	// set VSYNC flag during retrace
 /* generate periodic interrupt */ 
 			if (mem[0xDFA0] & 1) {
 				irq();		// if hardware interrupts are enabled, send signal to CPU
