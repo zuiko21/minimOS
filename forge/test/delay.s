@@ -1,6 +1,6 @@
 ; Delay test for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220518-1311
+; last modified 20220709-1244
 
 ;#include "../../macros.h"
 ;#include "../../zeropage.h"
@@ -74,12 +74,12 @@ rwide:
 			INY				; leave one or three blank bytes
 			INY
 			CPX #3			; within last half?
-			BCS lskip
+			BCS rskip
 				INY			; skip three then
 				INY
-lskip:
+rskip:
 			DEX
-			BNE lwide
+			BNE rwide
 		TYA					; check offset
 		BNE loop
 		INC pt+1			; next page is big chunks
@@ -109,6 +109,7 @@ rhalf:
 		STA (pt), Y			; two bytes
 ; change colour and advance page
 		INC pt+1
+		LDY #0				; eeeeek
 		LDA colour
 		SEC
 		SBC #$10			; eeeeeeek, it's MSN
