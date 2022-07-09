@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-S emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220708-1818
+ * last modified 20220709-1203
  * */
 
 #include <stdio.h>
@@ -25,8 +25,10 @@
 	word screen = 0;		// Durango screen switcher, xSSxxxxx xxxxxxxx *** may not use it
 	int dec;				// decimal flag for speed penalties (CMOS only)
 	int run;				// emulator control
-	int ver = 0;			// verbosity mode, 0 = none, 1 = jumps, 2 = all; will stop on BRK unless 0
+	int ver = 0;			// verbosity mode, 0 = none, 1 = warnings, 2 = interrupts, 3 = jumps, 4 = all; will stop on BRK unless < 2
 	int fast = 0;			// speed flag
+	int graf = 1;			// enable SDL2 graphic display
+	int safe = 0;			// enable saf mode (stops on warnings)
 	int stat_flag = 0;		// external control
 	int nmi_flag = 0;		// interrupt control
 	int irq_flag = 0;
@@ -125,12 +127,14 @@ int main(int argc, char *argv[])
 	char *filename;
 	char *rom_addr=NULL;
 	int rom_addr_int;
-	
+
 	if(argc==1) {
 		printf("usage: %s [-a rom_address] [-v] rom_file\n", argv[0]);	// in case user renames the executable
 		printf("-a: load ROM at supplied address, example 0x8000\n");
 		printf("-f fast mode\n");
-		printf("-k keep gui open after program end\n");
+		printf("-s safe mode (will stop on warnings and BRK)\n");
+		printf("-k keep GUI open after program end\n");
+		printf("-h headless (no graphics!)\n");
 		printf("-v verbose\n");
 		return 1;
 	}
@@ -150,6 +154,12 @@ int main(int argc, char *argv[])
 			break;
 		case 'v':
 			ver++;			// not that I like this, but...
+			break;
+		case 's':
+			safe = 1;
+			break;
+		case 'h':
+			graf = 0;
 			break;
 		case '?':
 			fprintf (stderr, "Unknown option\n");
@@ -196,11 +206,14 @@ void run_emulation () {
 	int line=0;				// line count for vertical retrace flag
 	clock_t next;			// delay counter
 	clock_t sleep_time;		// delay time
+	long irqs = 0;			// total elapsed interrupts (for performance evaluation)
+	long ticks = 0;			// total added microseconds of DELAY
+	long skip = 0;			// total skipped interrupts
 
 	run = 1;				// allow execution
 
 	printf("[F1=STOP, F2=NMI, F3=IRQ, F4=RESET, F5=STATUS, F6=DUMP]\n");
-	init_vdu();
+	if (graf)	init_vdu();
 	reset();				// ready to start!
 
 	next=clock()+4000;		// set delay counter, assumes CLOCKS_PER_SEC is 1000000!
@@ -226,19 +239,25 @@ void run_emulation () {
 /* check hardware interrupt counter */
 		if (it >= 6144)		// 250 Hz interrupt @ 1.536 MHz
 		{
+			irqs++;
 			it -= 6144;		// restore for next
 /* make a suitable delay for speed accuracy */
 			if (!fast) {
 				sleep_time=next-clock();
+				ticks += sleep_time;			// for performance measurement
 				if(sleep_time>0) {
 					usleep(sleep_time);			// should be accurate enough
 				} else {
-					if (!ver)	printf("!");	// not enough CPU power!
+					skip++;
+					if (!ver) {
+						printf("!");			// not enough CPU power!
+						fflush(stdout);
+					}
 				}
 				next=clock()+4000;				// set next interrupt time
 			}
 /* get keypresses from SDL here, as this get executed every 4 ms */
-			vdu_read_keyboard();
+			if (graf)	vdu_read_keyboard();	// ***is it possible read keys without initing graphics?
 /* generate periodic interrupt */ 
 			if (mem[0xDFA0] & 1) {
 				irq();		// if hardware interrupts are enabled, send signal to CPU
@@ -259,16 +278,20 @@ void run_emulation () {
 		}
 	}
 
-	vdu_draw_full();		// last screen update
+	if (graf)	vdu_draw_full();		// last screen update
 	printf(" *** CPU halted after %ld clock cycles ***\n", cont);
-	stat();					// display final status
+	stat();								// display final status
+
+/* performance statistics */
+	printf("\nSkipped interrupts: %ld\n", skip);
+	printf("Average CPU time use: %f\%\n", 100-(ticks/40.0/irqs));
 
 	if(keep_open) {
 		printf("\nPress ENTER key to exit\n");
 		getchar();
 	}
-	
-	close_vdu();
+
+	if (graf)	close_vdu();
 }
 
 /* **************************** */
