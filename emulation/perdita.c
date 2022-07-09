@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220709-1324
+ * last modified 20220709-1335
  * */
 
 #include <stdio.h>
@@ -62,7 +62,7 @@
 	void dump(word dir);	// display 16 bytes of memory
 	void run_emulation();	// Run emulator
 	int  exec(void);		// execute one opcode, returning number of cycles
-	void illegal(byte s);	// if safe mode, abort on illegal opcodes
+	void illegal(byte s, byte op);				// if in safe mode, abort on illegal opcodes
 	void process_keyboard(SDL_Event*);
 
 /* memory management */
@@ -250,7 +250,6 @@ void run_emulation () {
 					skip++;
 					if (!ver) {
 						printf("!");			// not enough CPU power!
-						fflush(stdout);
 					}
 				}
 				next=clock()+4000;				// set next interrupt time
@@ -259,8 +258,9 @@ void run_emulation () {
 			if (graf)	vdu_read_keyboard();	// ***is it possible read keys without initing graphics?
 /* generate periodic interrupt */ 
 			if (mem[0xDFA0] & 1) {
-				irq();		// if hardware interrupts are enabled, send signal to CPU
+				irq();							// if hardware interrupts are enabled, send signal to CPU
 			}
+			fflush(stdout);						// update terminal screen
 		}
 /* generate asynchronous interrupts */ 
 		if (irq_flag) {		// 'spurious' cartridge interrupt emulation!
@@ -428,7 +428,7 @@ void poke(word dir, byte v) {
 			// VDU-redraw all VRAM at selected screen! *** may not need it
 			// may add more flags for VDU
 		} else if (dir<=0xDF8F) {				// sync flags not writable!
-			if (ver > 2)	printf("\n*** Writing to Read-only ports at $%04X ***\n", pc);
+			if (ver)	printf("\n*** Writing to Read-only ports at $%04X ***\n", pc);
 			if (safe)	run = 0;
 		} else if (dir<=0xDF9F) {				// expansion port?
 			mem[dir] = v;		// *** is this OK?
@@ -900,14 +900,14 @@ int exec(void) {
 /* *** BRK: force break *** */
 		case 0x00:
 			pc++;
-			printf("[BRK]");
-			if (ver > 2)	run = 0;
+			if (ver > 1) printf("[BRK]");
+			if (safe)	run = 0;
 			else {
 				p |= 0b00010000;		// set B, just in case
 				intack();
 				p &= 0b11101111;		// clear B, just in case
 				pc = peek(0xFFFE) | peek(0xFFFF)<<8;	// IRQ/BRK vector
-				printf("\b PC=>%04X]", pc);
+				if (ver > 1) printf("\b PC=>%04X]", pc);
 			}
 			break;
 /* *** Bxx: Branch on flag condition *** */
@@ -1852,8 +1852,8 @@ int exec(void) {
 		case 0xEF:
 		case 0xFF:	// Rockwell BBR/BBS opcodes
 			per = 1;		// ultra-fast 1 byte NOPs!
-			if (ver > 3) printf("[NOP!]");
-			if (safe)	illegal(1);
+			if (ver)	printf("[NOP!]");
+			if (safe)	illegal(1, opcode);
 			break;
 		case 0x02:
 		case 0x22:
@@ -1863,35 +1863,35 @@ int exec(void) {
 		case 0xC2:
 		case 0xE2:
 			pc++;			// 2-byte, 2-cycle NOPs
-			if (ver > 3) printf("[NOP#]");
-			if (safe)	illegal(2);
+			if (ver)	printf("[NOP#]");
+			if (safe)	illegal(2, opcode);
 			break;
 		case 0x44:
 			pc++;
 			per++;			// only case of 2-byte, 3-cycle NOP
-			if (ver > 3) printf("[NOPz]");
-			if (safe)	illegal(2);
+			if (ver)	printf("[NOPz]");
+			if (safe)	illegal(2, opcode);
 			break;
 		case 0x54:
 		case 0xD4:
 		case 0xF4:
 			pc++;
 			per = 4;		// only cases of 2-byte, 4-cycle NOP
-			if (ver > 3) printf("[NOPzx]");
-			if (safe)	illegal(2);
+			if (ver)	printf("[NOPzx]");
+			if (safe)	illegal(2, opcode);
 			break;
 		case 0xDC:
 		case 0xFC:
 			pc += 2;
 			per = 4;		// only cases of 3-byte, 4-cycle NOP
-			if (ver > 3) printf("[NOPa]");
-			if (safe)	illegal(3);
+			if (ver)	printf("[NOPa]");
+			if (safe)	illegal(3, opcode);
 			break;
 		case 0x5C:
 			pc += 2;
 			per = 8;		// extremely slow 8-cycle NOP
-			if (ver > 3) printf("[NOP?]");
-			if (safe)	illegal(3);
+			if (ver)	printf("[NOP?]");
+			if (safe)	illegal(3, opcode);
 			break;			// not needed as it's the last one, but just in case
 	}
 
@@ -1899,9 +1899,8 @@ int exec(void) {
 }
 
 /* *** *** *** halt CPU on illegal opcodes *** *** *** */
-void illegal(byte s) {
-	printf("\n*** ($%04X) Illegal opcode $%02X ***\n", pc-s, opcode);
-	per = 0;
+void illegal(byte s, byte op) {
+	printf("\n*** ($%04X) Illegal opcode $%02X ***\n", pc-s, op);
 	run = 0;
 }
 
