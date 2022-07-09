@@ -1,6 +1,6 @@
-/* Perdita 65C02 Durango-S emulator!
+/* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220709-1203
+ * last modified 20220709-1229
  * */
 
 #include <stdio.h>
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "a:fvkc")) != -1)
+	while ((c = getopt (argc, argv, "a:fvksh")) != -1)
 	switch (c) {
 		case 'a':
 			rom_addr = optarg;
@@ -283,8 +283,8 @@ void run_emulation () {
 	stat();								// display final status
 
 /* performance statistics */
-	printf("\nSkipped interrupts: %ld (%f\%)\n", skip, skip*1.0/irqs);
-	printf("Average CPU time use: %f\%\n", 100-(ticks/40.0/irqs));
+	printf("\nSkipped interrupts: %ld (%f%%)\n", skip, skip*100.0/irqs);
+	printf("Average CPU time use: %f%%\n", 100-(ticks/40.0/irqs));
 
 	if(keep_open) {
 		printf("\nPress ENTER key to exit\n");
