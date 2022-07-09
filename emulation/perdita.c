@@ -283,7 +283,7 @@ void run_emulation () {
 	stat();								// display final status
 
 /* performance statistics */
-	printf("\nSkipped interrupts: %ld\n", skip);
+	printf("\nSkipped interrupts: %ld (%f\%)\n", skip, skip*1.0/irqs);
 	printf("Average CPU time use: %f\%\n", 100-(ticks/40.0/irqs));
 
 	if(keep_open) {
