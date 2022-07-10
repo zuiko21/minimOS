@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220709-1335
+ * last modified 20220710-1102
  * */
 
 #include <stdio.h>
@@ -207,9 +207,9 @@ void run_emulation () {
 	int line=0;				// line count for vertical retrace flag
 	clock_t next;			// delay counter
 	clock_t sleep_time;		// delay time
-	long irqs = 0;			// total elapsed interrupts (for performance evaluation)
+	long frames = 0;		// total elapsed frames (for performance evaluation)
 	long ticks = 0;			// total added microseconds of DELAY
-	long skip = 0;			// total skipped interrupts
+	long skip = 0;			// total skipped frames
 
 	printf("[F1=STOP, F2=NMI, F3=IRQ, F4=RESET, F5=STATUS, F6=DUMP]\n");
 	if (graf)	init_vdu();
@@ -228,7 +228,22 @@ void run_emulation () {
 			line++;
 			if (line >= 312) {
 				line = 0;				// 312-line field limit
+				frames++;
 				vdu_draw_full();		// seems worth updating screen every VSYNC
+/* make a suitable delay for speed accuracy */
+				if (!fast) {
+					sleep_time=next-clock();
+					ticks += sleep_time;		// for performance measurement
+					if(sleep_time>0) {
+						usleep(sleep_time);		// should be accurate enough
+					} else {
+						skip++;
+						if (!ver) {
+							printf("!");		// not enough CPU power!
+						}
+					}
+					next=clock()+20000;			// set next frame time (more like 19932)
+				}
 			}
 			mem[0xDF88] &= 0b10111111;			// replace bit 6 (VSYNC)...
 			mem[0xDF88] |= (line&256)>>2;		// ...by bit 8 of line number (>=256)
@@ -238,22 +253,7 @@ void run_emulation () {
 /* check hardware interrupt counter */
 		if (it >= 6144)		// 250 Hz interrupt @ 1.536 MHz
 		{
-			irqs++;
 			it -= 6144;		// restore for next
-/* make a suitable delay for speed accuracy */
-			if (!fast) {
-				sleep_time=next-clock();
-				ticks += sleep_time;			// for performance measurement
-				if(sleep_time>0) {
-					usleep(sleep_time);			// should be accurate enough
-				} else {
-					skip++;
-					if (!ver) {
-						printf("!");			// not enough CPU power!
-					}
-				}
-				next=clock()+4000;				// set next interrupt time
-			}
 /* get keypresses from SDL here, as this get executed every 4 ms */
 			if (graf)	vdu_read_keyboard();	// ***is it possible read keys without initing graphics?
 /* generate periodic interrupt */ 
@@ -282,8 +282,8 @@ void run_emulation () {
 	stat();								// display final status
 
 /* performance statistics */
-	printf("\nSkipped interrupts: %ld (%f%%)\n", skip, skip*100.0/irqs);
-	printf("Average CPU time use: %f%%\n", 100-(ticks/40.0/irqs));
+	printf("\nSkipped frames: %ld (%f%%)\n", skip, skip*100.0/frames);
+	printf("Average CPU time use: %f%%\n", 100-(ticks/200.0/frames));
 
 	if(keep_open) {
 		printf("\nPress ENTER key to exit\n");
