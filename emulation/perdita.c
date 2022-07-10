@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220710-1102
+ * last modified 20220710-1140
  * */
 
 #include <stdio.h>
@@ -207,12 +207,14 @@ void run_emulation () {
 	int line=0;				// line count for vertical retrace flag
 	clock_t next;			// delay counter
 	clock_t sleep_time;		// delay time
+	clock_t render_start;	// for SDL/GPU performance evaluation
 	long frames = 0;		// total elapsed frames (for performance evaluation)
 	long ticks = 0;			// total added microseconds of DELAY
+	long us_render = 0;		// total microseconds of rendering
 	long skip = 0;			// total skipped frames
 
 	printf("[F1=STOP, F2=NMI, F3=IRQ, F4=RESET, F5=STATUS, F6=DUMP]\n");
-	if (graf)	init_vdu();
+	init_vdu();
 	reset();				// ready to start!
 
 	next=clock()+4000;		// set delay counter, assumes CLOCKS_PER_SEC is 1000000!
@@ -229,7 +231,9 @@ void run_emulation () {
 			if (line >= 312) {
 				line = 0;				// 312-line field limit
 				frames++;
-				vdu_draw_full();		// seems worth updating screen every VSYNC
+				render_start = clock();
+				if (graf)	vdu_draw_full();		// seems worth updating screen every VSYNC
+				us_render += clock()-render_start;	// compute rendering time
 /* make a suitable delay for speed accuracy */
 				if (!fast) {
 					sleep_time=next-clock();
@@ -255,7 +259,7 @@ void run_emulation () {
 		{
 			it -= 6144;		// restore for next
 /* get keypresses from SDL here, as this get executed every 4 ms */
-			if (graf)	vdu_read_keyboard();	// ***is it possible read keys without initing graphics?
+			vdu_read_keyboard();	// ***is it possible read keys without initing graphics?
 /* generate periodic interrupt */ 
 			if (mem[0xDFA0] & 1) {
 				irq();							// if hardware interrupts are enabled, send signal to CPU
@@ -284,13 +288,13 @@ void run_emulation () {
 /* performance statistics */
 	printf("\nSkipped frames: %ld (%f%%)\n", skip, skip*100.0/frames);
 	printf("Average CPU time use: %f%%\n", 100-(ticks/200.0/frames));
-
+	printf("Average Rendering time: %ld µs (%f%%)\n", us_render/frames, us_render/frames/200.0);
 	if(keep_open) {
 		printf("\nPress ENTER key to exit\n");
 		getchar();
 	}
 
-	if (graf)	close_vdu();
+	close_vdu();
 }
 
 /* **************************** */
