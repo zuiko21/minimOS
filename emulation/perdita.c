@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220710-1140
+ * last modified 20220710-2346
  * */
 
 #include <stdio.h>
@@ -2001,6 +2001,11 @@ void vdu_set_color_pixel(byte c) {
 	// Color components
 	byte red=0, green=0, blue=0;
 
+	// Process invert flag
+	if(mem[0xdf80] & 0x40) {
+		c ^= 0x0F;		// just invert the index
+	}
+
 	// Durango palette
 	switch(c) {
 		case 0x00: red = 0x00; green = 0x00; blue = 0x00; break; // 0
@@ -2019,13 +2024,6 @@ void vdu_set_color_pixel(byte c) {
 		case 0x0d: red = 0x00; green = 0xff; blue = 0xff; break; // 13
 		case 0x0e: red = 0xff; green = 0x55; blue = 0xff; break; // 14
 		case 0x0f: red = 0xff; green = 0xff; blue = 0xff; break; // 15
-	}
-
-	// Process invert flag
-	if(mem[0xdf80] & 0x40) {
-		red   = ~red;
-		green = ~green;
-		blue  = ~blue;
 	}
 
 	// Process RGB flag
@@ -2054,15 +2052,15 @@ void vdu_set_hires_pixel(byte color_index) {
 void vdu_draw_color_pixel(word addr) {
 	SDL_Rect fill_rect;
 	// Calculate screen address
-	unsigned int screen_address = ((mem[0xdf80] & 0x30)>>4)*0x2000;
+	word screen_address = (mem[0xdf80] & 0x30) << 9;
 
 	// Calculate screen y coord
-	int y = floor((addr - screen_address) >>6);
+	int y = floor((addr - screen_address) >> 6);
 	// Calculate screen x coord
-	int x = ((addr - screen_address) <<1) & 127;
+	int x = ((addr - screen_address) << 1) & 127;
 
 	// Draw Left Pixel
-	vdu_set_color_pixel((mem[addr] & 0xf0)>>4);
+	vdu_set_color_pixel((mem[addr] & 0xf0) >> 4);
 	fill_rect.x = x * pixel_size;	// <<2
 	fill_rect.y = y * pixel_size;
 	fill_rect.w = pixel_size;
@@ -2078,11 +2076,11 @@ void vdu_draw_hires_pixel(word addr) {
 	SDL_Rect fill_rect;
 	int i;
 	// Calculate screen address
-	unsigned int screen_address = ((mem[0xdf80] & 0x30)>>4)*0x2000;
+	word screen_address = (mem[0xdf80] & 0x30) << 9;
 	// Calculate screen y coord
-	int y = floor((addr - screen_address) >>5);
+	int y = floor((addr - screen_address) >> 5);
 	// Calculate screen x coord
-	int x = ((addr - screen_address) <<3) & 255;
+	int x = ((addr - screen_address) << 3) & 255;
 	byte b = mem[addr];
 
 	fill_rect.x = x * hpixel_size;
@@ -2101,7 +2099,7 @@ void vdu_draw_hires_pixel(word addr) {
 void vdu_draw_full() {
 	word i;
 	byte hires_flag = mem[0xdf80] & 0x80;
-	word screen_address = ((mem[0xdf80] & 0x30)>>4)*0x2000;
+	word screen_address = (mem[0xdf80] & 0x30) << 9;
 	word screen_address_end = screen_address + 0x2000;
 
 	//Clear screen
