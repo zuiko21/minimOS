@@ -1,6 +1,6 @@
 ; Durango-X pixel routines
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220712-0127
+; last modified 20220712-0145
 
 ; *** input ***
 ; X = x coordinate (<128 in colour, <256 in HIRES)
@@ -15,26 +15,22 @@
 -IO8attr= $DF80				; compatible IO8lh for setting attributes (d7=HIRES, d6=INVERSE, now d5-d4 include screen block)
 
 dxplot:
+	STZ cio_pt				; common to all modes
 	BIT IO8attr				; check screen mode
 	BPL colplot				; * HIRES plot below *
-		LDA IO8attr			; get flags...
-		AND #$30			; ...for the selected screen
-		LSR
-		LSR
-		LSR
-		LSR					; just on MSB
-		STA cio_pt+1
 		TYA					; get Y coordinate in LSB
-		ASL
-		ROL cio_pt+1
-		ASL
-		ROL cio_pt+1
-		ASL
-		ROL cio_pt+1
-		ASL
-		ROL cio_pt+1
-		ASL
-		ROL cio_pt+1		; times 32! points to selected raster line
+		LSR
+		ROR cio_pt
+		LSR
+		ROR cio_pt
+		LSR
+		ROR cio_pt			; divide by 8 instead of times 32!
+		STA cio_pt+1		; LSB ready, temporary MSB
+		LDA IO8attr			; get flags...
+		AND #$30			; ...for the selected screen...
+		ASL					; ...and shift them to final position
+		ORA cio_pt+1
+		STA cio_pt+1		; full pointer ready!
 		TXA					; get X coordinate
 		LSR
 		LSR
@@ -55,21 +51,12 @@ unplot_h:
 		STA (cio_pt), Y
 		RTS
 colplot:
-	STZ cio_pt+1			; reset MSB, as screen bits will be added later
 	TYA						; get Y coordinate...
-	ASL
-	ROL cio_pt+1
-	ASL
-	ROL cio_pt+1
-	ASL
-	ROL cio_pt+1
-	ASL
-	ROL cio_pt+1
-	ASL
-	ROL cio_pt+1
-	ASL
-	ROL cio_pt+1			; times 64! points to selected raster line
-	STA cio_pt				; store shifted LSB
+	LSR
+	ROR cio_pt
+	LSR
+	ROR cio_pt				; divide by 4 instead of times 64!
+	STA cio_pt+1			; LSB ready, temporary MSB
 	LDA IO8attr				; get flags...
 	AND #$30				; ...for the selected screen...
 	ASL						; ...and shift them to final position
