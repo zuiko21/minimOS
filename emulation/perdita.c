@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220710-2346
+ * last modified 20220711-1001
  * */
 
 #include <stdio.h>
@@ -2038,7 +2038,7 @@ void vdu_set_color_pixel(byte c) {
 
 /* Set current color in SDL HiRes mode */
 void vdu_set_hires_pixel(byte color_index) {
-	byte color = color_index == 0 ? 0x00 : 0xff;
+	byte color = color_index ? 0xFF : 0x00;
 
 	// Process invert flag
 	if(mem[0xdf80] & 0x40) {
@@ -2061,8 +2061,8 @@ void vdu_draw_color_pixel(word addr) {
 
 	// Draw Left Pixel
 	vdu_set_color_pixel((mem[addr] & 0xf0) >> 4);
-	fill_rect.x = x * pixel_size;	// <<2
-	fill_rect.y = y * pixel_size;
+	fill_rect.x = x << 2;				// * pixel_size;
+	fill_rect.y = y << 2;				// * pixel_size;
 	fill_rect.w = pixel_size;
 	fill_rect.h = pixel_size;
 	SDL_RenderFillRect(sdl_renderer, &fill_rect);
@@ -2083,8 +2083,8 @@ void vdu_draw_hires_pixel(word addr) {
 	int x = ((addr - screen_address) << 3) & 255;
 	byte b = mem[addr];
 
-	fill_rect.x = x * hpixel_size;
-	fill_rect.y = y * hpixel_size;
+	fill_rect.x = x << 1;				// * hpixel_size;
+	fill_rect.y = y << 1;				// * hpixel_size;
 	fill_rect.w = hpixel_size;
 	fill_rect.h = hpixel_size;
 	for(i=0; i<8; i++) {
