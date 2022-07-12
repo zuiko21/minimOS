@@ -1,6 +1,6 @@
 ; pixel routine demo for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220712-2348
+; last modified 20220713-0029
 
 ; *** zeropage definitions ***
 	fw_ccol	= 3				; PAPERs setting
@@ -8,6 +8,9 @@
 	cio_pt	= 4				; screen pointer between PAPER and INK (.w)
 	fw_mask = 7				; PLOT/UNPLOT mode
 	fw_cbyt = 8				; temporary
+	ptr		= 9
+	posx	= 10			; extras
+	posy	= 11
 
 	* = $400				; usual download address
 
@@ -20,6 +23,9 @@
 	STA fw_ccol
 	LDY #0					; plot mode, and reset pointer
 	STY fw_mask
+	STY ptr
+	STY posx
+	STY posy
 ; clear screen
 	LDX #$60
 	STX cio_pt+1
@@ -31,10 +37,18 @@ loop:
 	INX
 	STX cio_pt+1
 	BPL loop
-; draw one pixel
-	LDX #64
-	LDY #32
+; fill the screen with pixels
+do:
+	LDX posx
+	LDA $400,X
+	STA fw_mask
+	LDY posy
 	JSR dxplot
+	INC posx
+	BPL do
+		STZ posx
+		INC posy
+		BPL do
 lock:
 	BRA lock
 

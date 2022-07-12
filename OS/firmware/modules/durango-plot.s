@@ -1,6 +1,6 @@
 ; Durango-X pixel routines
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220712-2314
+; last modified 20220713-0023
 
 ; *** input ***
 ; X = x coordinate (<128 in colour, <256 in HIRES)
@@ -91,4 +91,4 @@ unplot_c:
 
 ; *** data ***
 pixtab:
-	.dsb	128, 64, 32, 16, 8, 4, 2, 1		; bit patterns from offset
+	.byt	128, 64, 32, 16, 8, 4, 2, 1		; bit patterns from offset
