@@ -217,14 +217,14 @@ function SimulatorWidget(node) {
       var videoModeReg = memory.get(0xdf80);
       
       // Flags
-      var hiRes  = videoModeReg & 0x80;      
-      var invert = videoModeReg & 0x40;
+      var hiRes = (videoModeReg & 0x80)>>7;      
+      var invert = (videoModeReg & 0x40)>>6;
       
-      if(hiRes) {
-        drawHiResPixel(addr);
-      }
-      else {
+      if(hiRes == 0) {
         drawColorPixel(addr);
+      }
+      else if(hiRes == 1) {
+        drawHiResPixel(addr);
       }      
     }
     
@@ -239,17 +239,12 @@ function SimulatorWidget(node) {
     /** 
      * Get rgb color to display pixel.
      */
-    function getColor(c) {
+    function getColor(index) {
       // Color components
       var red=0, green=0, blue=0;
 
-      // Process invert flag
-      if(memory.get(0xdf80) & 0x40) {
-          c ~= c;
-      }
-
       // Durango palette
-      switch(c) {
+      switch(index) {
         case 0x00: red = 0x00; green = 0x00; blue = 0x00; break; // 0
         case 0x01: red = 0x00; green = 0xaa; blue = 0x00; break; // 1
         case 0x02: red = 0xff; green = 0x00; blue = 0x00; break; // 2
@@ -268,10 +263,18 @@ function SimulatorWidget(node) {
         case 0x0f: red = 0xff; green = 0xff; blue = 0xff; break; // 15
       }
 	
+      // Process invert flag
+      if((memory.get(0xdf80) & 0x40)>>6 == 1) {
+        red = 0xff-red;
+        green = 0xff - green;
+        blue = 0xff - blue;
+      }
 	
       // Process RGB flag
-      if(!(memory.get(0xdf80) & 0x08)) {
-        red = green = blue = ((c&1)?0x88:0) | ((c&2)?0x44:0) | ((c&4)?0x22:0) | ((c&8)?0x11:0);
+      if((memory.get(0xdf80) & 0x08)>>3 == 0) {
+        red = (red + green + blue) / 3;
+        green = red;
+        blue = green;
       }
     
       return '#'+toHexValue(red)+toHexValue(green)+toHexValue(blue);
@@ -282,8 +285,8 @@ function SimulatorWidget(node) {
       var color = color_index == 0 ? 0x00 : 0xff;
 
       // Process invert flag
-      if(memory.get(0xdf80) & 0x40) {
-        color = ~color;
+      if((memory.get(0xdf80) & 0x40)>>6 == 1) {
+        color = 0xff-color;
       }
       
       htmlColor = toHexValue(color);
@@ -718,12 +721,6 @@ function SimulatorWidget(node) {
         ORA();
       },
 
-      i1a: function () {
-        regA = (regA + 1) & 0xff;
-        setNVflagsForRegA();
-        //INC
-      },
-
       i1d: function () {
         var addr = popWord() + regX;
         regA |= memory.get(addr);
@@ -983,11 +980,6 @@ function SimulatorWidget(node) {
         var value = memory.get(addr);
         regA ^= value;
         EOR();
-      },
-
-      i5a: function () {
-        stackPush(regY);
-        //PHY (CMOS)
       },
 
       i5d: function () {
@@ -1928,7 +1920,7 @@ function SimulatorWidget(node) {
       ["CLV", null, null, null, null, null, null, null, null, null, null, 0xb8, null],
       ["CLD", null, null, null, null, null, null, null, null, null, null, 0xd8, null],
       ["SED", null, null, null, null, null, null, null, null, null, null, 0xf8, null],
-      ["INC", null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, 0x1a, null],
+      ["INC", null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, null, null],
       ["JMP", null, null, null, null, 0x4c, null, null, 0x6c, null, null, null, null],
       ["JSR", null, null, null, null, 0x20, null, null, null, null, null, null, null],
       ["LDA", 0xa9, 0xa5, 0xb5, null, 0xad, 0xbd, 0xb9, null, 0xa1, 0xb1, null, null],
@@ -1955,7 +1947,6 @@ function SimulatorWidget(node) {
       ["TSX", null, null, null, null, null, null, null, null, null, null, 0xba, null],
       ["PHA", null, null, null, null, null, null, null, null, null, null, 0x48, null],
       ["PLA", null, null, null, null, null, null, null, null, null, null, 0x68, null],
-      ["PHY", null, null, null, null, null, null, null, null, null, null, 0x5a, null],
       ["PHP", null, null, null, null, null, null, null, null, null, null, 0x08, null],
       ["PLP", null, null, null, null, null, null, null, null, null, null, 0x28, null],
       ["STX", null, 0x86, null, 0x96, 0x8e, null, null, null, null, null, null, null],
