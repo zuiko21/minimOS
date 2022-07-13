@@ -217,14 +217,14 @@ function SimulatorWidget(node) {
       var videoModeReg = memory.get(0xdf80);
       
       // Flags
-      var hiRes = (videoModeReg & 0x80)>>7;      
-      var invert = (videoModeReg & 0x40)>>6;
+      var hiRes  = videoModeReg & 0x80;      
+      var invert = videoModeReg & 0x40;
       
-      if(hiRes == 0) {
-        drawColorPixel(addr);
-      }
-      else if(hiRes == 1) {
+      if(hiRes) {
         drawHiResPixel(addr);
+      }
+      else {
+        drawColorPixel(addr);
       }      
     }
     
@@ -239,12 +239,17 @@ function SimulatorWidget(node) {
     /** 
      * Get rgb color to display pixel.
      */
-    function getColor(index) {
+    function getColor(c) {
       // Color components
       var red=0, green=0, blue=0;
 
+      // Process invert flag
+      if(memory.get(0xdf80) & 0x40) {
+          c ~= c;
+      }
+
       // Durango palette
-      switch(index) {
+      switch(c) {
         case 0x00: red = 0x00; green = 0x00; blue = 0x00; break; // 0
         case 0x01: red = 0x00; green = 0xaa; blue = 0x00; break; // 1
         case 0x02: red = 0xff; green = 0x00; blue = 0x00; break; // 2
@@ -263,18 +268,10 @@ function SimulatorWidget(node) {
         case 0x0f: red = 0xff; green = 0xff; blue = 0xff; break; // 15
       }
 	
-      // Process invert flag
-      if((memory.get(0xdf80) & 0x40)>>6 == 1) {
-        red = 0xff-red;
-        green = 0xff - green;
-        blue = 0xff - blue;
-      }
 	
       // Process RGB flag
-      if((memory.get(0xdf80) & 0x08)>>3 == 0) {
-        red = (red + green + blue) / 3;
-        green = red;
-        blue = green;
+      if(!(memory.get(0xdf80) & 0x08)) {
+        red = green = blue = ((c&1)?0x88:0) | ((c&2)?0x44:0) | ((c&4)?0x22:0) | ((c&8)?0x11:0);
       }
     
       return '#'+toHexValue(red)+toHexValue(green)+toHexValue(blue);
@@ -285,8 +282,8 @@ function SimulatorWidget(node) {
       var color = color_index == 0 ? 0x00 : 0xff;
 
       // Process invert flag
-      if((memory.get(0xdf80) & 0x40)>>6 == 1) {
-        color = 0xff-color;
+      if(memory.get(0xdf80) & 0x40) {
+        color = ~color;
       }
       
       htmlColor = toHexValue(color);
