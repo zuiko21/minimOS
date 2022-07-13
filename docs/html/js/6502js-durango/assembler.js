@@ -866,7 +866,7 @@ function SimulatorWidget(node) {
       i3a: function () {
         regA = (regA - 1) & 0xff;
         setNVflagsForRegA();
-        //DEC
+        //DEC (CMOS)
       },
 
       i3d: function () {
@@ -994,6 +994,11 @@ function SimulatorWidget(node) {
         EOR();
       },
 
+      i5a: function () {
+        stackPush(regY);
+        //PHY (CMOS)
+      },
+
       i5d: function () {
         var addr = popWord() + regX;
         var value = memory.get(addr);
@@ -1021,6 +1026,11 @@ function SimulatorWidget(node) {
         var value = memory.get(addr);
         testADC(value);
         //ADC
+      },
+
+      i64: function () {
+        memory.storeByte(popByte(), 0);
+        //STZ (CMOS)
       },
 
       i65: function () {
@@ -1098,6 +1108,11 @@ function SimulatorWidget(node) {
         //ADC
       },
 
+      i74: function () {
+        memory.storeByte((popByte() + regX) & 0xff, 0);
+        //STZ (CMOS)
+      },
+
       i75: function () {
         var addr = (popByte() + regX) & 0xff;
         var value = memory.get(addr);
@@ -1129,6 +1144,12 @@ function SimulatorWidget(node) {
         //ADC
       },
 
+      i68: function () {
+        regY = stackPop();
+        setNVflagsForRegY();
+        //PLY (CMOS)
+      },
+
       i7d: function () {
         var addr = popWord();
         var value = memory.get(addr + regX);
@@ -1145,6 +1166,12 @@ function SimulatorWidget(node) {
         if (sf) { value |= 0x80; }
         memory.storeByte(addr, value);
         ROR(value);
+      },
+
+      i80: function () {
+        var offset = popByte();
+        jumpBranch(offset);
+        //BRA (CMOS)
       },
 
       i81: function () {
@@ -1240,10 +1267,21 @@ function SimulatorWidget(node) {
         //TXS
       },
 
+      i9c: function () {
+        memory.storeByte(popWord(), 0);
+        //STZ (CMOS)
+      },
+
       i9d: function () {
         var addr = popWord();
         memory.storeByte(addr + regX, regA);
         //STA
+      },
+
+      i9e: function () {
+        var addr = popWord();
+        memory.storeByte(addr + regX, 0);
+        //STZ (CMOS)
       },
 
       ia0: function () {
@@ -1475,6 +1513,11 @@ function SimulatorWidget(node) {
         //CMP
       },
 
+      ida: function () {
+        stackPush(regX);
+        //PHX
+      },
+
       idd: function () {
         var addr = popWord() + regX;
         var value = memory.get(addr);
@@ -1589,6 +1632,12 @@ function SimulatorWidget(node) {
         var value = memory.get(addr + regY);
         testSBC(value);
         //SBC
+      },
+
+      ifa: function () {
+        regX = stackPop();
+        setNVflagsForRegX();
+        //PLX (CMOS)
       },
 
       ifd: function () {
@@ -1919,6 +1968,7 @@ function SimulatorWidget(node) {
       ["BCS", null, null, null, null, null, null, null, null, null, null, null, 0xb0],
       ["BNE", null, null, null, null, null, null, null, null, null, null, null, 0xd0],
       ["BEQ", null, null, null, null, null, null, null, null, null, null, null, 0xf0],
+      ["BRA", null, null, null, null, null, null, null, null, null, null, null, 0x80],
       ["BRK", null, null, null, null, null, null, null, null, null, null, 0x00, null],
       ["CMP", 0xc9, 0xc5, 0xd5, null, 0xcd, 0xdd, 0xd9, null, 0xc1, 0xd1, null, null],
       ["CPX", 0xe0, 0xe4, null, null, 0xec, null, null, null, null, null, null, null],
@@ -1959,10 +2009,15 @@ function SimulatorWidget(node) {
       ["TSX", null, null, null, null, null, null, null, null, null, null, 0xba, null],
       ["PHA", null, null, null, null, null, null, null, null, null, null, 0x48, null],
       ["PLA", null, null, null, null, null, null, null, null, null, null, 0x68, null],
+      ["PHX", null, null, null, null, null, null, null, null, null, null, 0xda, null],
+      ["PLX", null, null, null, null, null, null, null, null, null, null, 0xfa, null],
+      ["PHY", null, null, null, null, null, null, null, null, null, null, 0x5a, null],
+      ["PLY", null, null, null, null, null, null, null, null, null, null, 0x7a, null],
       ["PHP", null, null, null, null, null, null, null, null, null, null, 0x08, null],
       ["PLP", null, null, null, null, null, null, null, null, null, null, 0x28, null],
       ["STX", null, 0x86, null, 0x96, 0x8e, null, null, null, null, null, null, null],
       ["STY", null, 0x84, 0x94, null, 0x8c, null, null, null, null, null, null, null],
+      ["STZ", null, 0x64, 0x74, null, 0x9c, 0x9e, null, null, null, null, null, null],
       ["---", null, null, null, null, null, null, null, null, null, null, null, null]
     ];
 
