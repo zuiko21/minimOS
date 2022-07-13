@@ -721,6 +721,12 @@ function SimulatorWidget(node) {
         ORA();
       },
 
+      i1a: function () {
+        regA = (regA + 1) & 0xff;
+        setNVflagsForRegA();
+        //INC (CMOS)
+      },
+
       i1d: function () {
         var addr = popWord() + regX;
         regA |= memory.get(addr);
@@ -855,6 +861,12 @@ function SimulatorWidget(node) {
         var value = memory.get(addr);
         regA &= value;
         AND();
+      },
+
+      i3a: function () {
+        regA = (regA - 1) & 0xff;
+        setNVflagsForRegA();
+        //DEC
       },
 
       i3d: function () {
@@ -1911,7 +1923,7 @@ function SimulatorWidget(node) {
       ["CMP", 0xc9, 0xc5, 0xd5, null, 0xcd, 0xdd, 0xd9, null, 0xc1, 0xd1, null, null],
       ["CPX", 0xe0, 0xe4, null, null, 0xec, null, null, null, null, null, null, null],
       ["CPY", 0xc0, 0xc4, null, null, 0xcc, null, null, null, null, null, null, null],
-      ["DEC", null, 0xc6, 0xd6, null, 0xce, 0xde, null, null, null, null, null, null],
+      ["DEC", null, 0xc6, 0xd6, null, 0xce, 0xde, null, null, null, null, 0x3a, null],
       ["EOR", 0x49, 0x45, 0x55, null, 0x4d, 0x5d, 0x59, null, 0x41, 0x51, null, null],
       ["CLC", null, null, null, null, null, null, null, null, null, null, 0x18, null],
       ["SEC", null, null, null, null, null, null, null, null, null, null, 0x38, null],
@@ -1920,7 +1932,7 @@ function SimulatorWidget(node) {
       ["CLV", null, null, null, null, null, null, null, null, null, null, 0xb8, null],
       ["CLD", null, null, null, null, null, null, null, null, null, null, 0xd8, null],
       ["SED", null, null, null, null, null, null, null, null, null, null, 0xf8, null],
-      ["INC", null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, null, null],
+      ["INC", null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, 0x1a, null],
       ["JMP", null, null, null, null, 0x4c, null, null, 0x6c, null, null, null, null],
       ["JSR", null, null, null, null, 0x20, null, null, null, null, null, null, null],
       ["LDA", 0xa9, 0xa5, 0xb5, null, 0xad, 0xbd, 0xb9, null, 0xa1, 0xb1, null, null],
