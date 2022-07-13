@@ -718,6 +718,12 @@ function SimulatorWidget(node) {
         ORA();
       },
 
+      i1a: function () {
+        regA = (regA + 1) & 0xff;
+        setNVflagsForRegA();
+        //INC
+      },
+
       i1d: function () {
         var addr = popWord() + regX;
         regA |= memory.get(addr);
@@ -977,6 +983,11 @@ function SimulatorWidget(node) {
         var value = memory.get(addr);
         regA ^= value;
         EOR();
+      },
+
+      i5a: function () {
+        stackPush(regY);
+        //PHY (CMOS)
       },
 
       i5d: function () {
@@ -1917,7 +1928,7 @@ function SimulatorWidget(node) {
       ["CLV", null, null, null, null, null, null, null, null, null, null, 0xb8, null],
       ["CLD", null, null, null, null, null, null, null, null, null, null, 0xd8, null],
       ["SED", null, null, null, null, null, null, null, null, null, null, 0xf8, null],
-      ["INC", null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, null, null],
+      ["INC", null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, 0x1a, null],
       ["JMP", null, null, null, null, 0x4c, null, null, 0x6c, null, null, null, null],
       ["JSR", null, null, null, null, 0x20, null, null, null, null, null, null, null],
       ["LDA", 0xa9, 0xa5, 0xb5, null, 0xad, 0xbd, 0xb9, null, 0xa1, 0xb1, null, null],
@@ -1944,6 +1955,7 @@ function SimulatorWidget(node) {
       ["TSX", null, null, null, null, null, null, null, null, null, null, 0xba, null],
       ["PHA", null, null, null, null, null, null, null, null, null, null, 0x48, null],
       ["PLA", null, null, null, null, null, null, null, null, null, null, 0x68, null],
+      ["PHY", null, null, null, null, null, null, null, null, null, null, 0x5a, null],
       ["PHP", null, null, null, null, null, null, null, null, null, null, 0x08, null],
       ["PLP", null, null, null, null, null, null, null, null, null, null, 0x28, null],
       ["STX", null, 0x86, null, 0x96, 0x8e, null, null, null, null, null, null, null],
