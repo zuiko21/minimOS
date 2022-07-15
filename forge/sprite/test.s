@@ -1,6 +1,6 @@
 ; masked sprites demo for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220715-0145
+; last modified 20220715-1123
 
 ; *** variables and pointers ***
 IO8attr	= $DF80				; video mode register
@@ -111,6 +111,7 @@ anim:
 		INY
 		INY
 		STY screen+1			; restore this as may change
+;		STY bg+1				; OVERLAP *** does NOT work this way
 		STX bg+1
 		STA screen
 		STA bg					; LSB is the same as they're page-aligned
