@@ -1,10 +1,11 @@
-; Tiles position (0x8000 - 0x9fff)
-*=$8000
+; Tiles position (0xc000 - 0xdfff)
+*=$C000
 #include "boat_tiles.s"
-; First map 0xa000
+; First map 0xe000
 #include "boat_maps.s"
 
 begin:
+; $e300
 
 ; Set video mode
 ; [HiRes Invert S1 S0    RGB LED NC NC]
@@ -18,13 +19,13 @@ LDA #$00
 STA $10
 
 ; $12, $13 tile to draw (initial position in mem)
-LDA #$80
+LDA #$c0
 STA $13
 LDA #$00
 STA $12
 
 ; $14, $15 tilemap to draw
-LDA #$a0
+LDA #$e0
 STA $15
 LDA #$00
 STA $14
@@ -39,7 +40,7 @@ LDA #$40
 STA $11
 LDA #$00
 STA $10
-LDA #$a1
+LDA #$e1
 STA $15
 LDA #$00
 STA $14
@@ -56,7 +57,7 @@ LDA #$60
 STA $11
 LDA #$00
 STA $10
-LDA #$a2
+LDA #$e2
 STA $15
 LDA #$00
 STA $14
@@ -192,7 +193,7 @@ LSR
 CLC
 LSR
 CLC
-ADC #$80
+ADC #$C0;80
 STA $13
 RTS
 ; --------------------------------------------------------
