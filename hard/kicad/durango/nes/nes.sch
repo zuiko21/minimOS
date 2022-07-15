@@ -250,19 +250,7 @@ F 3 "" H 2150 4650 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	2200 3300 2750 3300
-Wire Wire Line
-	2200 3400 2800 3400
-Wire Wire Line
-	2200 3500 2850 3500
-Wire Wire Line
 	2200 3600 2900 3600
-Wire Wire Line
-	2200 3700 2950 3700
-Wire Wire Line
-	2200 3800 3000 3800
-Wire Wire Line
-	2200 3900 3050 3900
 Wire Wire Line
 	2200 4000 3100 4000
 NoConn ~ 3150 4200
@@ -286,7 +274,6 @@ Wire Wire Line
 	5800 4600 5800 3900
 Wire Wire Line
 	5800 3900 5700 3900
-Connection ~ 3050 3900
 Wire Wire Line
 	3050 3900 3150 3900
 Wire Wire Line
@@ -297,18 +284,16 @@ Wire Wire Line
 	5850 4650 5850 3800
 Wire Wire Line
 	5850 3800 5700 3800
-Connection ~ 3000 3800
 Wire Wire Line
 	3000 3800 3150 3800
 Wire Wire Line
-	2950 3700 2950 4700
+	2950 3700 2950 3900
 Wire Wire Line
 	2950 4700 5900 4700
 Wire Wire Line
 	5900 4700 5900 3700
 Wire Wire Line
 	5900 3700 5700 3700
-Connection ~ 2950 3700
 Wire Wire Line
 	2950 3700 3150 3700
 Wire Wire Line
@@ -330,18 +315,16 @@ Wire Wire Line
 	6000 4800 6000 3500
 Wire Wire Line
 	6000 3500 5700 3500
-Connection ~ 2850 3500
 Wire Wire Line
 	2850 3500 3150 3500
 Wire Wire Line
-	2800 3400 2800 4850
+	2800 3400 2800 3500
 Wire Wire Line
 	2800 4850 6050 4850
 Wire Wire Line
 	6050 4850 6050 3400
 Wire Wire Line
 	6050 3400 5700 3400
-Connection ~ 2800 3400
 Wire Wire Line
 	2800 3400 3150 3400
 Wire Wire Line
@@ -352,24 +335,23 @@ Wire Wire Line
 	6100 4900 6100 3300
 Wire Wire Line
 	6100 3300 5700 3300
-Connection ~ 2750 3300
 Wire Wire Line
 	2750 3300 3150 3300
-Text Label 2550 3300 0    50   ~ 0
+Text Label 2200 3300 0    50   ~ 0
 PD0
-Text Label 2550 3400 0    50   ~ 0
+Text Label 2200 3400 0    50   ~ 0
 PD1
-Text Label 2550 3500 0    50   ~ 0
+Text Label 2200 3500 0    50   ~ 0
 PD2
-Text Label 2550 3600 0    50   ~ 0
+Text Label 2200 3600 0    50   ~ 0
 PD3
-Text Label 2550 3700 0    50   ~ 0
+Text Label 2200 3700 0    50   ~ 0
 PD4
-Text Label 2550 3800 0    50   ~ 0
+Text Label 2200 3800 0    50   ~ 0
 PD5
-Text Label 2550 3900 0    50   ~ 0
+Text Label 2200 3900 0    50   ~ 0
 PD6
-Text Label 2550 4000 0    50   ~ 0
+Text Label 2200 4000 0    50   ~ 0
 PD7
 Text Label 4300 3500 0    50   ~ 0
 NESCLK
@@ -636,4 +618,42 @@ Text Label 4250 2800 1    50   ~ 0
 NESCLK
 Text Label 5100 2800 1    50   ~ 0
 NESCLK
+Connection ~ 2750 3300
+Wire Wire Line
+	2200 3300 2750 3300
+Wire Wire Line
+	2800 3500 2200 3500
+Connection ~ 2800 3500
+Wire Wire Line
+	2800 3500 2800 4850
+Wire Wire Line
+	2850 3500 2850 3450
+Wire Wire Line
+	2850 3450 2700 3450
+Wire Wire Line
+	2700 3450 2700 3400
+Wire Wire Line
+	2700 3400 2200 3400
+Connection ~ 2850 3500
+Wire Wire Line
+	2950 3900 2200 3900
+Connection ~ 2950 3900
+Wire Wire Line
+	2950 3900 2950 4700
+Wire Wire Line
+	3000 3800 2700 3800
+Wire Wire Line
+	2700 3800 2700 3700
+Wire Wire Line
+	2700 3700 2200 3700
+Connection ~ 3000 3800
+Wire Wire Line
+	3050 3900 3050 3850
+Wire Wire Line
+	3050 3850 2650 3850
+Wire Wire Line
+	2650 3850 2650 3800
+Wire Wire Line
+	2650 3800 2200 3800
+Connection ~ 3050 3900
 $EndSCHEMATC
