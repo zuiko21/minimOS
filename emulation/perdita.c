@@ -2226,8 +2226,8 @@ void process_keyboard(SDL_Event *e) {
 			case 8: controllers[e->jbutton.which] |= BUTTON_SELECT; break;
         	case 9: controllers[e->jbutton.which] |= BUTTON_START; break;
         }
-		if (ver) printf("controllers[0] = $%x\n", controllers[0]);
-		if (ver) printf("controllers[0] = $%x\n", controllers[1]);
+		if (ver > 2) printf("controllers[0] = $%x\n", controllers[0]);
+		if (ver > 2) printf("controllers[0] = $%x\n", controllers[1]);
 	}
 	// Controller button up
 	else if(e->type == SDL_JOYBUTTONUP) {
@@ -2239,8 +2239,8 @@ void process_keyboard(SDL_Event *e) {
         	case 8: controllers[e->jbutton.which] &= ~BUTTON_SELECT; break;
         	case 9: controllers[e->jbutton.which] &= ~BUTTON_START; break;
         }
-		if (ver) printf("controllers[0] = $%x\n", controllers[0]);
-		if (ver) printf("controllers[0] = $%x\n", controllers[1]);
+		if (ver > 2) printf("controllers[0] = $%x\n", controllers[0]);
+		if (ver > 2) printf("controllers[0] = $%x\n", controllers[1]);
 	}
 	else if( e->type == SDL_JOYAXISMOTION) {
 		if (ver) printf("controller: %d, axis: %d, value: %d\n", e->jaxis.which, e->jaxis.axis, e->jaxis.value);
@@ -2274,8 +2274,8 @@ void process_keyboard(SDL_Event *e) {
 			controllers[e->jaxis.which] &= ~BUTTON_UP;
 			controllers[e->jaxis.which] &= ~BUTTON_DOWN;
 		}
-		if (ver) printf("controllers[0] = $%x\n", controllers[0]);
-		if (ver) printf("controllers[0] = $%x\n", controllers[1]);
+		if (ver > 2) printf("controllers[0] = $%x\n", controllers[0]);
+		if (ver > 2) printf("controllers[0] = $%x\n", controllers[1]);
 	}
 }
 
