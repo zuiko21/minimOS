@@ -2260,20 +2260,22 @@ void process_keyboard(SDL_Event *e) {
 			controllers[e->jaxis.which] &= ~BUTTON_RIGHT;
 		}
 		// Up
-		if(e->jaxis.axis==0 && e->jaxis.value<0) {
+		if(e->jaxis.axis==1 && e->jaxis.value<0) {
 			controllers[e->jaxis.which] |= BUTTON_UP;
 			controllers[e->jaxis.which] &= ~BUTTON_DOWN;
 		}
 		// Down
-		else if(e->jaxis.axis==0 && e->jaxis.value>0) {
+		else if(e->jaxis.axis==1 && e->jaxis.value>0) {
 			controllers[e->jaxis.which] &= ~BUTTON_UP;
 			controllers[e->jaxis.which] |= BUTTON_DOWN;
 		}
 		// None
-		else if(e->jaxis.axis==0 && e->jaxis.value==0) {
+		else if(e->jaxis.axis==1 && e->jaxis.value==0) {
 			controllers[e->jaxis.which] &= ~BUTTON_UP;
 			controllers[e->jaxis.which] &= ~BUTTON_DOWN;
 		}
+		if (ver) printf("controllers[0] = $%x\n", controllers[0]);
+		if (ver) printf("controllers[0] = $%x\n", controllers[1]);
 	}
 }
 
