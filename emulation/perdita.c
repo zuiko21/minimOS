@@ -16,23 +16,35 @@
 	typedef uint8_t byte;
 	typedef uint16_t word;
 
+/* constants */
+#define BUTTON_A 0x80
+#define BUTTON_START 0x40
+#define BUTTON_B 0x20
+#define BUTTON_SELECT 0x10
+#define BUTTON_UP 0x08
+#define BUTTON_LEFT 0x04
+#define BUTTON_DOWN 0x02
+#define BUTTON_RIGHT 0x01
+
+
 /* global variables */
-	byte mem[65536];		// unified memory map
+	byte mem[65536];			// unified memory map
+	byte controllers[2];	// controller 2 register
 
-	byte a, x, y, s, p;		// 8-bit registers
-	word pc;				// program counter
+	byte a, x, y, s, p;			// 8-bit registers
+	word pc;					// program counter
 
-	word screen = 0;		// Durango screen switcher, xSSxxxxx xxxxxxxx *** may not use it
-	int dec;				// decimal flag for speed penalties (CMOS only)
-	int run = 1;			// allow execution
-	int ver = 0;			// verbosity mode, 0 = none, 1 = warnings, 2 = interrupts, 3 = jumps, 4 = all; will stop on BRK unless < 2
-	int fast = 0;			// speed flag
-	int graf = 1;			// enable SDL2 graphic display
-	int safe = 0;			// enable safe mode (stops on warnings)
-	int stat_flag = 0;		// external control
-	int nmi_flag = 0;		// interrupt control
+	word screen = 0;			// Durango screen switcher, xSSxxxxx xxxxxxxx *** may not use it
+	int dec;					// decimal flag for speed penalties (CMOS only)
+	int run = 1;				// allow execution
+	int ver = 0;				// verbosity mode, 0 = none, 1 = warnings, 2 = interrupts, 3 = jumps, 4 = all; will stop on BRK unless < 2
+	int fast = 0;				// speed flag
+	int graf = 1;				// enable SDL2 graphic display
+	int safe = 0;				// enable safe mode (stops on warnings)
+	int stat_flag = 0;			// external control
+	int nmi_flag = 0;			// interrupt control
 	int irq_flag = 0;
-	long cont = 0;			// total elapsed cycles
+	long cont = 0;				// total elapsed cycles
 
 /* global vdu variables */
 	// Screen width in pixels
@@ -399,11 +411,11 @@ byte peek(word dir) {
 	byte d = 0xFF;				// supposed floating databus value?
 
 	if (dir>=0xDF80 && dir<=0xDFFF) {	// *** I/O ***
-		if (dir<=0xDF87)		// video mode (high nibble readable)
+		if (dir<=0xDF87) {		// video mode (high nibble readable)
 			d = mem[0xDF80] | 0x0F;		// assume RGB mode and $FF floating value
-		else if (dir<=0xDF8F)	// sync flags
+		} else if (dir<=0xDF8F) {	// sync flags
 			d = mem[0xDF88];
-		else if (dir<=0xDF9F) {	// expansion port
+		} else if (dir<=0xDF9F) {	// expansion port
 			d = mem[dir];		// *** is this OK?
 		} else if (dir<=0xDFBF) {		// interrupt control and beeper are NOT readable and WILL be corrupted otherwise
 			if (ver)	printf("\n*** Reading from Write-only ports at $%04X ***\n", pc);
@@ -434,6 +446,12 @@ void poke(word dir, byte v) {
 		} else if (dir<=0xDF8F) {				// sync flags not writable!
 			if (ver)	printf("\n*** Writing to Read-only ports at $%04X ***\n", pc);
 			if (safe)	run = 0;
+		} else if (dir==0xDF9C) { // controller 1 at $df9c
+			if (ver>5)	printf("Latch controllers\n");
+			mem[dir]=controllers[0];
+		} else if (dir==0xDF9D) { // controllers 2 at $df9d 
+			if (ver>5)	printf("Shift controllers\n");
+			mem[dir]=controllers[1];
 		} else if (dir<=0xDF9F) {				// expansion port?
 			mem[dir] = v;		// *** is this OK?
 		} else if (dir<=0xDFAF)	// interrupt control?
@@ -473,6 +491,8 @@ void reset(void) {
 	p |= 0b00110100;						// these always 1, includes SEI
 	dec = 0;								// per CLD above
 	mem[0xDFA0] = 0;						// interrupt gets disabled on RESET!
+	controllers[0] = 0;						// Reset controller 1 register
+	controllers[1] = 0;						// Reset controller 2 register
 
 	cont = 0;								// reset global cycle counter?
 }
@@ -2194,6 +2214,68 @@ void process_keyboard(SDL_Event *e) {
 	// detect key release for PASK compatibility
 	else if(e->type == SDL_KEYUP) {
 		mem[0xDF9A] = 0;
+	}
+	// Controller button down
+	else if(e->type == SDL_JOYBUTTONDOWN) {
+		if (ver) printf("controller: %d button: %d\n",e->jbutton.which, e->jbutton.button);
+		switch( e->jbutton.button) {
+        	case 0: controllers[e->jbutton.which] |= BUTTON_A; break;
+        	case 1: controllers[e->jbutton.which] |= BUTTON_B; break;
+        	case 2: controllers[e->jbutton.which] |= BUTTON_A; break;
+        	case 3: controllers[e->jbutton.which] |= BUTTON_B; break;
+			case 8: controllers[e->jbutton.which] |= BUTTON_SELECT; break;
+        	case 9: controllers[e->jbutton.which] |= BUTTON_START; break;
+        }
+		if (ver > 2) printf("controllers[0] = $%x\n", controllers[0]);
+		if (ver > 2) printf("controllers[0] = $%x\n", controllers[1]);
+	}
+	// Controller button up
+	else if(e->type == SDL_JOYBUTTONUP) {
+		switch( e->jbutton.button) {
+        	case 0: controllers[e->jbutton.which] &= ~BUTTON_A; break;
+        	case 1: controllers[e->jbutton.which] &= ~BUTTON_B; break;
+			case 2: controllers[e->jbutton.which] &= ~BUTTON_A; break;
+        	case 3: controllers[e->jbutton.which] &= ~BUTTON_B; break;
+        	case 8: controllers[e->jbutton.which] &= ~BUTTON_SELECT; break;
+        	case 9: controllers[e->jbutton.which] &= ~BUTTON_START; break;
+        }
+		if (ver > 2) printf("controllers[0] = $%x\n", controllers[0]);
+		if (ver > 2) printf("controllers[0] = $%x\n", controllers[1]);
+	}
+	else if( e->type == SDL_JOYAXISMOTION) {
+		if (ver) printf("controller: %d, axis: %d, value: %d\n", e->jaxis.which, e->jaxis.axis, e->jaxis.value);
+		// Left
+		if(e->jaxis.axis==0 && e->jaxis.value<0) {
+			controllers[e->jaxis.which] |= BUTTON_LEFT;
+			controllers[e->jaxis.which] &= ~BUTTON_RIGHT;
+		}
+		// Right
+		else if(e->jaxis.axis==0 && e->jaxis.value>0) {
+			controllers[e->jaxis.which] &= ~BUTTON_LEFT;
+			controllers[e->jaxis.which] |= BUTTON_RIGHT;
+		}
+		// None
+		else if(e->jaxis.axis==0 && e->jaxis.value==0) {
+			controllers[e->jaxis.which] &= ~BUTTON_LEFT;
+			controllers[e->jaxis.which] &= ~BUTTON_RIGHT;
+		}
+		// Up
+		if(e->jaxis.axis==1 && e->jaxis.value<0) {
+			controllers[e->jaxis.which] |= BUTTON_UP;
+			controllers[e->jaxis.which] &= ~BUTTON_DOWN;
+		}
+		// Down
+		else if(e->jaxis.axis==1 && e->jaxis.value>0) {
+			controllers[e->jaxis.which] &= ~BUTTON_UP;
+			controllers[e->jaxis.which] |= BUTTON_DOWN;
+		}
+		// None
+		else if(e->jaxis.axis==1 && e->jaxis.value==0) {
+			controllers[e->jaxis.which] &= ~BUTTON_UP;
+			controllers[e->jaxis.which] &= ~BUTTON_DOWN;
+		}
+		if (ver > 2) printf("controllers[0] = $%x\n", controllers[0]);
+		if (ver > 2) printf("controllers[0] = $%x\n", controllers[1]);
 	}
 }
 

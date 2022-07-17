@@ -2128,6 +2128,12 @@ function SimulatorWidget(node) {
         return true;
       }
 
+      // Match .byte
+      if (lineno >= 0 && input.match(/^\.byte+\s+(\$[0-9a-f][0-9a-f],*\s*)+$/)) {
+        param = input.replace(/\.byte+\s+/, "").replace(/\s+/g, '');
+        return DCB(param);
+      }
+
       if (input.match(/^\w+\s+.*?$/)) {
         param = input.replace(/^\w+\s+(.*?)/, "$1");
       } else {
@@ -2467,6 +2473,7 @@ function SimulatorWidget(node) {
 
     // pushByte() - Push byte to memory
     function pushByte(value) {
+      //message("pushed " + value.toString(16) + " at "+defaultCodePC.toString(16));
       memory.set(defaultCodePC, value & 0xff);
       defaultCodePC++;
       codeLen++;
