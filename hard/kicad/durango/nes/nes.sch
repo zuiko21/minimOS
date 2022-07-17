@@ -18,8 +18,8 @@ $Comp
 L Connector_Generic:Conn_2Rows-07Pins J1
 U 1 1 624170B7
 P 4150 2000
-F 0 "J1" V 4246 1712 50  0000 R CNN
-F 1 "NES 0" V 4155 1712 50  0000 R CNN
+F 0 "J1" V 4450 1850 50  0000 R CNN
+F 1 "NES 0" V 4350 1850 50  0000 R CNN
 F 2 "Connector_PinSocket_2.54mm:PinSocket_2x04_P2.54mm_Vertical" H 4150 2000 50  0001 C CNN
 F 3 "~" H 4150 2000 50  0001 C CNN
 	1    4150 2000
@@ -31,8 +31,8 @@ $Comp
 L Connector_Generic:Conn_2Rows-07Pins J2
 U 1 1 62418766
 P 5000 2000
-F 0 "J2" V 5096 1712 50  0000 R CNN
-F 1 "NES 1" V 5005 1712 50  0000 R CNN
+F 0 "J2" V 5300 1850 50  0000 R CNN
+F 1 "NES 1" V 5200 1850 50  0000 R CNN
 F 2 "Connector_PinSocket_2.54mm:PinSocket_2x04_P2.54mm_Vertical" H 5000 2000 50  0001 C CNN
 F 3 "~" H 5000 2000 50  0001 C CNN
 	1    5000 2000
@@ -43,23 +43,23 @@ NoConn ~ 5000 1700
 $Comp
 L power:+5V #PWR0101
 U 1 1 6241C2BB
-P 5100 1700
-F 0 "#PWR0101" H 5100 1550 50  0001 C CNN
-F 1 "+5V" H 5115 1873 50  0000 C CNN
-F 2 "" H 5100 1700 50  0001 C CNN
-F 3 "" H 5100 1700 50  0001 C CNN
-	1    5100 1700
+P 5100 1650
+F 0 "#PWR0101" H 5100 1500 50  0001 C CNN
+F 1 "+5V" H 5115 1823 50  0000 C CNN
+F 2 "" H 5100 1650 50  0001 C CNN
+F 3 "" H 5100 1650 50  0001 C CNN
+	1    5100 1650
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:+5V #PWR0102
 U 1 1 6241C45F
-P 4250 1700
-F 0 "#PWR0102" H 4250 1550 50  0001 C CNN
-F 1 "+5V" H 4265 1873 50  0000 C CNN
-F 2 "" H 4250 1700 50  0001 C CNN
-F 3 "" H 4250 1700 50  0001 C CNN
-	1    4250 1700
+P 4250 1650
+F 0 "#PWR0102" H 4250 1500 50  0001 C CNN
+F 1 "+5V" H 4265 1823 50  0000 C CNN
+F 2 "" H 4250 1650 50  0001 C CNN
+F 3 "" H 4250 1650 50  0001 C CNN
+	1    4250 1650
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -250,19 +250,7 @@ F 3 "" H 2150 4650 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	2200 3300 2750 3300
-Wire Wire Line
-	2200 3400 2800 3400
-Wire Wire Line
-	2200 3500 2850 3500
-Wire Wire Line
 	2200 3600 2900 3600
-Wire Wire Line
-	2200 3700 2950 3700
-Wire Wire Line
-	2200 3800 3000 3800
-Wire Wire Line
-	2200 3900 3050 3900
 Wire Wire Line
 	2200 4000 3100 4000
 NoConn ~ 3150 4200
@@ -286,7 +274,6 @@ Wire Wire Line
 	5800 4600 5800 3900
 Wire Wire Line
 	5800 3900 5700 3900
-Connection ~ 3050 3900
 Wire Wire Line
 	3050 3900 3150 3900
 Wire Wire Line
@@ -297,18 +284,16 @@ Wire Wire Line
 	5850 4650 5850 3800
 Wire Wire Line
 	5850 3800 5700 3800
-Connection ~ 3000 3800
 Wire Wire Line
 	3000 3800 3150 3800
 Wire Wire Line
-	2950 3700 2950 4700
+	2950 3700 2950 3900
 Wire Wire Line
 	2950 4700 5900 4700
 Wire Wire Line
 	5900 4700 5900 3700
 Wire Wire Line
 	5900 3700 5700 3700
-Connection ~ 2950 3700
 Wire Wire Line
 	2950 3700 3150 3700
 Wire Wire Line
@@ -330,18 +315,16 @@ Wire Wire Line
 	6000 4800 6000 3500
 Wire Wire Line
 	6000 3500 5700 3500
-Connection ~ 2850 3500
 Wire Wire Line
 	2850 3500 3150 3500
 Wire Wire Line
-	2800 3400 2800 4850
+	2800 3400 2800 3500
 Wire Wire Line
 	2800 4850 6050 4850
 Wire Wire Line
 	6050 4850 6050 3400
 Wire Wire Line
 	6050 3400 5700 3400
-Connection ~ 2800 3400
 Wire Wire Line
 	2800 3400 3150 3400
 Wire Wire Line
@@ -352,24 +335,23 @@ Wire Wire Line
 	6100 4900 6100 3300
 Wire Wire Line
 	6100 3300 5700 3300
-Connection ~ 2750 3300
 Wire Wire Line
 	2750 3300 3150 3300
-Text Label 2550 3300 0    50   ~ 0
+Text Label 2200 3300 0    50   ~ 0
 PD0
-Text Label 2550 3400 0    50   ~ 0
+Text Label 2200 3400 0    50   ~ 0
 PD1
-Text Label 2550 3500 0    50   ~ 0
+Text Label 2200 3500 0    50   ~ 0
 PD2
-Text Label 2550 3600 0    50   ~ 0
+Text Label 2200 3600 0    50   ~ 0
 PD3
-Text Label 2550 3700 0    50   ~ 0
+Text Label 2200 3700 0    50   ~ 0
 PD4
-Text Label 2550 3800 0    50   ~ 0
+Text Label 2200 3800 0    50   ~ 0
 PD5
-Text Label 2550 3900 0    50   ~ 0
+Text Label 2200 3900 0    50   ~ 0
 PD6
-Text Label 2550 4000 0    50   ~ 0
+Text Label 2200 4000 0    50   ~ 0
 PD7
 Text Label 4300 3500 0    50   ~ 0
 NESCLK
@@ -636,4 +618,88 @@ Text Label 4250 2800 1    50   ~ 0
 NESCLK
 Text Label 5100 2800 1    50   ~ 0
 NESCLK
+Connection ~ 2750 3300
+Wire Wire Line
+	2200 3300 2750 3300
+Wire Wire Line
+	2800 3500 2200 3500
+Connection ~ 2800 3500
+Wire Wire Line
+	2800 3500 2800 4850
+Wire Wire Line
+	2850 3500 2850 3450
+Wire Wire Line
+	2850 3450 2700 3450
+Wire Wire Line
+	2700 3450 2700 3400
+Wire Wire Line
+	2700 3400 2200 3400
+Connection ~ 2850 3500
+Wire Wire Line
+	2950 3900 2200 3900
+Connection ~ 2950 3900
+Wire Wire Line
+	2950 3900 2950 4700
+Wire Wire Line
+	3000 3800 2700 3800
+Wire Wire Line
+	2700 3800 2700 3700
+Wire Wire Line
+	2700 3700 2200 3700
+Connection ~ 3000 3800
+Wire Wire Line
+	3050 3900 3050 3850
+Wire Wire Line
+	3050 3850 2650 3850
+Wire Wire Line
+	2650 3850 2650 3800
+Wire Wire Line
+	2650 3800 2200 3800
+Connection ~ 3050 3900
+$Comp
+L Device:R R1
+U 1 1 62D4C717
+P 3900 1950
+F 0 "R1" H 3750 2000 50  0000 L CNN
+F 1 "220K" V 3900 1850 50  0000 L CNN
+F 2 "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical" V 3830 1950 50  0001 C CNN
+F 3 "~" H 3900 1950 50  0001 C CNN
+	1    3900 1950
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R2
+U 1 1 62D56DA8
+P 4750 1950
+F 0 "R2" H 4600 2000 50  0000 L CNN
+F 1 "220K" V 4750 1850 50  0000 L CNN
+F 2 "Resistor_THT:R_Axial_DIN0204_L3.6mm_D1.6mm_P2.54mm_Vertical" V 4680 1950 50  0001 C CNN
+F 3 "~" H 4750 1950 50  0001 C CNN
+	1    4750 1950
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3950 2200 3950 2100
+Wire Wire Line
+	3950 2100 3900 2100
+Connection ~ 3950 2200
+Wire Wire Line
+	4800 2200 4800 2100
+Wire Wire Line
+	4800 2100 4750 2100
+Connection ~ 4800 2200
+Wire Wire Line
+	4750 1800 4750 1650
+Wire Wire Line
+	4750 1650 5100 1650
+Wire Wire Line
+	5100 1650 5100 1700
+Connection ~ 5100 1650
+Wire Wire Line
+	4250 1700 4250 1650
+Wire Wire Line
+	4250 1650 3900 1650
+Wire Wire Line
+	3900 1650 3900 1800
+Connection ~ 4250 1650
 $EndSCHEMATC
