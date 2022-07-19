@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<title>nimimOS memory map</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content="emiliollbb" />
+		<meta name="keywords" content="Durango 6502 retro @zuiko21">
+		<style type="text/css">
+			.kernel {
+				color: black;
+				background-color: yellow;
+			}
+			.fw {
+				color: white;
+				background-color: red;
+			}
+			.arch {
+				color: black;
+				background-color: cyan;
+			}
+			.ok {
+				color: black;
+				background-color: lime;
+			}
+			.blk {
+				color: black;
+				letter-spacing: 4px;
+				background-color: lightgrey;
+				text-align: center;
+			}
+		</style>
+	</head>
+	<body style="font-family:'DIN 30640 Std', 'Neuzeit Grotesk', 'ITC Avant Garde', Futura, 'Century Gothic', 'URW Gothic', sans-serif">
+		<p align="right"><a href="index-es.html"><img src="pics/es.png" width="80" height="53" /><br />En español</a></p>
+		<img src="pics/minimOS.png" alt="minimOS logo" width="318" height="69" />
+		<h2>A retro-inspired architecture</h2>
+		<h3>Memory map</h3>
+		<p>
+			Although the open <a href="durango.html"><i>Durango</i></a> architecture allows <b>full access</b> to <i>bare metal</i>,
+			future integration within the <b>minimOS</b> environment should be taken into account.
+		</p>
+		<table border="1">
+			<tr>
+				<th>Addresses</th>
+				<th>Usage by firmware</th>
+				<th>Usage by Kernel</th>
+				<th>Architecture-dependent usage</th>
+				<th>Notes:</th>
+			</tr>
+			<tr><td class="blk" colspan="5">Zero Page</td></tr>
+			<tr>
+				<td class="kernel"><code>$0000-$0001</code></td>
+				<td></td>
+				<td class="kernel"><code>std_in/stdout</code><br />(standard console devices)</td>
+				<td class="arch">6510 I/O port<br /><i>(Commodore 64)</i></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="kernel"><code>$0002</code></td>
+				<td></td>
+				<td class="kernel"><code>z_used</code><br />(ZP usage)</td>
+				<td></td>
+				<td>
+					Some <i>multitasking drivers</i> may improve performance if<br />
+					<b>total ZP usage</b> is set here, otherwise leave indisturbed
+				</td>
+			</tr>
+			<tr>
+				<td class="ok"><code>$0003-$00C3</code></td>
+				<td></td>
+				<td></td>
+				<td></td>
+				<td class="ok">FREE ZEROPAGE FOR ALL</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$00C4-$00DF</code></td>
+				<td class="fw"><code>nanoMon</code> debugger workspace</td>
+				<td></td>
+				<td></td>
+				<td>Only reserved if <i>some debuggers</i> (<code>nanoMon</code>) are used, FREE otherwise</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$00E0-$00E1</code></td>
+				<td></td>
+				<td class="kernel"><code>std_in/stdout</code><br />(standard console devices)</td>
+				<td class="arch">6510 I/O port<br /><i>Commodore 64</i> only</td>
+				<td>Only reserved if kernel <i>and</i> 6510 CPU are used; FREE otherwise</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$00E2-$00E3</code></td>
+				<td class="fw"><code>nmos_ii</code><br />(<i>indirect-indexed jump</i> macro for NMOS)</td>
+				<td></td>
+				<td class="arch"><b>NMOS</b> 6502 <code>JMP (abs,X)</code> replacement vector</td>
+				<td>
+					Only reserved if this macro <i>and</i> an NMOS 6502 CPU are used; FREE otherwise.
+					<small>Firmware uses this as <i>procedure call</i> method.</small>
+				</td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$00E4-$00EF</code></td>
+				<td class="fw" colspan="2">Kernel and firmware <b>local variables</b></td>
+				<td></td>
+				<td>Some bytes may be free if only a certain subset of functions are used</td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$00F0-$00FB</code></td>
+				<td class="fw" colspan="2">Kernel and firmware <b>parameters</b></td>
+				<td></td>
+				<td>Some bytes may be free if only a certain subset of functions are used</td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$00FC-$00FE</code></td>
+				<td class="fw"><code>sysptr/systmp</code><br />ZP space for interrupts</td>
+				<td></td>
+				<td></td>
+				<td>FREE for use <i>if interrupts are disabled</i>, otherwise may be corrupted</td>
+			</tr>
+			<tr>
+				<td class="kernel"><code>$00FC-$00FE</code></td>
+				<td class="fw">?</td>
+				<td class="kernel"><code>sys_sp</code><br />(ZP space for multitasking)</td>
+				<td></td>
+				<td>FREE <i>if no multitasking is used</i>, but some Firmware or interrupt components <b>might</b> use it!</td>
+			</tr>
+			<tr><td class="blk" colspan="5">Stack</td></tr>
+			<tr>
+				<td class="arch"><code>$0100-$0101</code></td>
+				<td class="fw">Debugger workspace</td>
+				<td></td>
+				<td></td>
+				<td>
+					Only reserved if <i>some debuggers</i> (<code>devX</code>) are used.<br />
+					<small><b>Stack Pointer</b> should be initialised to <code>$FF</code> as general practice.</small>
+				</td>
+			</tr>
+			<tr>
+				<td class="ok"><code>$0102-$01FF</code></td>
+				<td></td>
+				<td class="kernel">?</td>
+				<td></td>
+				<td>
+					Standard 6502 stack space.<br />
+					<small>
+						Most of this space will be free, but use with caution!<br />
+						<b>Stack Pointer</b> should be initialised to <code>$FF</code> as general practice.
+					</small>
+				</td>
+			</tr>
+			<tr><td class="blk" colspan="5">Rest of RAM</td></tr>
+			<tr>
+				<td class="fw"><code>$0200-$0201</code></td>
+				<td class="fw"><code>fw_irq</code><br />(firmware IRQ vector)</td>
+				<td></td>
+				<td></td>
+				<td>6502 <i>hardware</i> IRQ vector is recommended to point to <code>JMP ($0200)</code> as general practice.
+				</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$0202-$0203</code></td>
+				<td class="fw"><code>fw_nmi</code><br />(firmware NMI vector)</td>
+				<td></td>
+				<td></td>
+				<td>The <i>NMI handler</i> is expected to check this address in case of user-supplied NMI routines.</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$0203-$0204</code></td>
+				<td class="fw"><code>fw_dbg</code><br />(firmware debug vector)</td>
+				<td></td>
+				<td></td>
+				<td>The <i>BRK handler</i> is expected to check this address in case of user-supplied debuggers.</td>
+				</td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$0205-$0209</code></td>
+				<td class="fw" colspan="2"><code>ticks</code><br />(250 Hz IRQ counter)</td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$020A-$03FF</code></td>
+				<td class="fw" colspan="2">Kernel and firmware <b>data structures</b></td>
+				<td></td>
+				<td>Actual usage depends on software version, hopefully within this range!</td>
+			</tr>
+			<tr>
+				<td class="ok"><code>$0400-$7FFF</code></td>
+				<td></td>
+				<td></td>
+				<td></td>
+				<td class="ok">
+					FREE RAM FOR ALL.<br />
+					<small>Usually the last 8 kiB <code>($6000-$7FFF)</code> will be used as <b>screen</b> memory.</small>
+				</td>
+			</tr>
+			<tr><td class="blk" colspan="5">Low ROM</td></tr>
+			<tr><td class="blk" colspan="5">Input/Output</td></tr>
+			<tr><td class="blk" colspan="5">High ROM</td></tr>
+		</table>
+		<h4 style="color:pink"><i>More to come?</i></h4>
+		<p align="right">Last modified: 2022-07-19</p>
+	</body>
+</html>
