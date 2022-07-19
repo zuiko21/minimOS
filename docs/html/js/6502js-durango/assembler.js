@@ -339,7 +339,7 @@ function SimulatorWidget(node) {
   }
 
   function Memory() {
-    var memArray = new Array(0x8000);
+    var memArray = new Array(0x10000);
 
     function set(addr, val) {
       return memArray[addr] = val;
@@ -354,15 +354,24 @@ function SimulatorWidget(node) {
     }
 
     // storeByte() - Poke a byte, don't touch any registers
-
     function storeByte(addr, value) {
+      /* I/O Address space */
+      if (addr > 0xdf80 && addr <= 0xdfff) {
+        return;
+      }
+      
+      /* ROM Address space */
+      if (addr >= 0xe000 && addr <= 0xffff) {
+        return;
+      }
+      
       set(addr, value & 0xff);
       
       /* Update screen if video map has been updated */
       // Get video memory position      
       var screenAddress = ((memory.get(0xdf80) & 0x30)>>4)*0x2000;
       var screenAddressEnd = screenAddress + 0x2000;
-      if ((addr >= screenAddress) && (addr < screenAddressEnd)) {
+      if (addr >= screenAddress && addr < screenAddressEnd) {
         display.updatePixel(addr);
       }
     }
@@ -371,6 +380,7 @@ function SimulatorWidget(node) {
     function storeKeypress(e) {
       value = e.which;
       memory.storeByte(0xdf9a, value);
+      console.log(value);
     }
 
     function format(start, length) {
