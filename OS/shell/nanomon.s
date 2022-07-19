@@ -1,7 +1,7 @@
 ; minimOS nano-monitor
-; v0.3a4
+; v0.3b1
 ; (c) 2018-2022 Carlos J. Santisteban
-; last modified 20220102-1338
+; last modified 20220719-1411
 ; 65816-savvy, but in emulation mode ONLY
 
 ; *** stub as NMI handler, now valid for BRK ***
@@ -32,8 +32,8 @@
 ; option to pick full status from standard stack frame, comment if handler not available
 #define	NMI_SF	_NMI_SF
 
-BUFFER	= 9				; enough for a single command, even one for a byte and another for a word
-STKSIZ	= 4				; in order not to get into return stack space! writes use up to three
+BUFFER	= 11			; enough for a single command, even one for a byte and another for a word
+STKSIZ	= 5				; in order not to get into return stack space! writes use up to three
 ; note that with ZP addressing will wrap into start of zeropage, problem with 6510 or default I/O!
 
 ; **********************
@@ -41,7 +41,7 @@ STKSIZ	= 4				; in order not to get into return stack space! writes use up to th
 ; **********************
 ; 6502 registers
 ; S is never stacked, but must be stored anyway!
-	z_s		= $C0		; CANNOT use kernel parameter space
+	z_s		= $C4		; CANNOT use kernel parameter space
 ; stacked registers
 	z_y		= z_s+1
 	z_x		= z_y+1		; must respect register order, now matching stacked order!
@@ -56,7 +56,7 @@ STKSIZ	= 4				; in order not to get into return stack space! writes use up to th
 	z_tmp	= z_dat+1
 	buff	= z_tmp+1
 	stack	= buff+BUFFER
-
+	nm_f_zt	= stack+STKSIZ	; for ZP usage compute
 ; ******************
 ; *** init stuff ***
 ; ******************
