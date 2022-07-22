@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
-		<title>nimimOS memory map</title>
+		<title>minimOS memory map</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="description" content="emiliollbb" />
@@ -23,6 +23,10 @@
 				color: black;
 				background-color: lime;
 			}
+			.need {
+				color: black;
+				background-color: orange;
+			}
 			.blk {
 				color: black;
 				letter-spacing: 4px;
@@ -41,6 +45,8 @@
 			future integration within the <b>minimOS</b> environment should be taken into account.
 		</p>
 		<table border="1">
+			<!-- zero page -->
+			<tr><td class="blk" colspan="5">Zero Page</td></tr>
 			<tr>
 				<th>Addresses</th>
 				<th>Usage by firmware</th>
@@ -48,50 +54,46 @@
 				<th>Architecture-dependent usage</th>
 				<th>Notes:</th>
 			</tr>
-			<tr><td class="blk" colspan="5">Zero Page</td></tr>
 			<tr>
 				<td class="kernel"><code>$0000-$0001</code></td>
 				<td></td>
-				<td class="kernel"><code>std_in/stdout</code><br />(standard console devices)</td>
-				<td class="arch">6510 I/O port<br /><i>(Commodore 64)</i></td>
+				<td class="kernel"><code>std_in/stdout</code><br />standard console devices.</td>
+				<td class="arch">6510 I/O port for<br /><i>Commodore 64</i> only.</td>
 				<td></td>
 			</tr>
 			<tr>
 				<td class="kernel"><code>$0002</code></td>
 				<td></td>
-				<td class="kernel"><code>z_used</code><br />(ZP usage)</td>
+				<td class="kernel"><code>z_used</code> (ZP usage count)</td>
 				<td></td>
 				<td>
-					Some <i>multitasking drivers</i> may improve performance if<br />
-					<b>total ZP usage</b> is set here, otherwise leave indisturbed
+					Some <i>multitasking drivers</i> may improve performance if
+					<b>total ZP usage</b> is set here, otherwise leave indisturbed.
 				</td>
 			</tr>
 			<tr>
 				<td class="ok"><code>$0003-$00C3</code></td>
-				<td></td>
-				<td></td>
-				<td></td>
-				<td class="ok">FREE ZEROPAGE FOR ALL</td>
+				<td class="ok" colspan="4">FREE <b>ZEROPAGE</b> FOR ALL.</td>
 			</tr>
 			<tr>
 				<td class="arch"><code>$00C4-$00DF</code></td>
-				<td class="fw"><code>nanoMon</code> debugger workspace</td>
+				<td class="fw"><code>nanoMon</code> debugger workspace.</td>
 				<td></td>
 				<td></td>
-				<td>Only reserved if <i>some debuggers</i> (<code>nanoMon</code>) are used, FREE otherwise</td>
+				<td>Only reserved if <i>some debuggers</i> (<code>nanoMon</code>) are used, FREE otherwise.</td>
 			</tr>
 			<tr>
 				<td class="arch"><code>$00E0-$00E1</code></td>
 				<td></td>
-				<td class="kernel"><code>std_in/stdout</code><br />(standard console devices)</td>
-				<td class="arch">6510 I/O port<br /><i>Commodore 64</i> only</td>
-				<td>Only reserved if kernel <i>and</i> 6510 CPU are used; FREE otherwise</td>
+				<td class="kernel"><code>std_in/stdout</code><br />standard console devices.</td>
+				<td class="arch">Alternative location for<br /><i>Commodore 64</i> only.</td>
+				<td>Only reserved if kernel <i>and</i> 6510 CPU are used; FREE otherwise.</td>
 			</tr>
 			<tr>
 				<td class="arch"><code>$00E2-$00E3</code></td>
 				<td class="fw"><code>nmos_ii</code><br />(<i>indirect-indexed jump</i> macro for NMOS)</td>
 				<td></td>
-				<td class="arch"><b>NMOS</b> 6502 <code>JMP (abs,X)</code> replacement vector</td>
+				<td class="arch"><b>NMOS</b> 6502 <code>JMP (abs,X)</code> replacement vector.</td>
 				<td>
 					Only reserved if this macro <i>and</i> an NMOS 6502 CPU are used; FREE otherwise.
 					<small>Firmware uses this as <i>procedure call</i> method.</small>
@@ -99,39 +101,51 @@
 			</tr>
 			<tr>
 				<td class="fw"><code>$00E4-$00EF</code></td>
-				<td class="fw" colspan="2">Kernel and firmware <b>local variables</b></td>
+				<td class="fw" colspan="2">Kernel and firmware <b>local variables</b>.</td>
 				<td></td>
-				<td>Some bytes may be free if only a certain subset of functions are used</td>
+				<td>Some bytes may be free if only a certain subset of functions are used.</td>
 			</tr>
 			<tr>
 				<td class="fw"><code>$00F0-$00FB</code></td>
-				<td class="fw" colspan="2">Kernel and firmware <b>parameters</b></td>
+				<td class="fw" colspan="2">Kernel and firmware <b>parameters</b>.</td>
 				<td></td>
-				<td>Some bytes may be free if only a certain subset of functions are used</td>
+				<td>Some bytes may be free if only a certain subset of functions are used.</td>
 			</tr>
 			<tr>
 				<td class="fw"><code>$00FC-$00FE</code></td>
-				<td class="fw"><code>sysptr/systmp</code><br />ZP space for interrupts</td>
+				<td class="fw"><code>sysptr/systmp</code><br />ZP space for interrupts.</td>
 				<td></td>
 				<td></td>
-				<td>FREE for use <i>if interrupts are disabled</i>, otherwise may be corrupted</td>
+				<td>FREE for use <i>while interrupts are disabled</i>, otherwise may be corrupted.</td>
 			</tr>
 			<tr>
-				<td class="kernel"><code>$00FC-$00FE</code></td>
+				<td class="kernel"><code>$00FF</code></td>
 				<td class="fw">?</td>
 				<td class="kernel"><code>sys_sp</code><br />(ZP space for multitasking)</td>
 				<td></td>
 				<td>FREE <i>if no multitasking is used</i>, but some Firmware or interrupt components <b>might</b> use it!</td>
 			</tr>
-			<tr><td class="blk" colspan="5">Stack</td></tr>
+			<!-- stack -->
+			<tr>
+				<td class="blk" colspan="5">
+					Stack<br />
+					<small style="letter-spacing: 0px;"><b>Stack Pointer</b> should be initialised to <code>$FF</code> as general practice.</small>
+				</td>
+			</tr>
+			<tr>
+				<th>Addresses</th>
+				<th>Usage by firmware</th>
+				<th>Usage by Kernel</th>
+				<th>Architecture-dependent usage</th>
+				<th>Notes:</th>
+			</tr>
 			<tr>
 				<td class="arch"><code>$0100-$0101</code></td>
-				<td class="fw">Debugger workspace</td>
+				<td class="fw">Debugger workspace.</td>
 				<td></td>
 				<td></td>
 				<td>
 					Only reserved if <i>some debuggers</i> (<code>devX</code>) are used.<br />
-					<small><b>Stack Pointer</b> should be initialised to <code>$FF</code> as general practice.</small>
 				</td>
 			</tr>
 			<tr>
@@ -141,13 +155,18 @@
 				<td></td>
 				<td>
 					Standard 6502 stack space.<br />
-					<small>
-						Most of this space will be free, but use with caution!<br />
-						<b>Stack Pointer</b> should be initialised to <code>$FF</code> as general practice.
-					</small>
+					<small>Most of this space will be free, but use with caution!</small>
 				</td>
 			</tr>
+			<!-- RAM -->
 			<tr><td class="blk" colspan="5">Rest of RAM</td></tr>
+			<tr>
+				<th>Addresses</th>
+				<th>Usage by firmware</th>
+				<th>Usage by Kernel</th>
+				<th>Architecture-dependent usage</th>
+				<th>Notes:</th>
+			</tr>
 			<tr>
 				<td class="fw"><code>$0200-$0201</code></td>
 				<td class="fw"><code>fw_irq</code><br />(firmware IRQ vector)</td>
@@ -185,19 +204,236 @@
 			</tr>
 			<tr>
 				<td class="ok"><code>$0400-$7FFF</code></td>
-				<td></td>
-				<td></td>
-				<td></td>
-				<td class="ok">
-					FREE RAM FOR ALL.<br />
+				<td class="ok" colspan="4">
+					FREE <b>RAM</b> FOR ALL.<br />
 					<small>Usually the last 8 kiB <code>($6000-$7FFF)</code> will be used as <b>screen</b> memory.</small>
 				</td>
 			</tr>
-			<tr><td class="blk" colspan="5">Low ROM</td></tr>
-			<tr><td class="blk" colspan="5">Input/Output</td></tr>
+			<!-- Low ROM -->
+			<tr>
+				<td class="blk" colspan="5">
+					Low ROM<br />
+					<small style="letter-spacing: 0px;">Some systems (e.g. <i>Chihuahua</i>) may lack this block altogether.</small>
+				</td>
+			</tr>
+			<tr>
+				<th>Addresses</th>
+				<th>Usage by firmware</th>
+				<th>Usage by Kernel</th>
+				<th>Architecture-dependent usage</th>
+				<th>Notes:</th>
+			</tr>
+			<tr>
+				<td class="kernel"><code>$8000-$80FF</code></td>
+				<td></td>
+				<td class="kernel">Implicit <code>/sys</code> volume header</td>
+				<td></td>
+				<td>Volume header may be located elsewhere, leaving this page FREE.</td>
+			</tr>
+			<tr>
+				<td class="kernel"><code>$8100-$81FF</code></td>
+				<td></td>
+				<td class="kernel">Header for the first file in <code>/sys</code> volume.</td>
+				<td></td>
+				<td>Volume header may be located elsewhere, leaving this page FREE.</td>
+			</tr>
+			<tr>
+				<td class="ok"><code>$8200-$BFFF</code></td>
+				<td class="ok" colspan="4">FREE <b>ROM</b> FOR ALL.</td>
+			</tr>
+			<!-- I/O -->
+			<tr>
+				<td class="blk" colspan="5">
+					Input/Output<br />
+					<small style="letter-spacing: 0px;">
+						As general practice, <i>arbitrary reads</i> should <b>not</b> be done in this area.<br />
+						<i>Some existing systems may have wildly different I/O addresses; same restrictions apply.</i>
+					</small>
+				</td>
+			</tr>
+			<tr>
+				<th>Addresses</th>
+				<th>Usage by firmware</th>
+				<th>Usage by Kernel</th>
+				<th>Architecture-dependent usage</th>
+				<th>Notes:</th>
+			</tr>
+			<tr>
+				<td class="arch"><code>$DF00-$DF7F</code></td>
+				<td></td>
+				<td></td>
+				<td></td>
+				<td class="arch">
+					Not currently implemented in <i>Durango</i>, but others may use it!<br />
+					<small>
+						<i>Checksum</i> algorithm is expected to <b>skip</b> this whole <i>page</i>, so use at own risk!
+					</small>
+				</td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$DF80-$DFBF</code></td>
+				<td></td>
+				<td></td>
+				<td class="fw"><i>Durango</i> standard I/O ports.</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$DFC0-$DFFF</code></td>
+				<td></td>
+				<td></td>
+				<td class="arch"><b>Cartridge I/O</b> in <i>Durango</i>, but may be used in other machines!</td>
+				<td></td>
+			</tr>
+			<!-- high ROM -->
 			<tr><td class="blk" colspan="5">High ROM</td></tr>
+			<tr>
+				<th>Addresses</th>
+				<th>Usage by firmware</th>
+				<th>Usage by Kernel</th>
+				<th>Architecture-dependent usage</th>
+				<th>Notes:</th>
+			</tr>
+			<tr>
+				<td class="ok"><code>$C000-$FEFF</code></td>
+				<td class="ok" colspan="4">FREE <b>ROM</b> FOR ALL.</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FF00-$FF0B</code></td>
+				<td class="fw"><code>dx_nmi</code> standard <b>debugger</b> header.</td>
+				<td></td>
+				<td></td>
+				<td>
+					Actually intended for the <code>devX</code> debugger, may be used on final versions.
+					<small>See <code>forge/devx/nmi.s</code> for recommended standard code.</small>
+				</td>
+			</tr>
+			<tr>
+				<td class="ok"><code>$FF0C-$FFBD</code></td>
+				<td class="ok" colspan="4">
+					FREE <b>ROM</b> FOR ALL.<br />
+					<small>May use this, after standard header above, for desired NMI handler.</small>
+				</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFBE-$FFBF</code></td>
+				<td class="fw"><code>dx_exit</code> standard <b>debugger</b> end.</td>
+				<td></td>
+				<td></td>
+				<td>
+					Actually intended for the <code>devX</code> debugger, may be used on final versions.
+					<small>Recommended exit code is <code>PLA, RTI</code>.</small>
+				</td>
+			</tr>
+			<tr>
+				<td class="kernel"><code>$FFC0-$FFCF</code></td>
+				<td></td>
+				<td class="kernel"><b>Kernel</b> procedure call, actually part of <i>firmware</i>.</td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$FFD0-$FFD5</code></td>
+				<td class="fw">Firmware procedure call<br /><i>for user code</i>.</td>
+				<td></td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFD6-$FFD9</code></td>
+				<td class="fw"><code>rom_id</code> cartridge signature.</td>
+				<td></td>
+				<td></td>
+				<td class="need">
+					<code>DmOS</code> for <i>Durango</i>-type cartridges (36 pin)<br />
+					<code>VmOS</code> for <i>Veracruz</i>-type cartridges (44 pin)<br />
+				</td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$FFDA-$FFDD</code></td>
+				<td class="fw">Firmware procedure call<br /><i>for <b>Kernel/drivers</b> code</i>.</td>
+				<td></td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$FFDE-$FFDF</code></td>
+				<td class="fw"><code>signature</code> ROM checksum<br /><i>for <b>Fletcher-16</b> algorithm</i>.</td>
+				<td></td>
+				<td></td>
+				<td class="need">
+					Chosen value must result in <i>Fletcher-16</i> result of <b><code>$0000</code></b>.<br />
+					<i>Full <code>$DF</code> I/O page <b>always</b> skipped!</i>
+				</td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$FFE0-$FFE3</code></td>
+				<td class="fw" colspan="2"><code>PANIC</code> handler.</td>
+				<td></td>
+				<td>For <b>extreme I/O failure</b> cases; jump elsewhere to blink an LED or something.</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFE4-$FFEB</code></td>
+				<td></td>
+				<td></td>
+				<td class="arch">65C816 vector space.</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$FFEC</code></td>
+				<td class="fw"><code>aborted</code> handler for <i>unused</i> interrupts.</td>
+				<td></td>
+				<td></td>
+				<td><b>Must</b> be <code>$40</code> (<code>RTI</code>, Return From Interrupt)</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFED</code></td>
+				<td></td>
+				<td></td>
+				<td class="arch">Padding byte for the above, <i>unused in 65(C)02 systems</i>.</td>
+				<td>Recommended value: <code>$FF</code>.</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFEE-$FFF5</code></td>
+				<td></td>
+				<td></td>
+				<td class="arch">65C816 vector space.</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFF6-$FFF7</code></td>
+				<td class="fw"><code>brk_hndl</code> pointer for unified BRK handler.</td>
+				<td></td>
+				<td class="arch"><i>Not</i> actually used in 65C816 systems.</td>
+				<td>
+					<i>Upon BRK detection</i>, IRQ handler is expected to do <code>JMP (brk_hndl)</code><br />
+					which will point to code saving <b>full</b> status, then <i>calling</i> a <code>JMP (fw_dbg)</code> instruction.
+				</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFF8-$FFF9</code></td>
+				<td></td>
+				<td></td>
+				<td class="arch">ABORT vector for 65C816 systems.</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$FFFA-$FFFF</code></td>
+				<td class="fw" colspan="3">Standard 6502 vectors (NMI/RESET/IRQ)</td>
+				<td class="need">Always used!</td>
+			</tr>
+		</table>
+		<br />
+		<table border="0">
+			<tr><th colspan="4">Notes:</th></tr>
+			<tr>
+				<td class="fw">Reserved by Firmware</td>
+				<td class="kernel">Reserved by Kernel only</td>
+				<td class="arch">Architecture-dependent usage</td>
+				<td class="ok">FREE to use</td>
+				<td class="need">Mandatory content</td>
+			</tr>
 		</table>
 		<h4 style="color:pink"><i>More to come?</i></h4>
-		<p align="right">Last modified: 2022-07-19</p>
+		<p align="right">Last modified: 2022-07-23</p>
 	</body>
 </html>
