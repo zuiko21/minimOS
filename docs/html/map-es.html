@@ -1,0 +1,443 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<title>Mapa de memoria de minimOS</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content="emiliollbb" />
+		<meta name="keywords" content="Durango 6502 retro @zuiko21">
+		<style type="text/css">
+			.kernel {
+				color: black;
+				background-color: yellow;
+			}
+			.fw {
+				color: white;
+				background-color: red;
+			}
+			.arch {
+				color: black;
+				background-color: cyan;
+			}
+			.ok {
+				color: black;
+				background-color: lime;
+			}
+			.need {
+				color: black;
+				background-color: orange;
+			}
+			.blk {
+				color: black;
+				letter-spacing: 4px;
+				background-color: lightgrey;
+				text-align: center;
+			}
+		</style>
+	</head>
+	<body style="font-family:'DIN 30640 Std', 'Neuzeit Grotesk', 'ITC Avant Garde', Futura, 'Century Gothic', 'URW Gothic', sans-serif">
+		<p align="right"><a href="map.html"><img src="pics/gb.png" width="80" height="40" /><br />In English</a></p>
+		<img src="pics/minimOS.png" alt="minimOS logo" width="318" height="69" />
+		<h2>Una arquitectura de inspiración retro</h2>
+		<h3>Mapa de memoria</h3>
+		<p>
+			Aunque la arquitectura abierta <a href="durango-es.html"><i>Durango</i></a> permite <b>acceso total</b> al <i>hardware</i>,
+			debe tenerse en cuenta una futura integración en el entorno <b>minimOS</b>.
+		</p>
+		<table border="1">
+			<!-- zero page -->
+			<tr><td class="blk" colspan="5">Página cero</td></tr>
+			<tr>
+				<th>Direcciones</th>
+				<th>Uso por el <i>firmware</i></th>
+				<th>Uso por el Kernel</th>
+				<th>Uso según arquitectura</th>
+				<th>Notas:</th>
+			</tr>
+			<tr>
+				<td class="kernel"><code>$0000-$0001</code></td>
+				<td></td>
+				<td class="kernel"><code>std_in/stdout</code><br />dispositivos estándar de consola.</td>
+				<td class="arch">Puerto E/S del 6510<br />sólo en el <i>Commodore 64</i>.</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="kernel"><code>$0002</code></td>
+				<td></td>
+				<td class="kernel"><code>z_used</code><br />(uso de página cero)</td>
+				<td></td>
+				<td>
+					Algunos <i>drivers para multitarea</i> pueden mejorar su rendimiento
+					si se actualiza este valor con <b>el uso actual de página cero</b>; de lo contrario, debe dejarse como esté.
+				</td>
+			</tr>
+			<tr>
+				<td class="ok"><code>$0003-$00C3</code></td>
+				<td class="ok" colspan="4">ESPACIO LIBRE EN <b>PÁGINA CERO</b>.</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$00C4-$00DF</code></td>
+				<td class="fw">Espacio de trabajo del depurador <code>nanoMon</code>.</td>
+				<td></td>
+				<td></td>
+				<td>Sólo ocupado por <i>algunos depuradores</i> (<code>nanoMon</code>), LIBRE en caso contrario.</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$00E0-$00E1</code></td>
+				<td></td>
+				<td class="kernel"><code>std_in/stdout</code><br />dispositivos estándar de consola.</td>
+				<td class="arch">Ubicación alternativa<br />sólo para el <i>Commodore 64</i>.</td>
+				<td>Sólo ocupadas si se usa el Kernel <b><i>y</i></b> una CPU 6510, LIBRE en caso contrario.</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$00E2-$00E3</code></td>
+				<td class="fw"><code>nmos_ii</code><br />(macro para el <i>salto indirecto-indexedo</i> en NMOS)</td>
+				<td></td>
+				<td class="arch">Puntero temporal para emular la instrucción <code>JMP (abs,X)</code> en el 6502 <b>NMOS</b>.</td>
+				<td>
+					Sólo ocupadas si se usa esta macro <i>para la CPU 6502 NMOS</i>, LIBRE en caso contrario.<br />
+					<small>Ampliamente utilizado por el <i>firmware</i> como <i>método de llamada</i>.</small>
+				</td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$00E4-$00EF</code></td>
+				<td class="fw" colspan="2"><b>Variables locales</b> del Kernel y el <i>firmware</i>.</td>
+				<td></td>
+				<td>Algunos bytes pueden quedar libres si no se usan todas las funciones.</td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$00F0-$00FB</code></td>
+				<td class="fw" colspan="2"><b>Parámetros</b> del Kernel y el <i>firmware</i>.</td>
+				<td></td>
+				<td>Algunos bytes pueden quedar libres si no se usan todas las funciones.</td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$00FC-$00FE</code></td>
+				<td class="fw"><code>sysptr/systmp</code><br />Espacio en página cero para interrupciones.</td>
+				<td></td>
+				<td></td>
+				<td>Temporalmente LIBRE, <i>siempre que las interrupciones estén deshabilitadas</i>, de lo contrario podrían corromper su contenido.</td>
+			</tr>
+			<tr>
+				<td class="kernel"><code>$00FF</code></td>
+				<td class="fw">?</td>
+				<td class="kernel"><code>sys_sp</code><br />(puntero de pila para multitarea)</td>
+				<td></td>
+				<td>LIBRE <i>si no se dispone de multitarea</i>, aunque algunos componentes del <i>firmware</i> o rutinas de interrupción <b>podrían</b> usarlo.</td>
+			</tr>
+			<!-- stack -->
+			<tr>
+				<td class="blk" colspan="5">
+					Pila<br />
+					<small style="letter-spacing: 0px;">Como norma general, el <b>puntero de pila</b> debe inicializarse a <code>$FF</code>.</small>
+				</td>
+			</tr>
+			<tr>
+				<th>Direcciones</th>
+				<th>Uso por el <i>firmware</i></th>
+				<th>Uso por el Kernel</th>
+				<th>Uso según arquitectura</th>
+				<th>Notas:</th>
+			</tr>
+			<tr>
+				<td class="arch"><code>$0100-$0101</code></td>
+				<td class="fw">Espacio de trabajo del depurador.</td>
+				<td></td>
+				<td></td>
+				<td>
+					Sólo ocupada si se usan <i>algunos depuradores</i> (<code>devX</code>).<br />
+				</td>
+			</tr>
+			<tr>
+				<td class="ok"><code>$0102-$01FF</code></td>
+				<td class="fw">?</td>
+				<td class="kernel">?</td>
+				<td></td>
+				<td>
+					Espacio de pila del 6502.<br />
+					<small>Dada la recomendación anterior, la mayoría estará LIBRE; pero se aconseja precaución en su uso.</small>
+				</td>
+			</tr>
+			<!-- RAM -->
+			<tr><td class="blk" colspan="5">Resto de la RAM</td></tr>
+			<tr>
+				<th>Direcciones</th>
+				<th>Uso por el <i>firmware</i></th>
+				<th>Uso por el Kernel</th>
+				<th>Uso según arquitectura</th>
+				<th>Notas:</th>
+			</tr>
+			<tr>
+				<td class="fw"><code>$0200-$0201</code></td>
+				<td class="fw"><code>fw_irq</code><br />(vector IRQ del <i>firmware</i>)</td>
+				<td></td>
+				<td></td>
+				<td>En general, se recomienda que el vector IRQ <i>hardware</i> del 6502 apunte a <code>JMP ($0200)</code>.
+				</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$0202-$0203</code></td>
+				<td class="fw"><code>fw_nmi</code><br />(vector NMI del <i>firmware</i>)</td>
+				<td></td>
+				<td></td>
+				<td>El <i>gestor NMI</i> debería observar este puntero en caso de rutinas NMI instalables.</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$0203-$0204</code></td>
+				<td class="fw"><code>fw_nmi</code><br />(vector del depurador del <i>firmware</i>)</td>
+				<td></td>
+				<td></td>
+				<td>El <i>gestor BRK</i> debería observar este puntero en caso de depuradores instalables.</td>
+				</td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$0205-$0209</code></td>
+				<td class="fw" colspan="2"><code>ticks</code><br />(contador de interrupciones a 250 Hz)</td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$020A-$03FF</code></td>
+				<td class="fw" colspan="2"><b>Estructuras de datos</b> del Kernel y el firmware.</td>
+				<td></td>
+				<td>La cantidad usada dependerá de la versión del sistema, ¡esperemos que se mantenga en este rango!</td>
+			</tr>
+			<tr>
+				<td class="ok"><code>$0400-$7FFF</code></td>
+				<td class="ok" colspan="4">
+					ESPACIO LIBRE EN <b>RAM</b>.<br />
+					<small>Normalmente, los últimos 8 kiB <code>($6000-$7FFF)</code> se usarán como memoria de <b>pantalla</b> en <i>Durango</i>.</small>
+				</td>
+			</tr>
+			<!-- Low ROM -->
+			<tr>
+				<td class="blk" colspan="5">
+					ROM baja<br />
+					<small style="letter-spacing: 0px;">Algunas máquinas (p. ej. <i>Chihuahua</i>)
+					pueden tener la ROM a partir de <code>$C000</code>, o incluso carecer de este bloque completamente.</small>
+				</td>
+			</tr>
+			<tr>
+				<th>Direcciones</th>
+				<th>Uso por el <i>firmware</i></th>
+				<th>Uso por el Kernel</th>
+				<th>Uso según arquitectura</th>
+				<th>Notas:</th>
+			</tr>
+			<tr>
+				<td class="kernel"><code>$8000-$80FF</code></td>
+				<td></td>
+				<td class="kernel">Cabecera del volumen implícito <code>/sys</code>.</td>
+				<td></td>
+				<td>Si la cabecera del volumen se encuentra en otro lugar, esta zona queda LIBRE.</td>
+			</tr>
+			<tr>
+				<td class="kernel"><code>$8100-$81FF</code></td>
+				<td></td>
+				<td class="kernel">Cabecera del primer "archivo" del volumen <code>/sys</code>.</td>
+				<td></td>
+				<td>Si la cabecera del volumen se encuentra en otro lugar, esta zona queda LIBRE.</td>
+			</tr>
+			<tr>
+				<td class="ok"><code>$8200-$DEFF</code></td>
+				<td class="ok" colspan="4">ESPACIO LIBRE EN <b>ROM</b>.</td>
+			</tr>
+			<!-- I/O -->
+			<tr>
+				<td class="blk" colspan="5">
+					Entrada/Salida<br />
+					<small style="letter-spacing: 0px;">
+						Como norma general, <b>no</b> deben hacerse <i>lecturas arbitrarias</i> en esta area.<br />
+						<i>Algunas máquinas antiguas tendrán direcciones de E/S muy distintas; se aplican las mismas restricciones.</i>
+					</small>
+				</td>
+			</tr>
+			<tr>
+				<th>Direcciones</th>
+				<th>Uso por el <i>firmware</i></th>
+				<th>Uso por el Kernel</th>
+				<th>Uso según arquitectura</th>
+				<th>Notas:</th>
+			</tr>
+			<tr>
+				<td class="arch"><code>$DF00-$DF7F</code></td>
+				<td></td>
+				<td></td>
+				<td></td>
+				<td class="arch">
+					Esta zona se lee como ROM en <i>Durango</i>, pero podría ser E/S en otras máquinas.<br />
+					<small>
+						Se asume que la <i>suma de control</i> se <b>saltará</b> toda esta <i>página</i>; úsese con precaución.
+					</small>
+				</td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$DF80-$DFBF</code></td>
+				<td></td>
+				<td></td>
+				<td class="fw">Puertos E/S en <i>Durango</i>.</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$DFC0-$DFFF</code></td>
+				<td></td>
+				<td></td>
+				<td class="arch"><b>E/S de cartucho</b> en <i>Durango</i>, pero podría ser E/S integrada en otras máquinas.</td>
+				<td></td>
+			</tr>
+			<!-- high ROM -->
+			<tr><td class="blk" colspan="5">ROM alta</td></tr>
+			<tr>
+				<th>Direcciones</th>
+				<th>Uso por el <i>firmware</i></th>
+				<th>Uso por el Kernel</th>
+				<th>Uso según arquitectura</th>
+				<th>Notas:</th>
+			</tr>
+			<tr>
+				<td class="ok"><code>$E000-$FEFF</code></td>
+				<td class="ok" colspan="4">ESPACIO LIBRE EN <b>ROM</b>.</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FF00-$FF0B</code></td>
+				<td class="fw"><code>dx_nmi</code><br />Cabecera estándar del <b>depurador</b>.</td>
+				<td></td>
+				<td></td>
+				<td>
+					Especialmente diseñada para el depurador <code>devX</code>,
+					puede quedar libre en la versión final del cartucho.<br />
+					<small>Véase el código recomendado en <code>forge/devx/nmi.s</code>.</small>
+				</td>
+			</tr>
+			<tr>
+				<td class="ok"><code>$FF0C-$FFBD</code></td>
+				<td class="ok" colspan="4">
+					ESPACIO LIBRE EN <b>ROM</b>.<br />
+					<small>Tras la cabecera anterior, este espacio puede continuar el <i>gestor NMI</i> deseado.</small>
+				</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFBE-$FFBF</code></td>
+				<td class="fw"><code>dx_exit</code><br />Salida estándar del <b>depurador</b>.</td>
+				<td></td>
+				<td></td>
+				<td>
+					Especialmente diseñada para el depurador <code>devX</code>,
+					puede quedar libre en la versión final del cartucho.<br />
+					<small>El código sugerido es <code>PLA, RTI</code>.</small>
+				</td>
+			</tr>
+			<tr>
+				<td class="kernel"><code>$FFC0-$FFCF</code></td>
+				<td></td>
+				<td class="kernel">Punto de entrada al <b>Kernel</b>; forma parte del <i>firmware</i>.</td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$FFD0-$FFD5</code></td>
+				<td class="fw">Punto de entrada al <b>firmware</b> <i>para programas de usuario</i>.</td>
+				<td></td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFD6-$FFD9</code></td>
+				<td class="fw"><code>rom_id</code><br />Identificación del cartucho.</td>
+				<td></td>
+				<td></td>
+				<td class="need">
+					<code>DmOS</code> para los cartuchos tipo <i>Durango</i> (36 contactos)<br />
+					<code>VmOS</code> para los cartuchos tipo <i>Veracruz</i> (44 contactos)<br />
+				</td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$FFDA-$FFDD</code></td>
+				<td class="fw">Punto de entrada al <b>firmware</b> <i>para <b>drivers y Kernel</b></i>.</td>
+				<td></td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$FFDE-$FFDF</code></td>
+				<td class="fw"><code>signature</code><br />Suma de control de la ROM <i>para el algoritmo <b>Fletcher-16</b></i>.</td>
+				<td></td>
+				<td></td>
+				<td class="need">
+					Se escribirá aquí un valor tal que el resultado del algoritmo <i>Fletcher-16</i> sea <b><code>$0000</code></b>.
+					<i>¡<b>Siempre</b> se saltará toda la página de E/S <code>$DF</code>!</i>
+				</td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$FFE0-$FFE3</code></td>
+				<td class="fw" colspan="2">Gestor de <code>PANIC</code>.</td>
+				<td></td>
+				<td>Para <b>fallos catastróficos de E/S</b>; normalmente saltará a otra dirección para hacer parpadear un LED o algo similar.</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFE4-$FFEB</code></td>
+				<td></td>
+				<td></td>
+				<td class="arch">Espacio para vectores del 65C816.</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$FFEC</code></td>
+				<td class="fw"><code>aborted</code> handler for <i>unused</i> interrupts.</td>
+				<td></td>
+				<td></td>
+				<td><b>Must</b> be <code>$40</code> (<code>RTI</code>, Return From Interrupt)</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFED</code></td>
+				<td></td>
+				<td></td>
+				<td class="arch">Padding byte for the above, <i>unused in 65(C)02 systems</i>.</td>
+				<td>Recommended value: <code>$FF</code>.</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFEE-$FFF5</code></td>
+				<td></td>
+				<td></td>
+				<td class="arch">Espacio para vectores del 65C816.</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFF6-$FFF7</code></td>
+				<td class="fw">Puntero <code>brk_hndl</code> para el gestor BRK unificado.</td>
+				<td></td>
+				<td class="arch"><i>No</i> usado en sistemas 65C816.</td>
+				<td>
+					<i>Cuando la ISR determine BRK</i>, el gestor IRQ debería hacer <code>JMP (brk_hndl)</code><br />
+					que apuntará al código que salve el estado <b>completo</b>,
+					y entonces <i>llamará</i> a la instrucción <code>JMP (fw_dbg)</code>.
+				</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFF8-$FFF9</code></td>
+				<td></td>
+				<td></td>
+				<td class="arch">Vector ABORT para sistemas 65C816.</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$FFFA-$FFFF</code></td>
+				<td class="fw" colspan="3">Standard 6502 vectors (NMI/RESET/IRQ)</td>
+				<td class="need">Always used!</td>
+			</tr>
+		</table>
+		<br />
+		<table border="0">
+			<tr><th colspan="4">Notes:</th></tr>
+			<tr>
+				<td class="fw">Reservadas por el <i>firmware</i></td>
+				<td class="kernel">Reservadas sólo por el Kernel</td>
+				<td class="arch">Reservadas según arquitectura</td>
+				<td class="ok">LIBRE para su uso</td>
+				<td class="need">Contenido obligatorio</td>
+			</tr>
+		</table>
+		<h4 style="color:pink"><i>¿En construcción</i></h4>
+		<p align="right">Última modificación: 2022-07-23</p>
+	</body>
+</html>

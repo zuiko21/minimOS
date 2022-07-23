@@ -36,7 +36,7 @@
 		</style>
 	</head>
 	<body style="font-family:'DIN 30640 Std', 'Neuzeit Grotesk', 'ITC Avant Garde', Futura, 'Century Gothic', 'URW Gothic', sans-serif">
-		<p align="right"><a href="index-es.html"><img src="pics/es.png" width="80" height="53" /><br />En español</a></p>
+		<p align="right"><a href="map-es.html"><img src="pics/es.png" width="80" height="53" /><br />En español</a></p>
 		<img src="pics/minimOS.png" alt="minimOS logo" width="318" height="69" />
 		<h2>A retro-inspired architecture</h2>
 		<h3>Memory map</h3>
@@ -150,12 +150,12 @@
 			</tr>
 			<tr>
 				<td class="ok"><code>$0102-$01FF</code></td>
-				<td></td>
+				<td class="fw">?</td>
 				<td class="kernel">?</td>
 				<td></td>
 				<td>
 					Standard 6502 stack space.<br />
-					<small>Most of this space will be free, but use with caution!</small>
+					<small>Most of this space will be FREE, but use with caution!</small>
 				</td>
 			</tr>
 			<!-- RAM -->
@@ -206,14 +206,15 @@
 				<td class="ok"><code>$0400-$7FFF</code></td>
 				<td class="ok" colspan="4">
 					FREE <b>RAM</b> FOR ALL.<br />
-					<small>Usually the last 8 kiB <code>($6000-$7FFF)</code> will be used as <b>screen</b> memory.</small>
+					<small>Usually the last 8 kiB <code>($6000-$7FFF)</code> will be used as <i>Durango</i>'s <b>screen</b> memory.</small>
 				</td>
 			</tr>
 			<!-- Low ROM -->
 			<tr>
 				<td class="blk" colspan="5">
 					Low ROM<br />
-					<small style="letter-spacing: 0px;">Some systems (e.g. <i>Chihuahua</i>) may lack this block altogether.</small>
+					<small style="letter-spacing: 0px;">Some systems (e.g. <i>Chihuahua</i>)
+					may have ROM starting at <code>$C000</code>, or even lack this block altogether.</small>
 				</td>
 			</tr>
 			<tr>
@@ -226,7 +227,7 @@
 			<tr>
 				<td class="kernel"><code>$8000-$80FF</code></td>
 				<td></td>
-				<td class="kernel">Implicit <code>/sys</code> volume header</td>
+				<td class="kernel">Implicit <code>/sys</code> volume header.</td>
 				<td></td>
 				<td>Volume header may be located elsewhere, leaving this page FREE.</td>
 			</tr>
@@ -238,7 +239,7 @@
 				<td>Volume header may be located elsewhere, leaving this page FREE.</td>
 			</tr>
 			<tr>
-				<td class="ok"><code>$8200-$BFFF</code></td>
+				<td class="ok"><code>$8200-$DEFF</code></td>
 				<td class="ok" colspan="4">FREE <b>ROM</b> FOR ALL.</td>
 			</tr>
 			<!-- I/O -->
@@ -264,7 +265,7 @@
 				<td></td>
 				<td></td>
 				<td class="arch">
-					Not currently implemented in <i>Durango</i>, but others may use it!<br />
+					<i>Durango</i> will read actual ROM here, but others may use it for I/O!<br />
 					<small>
 						<i>Checksum</i> algorithm is expected to <b>skip</b> this whole <i>page</i>, so use at own risk!
 					</small>
@@ -294,7 +295,7 @@
 				<th>Notes:</th>
 			</tr>
 			<tr>
-				<td class="ok"><code>$C000-$FEFF</code></td>
+				<td class="ok"><code>$E000-$FEFF</code></td>
 				<td class="ok" colspan="4">FREE <b>ROM</b> FOR ALL.</td>
 			</tr>
 			<tr>
