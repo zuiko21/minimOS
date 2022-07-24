@@ -1,8 +1,8 @@
 ; Durango firmware
 ; based on generic firmware template for minimOS·65
-; v0.6.1b6
+; v0.6.1b7
 ; (c)2015-2022 Carlos J. Santisteban
-; last modified 20220322-2322
+; last modified 20220723-0031
 
 #define		ROM			_ROM
 #define		HEADERS		_HEADERS
@@ -452,8 +452,10 @@ freeSize	=	fw_end - free_head -256	; compute size NOT including header!
 
 ; filling for ready-to-blow ROM
 #ifdef		ROM
-	.dsb	adm_call-*, $FF
+	.dsb	rom_id-*, $FF
 #endif
+* = rom_id
+	.asc	"DmOS"		; Durango-type cartridge at $FFD6
 
 ; *** administrative meta-kernel call primitive ($FFDA) ***
 * = adm_call

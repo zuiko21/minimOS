@@ -1,6 +1,6 @@
-; minimOS 0.6.1a3 MACRO definitions
+; minimOS 0.6.1a4 MACRO definitions
 ; (c) 2012-2022 Carlos J. Santisteban
-; last modified 20211230-2243
+; last modified 20220723-0028
 
 ; **************************
 ; *** standard addresses ***
@@ -11,6 +11,7 @@
 kerncall	=	$FFC0	; ending in RTS/RTI, 816 will use COP handler and a COP,RTS wrapper for 02
 adm_call	=	$FFDA	; ending in RTS, intended for kernel/drivers ONLY, revamped address
 adm_appc	=	$FFD0	; special interface for 65816 firmware call from USER software!
+rom_id		=	$FFD6	; new "DmOS" (Durango/36 pin) or "VmOS" (Veracruz/44 pin) cartridge ID
 signature	=	$FFDE	; new Fletcher-16 checksum
 lock		=	$FFE0	; more-or-less 816 savvy address
 brk_02		=	$FFF6	; supposedly emulated BRK, may be 816-savvy!
@@ -18,6 +19,7 @@ brk_02		=	$FFF6	; supposedly emulated BRK, may be 816-savvy!
 kerncall	=	$5FC0	; ending in RTS/RTI, 816 will use COP handler and a COP,RTS wrapper for 02
 adm_call	=	$5FDA	; ending in RTS, intended for kernel/drivers ONLY, revamped address
 adm_appc	=	$5FD0	; special interface for 65816 firmware call from USER software!
+rom_id		=	$5FD6	; new "DmOS" (Durango/36 pin) or "VmOS" (Veracruz/44 pin) cartridge ID
 signature	=	$5FDE	; new Fletcher-16 checksum
 lock		=	$5FE0	; standard downloaded panic entry
 brk_02		=	$5FF6	; supposedly emulated BRK
