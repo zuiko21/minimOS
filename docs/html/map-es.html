@@ -93,7 +93,7 @@
 				<td class="arch"><code>$00E2-$00E3</code></td>
 				<td class="fw"><code>nmos_ii</code><br />(macro para el <i>salto indirecto-indexedo</i> en NMOS)</td>
 				<td></td>
-				<td class="arch">Puntero temporal para emular la instrucción <code>JMP (abs,X)</code> en el 6502 <b>NMOS</b>.</td>
+				<td class="arch">Puntero temporal para emular la instrucción <code>JMP(abs,X)</code> en el 6502 <b>NMOS</b>.</td>
 				<td>
 					Sólo ocupadas si se usa esta macro <i>para la CPU 6502 NMOS</i>, LIBRE en caso contrario.<br />
 					<small>Ampliamente utilizado por el <i>firmware</i> como <i>método de llamada</i>.</small>
@@ -347,6 +347,7 @@
 				<td></td>
 				<td></td>
 				<td class="need">
+					Cadena ASCII:<br />
 					<code>DmOS</code> para los cartuchos tipo <i>Durango</i> (36 contactos)<br />
 					<code>VmOS</code> para los cartuchos tipo <i>Veracruz</i> (44 contactos)<br />
 				</td>
@@ -383,17 +384,17 @@
 			</tr>
 			<tr>
 				<td class="fw"><code>$FFEC</code></td>
-				<td class="fw"><code>aborted</code> handler for <i>unused</i> interrupts.</td>
+				<td class="fw">Gestor <code>aborted</code> para las interrupciones <i>no utilizadas</i> interrupts.</td>
 				<td></td>
 				<td></td>
-				<td><b>Must</b> be <code>$40</code> (<code>RTI</code>, Return From Interrupt)</td>
+				<td><b>Debe</b> contener <code>$40</code> (<code>RTI</code>, <i>Return From Interrupt</i>)</td>
 			</tr>
 			<tr>
 				<td class="arch"><code>$FFED</code></td>
 				<td></td>
 				<td></td>
-				<td class="arch">Padding byte for the above, <i>unused in 65(C)02 systems</i>.</td>
-				<td>Recommended value: <code>$FF</code>.</td>
+				<td class="arch">Byte de relleno para el anterior, <i>en realidad no se usa en sistemas 65(C)02</i>.</td>
+				<td>Valor recomendado: <code>$FF</code>.</td>
 			</tr>
 			<tr>
 				<td class="arch"><code>$FFEE-$FFF5</code></td>
@@ -406,11 +407,11 @@
 				<td class="arch"><code>$FFF6-$FFF7</code></td>
 				<td class="fw">Puntero <code>brk_hndl</code> para el gestor BRK unificado.</td>
 				<td></td>
-				<td class="arch"><i>No</i> usado en sistemas 65C816.</td>
+				<td class="arch"><i>No usado</i> en sistemas 65C816.</td>
 				<td>
-					<i>Cuando la ISR determine BRK</i>, el gestor IRQ debería hacer <code>JMP (brk_hndl)</code><br />
+					<i>Cuando el gestor IRQ determine <code>BRK</code></i>,  debería hacer <code>JMP(brk_hndl)</code><br />
 					que apuntará al código que salve el estado <b>completo</b>,
-					y entonces <i>llamará</i> a la instrucción <code>JMP (fw_dbg)</code>.
+					y entonces <i>llamará</i> a una instrucción <code>JMP(fw_dbg)</code>.
 				</td>
 			</tr>
 			<tr>
@@ -422,8 +423,8 @@
 			</tr>
 			<tr>
 				<td class="fw"><code>$FFFA-$FFFF</code></td>
-				<td class="fw" colspan="3">Standard 6502 vectors (NMI/RESET/IRQ)</td>
-				<td class="need">Always used!</td>
+				<td class="fw" colspan="3">Vectores del 6502 (NMI/RESET/IRQ)</td>
+				<td class="need">¡Siempre se usan!</td>
 			</tr>
 		</table>
 		<br />
@@ -438,6 +439,6 @@
 			</tr>
 		</table>
 		<h4 style="color:pink"><i>¿En construcción</i></h4>
-		<p align="right">Última modificación: 2022-07-23</p>
+		<p align="right">Última modificación: 2022-07-24</p>
 	</body>
 </html>
