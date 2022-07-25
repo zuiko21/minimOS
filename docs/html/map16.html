@@ -1,0 +1,324 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<title>minimOS memory map</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content="emiliollbb" />
+		<meta name="keywords" content="Durango 6502 retro @zuiko21">
+		<style type="text/css">
+			.kernel {
+				color: black;
+				background-color: yellow;
+			}
+			.fw {
+				color: white;
+				background-color: red;
+			}
+			.arch {
+				color: black;
+				background-color: cyan;
+			}
+			.ok {
+				color: black;
+				background-color: lime;
+			}
+			.need {
+				color: black;
+				background-color: orange;
+			}
+			.blk {
+				color: black;
+				letter-spacing: 4px;
+				background-color: lightgrey;
+				text-align: center;
+			}
+			.eq {
+				color: black;
+				letter-spacing: 2px;
+				background-color: pink;
+				font-style: italic;
+			}
+		</style>
+	</head>
+	<body style="font-family:'DIN 30640 Std', 'Neuzeit Grotesk', 'ITC Avant Garde', Futura, 'Century Gothic', 'URW Gothic', sans-serif">
+		<p align="right"><a href="map16-es.html"><img src="pics/es.png" width="80" height="53" /><br />En español</a></p>
+		<img src="pics/minimOS.png" alt="minimOS logo" width="318" height="69" />
+		<h2>A retro-inspired architecture</h2>
+		<h3>Memory map</h3>
+		<h4 style="color:red">65C816 version, <i>Veracruz</i> based.</h4>
+		<p>
+			Although the open <a href="veracruz.html"><i>Veracruz</i></a> architecture allows <b>full access</b> to <i>bare metal</i>,
+			future integration within the <b>minimOS</b> environment should be taken into account.<br />
+			<small>As the first 64 kiB <i>bank</i> remains pretty much the same, only major differences <a href="map.html">from the 65(C)02 version</a> are noted.</small>
+		</p>
+		<table border="1">
+			<!-- zero page -->
+			<tr>
+				<td class="blk" colspan="5">
+					<i>Direct</i> Page<br />
+					<small style="letter-spacing: 0px;">In <b>multitasking</b> 65C816 systems, there may be several copies of this <i>context</i> around the first <i>bank</i>.</small>
+				</td>
+			</tr>
+			<tr>
+				<th>Addresses</th>
+				<th>Usage by firmware</th>
+				<th>Usage by Kernel</th>
+				<th>Architecture-dependent usage</th>
+				<th>Notes</th>
+			</tr>
+			<tr>
+				<td><code>$000000-$000002</code></td>
+				<td class="eq" colspan="4">Same as 65(C)02</td>
+			</tr>
+			<tr>
+				<td class="ok"><code>$000003-<b>$0000BF</b></code></td>
+				<td class="ok" colspan="4">FREE <b>DIRECT PAGE</b> AREA.</td>
+			</tr>
+			<tr>
+				<td class="arch"><b><code>$0000C0-$0000E1</code></b></td>
+				<td class="fw"><code>nanoMon</code> debugger workspace.</td>
+				<td></td>
+				<td></td>
+				<td>Only reserved if <i>some debuggers</i> (<code>nanoMon</code>) are used, FREE otherwise.</td>
+			</tr>
+			<tr>
+				<td><code>$0000E2-$0000FF</code></td>
+				<td class="eq" colspan="4">Same as 65(C)02</td>
+			</tr>
+			<!-- stack -->
+			<tr>
+				<td class="blk" colspan="5">
+					Stack<br />
+					<small style="letter-spacing: 0px;">
+						<b>Stack Pointer</b> should be initialised as per machine recommendations.<br />
+						In <b>multitasking</b> 65C816 systems, there may be several copies of this <i>context</i> around the first <i>bank</i>.
+					</small>
+				</td>
+			</tr>
+			<tr>
+				<td><code>$000100-$0001FF</code></td>
+				<td class="eq" colspan="4">Same as 65(C)02</td>
+			</tr>
+			<!-- RAM -->
+			<tr>
+				<td class="blk" colspan="5">
+					Rest of <i>low</i> RAM<br />
+					<small style="letter-spacing: 0px;">
+						In <b>multitasking</b> 65C816 systems, this may contain several <i>zeropage/stack <b>contexts</b></i>.
+					</small>
+
+				</td>
+			</tr>
+			<tr>
+				<th>Addresses</th>
+				<th>Usage by firmware</th>
+				<th>Usage by Kernel</th>
+				<th>Architecture-dependent usage</th>
+				<th>Notes</th>
+			</tr>
+			<tr>
+				<td><code>$000200-<i>$0003FF</i></code></td>
+				<td class="eq" colspan="4">Same as 65(C)02, but... <small>see notes below.</small></td>
+			</tr>
+			<tr>
+				<td class="ok"><i><code>$000400-$008000</code></i></td>
+				<td class="ok" colspan="4">
+					FREE <b>RAM</b> AREA.<br />
+					<small>
+						<i>Multitasking</i> systems will have a free area starting at an address
+						<i>much higher</i> than <code>$000400</code>.<br />
+						<i>Base</i> ROM could be less than 32 kiB, or even completely <b>switched off</b>;
+						but last free address must be less than <code>$00FFFF</code>
+						as <b>interrupt vectors</b> and <i>entry points</i> are still needed.
+					</small>
+				</td>
+			</tr>
+			<!-- Low ROM -->
+			<tr>
+				<td class="blk" colspan="5">
+					Low <i>base</i> ROM<br />
+					<small style="letter-spacing: 0px;">
+						<i>Base</i> ROM could be less than 32 kiB, or even completely <b>switched off</b>.
+					</small>
+				</td>
+			</tr>
+			<tr>
+				<td><code><i>$008000</i>-$00DEFF</code></td>
+				<td class="eq" colspan="4">Same as 65(C)02</td>
+			</tr>
+			<!-- I/O -->
+			<tr>
+				<td class="blk" colspan="5">
+					Input/Output<br />
+					<small style="letter-spacing: 0px;">
+						As general practice, <i>arbitrary reads</i> should <b>not</b> be done in this area.<br />
+						<i><b>Final I/O map to be determined</b>; most likely will include the standard <b>Durango</b> I/O plus some extra ports.</i>
+					</small>
+				</td>
+			</tr>
+			<tr>
+				<th>Addresses</th>
+				<th>Usage by firmware</th>
+				<th>Usage by Kernel</th>
+				<th>Architecture-dependent usage</th>
+				<th>Notes</th>
+			</tr>
+			<tr>
+				<td class="arch"><code>$00DF00-$00DF7F</code></td>
+				<td></td>
+				<td></td>
+				<td class="arch">To Be Determined</td>
+				<td>
+					<i>Checksum</i> algorithm is expected to <b>skip</b> this whole <i>page</i>, so use at own risk!
+				</td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$00DF80-$00DFBF</code></td>
+				<td></td>
+				<td></td>
+				<td class="fw"><i>Durango</i> standard I/O ports.</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$00DFC0-$00DFFF</code></td>
+				<td></td>
+				<td></td>
+				<td class="arch">To Be Determined</td>
+				<td class="arch"><b>Cartridge I/O</b> in <i>Durango</i>, but may be used in other machines!</td>
+			</tr>
+			<!-- high ROM -->
+			<tr>
+				<td class="blk" colspan="5">
+					High <i>base</i> ROM<br />
+					<small style="letter-spacing: 0px;">
+						<i>Base</i> ROM could be less than 8 kiB, or even completely <b>switched off</b>;
+						may start well above <code>$00E000</code>.
+					</small>
+				</td>
+			</tr>
+			<tr>
+				<th>Addresses</th>
+				<th>Usage by firmware</th>
+				<th>Usage by Kernel</th>
+				<th>Architecture-dependent usage</th>
+				<th>Notes</th>
+			</tr>
+			<tr>
+				<td class="ok"><code><i>$00E000</i>-$00FEFF</code></td>
+				<td class="ok" colspan="4">FREE <b>ROM</b> AREA.</td>
+			</tr>
+			<tr>
+				<td><code>$00FF00-$00FBFF</code></td>
+				<td class="eq" colspan="4">Same as 65(C)02</td>
+			</tr>
+			<tr>
+				<td class="kernel"><code>$00FFC0-$00FFCF</code></td>
+				<td></td>
+				<td class="kernel"><b>Kernel</b> entry point <i>for 65(C)02 code</i>.</td>
+				<td></td>
+				<td></td>
+			</tr>
+			<tr>
+				<td><code>$00FFD0-$00FFE3</code></td>
+				<td class="eq" colspan="4">Same as 65(C)02</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFE4-$FFEB</code></td>
+				<td></td>
+				<td></td>
+				<td class="arch">65C816 vector space.</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$FFEC</code></td>
+				<td class="fw"><code>aborted</code> handler for <i>unused</i> interrupts.</td>
+				<td></td>
+				<td></td>
+				<td><b>Must</b> be <code>$40</code> (<code>RTI</code>, Return From Interrupt)</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFED</code></td>
+				<td></td>
+				<td></td>
+				<td class="arch">Padding byte for the above, <i>unused in 65(C)02 systems</i>.</td>
+				<td>Recommended value: <code>$FF</code>.</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFEE-$FFF5</code></td>
+				<td></td>
+				<td></td>
+				<td class="arch">65C816 vector space.</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFF6-$FFF7</code></td>
+				<td class="fw"><code>brk_hndl</code> pointer for unified BRK handler.</td>
+				<td></td>
+				<td class="arch"><i>Not</i> actually used in 65C816 systems.</td>
+				<td>
+					<i>Upon BRK detection</i>, IRQ handler is expected to do <code>JMP(brk_hndl)</code><br />
+					which will point to some code saving the <b>extended</b> status, then <i>calling</i> a <code>JMP(fw_dbg)</code> instruction.
+				</td>
+			</tr>
+			<tr>
+				<td class="arch"><code>$FFF8-$FFF9</code></td>
+				<td></td>
+				<td></td>
+				<td class="arch">ABORT vector for 65C816 systems.</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td class="fw"><code>$FFFA-$FFFF</code></td>
+				<td class="fw" colspan="3">Standard 6502 vectors (NMI/RESET/IRQ)</td>
+				<td class="need">Always used!</td>
+			</tr>
+			<!-- high RAM, '816-only -->
+			<tr>
+				<td class="blk" colspan="5">
+					<i>High</i> RAM<br />
+					<small style="letter-spacing: 0px;">
+						<i>Veracruz</i> systems may be equipped with either <b>256 kiB or 1 MiB</b> total RAM,
+						<i>mirrored</i> for the first 8 MiB; <i>most 65C816 systems expected to display similar <b>mirroring</b>.</i>
+					</small>
+				</td>
+			</tr>
+			<tr>
+				<th>Addresses</th>
+				<th>Usage by firmware</th>
+				<th>Usage by Kernel</th>
+				<th>Architecture-dependent usage</th>
+				<th>Notes</th>
+			</tr>
+			<!-- high ROM, '816-only -->
+			<tr>
+				<td class="blk" colspan="5">
+					<i>High</i> ROM<br />
+					<small style="letter-spacing: 0px;">
+						<i>Veracruz</i> systems may be <i>optionally</i> equipped with up to <b>1 MiB <i>extended cartridge</i> ROM</b>,
+						<i>mirrored</i> along the last 8 MiB.
+					</small>
+				</td>
+			</tr>
+			<tr>
+				<th>Addresses</th>
+				<th>Usage by firmware</th>
+				<th>Usage by Kernel</th>
+				<th>Architecture-dependent usage</th>
+				<th>Notes</th>
+			</tr>
+		</table>
+		<br />
+		<table border="0">
+			<tr><th colspan="4">Caption:</th></tr>
+			<tr>
+				<td class="fw">Reserved by Firmware</td>
+				<td class="kernel">Reserved by Kernel only</td>
+				<td class="arch">Architecture-dependent usage</td>
+				<td class="ok">FREE to use</td>
+				<td class="need">Mandatory content</td>
+			</tr>
+		</table>
+		<p align="right">Last modified: 2022-07-25</p>
+	</body>
+</html>

@@ -40,6 +40,7 @@
 		<img src="pics/minimOS.png" alt="minimOS logo" width="318" height="69" />
 		<h2>Una arquitectura de inspiración retro</h2>
 		<h3>Mapa de memoria</h3>
+		<h4 style="color:red">Versión 65(C)02, basado en la serie <i>Durango</i>.</h4>
 		<p>
 			Aunque la arquitectura abierta <a href="durango-es.html"><i>Durango</i></a> permite <b>acceso total</b> al <i>hardware</i>,
 			debe tenerse en cuenta una futura integración en el entorno <b>minimOS</b>.
@@ -52,7 +53,7 @@
 				<th>Uso por el <i>firmware</i></th>
 				<th>Uso por el Kernel</th>
 				<th>Uso según arquitectura</th>
-				<th>Notas:</th>
+				<th>Notas</th>
 			</tr>
 			<tr>
 				<td class="kernel"><code>$0000-$0001</code></td>
@@ -91,9 +92,9 @@
 			</tr>
 			<tr>
 				<td class="arch"><code>$00E2-$00E3</code></td>
-				<td class="fw"><code>nmos_ii</code><br />(macro para el <i>salto indirecto-indexedo</i> en NMOS)</td>
+				<td class="fw"><code>nmos_ii</code><br />(macro para el <i>salto indexado-indirecto</i> en NMOS)</td>
 				<td></td>
-				<td class="arch">Puntero temporal para emular la instrucción <code>JMP (abs,X)</code> en el 6502 <b>NMOS</b>.</td>
+				<td class="arch">Puntero temporal para emular la instrucción <code>JMP(abs,X)</code> en el 6502 <b>NMOS</b>.</td>
 				<td>
 					Sólo ocupadas si se usa esta macro <i>para la CPU 6502 NMOS</i>, LIBRE en caso contrario.<br />
 					<small>Ampliamente utilizado por el <i>firmware</i> como <i>método de llamada</i>.</small>
@@ -116,7 +117,7 @@
 				<td class="fw"><code>sysptr/systmp</code><br />Espacio en página cero para interrupciones.</td>
 				<td></td>
 				<td></td>
-				<td>Temporalmente LIBRE, <i>siempre que las interrupciones estén deshabilitadas</i>, de lo contrario podrían corromper su contenido.</td>
+				<td>Temporalmente LIBRE <i>siempre que las interrupciones estén deshabilitadas</i>; de lo contrario podrían corromper su contenido.</td>
 			</tr>
 			<tr>
 				<td class="kernel"><code>$00FF</code></td>
@@ -137,7 +138,7 @@
 				<th>Uso por el <i>firmware</i></th>
 				<th>Uso por el Kernel</th>
 				<th>Uso según arquitectura</th>
-				<th>Notas:</th>
+				<th>Notas</th>
 			</tr>
 			<tr>
 				<td class="arch"><code>$0100-$0101</code></td>
@@ -165,14 +166,14 @@
 				<th>Uso por el <i>firmware</i></th>
 				<th>Uso por el Kernel</th>
 				<th>Uso según arquitectura</th>
-				<th>Notas:</th>
+				<th>Notas</th>
 			</tr>
 			<tr>
 				<td class="fw"><code>$0200-$0201</code></td>
 				<td class="fw"><code>fw_irq</code><br />(vector IRQ del <i>firmware</i>)</td>
 				<td></td>
 				<td></td>
-				<td>En general, se recomienda que el vector IRQ <i>hardware</i> del 6502 apunte a <code>JMP ($0200)</code>.
+				<td>En general, se recomienda que el vector IRQ <i>hardware</i> del 6502 apunte a <code>JMP($0200)</code>.
 				</td>
 			</tr>
 			<tr>
@@ -222,7 +223,7 @@
 				<th>Uso por el <i>firmware</i></th>
 				<th>Uso por el Kernel</th>
 				<th>Uso según arquitectura</th>
-				<th>Notas:</th>
+				<th>Notas</th>
 			</tr>
 			<tr>
 				<td class="kernel"><code>$8000-$80FF</code></td>
@@ -257,7 +258,7 @@
 				<th>Uso por el <i>firmware</i></th>
 				<th>Uso por el Kernel</th>
 				<th>Uso según arquitectura</th>
-				<th>Notas:</th>
+				<th>Notas</th>
 			</tr>
 			<tr>
 				<td class="arch"><code>$DF00-$DF7F</code></td>
@@ -292,7 +293,7 @@
 				<th>Uso por el <i>firmware</i></th>
 				<th>Uso por el Kernel</th>
 				<th>Uso según arquitectura</th>
-				<th>Notas:</th>
+				<th>Notas</th>
 			</tr>
 			<tr>
 				<td class="ok"><code>$E000-$FEFF</code></td>
@@ -313,7 +314,7 @@
 				<td class="ok"><code>$FF0C-$FFBD</code></td>
 				<td class="ok" colspan="4">
 					ESPACIO LIBRE EN <b>ROM</b>.<br />
-					<small>Tras la cabecera anterior, este espacio puede continuar el <i>gestor NMI</i> deseado.</small>
+					<small>Tras la cabecera anterior, este espacio puede contener un <i>gestor NMI</i> personalizado.</small>
 				</td>
 			</tr>
 			<tr>
@@ -347,6 +348,7 @@
 				<td></td>
 				<td></td>
 				<td class="need">
+					Cadena ASCII:<br />
 					<code>DmOS</code> para los cartuchos tipo <i>Durango</i> (36 contactos)<br />
 					<code>VmOS</code> para los cartuchos tipo <i>Veracruz</i> (44 contactos)<br />
 				</td>
@@ -383,17 +385,17 @@
 			</tr>
 			<tr>
 				<td class="fw"><code>$FFEC</code></td>
-				<td class="fw"><code>aborted</code> handler for <i>unused</i> interrupts.</td>
+				<td class="fw">Gestor <code>aborted</code> para las interrupciones <i>no utilizadas</i> interrupts.</td>
 				<td></td>
 				<td></td>
-				<td><b>Must</b> be <code>$40</code> (<code>RTI</code>, Return From Interrupt)</td>
+				<td><b>Debe</b> contener <code>$40</code> (<code>RTI</code>, <i>Return From Interrupt</i>)</td>
 			</tr>
 			<tr>
 				<td class="arch"><code>$FFED</code></td>
 				<td></td>
 				<td></td>
-				<td class="arch">Padding byte for the above, <i>unused in 65(C)02 systems</i>.</td>
-				<td>Recommended value: <code>$FF</code>.</td>
+				<td class="arch">Byte de relleno para el anterior, <i>en realidad no se usa en sistemas 65(C)02</i>.</td>
+				<td>Valor recomendado: <code>$FF</code>.</td>
 			</tr>
 			<tr>
 				<td class="arch"><code>$FFEE-$FFF5</code></td>
@@ -406,11 +408,11 @@
 				<td class="arch"><code>$FFF6-$FFF7</code></td>
 				<td class="fw">Puntero <code>brk_hndl</code> para el gestor BRK unificado.</td>
 				<td></td>
-				<td class="arch"><i>No</i> usado en sistemas 65C816.</td>
+				<td class="arch"><i>No usado</i> en sistemas 65C816.</td>
 				<td>
-					<i>Cuando la ISR determine BRK</i>, el gestor IRQ debería hacer <code>JMP (brk_hndl)</code><br />
-					que apuntará al código que salve el estado <b>completo</b>,
-					y entonces <i>llamará</i> a la instrucción <code>JMP (fw_dbg)</code>.
+					<i>Cuando el gestor IRQ detecte <code>BRK</code></i>, debería hacer <code>JMP(brk_hndl)</code><br />
+					que apuntará al código que salve el estado <b>extendido</b>,
+					y entonces <i>llamará</i> a una instrucción <code>JMP(fw_dbg)</code>.
 				</td>
 			</tr>
 			<tr>
@@ -422,13 +424,13 @@
 			</tr>
 			<tr>
 				<td class="fw"><code>$FFFA-$FFFF</code></td>
-				<td class="fw" colspan="3">Standard 6502 vectors (NMI/RESET/IRQ)</td>
-				<td class="need">Always used!</td>
+				<td class="fw" colspan="3">Vectores del 6502 (NMI/RESET/IRQ)</td>
+				<td class="need">¡Siempre se usan!</td>
 			</tr>
 		</table>
 		<br />
 		<table border="0">
-			<tr><th colspan="4">Notes:</th></tr>
+			<tr><th colspan="4">Leyenda:</th></tr>
 			<tr>
 				<td class="fw">Reservadas por el <i>firmware</i></td>
 				<td class="kernel">Reservadas sólo por el Kernel</td>
@@ -437,7 +439,13 @@
 				<td class="need">Contenido obligatorio</td>
 			</tr>
 		</table>
-		<h4 style="color:pink"><i>¿En construcción</i></h4>
-		<p align="right">Última modificación: 2022-07-23</p>
+		<p>
+			Los sistemas basados en el <b>65C816</b>
+			<a href="map16-es.html"><i>extenderán</i> este mapa hasta los <b>16 MiB</b></a>.
+			El primer <i>banco</i> de 64 kiB será prácticamente idéntico,
+			aunque la <i>ROM base</i> podría ser <b>deshabilitada</b>,
+			permitiendo el acceso a una <i>RAM oculta</i> bajo ella.
+		</p>
+		<p align="right">Última modificación: 2022-07-25</p>
 	</body>
 </html>

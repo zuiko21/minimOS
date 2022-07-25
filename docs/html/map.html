@@ -40,6 +40,7 @@
 		<img src="pics/minimOS.png" alt="minimOS logo" width="318" height="69" />
 		<h2>A retro-inspired architecture</h2>
 		<h3>Memory map</h3>
+		<h4 style="color:red">65(C)02 version, <i>Durango</i>-series based.</h4>
 		<p>
 			Although the open <a href="durango.html"><i>Durango</i></a> architecture allows <b>full access</b> to <i>bare metal</i>,
 			future integration within the <b>minimOS</b> environment should be taken into account.
@@ -52,7 +53,7 @@
 				<th>Usage by firmware</th>
 				<th>Usage by Kernel</th>
 				<th>Architecture-dependent usage</th>
-				<th>Notes:</th>
+				<th>Notes</th>
 			</tr>
 			<tr>
 				<td class="kernel"><code>$0000-$0001</code></td>
@@ -73,7 +74,7 @@
 			</tr>
 			<tr>
 				<td class="ok"><code>$0003-$00C3</code></td>
-				<td class="ok" colspan="4">FREE <b>ZEROPAGE</b> FOR ALL.</td>
+				<td class="ok" colspan="4">FREE <b>ZEROPAGE</b> AREA.</td>
 			</tr>
 			<tr>
 				<td class="arch"><code>$00C4-$00DF</code></td>
@@ -91,9 +92,9 @@
 			</tr>
 			<tr>
 				<td class="arch"><code>$00E2-$00E3</code></td>
-				<td class="fw"><code>nmos_ii</code><br />(<i>indirect-indexed jump</i> macro for NMOS)</td>
+				<td class="fw"><code>nmos_ii</code><br />(<i>indexed-indirect jump</i> macro for NMOS)</td>
 				<td></td>
-				<td class="arch"><b>NMOS</b> 6502 <code>JMP (abs,X)</code> replacement vector.</td>
+				<td class="arch"><b>NMOS</b> 6502 <code>JMP(abs,X)</code> replacement vector.</td>
 				<td>
 					Only reserved if this macro <i>and</i> an NMOS 6502 CPU are used; FREE otherwise.
 					<small>Firmware uses this as <i>procedure call</i> method.</small>
@@ -121,9 +122,9 @@
 			<tr>
 				<td class="kernel"><code>$00FF</code></td>
 				<td class="fw">?</td>
-				<td class="kernel"><code>sys_sp</code><br />(ZP space for multitasking)</td>
+				<td class="kernel"><code>sys_sp</code><br />(multitasking Stack Pointer)</td>
 				<td></td>
-				<td>FREE <i>if no multitasking is used</i>, but some Firmware or interrupt components <b>might</b> use it!</td>
+				<td>FREE <i>if no multitasking is used</i>, but some Firmware or interrupt routines <b>might</b> use it!</td>
 			</tr>
 			<!-- stack -->
 			<tr>
@@ -137,7 +138,7 @@
 				<th>Usage by firmware</th>
 				<th>Usage by Kernel</th>
 				<th>Architecture-dependent usage</th>
-				<th>Notes:</th>
+				<th>Notes</th>
 			</tr>
 			<tr>
 				<td class="arch"><code>$0100-$0101</code></td>
@@ -155,7 +156,7 @@
 				<td></td>
 				<td>
 					Standard 6502 stack space.<br />
-					<small>Most of this space will be FREE, but use with caution!</small>
+					<small>Following the above recommendation, most of this space will be FREE, but use with caution!</small>
 				</td>
 			</tr>
 			<!-- RAM -->
@@ -165,14 +166,14 @@
 				<th>Usage by firmware</th>
 				<th>Usage by Kernel</th>
 				<th>Architecture-dependent usage</th>
-				<th>Notes:</th>
+				<th>Notes</th>
 			</tr>
 			<tr>
 				<td class="fw"><code>$0200-$0201</code></td>
 				<td class="fw"><code>fw_irq</code><br />(firmware IRQ vector)</td>
 				<td></td>
 				<td></td>
-				<td>6502 <i>hardware</i> IRQ vector is recommended to point to <code>JMP ($0200)</code> as general practice.
+				<td>6502 <i>hardware</i> IRQ vector is recommended to point to <code>JMP($0200)</code> as general practice.
 				</td>
 			</tr>
 			<tr>
@@ -205,7 +206,7 @@
 			<tr>
 				<td class="ok"><code>$0400-$7FFF</code></td>
 				<td class="ok" colspan="4">
-					FREE <b>RAM</b> FOR ALL.<br />
+					FREE <b>RAM</b> AREA.<br />
 					<small>Usually the last 8 kiB <code>($6000-$7FFF)</code> will be used as <i>Durango</i>'s <b>screen</b> memory.</small>
 				</td>
 			</tr>
@@ -222,25 +223,25 @@
 				<th>Usage by firmware</th>
 				<th>Usage by Kernel</th>
 				<th>Architecture-dependent usage</th>
-				<th>Notes:</th>
+				<th>Notes</th>
 			</tr>
 			<tr>
 				<td class="kernel"><code>$8000-$80FF</code></td>
 				<td></td>
 				<td class="kernel">Implicit <code>/sys</code> volume header.</td>
 				<td></td>
-				<td>Volume header may be located elsewhere, leaving this page FREE.</td>
+				<td>Volume header could be located elsewhere, leaving this page FREE.</td>
 			</tr>
 			<tr>
 				<td class="kernel"><code>$8100-$81FF</code></td>
 				<td></td>
-				<td class="kernel">Header for the first file in <code>/sys</code> volume.</td>
+				<td class="kernel">Header for the first "file" in <code>/sys</code> volume.</td>
 				<td></td>
-				<td>Volume header may be located elsewhere, leaving this page FREE.</td>
+				<td>Volume header could be located elsewhere, leaving this page FREE.</td>
 			</tr>
 			<tr>
 				<td class="ok"><code>$8200-$DEFF</code></td>
-				<td class="ok" colspan="4">FREE <b>ROM</b> FOR ALL.</td>
+				<td class="ok" colspan="4">FREE <b>ROM</b> AREA.</td>
 			</tr>
 			<!-- I/O -->
 			<tr>
@@ -257,7 +258,7 @@
 				<th>Usage by firmware</th>
 				<th>Usage by Kernel</th>
 				<th>Architecture-dependent usage</th>
-				<th>Notes:</th>
+				<th>Notes</th>
 			</tr>
 			<tr>
 				<td class="arch"><code>$DF00-$DF7F</code></td>
@@ -292,11 +293,11 @@
 				<th>Usage by firmware</th>
 				<th>Usage by Kernel</th>
 				<th>Architecture-dependent usage</th>
-				<th>Notes:</th>
+				<th>Notes</th>
 			</tr>
 			<tr>
 				<td class="ok"><code>$E000-$FEFF</code></td>
-				<td class="ok" colspan="4">FREE <b>ROM</b> FOR ALL.</td>
+				<td class="ok" colspan="4">FREE <b>ROM</b> AREA.</td>
 			</tr>
 			<tr>
 				<td class="arch"><code>$FF00-$FF0B</code></td>
@@ -304,15 +305,15 @@
 				<td></td>
 				<td></td>
 				<td>
-					Actually intended for the <code>devX</code> debugger, may be used on final versions.
+					Actually intended for the <code>devX</code> debugger, may be free for final versions.
 					<small>See <code>forge/devx/nmi.s</code> for recommended standard code.</small>
 				</td>
 			</tr>
 			<tr>
 				<td class="ok"><code>$FF0C-$FFBD</code></td>
 				<td class="ok" colspan="4">
-					FREE <b>ROM</b> FOR ALL.<br />
-					<small>May use this, after standard header above, for desired NMI handler.</small>
+					FREE <b>ROM</b> AREA.<br />
+					<small>May use this, after the standard header above, for a custom <i>NMI handler</i>.</small>
 				</td>
 			</tr>
 			<tr>
@@ -321,20 +322,20 @@
 				<td></td>
 				<td></td>
 				<td>
-					Actually intended for the <code>devX</code> debugger, may be used on final versions.
+					Actually intended for the <code>devX</code> debugger, may be free for final versions.
 					<small>Recommended exit code is <code>PLA, RTI</code>.</small>
 				</td>
 			</tr>
 			<tr>
 				<td class="kernel"><code>$FFC0-$FFCF</code></td>
 				<td></td>
-				<td class="kernel"><b>Kernel</b> procedure call, actually part of <i>firmware</i>.</td>
+				<td class="kernel"><b>Kernel</b> entry point, actually part of <i>firmware</i>.</td>
 				<td></td>
 				<td></td>
 			</tr>
 			<tr>
 				<td class="fw"><code>$FFD0-$FFD5</code></td>
-				<td class="fw">Firmware procedure call<br /><i>for user code</i>.</td>
+				<td class="fw">Firmware entry point<br /><i>for user code</i>.</td>
 				<td></td>
 				<td></td>
 				<td></td>
@@ -345,13 +346,14 @@
 				<td></td>
 				<td></td>
 				<td class="need">
+					ASCII string:<br />
 					<code>DmOS</code> for <i>Durango</i>-type cartridges (36 pin)<br />
 					<code>VmOS</code> for <i>Veracruz</i>-type cartridges (44 pin)<br />
 				</td>
 			</tr>
 			<tr>
 				<td class="fw"><code>$FFDA-$FFDD</code></td>
-				<td class="fw">Firmware procedure call<br /><i>for <b>Kernel/drivers</b> code</i>.</td>
+				<td class="fw">Firmware entry point<br /><i>for <b>Kernel/drivers</b> code</i>.</td>
 				<td></td>
 				<td></td>
 				<td></td>
@@ -362,7 +364,7 @@
 				<td></td>
 				<td></td>
 				<td class="need">
-					Chosen value must result in <i>Fletcher-16</i> result of <b><code>$0000</code></b>.<br />
+					Chosen value must result in <i>Fletcher-16</i> result of <b><code>$0000</code></b>.
 					<i>Full <code>$DF</code> I/O page <b>always</b> skipped!</i>
 				</td>
 			</tr>
@@ -406,8 +408,8 @@
 				<td></td>
 				<td class="arch"><i>Not</i> actually used in 65C816 systems.</td>
 				<td>
-					<i>Upon BRK detection</i>, IRQ handler is expected to do <code>JMP (brk_hndl)</code><br />
-					which will point to code saving <b>full</b> status, then <i>calling</i> a <code>JMP (fw_dbg)</code> instruction.
+					<i>Upon BRK detection</i>, IRQ handler is expected to do <code>JMP(brk_hndl)</code><br />
+					which will point to some code saving the <b>extended</b> status, then <i>calling</i> a <code>JMP(fw_dbg)</code> instruction.
 				</td>
 			</tr>
 			<tr>
@@ -425,7 +427,7 @@
 		</table>
 		<br />
 		<table border="0">
-			<tr><th colspan="4">Notes:</th></tr>
+			<tr><th colspan="4">Caption:</th></tr>
 			<tr>
 				<td class="fw">Reserved by Firmware</td>
 				<td class="kernel">Reserved by Kernel only</td>
@@ -434,7 +436,13 @@
 				<td class="need">Mandatory content</td>
 			</tr>
 		</table>
-		<h4 style="color:pink"><i>More to come?</i></h4>
-		<p align="right">Last modified: 2022-07-23</p>
+		<p>
+			<b>65C816</b>-based systems will
+			<a href="map16.html"><i>extend</i> this map up to <b>16 MiB</b></a>.
+			The very first 64 kiB <i>bank</i> will remain roughly the same,
+			although the <i>base ROM</i> could be <b>switched off</b>,
+			allowing access to a <i>shadow RAM</i> below.
+		</p>
+		<p align="right">Last modified: 2022-07-25</p>
 	</body>
 </html>
