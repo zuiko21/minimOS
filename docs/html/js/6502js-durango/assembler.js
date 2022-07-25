@@ -4,6 +4,12 @@
 *
 *  Adapted by Nick Morgan
 *  https://github.com/skilldrick/6502js
+* 
+*  Revised display: Emilio LLBB
+*  https://github.com/emiliollbb
+* 
+*  CMOS opcode support: Carlos Santisteban
+*  https://github.com/zuiko21/
 *
 *  Released under the GNU General Public License
 *  see http://gnu.org/licenses/gpl.html
@@ -527,6 +533,14 @@ function SimulatorWidget(node) {
       }
     }
 
+    function BITIMM(value) {
+     if (regA & value) {
+        regP &= 0xfd;
+      } else {
+        regP |= 0x02;
+      }
+    }
+
     function CLC() {
       regP &= 0xfe;
     }
@@ -886,6 +900,12 @@ function SimulatorWidget(node) {
         AND();
       },
 
+      i34: function () {
+        var addr = (popByte() + regX) & 0xff;
+        var value = memory.get(addr);
+        BIT(value);
+      },
+
       i35: function () {
         var addr = (popByte() + regX) & 0xff;
         regA &= memory.get(addr);
@@ -918,6 +938,12 @@ function SimulatorWidget(node) {
         regA = (regA - 1) & 0xff;
         setNVflagsForRegA();
         //DEC (CMOS)
+      },
+
+      i3c: function () {
+        var addr = popWord() + regX;
+        var value = memory.get(addr);
+        BIT(value);
       },
 
       i3d: function () {
@@ -1251,6 +1277,11 @@ function SimulatorWidget(node) {
         regY = (regY - 1) & 0xff;
         setNVflagsForRegY();
         //DEY
+      },
+
+      i89: function () {
+        var value = popByte();
+        BITIMM(value);	// BIT # should not affect NV, only Z!
       },
 
       i8a: function () {
@@ -2010,7 +2041,7 @@ function SimulatorWidget(node) {
       ["ADC", 0x69, 0x65, 0x75, null, 0x6d, 0x7d, 0x79, null, 0x61, 0x71, null, null],
       ["AND", 0x29, 0x25, 0x35, null, 0x2d, 0x3d, 0x39, null, 0x21, 0x31, null, null],
       ["ASL", null, 0x06, 0x16, null, 0x0e, 0x1e, null, null, null, null, 0x0a, null],
-      ["BIT", null, 0x24, null, null, 0x2c, null, null, null, null, null, null, null],
+      ["BIT", 0x89, 0x24, 0x34, null, 0x2c, 0x3c, null, null, null, null, null, null],
       ["BPL", null, null, null, null, null, null, null, null, null, null, null, 0x10],
       ["BMI", null, null, null, null, null, null, null, null, null, null, null, 0x30],
       ["BVC", null, null, null, null, null, null, null, null, null, null, null, 0x50],
