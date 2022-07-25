@@ -446,6 +446,21 @@ void poke(word dir, byte v) {
 		} else if (dir<=0xDF8F) {				// sync flags not writable!
 			if (ver)	printf("\n*** Writing to Read-only ports at $%04X ***\n", pc);
 			if (safe)	run = 0;
+		} else if (dir==0xDF93) { // virtual serial port at $df93
+			// Cache value
+			mem[dir]=v;
+			// If not printable
+			if(mem[dir] <= 0x20 || mem[dir] >= 0x7f) {
+				// Print hex value
+				printf("[%02X]", mem[dir]);
+			}
+			// If printable
+			else {
+				// Print it
+				printf("%c", mem[dir]);
+			}
+			// flush stdout
+			fflush(stdout);
 		} else if (dir==0xDF9C) { // controller 1 at $df9c
 			if (ver>5)	printf("Latch controllers\n");
 			mem[dir]=controllers[0];

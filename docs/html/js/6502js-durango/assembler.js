@@ -52,7 +52,9 @@ function SimulatorWidget(node) {
     $node.find('.notesButton').click(ui.showNotes);
     $node.find('.code').keypress(simulator.stop);
     $node.find('.code').keypress(ui.initialize);
-    $(document).keypress(memory.storeKeypress);
+    $(document).keydown(memory.storeKeypress);
+    $(document).keyup(memory.storeKeyup);
+    //$(document).keyup(function(){console.log('-- up --')});
   }
 
   function stripText() {
@@ -339,7 +341,7 @@ function SimulatorWidget(node) {
   }
 
   function Memory() {
-    var memArray = new Array(0x8000);
+    var memArray = new Array(0x10000);
 
     function set(addr, val) {
       return memArray[addr] = val;
@@ -354,23 +356,71 @@ function SimulatorWidget(node) {
     }
 
     // storeByte() - Poke a byte, don't touch any registers
-
     function storeByte(addr, value) {
+      /* I/O Address space */
+      if (addr > 0xdf80 && addr <= 0xdfff) {
+        return;
+      }
+      
+      /* ROM Address space */
+      if (addr >= 0xe000 && addr <= 0xffff) {
+        return;
+      }
+      
       set(addr, value & 0xff);
       
       /* Update screen if video map has been updated */
       // Get video memory position      
       var screenAddress = ((memory.get(0xdf80) & 0x30)>>4)*0x2000;
       var screenAddressEnd = screenAddress + 0x2000;
-      if ((addr >= screenAddress) && (addr < screenAddressEnd)) {
+      if (addr >= screenAddress && addr < screenAddressEnd) {
         display.updatePixel(addr);
       }
     }
+    
+    var BUTTON_A = 0x80;
+    var BUTTON_START = 0x40;
+    var BUTTON_B = 0x20;
+    var BUTTON_SELECT = 0x10;
+    var BUTTON_UP = 0x08;
+    var BUTTON_LEFT = 0x04;
+    var BUTTON_DOWN = 0x02;
+    var BUTTON_RIGHT = 0x01;
 
     // storeKeypress() - Store keycode in ZP $ff
     function storeKeypress(e) {
+        
+      
       value = e.which;
-      memory.storeByte(0xdf9a, value);
+      memArray[0xdf9a]=value;
+      
+      /* Emulate controllers buttons */
+      // Controller 1 UP
+      if(value==38) {
+        memArray[0xdf9c] |= BUTTON_UP;
+      }
+      else if(value==28) {
+        memArray[0xdf9c] |= BUTTON_DOWN;
+      }
+      else if(value==37) {
+        memArray[0xdf9c] |= BUTTON_LEFT;
+      }
+      else if(value==39) {
+        memArray[0xdf9c] |= BUTTON_RIGHT;
+      }
+      console.log(value);
+    }
+    
+    function storeKeyup(e) {
+      value = e.which;
+      memArray[0xdf9a]=0;
+      if(value==38) {
+        memArray[0xdf9c] &= ~BUTTON_UP;
+      }
+      else if(value==28) {
+        memArray[0xdf9c] &= ~BUTTON_DOWN;
+      }
+      console.log('up ' + value);   
     }
 
     function format(start, length) {
@@ -397,6 +447,7 @@ function SimulatorWidget(node) {
       getWord: getWord,
       storeByte: storeByte,
       storeKeypress: storeKeypress,
+      storeKeyup: storeKeyup,
       format: format
     };
   }
