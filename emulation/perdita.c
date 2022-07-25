@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220711-1001
+ * last modified 20220725-1239
  * */
 
 #include <stdio.h>
@@ -29,19 +29,18 @@
 
 /* global variables */
 	byte mem[65536];			// unified memory map
-	byte controllers[2];	// controller 2 register
+	byte controllers[2];		// 2 controller register
 
 	byte a, x, y, s, p;			// 8-bit registers
 	word pc;					// program counter
 
 	word screen = 0;			// Durango screen switcher, xSSxxxxx xxxxxxxx *** may not use it
 	int dec;					// decimal flag for speed penalties (CMOS only)
-	int run = 1;				// allow execution
-	int ver = 0;				// verbosity mode, 0 = none, 1 = warnings, 2 = interrupts, 3 = jumps, 4 = all; will stop on BRK unless < 2
+	int run = 3;				// allow execution, 0 = stop, 1 = pause, 2 = single step, 3 = run
+	int ver = 0;				// verbosity mode, 0 = none, 1 = warnings, 2 = interrupts, 3 = jumps, 4 = events, 5 = all
 	int fast = 0;				// speed flag
 	int graf = 1;				// enable SDL2 graphic display
-	int safe = 0;				// enable safe mode (stops on warnings)
-	int stat_flag = 0;			// external control
+	int safe = 0;				// enable safe mode (stops on warnings and BRK)
 	int nmi_flag = 0;			// interrupt control
 	int irq_flag = 0;
 	long cont = 0;				// total elapsed cycles
@@ -147,8 +146,8 @@ int main(int argc, char *argv[])
 		printf("-f fast mode\n");
 		printf("-s safe mode (will stop on warnings and BRK)\n");
 		printf("-k keep GUI open after program end\n");
-		printf("-h headless (no graphics!)\n");
-		printf("-v verbose\n");
+		printf("-h headless -- no graphics!\n");
+		printf("-v verbose (warnings/interrupts/jumps/events/all)\n");
 		return 1;
 	}
 
@@ -225,7 +224,7 @@ void run_emulation () {
 	long us_render = 0;		// total microseconds of rendering
 	long skip = 0;			// total skipped frames
 
-	printf("[F1=STOP, F2=NMI, F3=IRQ, F4=RESET, F5=STATUS, F6=DUMP]\n");
+	printf("[F1=STOP, F2=NMI, F3=IRQ, F4=RESET, F5=PAUSE, F6=DUMP, F7=STEP, F8=RESUME]\n");
 	init_vdu();
 	reset();				// ready to start!
 
@@ -287,9 +286,15 @@ void run_emulation () {
 			nmi_flag = 0;
 			nmi();			// NMI gets executed always
 		}
-		if (stat_flag) {
-			stat_flag = 0;
-			stat();
+/* check pause and step execution */
+		if (run == 2)	run = 1;		// back to PAUSE after single-step execution
+		if (run == 1) {
+			if (graf)	vdu_draw_full();// get latest screen contents
+			stat();						// display status at every pause
+			while (run == 1) {			// wait until resume or step...
+				sleep(20);
+				vdu_read_keyboard();	// ...but keep checking those keys for changes in 'run'
+			}
 		}
 	}
 
@@ -371,7 +376,7 @@ void load(const char name[], word adr) {
 		} while( c != EOF);
 
 		fclose(f);
-		printf("%s: %d bytes loaded at $%04X\n", name, b, adr);
+		printf("%s: %d bytes loaded at $%04X\n", name, --b, adr);
 	}
 	else {
 		printf("*** Could not load image ***\n");
@@ -462,10 +467,10 @@ void poke(word dir, byte v) {
 			// flush stdout
 			fflush(stdout);
 		} else if (dir==0xDF9C) { // controller 1 at $df9c
-			if (ver>5)	printf("Latch controllers\n");
+			if (ver>3)	printf("Latch controllers\n");
 			mem[dir]=controllers[0];
 		} else if (dir==0xDF9D) { // controllers 2 at $df9d 
-			if (ver>5)	printf("Shift controllers\n");
+			if (ver>3)	printf("Shift controllers\n");
 			mem[dir]=controllers[1];
 		} else if (dir<=0xDF9F) {				// expansion port?
 			mem[dir] = v;		// *** is this OK?
@@ -1817,16 +1822,19 @@ int exec(void) {
 			bits_nz(a);
 			if (ver > 3) printf("[TYA]");
 			break;
-/* *** Display Status (WAI on WDC) *** */
+/* *** *** special control 'opcodes' *** *** */
+/* *** Emulator Breakpoint  (WAI on WDC) *** */
 		case 0xCB:
-			if (ver)	printf(" Status @ $%x04:", pc-1);	// must allow warnings to display status request
-			stat();
+//			if (ver)	printf(" Status @ $%x04:", pc-1);	// must allow warnings to display status request
+//			stat();
+			run = 1;		// pause execution
 			break;
 /* *** Graceful Halt (STP on WDC) *** */
 		case 0xDB:
 			printf(" ...HALT!");
-			run = per = 0;
+			run = per = 0;	// definitively stop execution
 			break;
+/* *** *** unused (illegal?) opcodes *** *** */
 /* *** remaining opcodes (illegal on NMOS) executed as pseudoNOPs, according to 65C02 byte and cycle usage *** */
 		case 0x03:
 		case 0x13:
@@ -2308,33 +2316,35 @@ void vdu_read_keyboard() {
 		}
 		// Press F1 = STOP
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F1) {
-			run = 0;
+			run = 0;		// definitively stop execution
 		}
 		// Press F2 = NMI
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F2) {
-			nmi_flag = 1;
+			nmi_flag = 1;	// simulate NMI signal
 		}
 		// Press F3 = IRQ?
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F3) {
-			irq_flag = 1;
+			irq_flag = 1;	// simulate (spurious) IRQ
 		}
 		// Press F4 = RESET
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F4) {
 			reset();
 		}
-		// Press F5 = STATUS
+		// Press F5 = PAUSE
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F5) {
-			stat_flag = 1;
+			run = 1;		// pause execution and display status
 		}
 		// Press F6 = DUMP memory to file
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F6) {
 			full_dump();
 		}
-		// Press F7
+		// Press F7 = STEP
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F7) {
+			run = 2;		// will execute a single opcode, then back to PAUSE mode
 		}
-		// Press F8
+		// Press F8 = RESUME
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F8) {
+			run = 3;		// resume normal execution
 		}
 		// Press F9
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F9) {
