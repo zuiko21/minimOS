@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220725-1239
+ * last modified 20220725-1337
  * */
 
 #include <stdio.h>
@@ -145,6 +145,7 @@ int main(int argc, char *argv[])
 		printf("-a: load ROM at supplied address, example 0x8000\n");
 		printf("-f fast mode\n");
 		printf("-s safe mode (will stop on warnings and BRK)\n");
+		printf("-p start in STEP mode\n");
 		printf("-k keep GUI open after program end\n");
 		printf("-h headless -- no graphics!\n");
 		printf("-v verbose (warnings/interrupts/jumps/events/all)\n");
@@ -153,7 +154,7 @@ int main(int argc, char *argv[])
 
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "a:fvksh")) != -1)
+	while ((c = getopt (argc, argv, "a:fvksph")) != -1)
 	switch (c) {
 		case 'a':
 			rom_addr = optarg;
@@ -169,6 +170,9 @@ int main(int argc, char *argv[])
 			break;
 		case 's':
 			safe = 1;
+			break;
+		case 'p':
+			run = 2;
 			break;
 		case 'h':
 			graf = 0;
@@ -292,7 +296,7 @@ void run_emulation () {
 			if (graf)	vdu_draw_full();// get latest screen contents
 			stat();						// display status at every pause
 			while (run == 1) {			// wait until resume or step...
-				sleep(20);
+				usleep(20000);
 				vdu_read_keyboard();	// ...but keep checking those keys for changes in 'run'
 			}
 		}
@@ -324,8 +328,7 @@ void stat(void)	{
 	byte psr = p;			// local copy of status
 	const char flag[8]="NV.bDIZC";	// flag names
 
-	pc--;
-	printf("<PC=$%04X, A=$%02X, X=$%02X, Y=$%02X, S=$%02X>\n<PSR: ", pc, a, x, y, s);
+	printf("<PC=$%04X, A=$%02X, X=$%02X, Y=$%02X, S=$%02X>\n<PSR: ", pc-1, a, x, y, s);
 	for (i=0; i<8; i++) {
 		if (psr&128)	printf("%c", flag[i]);
 		else			printf("·");
