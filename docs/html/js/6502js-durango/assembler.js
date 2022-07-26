@@ -1255,6 +1255,12 @@ function SimulatorWidget(node) {
         //PLY (CMOS)
       },
 
+      i7c: function () {
+        var addr = popWord();
+        regPC = memory.getWord(addr + regX);
+        //JMP *IABX* (CMOS)
+      },
+
       i7d: function () {
         var addr = popWord();
         var value = memory.get(addr + regX);
@@ -2065,72 +2071,72 @@ function SimulatorWidget(node) {
     var codeAssembledOK = false;
 
     var Opcodes = [
-      /* Name, Imm,  ZP,   ZPX,  ZPY,  ABS, ABSX, ABSY,  IND, INDX, INDY, SNGL,  BRA,  IZP, IABX */
-      ["ADC", 0x69, 0x65, 0x75, null, 0x6d, 0x7d, 0x79, null, 0x61, 0x71, null, null],
-      ["AND", 0x29, 0x25, 0x35, null, 0x2d, 0x3d, 0x39, null, 0x21, 0x31, null, null],
-      ["ASL", null, 0x06, 0x16, null, 0x0e, 0x1e, null, null, null, null, 0x0a, null],
-      ["BIT", 0x89, 0x24, 0x34, null, 0x2c, 0x3c, null, null, null, null, null, null],
-      ["BPL", null, null, null, null, null, null, null, null, null, null, null, 0x10],
-      ["BMI", null, null, null, null, null, null, null, null, null, null, null, 0x30],
-      ["BVC", null, null, null, null, null, null, null, null, null, null, null, 0x50],
-      ["BVS", null, null, null, null, null, null, null, null, null, null, null, 0x70],
-      ["BCC", null, null, null, null, null, null, null, null, null, null, null, 0x90],
-      ["BCS", null, null, null, null, null, null, null, null, null, null, null, 0xb0],
-      ["BNE", null, null, null, null, null, null, null, null, null, null, null, 0xd0],
-      ["BEQ", null, null, null, null, null, null, null, null, null, null, null, 0xf0],
-      ["BRA", null, null, null, null, null, null, null, null, null, null, null, 0x80],
-      ["BRK", null, null, null, null, null, null, null, null, null, null, 0x00, null],
-      ["CMP", 0xc9, 0xc5, 0xd5, null, 0xcd, 0xdd, 0xd9, null, 0xc1, 0xd1, null, null],
-      ["CPX", 0xe0, 0xe4, null, null, 0xec, null, null, null, null, null, null, null],
-      ["CPY", 0xc0, 0xc4, null, null, 0xcc, null, null, null, null, null, null, null],
-      ["DEC", null, 0xc6, 0xd6, null, 0xce, 0xde, null, null, null, null, 0x3a, null],
-      ["EOR", 0x49, 0x45, 0x55, null, 0x4d, 0x5d, 0x59, null, 0x41, 0x51, null, null],
-      ["CLC", null, null, null, null, null, null, null, null, null, null, 0x18, null],
-      ["SEC", null, null, null, null, null, null, null, null, null, null, 0x38, null],
-      ["CLI", null, null, null, null, null, null, null, null, null, null, 0x58, null],
-      ["SEI", null, null, null, null, null, null, null, null, null, null, 0x78, null],
-      ["CLV", null, null, null, null, null, null, null, null, null, null, 0xb8, null],
-      ["CLD", null, null, null, null, null, null, null, null, null, null, 0xd8, null],
-      ["SED", null, null, null, null, null, null, null, null, null, null, 0xf8, null],
-      ["INC", null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, 0x1a, null],
-      ["JMP", null, null, null, null, 0x4c, null, null, 0x6c, null, null, null, null],
-      ["JSR", null, null, null, null, 0x20, null, null, null, null, null, null, null],
-      ["LDA", 0xa9, 0xa5, 0xb5, null, 0xad, 0xbd, 0xb9, null, 0xa1, 0xb1, null, null],
-      ["LDX", 0xa2, 0xa6, null, 0xb6, 0xae, null, 0xbe, null, null, null, null, null],
-      ["LDY", 0xa0, 0xa4, 0xb4, null, 0xac, 0xbc, null, null, null, null, null, null],
-      ["LSR", null, 0x46, 0x56, null, 0x4e, 0x5e, null, null, null, null, 0x4a, null],
-      ["NOP", null, null, null, null, null, null, null, null, null, null, 0xea, null],
-      ["ORA", 0x09, 0x05, 0x15, null, 0x0d, 0x1d, 0x19, null, 0x01, 0x11, null, null],
-      ["TAX", null, null, null, null, null, null, null, null, null, null, 0xaa, null],
-      ["TXA", null, null, null, null, null, null, null, null, null, null, 0x8a, null],
-      ["DEX", null, null, null, null, null, null, null, null, null, null, 0xca, null],
-      ["INX", null, null, null, null, null, null, null, null, null, null, 0xe8, null],
-      ["TAY", null, null, null, null, null, null, null, null, null, null, 0xa8, null],
-      ["TYA", null, null, null, null, null, null, null, null, null, null, 0x98, null],
-      ["DEY", null, null, null, null, null, null, null, null, null, null, 0x88, null],
-      ["INY", null, null, null, null, null, null, null, null, null, null, 0xc8, null],
-      ["ROR", null, 0x66, 0x76, null, 0x6e, 0x7e, null, null, null, null, 0x6a, null],
-      ["ROL", null, 0x26, 0x36, null, 0x2e, 0x3e, null, null, null, null, 0x2a, null],
-      ["RTI", null, null, null, null, null, null, null, null, null, null, 0x40, null],
-      ["RTS", null, null, null, null, null, null, null, null, null, null, 0x60, null],
-      ["SBC", 0xe9, 0xe5, 0xf5, null, 0xed, 0xfd, 0xf9, null, 0xe1, 0xf1, null, null],
-      ["STA", null, 0x85, 0x95, null, 0x8d, 0x9d, 0x99, null, 0x81, 0x91, null, null],
-      ["TRB", null, 0x14, null, null, 0x1c, null, null, null, null, null, null, null],
-      ["TSB", null, 0x04, null, null, 0x0c, null, null, null, null, null, null, null],
-      ["TXS", null, null, null, null, null, null, null, null, null, null, 0x9a, null],
-      ["TSX", null, null, null, null, null, null, null, null, null, null, 0xba, null],
-      ["PHA", null, null, null, null, null, null, null, null, null, null, 0x48, null],
-      ["PLA", null, null, null, null, null, null, null, null, null, null, 0x68, null],
-      ["PHX", null, null, null, null, null, null, null, null, null, null, 0xda, null],
-      ["PLX", null, null, null, null, null, null, null, null, null, null, 0xfa, null],
-      ["PHY", null, null, null, null, null, null, null, null, null, null, 0x5a, null],
-      ["PLY", null, null, null, null, null, null, null, null, null, null, 0x7a, null],
-      ["PHP", null, null, null, null, null, null, null, null, null, null, 0x08, null],
-      ["PLP", null, null, null, null, null, null, null, null, null, null, 0x28, null],
-      ["STX", null, 0x86, null, 0x96, 0x8e, null, null, null, null, null, null, null],
-      ["STY", null, 0x84, 0x94, null, 0x8c, null, null, null, null, null, null, null],
-      ["STZ", null, 0x64, 0x74, null, 0x9c, 0x9e, null, null, null, null, null, null],
-      ["---", null, null, null, null, null, null, null, null, null, null, null, null]
+      /* Name, Imm,  ZP,   ZPX,  ZPY,  ABS, ABSX, ABSY,  IND, INDX, INDY, SNGL,  BRA, IABX, INDZ */
+      ["ADC", 0x69, 0x65, 0x75, null, 0x6d, 0x7d, 0x79, null, 0x61, 0x71, null, null, null, null],
+      ["AND", 0x29, 0x25, 0x35, null, 0x2d, 0x3d, 0x39, null, 0x21, 0x31, null, null, null, null],
+      ["ASL", null, 0x06, 0x16, null, 0x0e, 0x1e, null, null, null, null, 0x0a, null, null, null],
+      ["BIT", 0x89, 0x24, 0x34, null, 0x2c, 0x3c, null, null, null, null, null, null, null, null],
+      ["BPL", null, null, null, null, null, null, null, null, null, null, null, 0x10, null, null],
+      ["BMI", null, null, null, null, null, null, null, null, null, null, null, 0x30, null, null],
+      ["BVC", null, null, null, null, null, null, null, null, null, null, null, 0x50, null, null],
+      ["BVS", null, null, null, null, null, null, null, null, null, null, null, 0x70, null, null],
+      ["BCC", null, null, null, null, null, null, null, null, null, null, null, 0x90, null, null],
+      ["BCS", null, null, null, null, null, null, null, null, null, null, null, 0xb0, null, null],
+      ["BNE", null, null, null, null, null, null, null, null, null, null, null, 0xd0, null, null],
+      ["BEQ", null, null, null, null, null, null, null, null, null, null, null, 0xf0, null, null],
+      ["BRA", null, null, null, null, null, null, null, null, null, null, null, 0x80, null, null],
+      ["BRK", null, null, null, null, null, null, null, null, null, null, 0x00, null, null, null],
+      ["CMP", 0xc9, 0xc5, 0xd5, null, 0xcd, 0xdd, 0xd9, null, 0xc1, 0xd1, null, null, null, null],
+      ["CPX", 0xe0, 0xe4, null, null, 0xec, null, null, null, null, null, null, null, null, null],
+      ["CPY", 0xc0, 0xc4, null, null, 0xcc, null, null, null, null, null, null, null, null, null],
+      ["DEC", null, 0xc6, 0xd6, null, 0xce, 0xde, null, null, null, null, 0x3a, null, null, null],
+      ["EOR", 0x49, 0x45, 0x55, null, 0x4d, 0x5d, 0x59, null, 0x41, 0x51, null, null, null, null],
+      ["CLC", null, null, null, null, null, null, null, null, null, null, 0x18, null, null, null],
+      ["SEC", null, null, null, null, null, null, null, null, null, null, 0x38, null, null, null],
+      ["CLI", null, null, null, null, null, null, null, null, null, null, 0x58, null, null, null],
+      ["SEI", null, null, null, null, null, null, null, null, null, null, 0x78, null, null, null],
+      ["CLV", null, null, null, null, null, null, null, null, null, null, 0xb8, null, null, null],
+      ["CLD", null, null, null, null, null, null, null, null, null, null, 0xd8, null, null, null],
+      ["SED", null, null, null, null, null, null, null, null, null, null, 0xf8, null, null, null],
+      ["INC", null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, 0x1a, null, null, null],
+      ["JMP", null, null, null, null, 0x4c, null, null, 0x6c, null, null, null, null, 0x7c, null],
+      ["JSR", null, null, null, null, 0x20, null, null, null, null, null, null, null, null, null],
+      ["LDA", 0xa9, 0xa5, 0xb5, null, 0xad, 0xbd, 0xb9, null, 0xa1, 0xb1, null, null, null, null],
+      ["LDX", 0xa2, 0xa6, null, 0xb6, 0xae, null, 0xbe, null, null, null, null, null, null, null],
+      ["LDY", 0xa0, 0xa4, 0xb4, null, 0xac, 0xbc, null, null, null, null, null, null, null, null],
+      ["LSR", null, 0x46, 0x56, null, 0x4e, 0x5e, null, null, null, null, 0x4a, null, null, null],
+      ["NOP", null, null, null, null, null, null, null, null, null, null, 0xea, null, null, null],
+      ["ORA", 0x09, 0x05, 0x15, null, 0x0d, 0x1d, 0x19, null, 0x01, 0x11, null, null, null, null],
+      ["TAX", null, null, null, null, null, null, null, null, null, null, 0xaa, null, null, null],
+      ["TXA", null, null, null, null, null, null, null, null, null, null, 0x8a, null, null, null],
+      ["DEX", null, null, null, null, null, null, null, null, null, null, 0xca, null, null, null],
+      ["INX", null, null, null, null, null, null, null, null, null, null, 0xe8, null, null, null],
+      ["TAY", null, null, null, null, null, null, null, null, null, null, 0xa8, null, null, null],
+      ["TYA", null, null, null, null, null, null, null, null, null, null, 0x98, null, null, null],
+      ["DEY", null, null, null, null, null, null, null, null, null, null, 0x88, null, null, null],
+      ["INY", null, null, null, null, null, null, null, null, null, null, 0xc8, null, null, null],
+      ["ROR", null, 0x66, 0x76, null, 0x6e, 0x7e, null, null, null, null, 0x6a, null, null, null],
+      ["ROL", null, 0x26, 0x36, null, 0x2e, 0x3e, null, null, null, null, 0x2a, null, null, null],
+      ["RTI", null, null, null, null, null, null, null, null, null, null, 0x40, null, null, null],
+      ["RTS", null, null, null, null, null, null, null, null, null, null, 0x60, null, null, null],
+      ["SBC", 0xe9, 0xe5, 0xf5, null, 0xed, 0xfd, 0xf9, null, 0xe1, 0xf1, null, null, null, null],
+      ["STA", null, 0x85, 0x95, null, 0x8d, 0x9d, 0x99, null, 0x81, 0x91, null, null, null, null],
+      ["TRB", null, 0x14, null, null, 0x1c, null, null, null, null, null, null, null, null, null],
+      ["TSB", null, 0x04, null, null, 0x0c, null, null, null, null, null, null, null, null, null],
+      ["TXS", null, null, null, null, null, null, null, null, null, null, 0x9a, null, null, null],
+      ["TSX", null, null, null, null, null, null, null, null, null, null, 0xba, null, null, null],
+      ["PHA", null, null, null, null, null, null, null, null, null, null, 0x48, null, null, null],
+      ["PLA", null, null, null, null, null, null, null, null, null, null, 0x68, null, null, null],
+      ["PHX", null, null, null, null, null, null, null, null, null, null, 0xda, null, null, null],
+      ["PLX", null, null, null, null, null, null, null, null, null, null, 0xfa, null, null, null],
+      ["PHY", null, null, null, null, null, null, null, null, null, null, 0x5a, null, null, null],
+      ["PLY", null, null, null, null, null, null, null, null, null, null, 0x7a, null, null, null],
+      ["PHP", null, null, null, null, null, null, null, null, null, null, 0x08, null, null, null],
+      ["PLP", null, null, null, null, null, null, null, null, null, null, 0x28, null, null, null],
+      ["STX", null, 0x86, null, 0x96, 0x8e, null, null, null, null, null, null, null, null, null],
+      ["STY", null, 0x84, 0x94, null, 0x8c, null, null, null, null, null, null, null, null, null],
+      ["STZ", null, 0x64, 0x74, null, 0x9c, 0x9e, null, null, null, null, null, null, null, null],
+      ["---", null, null, null, null, null, null, null, null, null, null, null, null, null, null]
     ];
 
     // assembleCode()
@@ -2272,11 +2278,13 @@ function SimulatorWidget(node) {
           if (checkZeroPageY(param, Opcodes[o][4])) { return true; }
           if (checkAbsoluteX(param, Opcodes[o][6])) { return true; }
           if (checkAbsoluteY(param, Opcodes[o][7])) { return true; }
+          if (checkIndAbsX(param, Opcodes[o][13])) { return true; }		// CMOS
           if (checkIndirect(param, Opcodes[o][8])) { return true; }
           if (checkIndirectX(param, Opcodes[o][9])) { return true; }
           if (checkIndirectY(param, Opcodes[o][10])) { return true; }
           if (checkAbsolute(param, Opcodes[o][5])) { return true; }
           if (checkBranch(param, Opcodes[o][12])) { return true; }
+          if (checkIndirectZP(param, Opcodes[o][14])) { return true; }	// CMOS
         }
       }
       return false; // Unknown opcode
@@ -2387,6 +2395,20 @@ function SimulatorWidget(node) {
       return false;
     }
 
+    // checkIndAbsX() - Check if param is indirect ABSOLUTE X and push value *** CMOS
+    function checkIndAbsX(param, opcode) {
+      var value;
+      if (opcode === null) { return false; }
+      if (param.match(/^\(\$[0-9a-f]{4},X\)$/i)) {
+        pushByte(opcode);
+        value = param.replace(/^\(\$([0-9a-f]{4}).*$/i, "$1");
+        if (value < 0 || value > 0xffff) { return false; }
+        pushWord(parseInt(value, 16));
+        return true;
+      }
+      return false;
+    }
+
     // checkIndirectX() - Check if param is indirect X and push value
     function checkIndirectX(param, opcode) {
       var value;
@@ -2406,6 +2428,20 @@ function SimulatorWidget(node) {
       var value;
       if (opcode === null) { return false; }
       if (param.match(/^\(\$[0-9a-f]{1,2}\),Y$/i)) {
+        pushByte(opcode);
+        value = param.replace(/^\([\$]([0-9a-f]{1,2}).*$/i, "$1");
+        if (value < 0 || value > 255) { return false; }
+        pushByte(parseInt(value, 16));
+        return true;
+      }
+      return false;
+    }
+
+    // checkIndirectZP() - Check if param is indirect ZP and push value *** CMOS
+    function checkIndirectZP(param, opcode) {
+      var value;
+      if (opcode === null) { return false; }
+      if (param.match(/^\(\$[0-9a-f]{1,2}\)$/i)) {
         pushByte(opcode);
         value = param.replace(/^\([\$]([0-9a-f]{1,2}).*$/i, "$1");
         if (value < 0 || value > 255) { return false; }
@@ -2631,7 +2667,9 @@ function SimulatorWidget(node) {
       'INDX',
       'INDY',
       'SNGL',
-      'BRA'
+      'BRA',
+      'IABX',
+      'INDZ'
     ];
 
     var instructionLength = {
@@ -2646,7 +2684,9 @@ function SimulatorWidget(node) {
       INDX: 2,
       INDY: 2,
       SNGL: 1,
-      BRA: 2
+      BRA: 2,
+      IABX: 3,
+      INDZ: 2
     };
 
     function getModeAndCode(byte) {
@@ -2679,7 +2719,7 @@ function SimulatorWidget(node) {
       var mode;
 
       function isAccumulatorInstruction() {
-        var accumulatorBytes = [0x0a, 0x4a, 0x2a, 0x6a];
+        var accumulatorBytes = [0x0a, 0x1a, 0x3a, 0x4a, 0x2a, 0x6a];
         if (accumulatorBytes.indexOf(bytes[0]) > -1) {
           return true;
         }
@@ -2712,7 +2752,7 @@ function SimulatorWidget(node) {
         if (mode.match(/X$/)) {
           argsString += ',X';
         }
-        if (mode.match(/^IND/)) {
+        if (mode.match(/^IND/) || mode.match(/^IABX/)) {	// I want to be safe!
           argsString = '(' + argsString + ')';
         }
         if (mode.match(/Y$/)) {
