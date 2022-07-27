@@ -152,7 +152,7 @@ begin:
 
 ; Set video mode
 ; [HiRes Invert S1 S0    RGB LED NC NC]
-LDA #$3F
+LDA #$3C
 STA $df80
 
 ; $10 $11 current video memory pointer
@@ -960,7 +960,7 @@ RTS
 
 
 ; Fill unused ROM
-.dsb $fffa-*, $00
+.dsb $fffa-*, $FF
 
 ; Set initial PC
 * = $fffa
