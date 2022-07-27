@@ -770,9 +770,16 @@ function SimulatorWidget(node) {
 
       i11: function () {
         var zp = popByte();
-        var value = memory.getWord(zp) + regY;
-        regA |= memory.get(value);
+        var addr = memory.getWord(zp) + regY;
+        regA |= memory.get(addr);
         ORA();
+      },
+
+      i12: function () {
+        var zp = popByte();
+        var addr = memory.getWord(zp);
+        regA |= memory.get(value);
+        ORA();	// CMOS
       },
 
       i14: function () {	// TRB (CMOS)
@@ -923,9 +930,16 @@ function SimulatorWidget(node) {
 
       i31: function () {
         var zp = popByte();
-        var value = memory.getWord(zp) + regY;
-        regA &= memory.get(value);
+        var addr = memory.getWord(zp) + regY;
+        regA &= memory.get(addr);
         AND();
+      },
+
+      i32: function () {
+        var zp = popByte();
+        var addr = memory.getWord(zp);
+        regA &= memory.get(addr);
+        AND();	// CMOS
       },
 
       i34: function () {
@@ -1066,9 +1080,16 @@ function SimulatorWidget(node) {
 
       i51: function () {
         var zp = popByte();
-        var value = memory.getWord(zp) + regY;
-        regA ^= memory.get(value);
+        var addr = memory.getWord(zp) + regY;
+        regA ^= memory.get(addr);
         EOR();
+      },
+
+      i52: function () {
+        var zp = popByte();
+        var addr = memory.getWord(zp);
+        regA ^= memory.get(addr);
+        EOR();	// CMOS
       },
 
       i55: function () {
@@ -1213,6 +1234,14 @@ function SimulatorWidget(node) {
         //ADC
       },
 
+      i72: function () {
+        var zp = popByte();
+        var addr = memory.getWord(zp);
+        var value = memory.get(addr);
+        testADC(value);
+        //ADC *INDZ* (CMOS)
+      },
+
       i74: function () {
         memory.storeByte((popByte() + regX) & 0xff, 0);
         //STZ (CMOS)
@@ -1352,6 +1381,13 @@ function SimulatorWidget(node) {
         //STA
       },
 
+      i92: function () {
+        var zp = popByte();
+        var addr = memory.getWord(zp);
+        memory.storeByte(addr, regA);
+        //STA CMOS
+      },
+
       i94: function () {
         memory.storeByte((popByte() + regX) & 0xff, regY);
         //STY
@@ -1475,6 +1511,13 @@ function SimulatorWidget(node) {
         var addr = memory.getWord(zp) + regY;
         regA = memory.get(addr);
         LDA();
+      },
+
+      ib2: function () {
+        var zp = popByte();
+        var addr = memory.getWord(zp);
+        regA = memory.get(addr);
+        LDA();	// CMOS
       },
 
       ib4: function () {
@@ -1606,6 +1649,14 @@ function SimulatorWidget(node) {
         //CMP
       },
 
+      id2: function () {
+        var zp = popByte();
+        var addr = memory.getWord(zp);
+        var value = memory.get(addr);
+        doCompare(regA, value);
+        //CMP CMOS
+      },
+
       id5: function () {
         var value = memory.get((popByte() + regX) & 0xff);
         doCompare(regA, value);
@@ -1724,6 +1775,14 @@ function SimulatorWidget(node) {
         var value = memory.get(addr + regY);
         testSBC(value);
         //SBC
+      },
+
+      if2: function () {
+        var zp = popByte();
+        var addr = memory.getWord(zp);
+        var value = memory.get(addr);
+        testSBC(value);
+        //SBC CMOS
       },
 
       if5: function () {
@@ -2072,8 +2131,8 @@ function SimulatorWidget(node) {
 
     var Opcodes = [
       /* Name, Imm,  ZP,   ZPX,  ZPY,  ABS, ABSX, ABSY,  IND, INDX, INDY, SNGL,  BRA, IABX, INDZ */
-      ["ADC", 0x69, 0x65, 0x75, null, 0x6d, 0x7d, 0x79, null, 0x61, 0x71, null, null, null, null],
-      ["AND", 0x29, 0x25, 0x35, null, 0x2d, 0x3d, 0x39, null, 0x21, 0x31, null, null, null, null],
+      ["ADC", 0x69, 0x65, 0x75, null, 0x6d, 0x7d, 0x79, null, 0x61, 0x71, null, null, null, 0x72],
+      ["AND", 0x29, 0x25, 0x35, null, 0x2d, 0x3d, 0x39, null, 0x21, 0x31, null, null, null, 0x32],
       ["ASL", null, 0x06, 0x16, null, 0x0e, 0x1e, null, null, null, null, 0x0a, null, null, null],
       ["BIT", 0x89, 0x24, 0x34, null, 0x2c, 0x3c, null, null, null, null, null, null, null, null],
       ["BPL", null, null, null, null, null, null, null, null, null, null, null, 0x10, null, null],
@@ -2086,11 +2145,11 @@ function SimulatorWidget(node) {
       ["BEQ", null, null, null, null, null, null, null, null, null, null, null, 0xf0, null, null],
       ["BRA", null, null, null, null, null, null, null, null, null, null, null, 0x80, null, null],
       ["BRK", null, null, null, null, null, null, null, null, null, null, 0x00, null, null, null],
-      ["CMP", 0xc9, 0xc5, 0xd5, null, 0xcd, 0xdd, 0xd9, null, 0xc1, 0xd1, null, null, null, null],
+      ["CMP", 0xc9, 0xc5, 0xd5, null, 0xcd, 0xdd, 0xd9, null, 0xc1, 0xd1, null, null, null, 0xd2],
       ["CPX", 0xe0, 0xe4, null, null, 0xec, null, null, null, null, null, null, null, null, null],
       ["CPY", 0xc0, 0xc4, null, null, 0xcc, null, null, null, null, null, null, null, null, null],
       ["DEC", null, 0xc6, 0xd6, null, 0xce, 0xde, null, null, null, null, 0x3a, null, null, null],
-      ["EOR", 0x49, 0x45, 0x55, null, 0x4d, 0x5d, 0x59, null, 0x41, 0x51, null, null, null, null],
+      ["EOR", 0x49, 0x45, 0x55, null, 0x4d, 0x5d, 0x59, null, 0x41, 0x51, null, null, null, 0x52],
       ["CLC", null, null, null, null, null, null, null, null, null, null, 0x18, null, null, null],
       ["SEC", null, null, null, null, null, null, null, null, null, null, 0x38, null, null, null],
       ["CLI", null, null, null, null, null, null, null, null, null, null, 0x58, null, null, null],
@@ -2101,12 +2160,12 @@ function SimulatorWidget(node) {
       ["INC", null, 0xe6, 0xf6, null, 0xee, 0xfe, null, null, null, null, 0x1a, null, null, null],
       ["JMP", null, null, null, null, 0x4c, null, null, 0x6c, null, null, null, null, 0x7c, null],
       ["JSR", null, null, null, null, 0x20, null, null, null, null, null, null, null, null, null],
-      ["LDA", 0xa9, 0xa5, 0xb5, null, 0xad, 0xbd, 0xb9, null, 0xa1, 0xb1, null, null, null, null],
+      ["LDA", 0xa9, 0xa5, 0xb5, null, 0xad, 0xbd, 0xb9, null, 0xa1, 0xb1, null, null, null, 0xb2],
       ["LDX", 0xa2, 0xa6, null, 0xb6, 0xae, null, 0xbe, null, null, null, null, null, null, null],
       ["LDY", 0xa0, 0xa4, 0xb4, null, 0xac, 0xbc, null, null, null, null, null, null, null, null],
       ["LSR", null, 0x46, 0x56, null, 0x4e, 0x5e, null, null, null, null, 0x4a, null, null, null],
       ["NOP", null, null, null, null, null, null, null, null, null, null, 0xea, null, null, null],
-      ["ORA", 0x09, 0x05, 0x15, null, 0x0d, 0x1d, 0x19, null, 0x01, 0x11, null, null, null, null],
+      ["ORA", 0x09, 0x05, 0x15, null, 0x0d, 0x1d, 0x19, null, 0x01, 0x11, null, null, null, 0x12],
       ["TAX", null, null, null, null, null, null, null, null, null, null, 0xaa, null, null, null],
       ["TXA", null, null, null, null, null, null, null, null, null, null, 0x8a, null, null, null],
       ["DEX", null, null, null, null, null, null, null, null, null, null, 0xca, null, null, null],
@@ -2119,8 +2178,8 @@ function SimulatorWidget(node) {
       ["ROL", null, 0x26, 0x36, null, 0x2e, 0x3e, null, null, null, null, 0x2a, null, null, null],
       ["RTI", null, null, null, null, null, null, null, null, null, null, 0x40, null, null, null],
       ["RTS", null, null, null, null, null, null, null, null, null, null, 0x60, null, null, null],
-      ["SBC", 0xe9, 0xe5, 0xf5, null, 0xed, 0xfd, 0xf9, null, 0xe1, 0xf1, null, null, null, null],
-      ["STA", null, 0x85, 0x95, null, 0x8d, 0x9d, 0x99, null, 0x81, 0x91, null, null, null, null],
+      ["SBC", 0xe9, 0xe5, 0xf5, null, 0xed, 0xfd, 0xf9, null, 0xe1, 0xf1, null, null, null, 0xf2],
+      ["STA", null, 0x85, 0x95, null, 0x8d, 0x9d, 0x99, null, 0x81, 0x91, null, null, null, 0x92],
       ["TRB", null, 0x14, null, null, 0x1c, null, null, null, null, null, null, null, null, null],
       ["TSB", null, 0x04, null, null, 0x0c, null, null, null, null, null, null, null, null, null],
       ["TXS", null, null, null, null, null, null, null, null, null, null, 0x9a, null, null, null],
@@ -2282,9 +2341,9 @@ function SimulatorWidget(node) {
           if (checkIndirect(param, Opcodes[o][8])) { return true; }
           if (checkIndirectX(param, Opcodes[o][9])) { return true; }
           if (checkIndirectY(param, Opcodes[o][10])) { return true; }
+          if (checkIndirectZP(param, Opcodes[o][14])) { return true; }	// CMOS
           if (checkAbsolute(param, Opcodes[o][5])) { return true; }
           if (checkBranch(param, Opcodes[o][12])) { return true; }
-          if (checkIndirectZP(param, Opcodes[o][14])) { return true; }	// CMOS
         }
       }
       return false; // Unknown opcode
