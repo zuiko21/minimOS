@@ -28,8 +28,10 @@
 
 
 /* global variables */
-	byte mem[65536];			// unified memory map
-	byte controllers[2];		// 2 controller register
+	byte mem[65536];			 // unified memory map
+	byte controllers[2];		 // 2 controller register
+	int emulate_controllers = 0; // Use keyboard as gamepad
+	int cont_shift_counter = 0;  // Controller shift counter
 
 	byte a, x, y, s, p;			// 8-bit registers
 	word pc;					// program counter
@@ -75,6 +77,7 @@
 	int  exec(void);		// execute one opcode, returning number of cycles
 	void illegal(byte s, byte op);				// if in safe mode, abort on illegal opcodes
 	void process_keyboard(SDL_Event*);
+	void emulate_controller1(SDL_Event *e);
 
 /* memory management */
 	byte peek(word dir);			// read memory or I/O
@@ -472,9 +475,15 @@ void poke(word dir, byte v) {
 		} else if (dir==0xDF9C) { // controller 1 at $df9c
 			if (ver>3)	printf("Latch controllers\n");
 			mem[dir]=controllers[0];
+			cont_shift_counter = 0;
 		} else if (dir==0xDF9D) { // controllers 2 at $df9d 
 			if (ver>3)	printf("Shift controllers\n");
-			mem[dir]=controllers[1];
+			if(cont_shift_counter++ == 8) {
+				mem[dir]=controllers[1];
+			}
+			else {
+				mem[dir]=0;
+			}
 		} else if (dir<=0xDF9F) {				// expansion port?
 			mem[dir] = v;		// *** is this OK?
 		} else if (dir<=0xDFAF)	// interrupt control?
@@ -1979,6 +1988,9 @@ int init_vdu() {
 		 return -2;
 		}
 	}
+	if(SDL_NumJoysticks()==0) {
+		emulate_controllers = 1;
+	}
 
 	// Get display mode
 	if (SDL_GetDesktopDisplayMode(0, &sdl_display_mode) != 0) {
@@ -2302,6 +2314,85 @@ void process_keyboard(SDL_Event *e) {
 		}
 		if (ver > 2) printf("controllers[0] = $%x\n", controllers[0]);
 		if (ver > 2) printf("controllers[0] = $%x\n", controllers[1]);
+	}
+	// Emulate controllers
+	if(emulate_controllers) {
+		emulate_controller1(e);
+	}
+}
+
+void emulate_controller1(SDL_Event *e) {
+	// Left key down p1 at o
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'o') {
+		// Left down
+		controllers[0] |= BUTTON_LEFT;		
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'o') {
+		// Left up
+		controllers[0] &= ~BUTTON_LEFT;		
+	}
+	// Right key down p1 at p
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'p') {
+		// Right down
+		controllers[0] |= BUTTON_RIGHT;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'p') {
+		// Right up
+		controllers[0] &= ~BUTTON_RIGHT;
+	}
+	// Up key p1 at q
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'q') {
+		// Up down
+		controllers[0] |= BUTTON_UP;		
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'q') {
+		// Up up
+		controllers[0] &= ~BUTTON_UP;
+	}
+	// Down key p1 at a
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'a') {
+		// Down down
+		controllers[0] |= BUTTON_DOWN;		
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'a') {
+		// Down up
+		controllers[0] &= ~BUTTON_DOWN;
+	}
+	// A key down p1 at space
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == ' ') {
+		// A down
+		controllers[0] |= BUTTON_A;		
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == ' ') {
+		// A up
+		controllers[0] &= ~BUTTON_A;
+	}
+	// B key p1 at c
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'c') {
+		// B down
+		controllers[0] |= BUTTON_B;		
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'c') {
+		// B up
+		controllers[0] &= ~BUTTON_B;
+	}
+	// START key p1 at space
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 13) {
+		// START down
+		controllers[0] |= BUTTON_START;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 13) {
+		// START up
+		controllers[0] &= ~BUTTON_START;
+	}
+	// SELECT key p1 at x
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'x') {
+		// SELECT down
+		controllers[0] |= BUTTON_SELECT;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'x') {
+		// SELECT up
+		controllers[0] &= ~BUTTON_SELECT;
 	}
 }
 
