@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220731-2317
+ * last modified 20220731-2355
  * */
 
 #include <stdio.h>
@@ -207,9 +207,17 @@ int main(int argc, char *argv[])
 	else {
 		rom_addr_int = (int)strtol(rom_addr, NULL, 0);
 		load(filename, rom_addr_int);
+/* set some standard vectors and base ROM contents */
+		mem[0xFFF6] = 0x6C;					// JMP ($0200) as recommended
+		mem[0xFFF7] = 0x00;
+		mem[0xFFF8] = 0x02;
+		mem[0xFFF9] = 0x40;					// RTI for unused NMI vector
+		mem[0xFFFA] = 0xF9;					// standard NMI vector points to RTI
+		mem[0xFFFB] = 0xFF;
 		mem[0xFFFC] = rom_addr_int & 0xFF;	// set RESET vector pointing to loaded code
 		mem[0xFFFD] = rom_addr_int >> 8;
-		mem[0xDF80] = 0x38;					// just in case, set default screen, colour mode
+		mem[0xFFFE] = 0xF6;					// standard IRQ vector points to recommended indirect jump
+		mem[0xFFFF] = 0xFF;
 	}
 
 	run_emulation();
@@ -236,7 +244,10 @@ void run_emulation () {
 	init_vdu();
 	reset();				// ready to start!
 
-	next=clock()+4000;		// set delay counter, assumes CLOCKS_PER_SEC is 1000000!
+	next=clock()+20000;		// set delay counter, assumes CLOCKS_PER_SEC is 1000000!
+	min_sleep = 20000;		// EEEEEEK
+	max_render = 0;
+
 	while (run) {
 /* execute current opcode */
 		cyc = exec();		// count elapsed clock cycles for this instruction
@@ -259,7 +270,7 @@ void run_emulation () {
 				if (!fast) {
 					sleep_time=next-clock();
 					ticks += sleep_time;		// for performance measurement
-					if (ticks < min_sleep)		min_sleep = ticks;		// worse performance so far
+					if (sleep_time < min_sleep)		min_sleep = sleep_time;		// worse performance so far
 					if(sleep_time>0) {
 						usleep(sleep_time);		// should be accurate enough
 					} else {
@@ -314,6 +325,7 @@ void run_emulation () {
 	stat();								// display final status
 
 /* performance statistics */
+	if (!frames)	frames = 1;			// whatever
 	printf("\nSkipped frames: %ld (%f%%)\n", skip, skip*100.0/frames);
 	printf("Average CPU time use: %f%%\n", 100-(ticks/200.0/frames));
 	printf("Peak CPU time use: %f%%\n", 100-(min_sleep/200.0));
