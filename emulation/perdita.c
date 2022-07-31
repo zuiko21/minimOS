@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220731-1118
+ * last modified 20220731-2317
  * */
 
 #include <stdio.h>
@@ -223,7 +223,10 @@ void run_emulation () {
 	int line=0;				// line count for vertical retrace flag
 	clock_t next;			// delay counter
 	clock_t sleep_time;		// delay time
+	clock_t min_sleep;		// for peek performance evaluation
 	clock_t render_start;	// for SDL/GPU performance evaluation
+	clock_t render_time;
+	clock_t max_render;
 	long frames = 0;		// total elapsed frames (for performance evaluation)
 	long ticks = 0;			// total added microseconds of DELAY
 	long us_render = 0;		// total microseconds of rendering
@@ -249,11 +252,14 @@ void run_emulation () {
 				frames++;
 				render_start = clock();
 				if (graf && scr_dirty)	vdu_draw_full();	// seems worth updating screen every VSYNC
-				us_render += clock()-render_start;			// compute rendering time
+				render_time = clock()-render_start;
+				us_render += render_time;					// compute rendering time
+				if (render_time > max_render)	max_render = render_time;
 /* make a suitable delay for speed accuracy */
 				if (!fast) {
 					sleep_time=next-clock();
 					ticks += sleep_time;		// for performance measurement
+					if (ticks < min_sleep)		min_sleep = ticks;		// worse performance so far
 					if(sleep_time>0) {
 						usleep(sleep_time);		// should be accurate enough
 					} else {
@@ -310,7 +316,9 @@ void run_emulation () {
 /* performance statistics */
 	printf("\nSkipped frames: %ld (%f%%)\n", skip, skip*100.0/frames);
 	printf("Average CPU time use: %f%%\n", 100-(ticks/200.0/frames));
+	printf("Peak CPU time use: %f%%\n", 100-(min_sleep/200.0));
 	printf("Average Rendering time: %ld µs (%f%%)\n", us_render/frames, us_render/frames/200.0);
+	printf("Peak Rendering time: %ld µs (%f%%)\n", max_render, max_render/200.0);
 	if(keep_open) {
 		printf("\nPress ENTER key to exit\n");
 		getchar();
@@ -450,6 +458,7 @@ void poke(word dir, byte v) {
 		if (dir<=0xDF87) {		// video mode?
 			mem[0xDF80] = v;	// canonical address
 			screen = (v & 0b00110000) << 9;		// screen switching
+			scr_dirty = 1;		// note window should be updated when changing modes!
 		} else if (dir<=0xDF8F) {				// sync flags not writable!
 			if (ver)	printf("\n*** Writing to Read-only ports at $%04X ***\n", pc);
 			if (safe)	run = 0;
