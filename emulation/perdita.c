@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220725-1337
+ * last modified 20220731-1118
  * */
 
 #include <stdio.h>
@@ -34,7 +34,8 @@
 	byte a, x, y, s, p;			// 8-bit registers
 	word pc;					// program counter
 
-	word screen = 0;			// Durango screen switcher, xSSxxxxx xxxxxxxx *** may not use it
+	word screen = 0;			// Durango screen switcher, xSSxxxxx xxxxxxxx
+	int scr_dirty = 0;			// screen update flag
 	int dec;					// decimal flag for speed penalties (CMOS only)
 	int run = 3;				// allow execution, 0 = stop, 1 = pause, 2 = single step, 3 = run
 	int ver = 0;				// verbosity mode, 0 = none, 1 = warnings, 2 = interrupts, 3 = jumps, 4 = events, 5 = all
@@ -247,8 +248,8 @@ void run_emulation () {
 				line = 0;				// 312-line field limit
 				frames++;
 				render_start = clock();
-				if (graf)	vdu_draw_full();		// seems worth updating screen every VSYNC
-				us_render += clock()-render_start;	// compute rendering time
+				if (graf && scr_dirty)	vdu_draw_full();	// seems worth updating screen every VSYNC
+				us_render += clock()-render_start;			// compute rendering time
 /* make a suitable delay for speed accuracy */
 				if (!fast) {
 					sleep_time=next-clock();
@@ -293,7 +294,7 @@ void run_emulation () {
 /* check pause and step execution */
 		if (run == 2)	run = 1;		// back to PAUSE after single-step execution
 		if (run == 1) {
-			if (graf)	vdu_draw_full();// get latest screen contents
+			if (graf && scr_dirty)		vdu_draw_full();	// get latest screen contents
 			stat();						// display status at every pause
 			while (run == 1) {			// wait until resume or step...
 				usleep(20000);
@@ -442,15 +443,13 @@ byte peek(word dir) {
 void poke(word dir, byte v) {
 	if (dir<=0x7FFF) {			// 32 KiB static RAM
 		mem[dir] = v;
-//		if ((dir & 0x6000) == screen) {			// VRAM area *** no need as whole screen will be updated every frame
-			// send (dir&0x1FFF, v) to VDU
-//		}
+		if ((dir & 0x6000) == screen) {			// VRAM area
+			scr_dirty = 1;		// screen access detected, thus window must be updated!
+		}
 	} else if (dir>=0xDF80 && dir<=0xDFFF) {	// *** I/O ***
 		if (dir<=0xDF87) {		// video mode?
 			mem[0xDF80] = v;	// canonical address
-			screen = (v & 0b00110000) << 9;		// screen switching *** may not use 'screen' anymore
-			// VDU-redraw all VRAM at selected screen! *** may not need it
-			// may add more flags for VDU
+			screen = (v & 0b00110000) << 9;		// screen switching
 		} else if (dir<=0xDF8F) {				// sync flags not writable!
 			if (ver)	printf("\n*** Writing to Read-only ports at $%04X ***\n", pc);
 			if (safe)	run = 0;
@@ -2167,6 +2166,8 @@ void vdu_draw_full() {
 
 	//Update screen
 	SDL_RenderPresent(sdl_renderer);
+	
+	scr_dirty = 0;			// window has been updated
 }
 
 /* Process keyboard / mouse events */
