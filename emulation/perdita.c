@@ -460,15 +460,20 @@ void poke(word dir, byte v) {
 		} else if (dir==0xDF93) { // virtual serial port at $df93
 			// Cache value
 			mem[dir]=v;
-			// If not printable
-			if(mem[dir] <= 0x20 || mem[dir] >= 0x7f) {
+			// If hex mode enabled
+			if(mem[0xDF9]==0x01) {
 				// Print hex value
-				printf("[%02X]", mem[dir]);
+				printf("[%02X]", mem[dir]);	
 			}
-			// If printable
-			else {
-				// Print it
+			// If ascii mode enabled
+			else if(mem[0xDF9]==0x01) {
+				// Print ascii
 				printf("%c", mem[dir]);
+			}
+			// If ascii mode enabled
+			else if(mem[0xDF9]==0xFF) {
+				// Print stat
+				stat();
 			}
 			// flush stdout
 			fflush(stdout);
