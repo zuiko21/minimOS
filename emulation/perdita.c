@@ -461,17 +461,17 @@ void poke(word dir, byte v) {
 			// Cache value
 			mem[dir]=v;
 			// If hex mode enabled
-			if(mem[0xDF9]==0x01) {
+			if(mem[0xDF94]==0x00) {
 				// Print hex value
 				printf("[%02X]", mem[dir]);	
 			}
 			// If ascii mode enabled
-			else if(mem[0xDF9]==0x01) {
+			else if(mem[0xDF94]==0x01) {
 				// Print ascii
 				printf("%c", mem[dir]);
 			}
 			// If ascii mode enabled
-			else if(mem[0xDF9]==0xFF) {
+			else if(mem[0xDF94]==0xFF) {
 				// Print stat
 				stat();
 			}
