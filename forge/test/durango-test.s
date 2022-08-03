@@ -388,7 +388,7 @@ vsync:
 vcont:
 		BIT IO8lh			; check VBLANK (4)
 		BVS vsync			; wait until sync ends (3)
-	LDY #9					; vertical display is ~16.3 ms, X cycles every ~2 ms...
+	LDY #211;9					; vertical display is ~16.3 ms, X cycles every ~2 ms...
 	LDX #192				; ...so make first iteration shorter (by ~1.5 ms)
 vden:
 		INX					; (2)
@@ -438,24 +438,23 @@ lend:
 	BEQ sync_ok				; 0 = 256, hopefully!
 ; otherwise we have a wrong number of lines!
 bad_count:
-	LDA #$EE:LDX #0:LDY #0
-	.byt	$cb				; halt here
+	LDA #$EE:LDX #0:LDY #0:.byt $cb:BRA sync_ok
 ; or VSYNC is way off (or not reported)
 vtime:
-	LDA #0:LDX #0:LDY #$11:.byt $cb
+	LDA #0:LDX #0:LDY #$11:.byt $cb:BRA sync_ok
 vtime2:
 	LDA #0:LDX #0:LDY #$22
-	.byt	$cb				; halt here
+	.byt	$cb:BRA sync_ok				; halt here
 ; or HSYNC is way off (or not reported)
 htime:
 	LDA #0:LDX #$11:LDY #0
-	.byt	$cb				; halt here
+	.byt	$cb:BRA sync_ok				; halt here
 htime2:
 	LDA #0:LDX #$22:LDY #0
-	.byt	$cb				; halt here
+	.byt	$cb:BRA sync_ok				; halt here
 htime3:
 	LDA #0:LDX #$33:LDY #0
-	.byt	$cb				; halt here
+	.byt	$cb:BRA sync_ok				; halt here
 sync_ok:
 ; *** all OK, end of test ***
 ; sweep sound, print OK banner and lock
