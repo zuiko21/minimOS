@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220725-1337
+ * last modified 20220731-2355
  * */
 
 #include <stdio.h>
@@ -36,7 +36,8 @@
 	byte a, x, y, s, p;			// 8-bit registers
 	word pc;					// program counter
 
-	word screen = 0;			// Durango screen switcher, xSSxxxxx xxxxxxxx *** may not use it
+	word screen = 0;			// Durango screen switcher, xSSxxxxx xxxxxxxx
+	int scr_dirty = 0;			// screen update flag
 	int dec;					// decimal flag for speed penalties (CMOS only)
 	int run = 3;				// allow execution, 0 = stop, 1 = pause, 2 = single step, 3 = run
 	int ver = 0;				// verbosity mode, 0 = none, 1 = warnings, 2 = interrupts, 3 = jumps, 4 = events, 5 = all
@@ -209,9 +210,17 @@ int main(int argc, char *argv[])
 	else {
 		rom_addr_int = (int)strtol(rom_addr, NULL, 0);
 		load(filename, rom_addr_int);
+/* set some standard vectors and base ROM contents */
+		mem[0xFFF6] = 0x6C;					// JMP ($0200) as recommended
+		mem[0xFFF7] = 0x00;
+		mem[0xFFF8] = 0x02;
+		mem[0xFFF9] = 0x40;					// RTI for unused NMI vector
+		mem[0xFFFA] = 0xF9;					// standard NMI vector points to RTI
+		mem[0xFFFB] = 0xFF;
 		mem[0xFFFC] = rom_addr_int & 0xFF;	// set RESET vector pointing to loaded code
 		mem[0xFFFD] = rom_addr_int >> 8;
-		mem[0xDF80] = 0x38;					// just in case, set default screen, colour mode
+		mem[0xFFFE] = 0xF6;					// standard IRQ vector points to recommended indirect jump
+		mem[0xFFFF] = 0xFF;
 	}
 
 	run_emulation();
@@ -225,7 +234,10 @@ void run_emulation () {
 	int line=0;				// line count for vertical retrace flag
 	clock_t next;			// delay counter
 	clock_t sleep_time;		// delay time
+	clock_t min_sleep;		// for peek performance evaluation
 	clock_t render_start;	// for SDL/GPU performance evaluation
+	clock_t render_time;
+	clock_t max_render;
 	long frames = 0;		// total elapsed frames (for performance evaluation)
 	long ticks = 0;			// total added microseconds of DELAY
 	long us_render = 0;		// total microseconds of rendering
@@ -235,7 +247,10 @@ void run_emulation () {
 	init_vdu();
 	reset();				// ready to start!
 
-	next=clock()+4000;		// set delay counter, assumes CLOCKS_PER_SEC is 1000000!
+	next=clock()+20000;		// set delay counter, assumes CLOCKS_PER_SEC is 1000000!
+	min_sleep = 20000;		// EEEEEEK
+	max_render = 0;
+
 	while (run) {
 /* execute current opcode */
 		cyc = exec();		// count elapsed clock cycles for this instruction
@@ -250,12 +265,15 @@ void run_emulation () {
 				line = 0;				// 312-line field limit
 				frames++;
 				render_start = clock();
-				if (graf)	vdu_draw_full();		// seems worth updating screen every VSYNC
-				us_render += clock()-render_start;	// compute rendering time
+				if (graf && scr_dirty)	vdu_draw_full();	// seems worth updating screen every VSYNC
+				render_time = clock()-render_start;
+				us_render += render_time;					// compute rendering time
+				if (render_time > max_render)	max_render = render_time;
 /* make a suitable delay for speed accuracy */
 				if (!fast) {
 					sleep_time=next-clock();
 					ticks += sleep_time;		// for performance measurement
+					if (sleep_time < min_sleep)		min_sleep = sleep_time;		// worse performance so far
 					if(sleep_time>0) {
 						usleep(sleep_time);		// should be accurate enough
 					} else {
@@ -296,7 +314,7 @@ void run_emulation () {
 /* check pause and step execution */
 		if (run == 2)	run = 1;		// back to PAUSE after single-step execution
 		if (run == 1) {
-			if (graf)	vdu_draw_full();// get latest screen contents
+			if (graf && scr_dirty)		vdu_draw_full();	// get latest screen contents
 			stat();						// display status at every pause
 			while (run == 1) {			// wait until resume or step...
 				usleep(20000);
@@ -310,9 +328,12 @@ void run_emulation () {
 	stat();								// display final status
 
 /* performance statistics */
+	if (!frames)	frames = 1;			// whatever
 	printf("\nSkipped frames: %ld (%f%%)\n", skip, skip*100.0/frames);
 	printf("Average CPU time use: %f%%\n", 100-(ticks/200.0/frames));
+	printf("Peak CPU time use: %f%%\n", 100-(min_sleep/200.0));
 	printf("Average Rendering time: %ld µs (%f%%)\n", us_render/frames, us_render/frames/200.0);
+	printf("Peak Rendering time: %ld µs (%f%%)\n", max_render, max_render/200.0);
 	if(keep_open) {
 		printf("\nPress ENTER key to exit\n");
 		getchar();
@@ -445,15 +466,14 @@ byte peek(word dir) {
 void poke(word dir, byte v) {
 	if (dir<=0x7FFF) {			// 32 KiB static RAM
 		mem[dir] = v;
-//		if ((dir & 0x6000) == screen) {			// VRAM area *** no need as whole screen will be updated every frame
-			// send (dir&0x1FFF, v) to VDU
-//		}
+		if ((dir & 0x6000) == screen) {			// VRAM area
+			scr_dirty = 1;		// screen access detected, thus window must be updated!
+		}
 	} else if (dir>=0xDF80 && dir<=0xDFFF) {	// *** I/O ***
 		if (dir<=0xDF87) {		// video mode?
 			mem[0xDF80] = v;	// canonical address
-			screen = (v & 0b00110000) << 9;		// screen switching *** may not use 'screen' anymore
-			// VDU-redraw all VRAM at selected screen! *** may not need it
-			// may add more flags for VDU
+			screen = (v & 0b00110000) << 9;		// screen switching
+			scr_dirty = 1;		// note window should be updated when changing modes!
 		} else if (dir<=0xDF8F) {				// sync flags not writable!
 			if (ver)	printf("\n*** Writing to Read-only ports at $%04X ***\n", pc);
 			if (safe)	run = 0;
@@ -2184,6 +2204,8 @@ void vdu_draw_full() {
 
 	//Update screen
 	SDL_RenderPresent(sdl_renderer);
+	
+	scr_dirty = 0;			// window has been updated
 }
 
 /* Process keyboard / mouse events */
