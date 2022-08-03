@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220731-2355
+ * last modified 20220804-0034
  * */
 
 #include <stdio.h>
@@ -265,7 +265,7 @@ void run_emulation () {
 			ht -= 98;
 			line++;
 			if (line >= 312) {
-				line = 0;				// 312-line field limit
+				line -= 312;				// 312-line field limit
 				frames++;
 				render_start = clock();
 				if (graf && scr_dirty)	vdu_draw_full();	// seems worth updating screen every VSYNC
