@@ -1,6 +1,6 @@
 ; FULL test of Durango-X/S/R (ROMmable version)
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220804-0013
+; last modified 20220804-0050
 
 ;#define	NMOS	_NMOS
 
@@ -379,7 +379,7 @@ it_ok:
 ; *** next is testing for HSYNC and VSYNC... ***
 ; make sure X ends at 0, or load after!
 	LDX #25					; each iteration is 12t, X cycles every 3075t ~2 ms
-	LDY #3;2					; VBLANK takes ~3.6 ms, so one iteration is ~10% shorter for ~3.8 ms
+	LDY #2					; VBLANK takes ~3.6 ms, so one iteration is ~10% shorter for ~3.8 ms
 vsync:
 		INX					; (2)
 		BNE vcont			; count cycles... (3...)
@@ -388,13 +388,13 @@ vsync:
 vcont:
 		BIT IO8lh			; check VBLANK (4)
 		BVS vsync			; wait until sync ends (3)
-	LDY #10;9					; vertical display is ~16.3 ms, X cycles every ~2 ms...
+	LDY #9					; vertical display is ~16.3 ms, X cycles every ~2 ms...
 	LDX #192				; ...so make first iteration shorter (by ~1.5 ms)
 vden:
 		INX					; (2)
 		BNE vdisp			; count cycles... (3...)
 			DEY
-			BEQ vtime		; up to ~16.5 ms
+			BEQ vtime2		; up to ~16.5 ms
 vdisp:
 		BIT IO8lh			; check VBLANK (4)
 		BVC vden			; wait until vertical display ends
@@ -409,14 +409,14 @@ hsync:
 	LDY #6					; loop takes 11t, display is 64, thus limit at ~66t
 hden:
 		DEY					; (2)
-			BEQ htime		; timeout at ~44t (2)
+			BEQ htime2		; timeout at ~44t (2)
 		BIT IO8lh			; check HBLANK (4)
 		BMI hden			; until sync ends (3)
 	LDY #3					; loop takes 11t, HBLANK is 34, thus limit at ~44t (might do 3 as per overhead)
 ; and measure hsync again, just for the sake of it
 hmeas:
 		DEY					; (2)
-			BEQ htime		; timeout at ~44t (2)
+			BEQ htime3		; timeout at ~44t (2)
 		BIT IO8lh			; check HBLANK (4)
 		BMI hmeas			; until sync ends (3)
 ; there's HSYNC at reasonable speed
@@ -442,11 +442,19 @@ bad_count:
 	.byt	$cb				; halt here
 ; or VSYNC is way off (or not reported)
 vtime:
-	LDA #0:LDX #0:LDY #$EE
+	LDA #0:LDX #0:LDY #$11:.byt $cb
+vtime2:
+	LDA #0:LDX #0:LDY #$22
 	.byt	$cb				; halt here
 ; or HSYNC is way off (or not reported)
 htime:
-	LDA #0:LDX #$EE:LDY #0
+	LDA #0:LDX #$11:LDY #0
+	.byt	$cb				; halt here
+htime2:
+	LDA #0:LDX #$22:LDY #0
+	.byt	$cb				; halt here
+htime3:
+	LDA #0:LDX #$33:LDY #0
 	.byt	$cb				; halt here
 sync_ok:
 ; *** all OK, end of test ***
