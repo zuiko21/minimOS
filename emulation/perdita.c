@@ -29,7 +29,11 @@
 
 /* global variables */
 	byte mem[65536];			// unified memory map
-	byte controllers[2];		// 2 controller register
+	byte gamepads[2];		 	// 2 gamepad hardware status
+	byte gamepads_latch[2];	 	// 2 gamepad register latch
+	int gp1_emulated = 0; 		// Use keyboard as gamepad 1
+	int gp2_emulated = 0; 		// Use keyboard as gamepad 2
+	int gp_shift_counter = 0;	// gamepad shift counter
 
 	byte a, x, y, s, p;			// 8-bit registers
 	word pc;					// program counter
@@ -59,7 +63,7 @@
 	SDL_Renderer* sdl_renderer;
 	// Display mode
 	SDL_DisplayMode sdl_display_mode;
-	// Game Controllers
+	// Game gamepads
 	SDL_Joystick *sdl_gamepads[2];
 	// Do not close GUI after program end
 	int keep_open = 0;
@@ -76,6 +80,8 @@
 	int  exec(void);		// execute one opcode, returning number of cycles
 	void illegal(byte s, byte op);				// if in safe mode, abort on illegal opcodes
 	void process_keyboard(SDL_Event*);
+	void emulate_gamepad1(SDL_Event *e);
+	void emulate_gamepad2(SDL_Event *e);
 
 /* memory management */
 	byte peek(word dir);			// read memory or I/O
@@ -477,24 +483,38 @@ void poke(word dir, byte v) {
 		} else if (dir==0xDF93) { // virtual serial port at $df93
 			// Cache value
 			mem[dir]=v;
-			// If not printable
-			if(mem[dir] <= 0x20 || mem[dir] >= 0x7f) {
+			// If hex mode enabled
+			if(mem[0xDF94]==0x00) {
 				// Print hex value
-				printf("[%02X]", mem[dir]);
+				printf("[%02X]", mem[dir]);	
 			}
-			// If printable
-			else {
-				// Print it
+			// If ascii mode enabled
+			else if(mem[0xDF94]==0x01) {
+				// Print ascii
 				printf("%c", mem[dir]);
+			}
+			// If ascii mode enabled
+			else if(mem[0xDF94]==0xFF) {
+				// Print stat
+				stat();
 			}
 			// flush stdout
 			fflush(stdout);
-		} else if (dir==0xDF9C) { // controller 1 at $df9c
-			if (ver>3)	printf("Latch controllers\n");
-			mem[dir]=controllers[0];
-		} else if (dir==0xDF9D) { // controllers 2 at $df9d 
-			if (ver>3)	printf("Shift controllers\n");
-			mem[dir]=controllers[1];
+		} else if (dir==0xDF9C) { // gamepad 1 at $df9c
+			if (ver)	printf("Latch gamepads\n");
+			gamepads_latch[0] = gamepads[0];
+			gamepads_latch[1] = gamepads[1];
+			gp_shift_counter = 0;
+		} else if (dir==0xDF9D) { // gamepads 2 at $df9d 
+			if (ver)	printf("Shift gamepads\n");
+			if(++gp_shift_counter == 8) {
+				mem[0xDF9C]=gamepads_latch[0];
+				mem[0xDF9D]=gamepads_latch[1];
+			}
+			else {
+				mem[0xDF9C]=0;
+				mem[0xDF9D]=0;
+			}
 		} else if (dir<=0xDF9F) {				// expansion port?
 			mem[dir] = v;		// *** is this OK?
 		} else if (dir<=0xDFAF)	// interrupt control?
@@ -534,8 +554,8 @@ void reset(void) {
 	p |= 0b00110100;						// these always 1, includes SEI
 	dec = 0;								// per CLD above
 	mem[0xDFA0] = 0;						// interrupt gets disabled on RESET!
-	controllers[0] = 0;						// Reset controller 1 register
-	controllers[1] = 0;						// Reset controller 2 register
+	gamepads[0] = 0;						// Reset gamepad 1 register
+	gamepads[1] = 0;						// Reset gamepad 2 register
 
 	cont = 0;								// reset global cycle counter?
 }
@@ -1995,9 +2015,17 @@ int init_vdu() {
 		sdl_gamepads[i] = SDL_JoystickOpen(i);
 		if(sdl_gamepads[i] == NULL)
 		{
-		 printf("Unable to open game controller #%d! SDL Error: %s\n", i, SDL_GetError());
+		 printf("Unable to open game gamepad #%d! SDL Error: %s\n", i, SDL_GetError());
 		 return -2;
 		}
+	}
+	if(SDL_NumJoysticks()==0) {
+		gp1_emulated = 1;
+		gp2_emulated = 1;
+	}
+	else if(SDL_NumJoysticks()==1) {
+		gp1_emulated = 0;
+		gp2_emulated = 1;
 	}
 
 	// Get display mode
@@ -2223,7 +2251,7 @@ void process_keyboard(SDL_Event *e) {
 	 * KMOD_CAPS -> caps key is down
 	 */
 	if(e->type == SDL_KEYDOWN) {
-		printf("key: %c (%d)\n", e->key.keysym.sym, e->key.keysym.sym);
+		if (ver) printf("key: %c (%d)\n", e->key.keysym.sym, e->key.keysym.sym);
 		
 		if(SDL_GetModState() & KMOD_LSHIFT) {
 			printf("Left shift key is pressed\n");
@@ -2263,67 +2291,226 @@ void process_keyboard(SDL_Event *e) {
 	else if(e->type == SDL_KEYUP) {
 		mem[0xDF9A] = 0;
 	}
-	// Controller button down
+	// gamepad button down
 	else if(e->type == SDL_JOYBUTTONDOWN) {
-		if (ver) printf("controller: %d button: %d\n",e->jbutton.which, e->jbutton.button);
+		if (ver) printf("gamepad: %d button: %d\n",e->jbutton.which, e->jbutton.button);
 		switch( e->jbutton.button) {
-        	case 0: controllers[e->jbutton.which] |= BUTTON_A; break;
-        	case 1: controllers[e->jbutton.which] |= BUTTON_B; break;
-        	case 2: controllers[e->jbutton.which] |= BUTTON_A; break;
-        	case 3: controllers[e->jbutton.which] |= BUTTON_B; break;
-			case 8: controllers[e->jbutton.which] |= BUTTON_SELECT; break;
-        	case 9: controllers[e->jbutton.which] |= BUTTON_START; break;
+        	case 0: gamepads[e->jbutton.which] |= BUTTON_A; break;
+        	case 1: gamepads[e->jbutton.which] |= BUTTON_B; break;
+        	case 2: gamepads[e->jbutton.which] |= BUTTON_A; break;
+        	case 3: gamepads[e->jbutton.which] |= BUTTON_B; break;
+			case 8: gamepads[e->jbutton.which] |= BUTTON_SELECT; break;
+        	case 9: gamepads[e->jbutton.which] |= BUTTON_START; break;
         }
-		if (ver > 2) printf("controllers[0] = $%x\n", controllers[0]);
-		if (ver > 2) printf("controllers[0] = $%x\n", controllers[1]);
+		if (ver > 2) printf("gamepads[0] = $%x\n", gamepads[0]);
+		if (ver > 2) printf("gamepads[0] = $%x\n", gamepads[1]);
 	}
-	// Controller button up
+	// gamepad button up
 	else if(e->type == SDL_JOYBUTTONUP) {
 		switch( e->jbutton.button) {
-        	case 0: controllers[e->jbutton.which] &= ~BUTTON_A; break;
-        	case 1: controllers[e->jbutton.which] &= ~BUTTON_B; break;
-			case 2: controllers[e->jbutton.which] &= ~BUTTON_A; break;
-        	case 3: controllers[e->jbutton.which] &= ~BUTTON_B; break;
-        	case 8: controllers[e->jbutton.which] &= ~BUTTON_SELECT; break;
-        	case 9: controllers[e->jbutton.which] &= ~BUTTON_START; break;
+        	case 0: gamepads[e->jbutton.which] &= ~BUTTON_A; break;
+        	case 1: gamepads[e->jbutton.which] &= ~BUTTON_B; break;
+			case 2: gamepads[e->jbutton.which] &= ~BUTTON_A; break;
+        	case 3: gamepads[e->jbutton.which] &= ~BUTTON_B; break;
+        	case 8: gamepads[e->jbutton.which] &= ~BUTTON_SELECT; break;
+        	case 9: gamepads[e->jbutton.which] &= ~BUTTON_START; break;
         }
-		if (ver > 2) printf("controllers[0] = $%x\n", controllers[0]);
-		if (ver > 2) printf("controllers[0] = $%x\n", controllers[1]);
+		if (ver > 2) printf("gamepads[0] = $%x\n", gamepads[0]);
+		if (ver > 2) printf("gamepads[0] = $%x\n", gamepads[1]);
 	}
 	else if( e->type == SDL_JOYAXISMOTION) {
-		if (ver) printf("controller: %d, axis: %d, value: %d\n", e->jaxis.which, e->jaxis.axis, e->jaxis.value);
+		if (ver) printf("gamepad: %d, axis: %d, value: %d\n", e->jaxis.which, e->jaxis.axis, e->jaxis.value);
 		// Left
 		if(e->jaxis.axis==0 && e->jaxis.value<0) {
-			controllers[e->jaxis.which] |= BUTTON_LEFT;
-			controllers[e->jaxis.which] &= ~BUTTON_RIGHT;
+			gamepads[e->jaxis.which] |= BUTTON_LEFT;
+			gamepads[e->jaxis.which] &= ~BUTTON_RIGHT;
 		}
 		// Right
 		else if(e->jaxis.axis==0 && e->jaxis.value>0) {
-			controllers[e->jaxis.which] &= ~BUTTON_LEFT;
-			controllers[e->jaxis.which] |= BUTTON_RIGHT;
+			gamepads[e->jaxis.which] &= ~BUTTON_LEFT;
+			gamepads[e->jaxis.which] |= BUTTON_RIGHT;
 		}
 		// None
 		else if(e->jaxis.axis==0 && e->jaxis.value==0) {
-			controllers[e->jaxis.which] &= ~BUTTON_LEFT;
-			controllers[e->jaxis.which] &= ~BUTTON_RIGHT;
+			gamepads[e->jaxis.which] &= ~BUTTON_LEFT;
+			gamepads[e->jaxis.which] &= ~BUTTON_RIGHT;
 		}
 		// Up
 		if(e->jaxis.axis==1 && e->jaxis.value<0) {
-			controllers[e->jaxis.which] |= BUTTON_UP;
-			controllers[e->jaxis.which] &= ~BUTTON_DOWN;
+			gamepads[e->jaxis.which] |= BUTTON_UP;
+			gamepads[e->jaxis.which] &= ~BUTTON_DOWN;
 		}
 		// Down
 		else if(e->jaxis.axis==1 && e->jaxis.value>0) {
-			controllers[e->jaxis.which] &= ~BUTTON_UP;
-			controllers[e->jaxis.which] |= BUTTON_DOWN;
+			gamepads[e->jaxis.which] &= ~BUTTON_UP;
+			gamepads[e->jaxis.which] |= BUTTON_DOWN;
 		}
 		// None
 		else if(e->jaxis.axis==1 && e->jaxis.value==0) {
-			controllers[e->jaxis.which] &= ~BUTTON_UP;
-			controllers[e->jaxis.which] &= ~BUTTON_DOWN;
+			gamepads[e->jaxis.which] &= ~BUTTON_UP;
+			gamepads[e->jaxis.which] &= ~BUTTON_DOWN;
 		}
-		if (ver > 2) printf("controllers[0] = $%x\n", controllers[0]);
-		if (ver > 2) printf("controllers[0] = $%x\n", controllers[1]);
+		if (ver > 2) printf("gamepads[0] = $%x\n", gamepads[0]);
+		if (ver > 2) printf("gamepads[0] = $%x\n", gamepads[1]);
+	}
+	// Emulate gamepads
+	if(gp1_emulated) {
+		emulate_gamepad1(e);
+	}
+	if(gp2_emulated) {
+		emulate_gamepad2(e);
+	}
+}
+
+/* Emulate first gamepad. */
+void emulate_gamepad1(SDL_Event *e) {
+	// Left key down p1 at o
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'o') {
+		// Left down
+		gamepads[0] |= BUTTON_LEFT;		
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'o') {
+		// Left up
+		gamepads[0] &= ~BUTTON_LEFT;		
+	}
+	// Right key down p1 at p
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'p') {
+		// Right down
+		gamepads[0] |= BUTTON_RIGHT;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'p') {
+		// Right up
+		gamepads[0] &= ~BUTTON_RIGHT;
+	}
+	// Up key p1 at q
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'q') {
+		// Up down
+		gamepads[0] |= BUTTON_UP;		
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'q') {
+		// Up up
+		gamepads[0] &= ~BUTTON_UP;
+	}
+	// Down key p1 at a
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'a') {
+		// Down down
+		gamepads[0] |= BUTTON_DOWN;		
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'a') {
+		// Down up
+		gamepads[0] &= ~BUTTON_DOWN;
+	}
+	// A key down p1 at space
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == ' ') {
+		// A down
+		gamepads[0] |= BUTTON_A;		
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == ' ') {
+		// A up
+		gamepads[0] &= ~BUTTON_A;
+	}
+	// B key p1 at c
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'c') {
+		// B down
+		gamepads[0] |= BUTTON_B;		
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'c') {
+		// B up
+		gamepads[0] &= ~BUTTON_B;
+	}
+	// START key p1 at space
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 13) {
+		// START down
+		gamepads[0] |= BUTTON_START;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 13) {
+		// START up
+		gamepads[0] &= ~BUTTON_START;
+	}
+	// SELECT key p1 at x
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'x') {
+		// SELECT down
+		gamepads[0] |= BUTTON_SELECT;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'x') {
+		// SELECT up
+		gamepads[0] &= ~BUTTON_SELECT;
+	}
+}
+
+/* Emulate second gamepad. */
+void emulate_gamepad2(SDL_Event *e) {
+	// Left key down p1 at u
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'u') {
+		// Left down
+		gamepads[1] |= BUTTON_LEFT;		
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'u') {
+		// Left up
+		gamepads[1] &= ~BUTTON_LEFT;		
+	}
+	// Right key down p1 at i
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'i') {
+		// Right down
+		gamepads[1] |= BUTTON_RIGHT;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'i') {
+		// Right up
+		gamepads[1] &= ~BUTTON_RIGHT;
+	}
+	// Up key p1 at w
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'w') {
+		// Up down
+		gamepads[1] |= BUTTON_UP;		
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'w') {
+		// Up up
+		gamepads[1] &= ~BUTTON_UP;
+	}
+	// Down key p1 at s
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 's') {
+		// Down down
+		gamepads[1] |= BUTTON_DOWN;		
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 's') {
+		// Down up
+		gamepads[1] &= ~BUTTON_DOWN;
+	}
+	// A key down p1 at e
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'e') {
+		// A down
+		gamepads[1] |= BUTTON_A;		
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'e') {
+		// A up
+		gamepads[1] &= ~BUTTON_A;
+	}
+	// B key p1 at d
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'd') {
+		// B down
+		gamepads[1] |= BUTTON_B;		
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'd') {
+		// B up
+		gamepads[1] &= ~BUTTON_B;
+	}
+	// START key p1 at r
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'r') {
+		// START down
+		gamepads[1] |= BUTTON_START;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'r') {
+		// START up
+		gamepads[1] &= ~BUTTON_START;
+	}
+	// SELECT key p1 at f
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'f') {
+		// SELECT down
+		gamepads[1] |= BUTTON_SELECT;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'f') {
+		// SELECT up
+		gamepads[1] &= ~BUTTON_SELECT;
 	}
 }
 
