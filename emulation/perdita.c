@@ -515,7 +515,6 @@ void poke(word dir, byte v) {
 				mem[0xDF9C]=0;
 				mem[0xDF9D]=0;
 			}
-			printf("shift counter %d\n", gp_shift_counter);
 		} else if (dir<=0xDF9F) {				// expansion port?
 			mem[dir] = v;		// *** is this OK?
 		} else if (dir<=0xDFAF)	// interrupt control?
