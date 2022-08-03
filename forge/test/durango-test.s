@@ -243,7 +243,7 @@ ram_ok:
 
 
 ro_3:
-		JMP rom_bad			; jump as easily as possible (Z is clear)
+;		JMP rom_bad			; jump as easily as possible (Z is clear)
 
 rom_ok:
 ; show banner if ROM checked OK 8worth using RLE?)
@@ -379,7 +379,7 @@ it_ok:
 ; *** next is testing for HSYNC and VSYNC... ***
 ; make sure X ends at 0, or load after!
 	LDX #25					; each iteration is 12t, X cycles every 3075t ~2 ms
-	LDY #2					; VBLANK takes ~3.6 ms, so one iteration is ~10% shorter for ~3.8 ms
+	LDY #3;2					; VBLANK takes ~3.6 ms, so one iteration is ~10% shorter for ~3.8 ms
 vsync:
 		INX					; (2)
 		BNE vcont			; count cycles... (3...)
@@ -388,7 +388,7 @@ vsync:
 vcont:
 		BIT IO8lh			; check VBLANK (4)
 		BVS vsync			; wait until sync ends (3)
-	LDY #9					; vertical display is ~16.3 ms, X cycles every ~2 ms...
+	LDY #10;9					; vertical display is ~16.3 ms, X cycles every ~2 ms...
 	LDX #192				; ...so make first iteration shorter (by ~1.5 ms)
 vden:
 		INX					; (2)
@@ -438,12 +438,15 @@ lend:
 	BEQ sync_ok				; 0 = 256, hopefully!
 ; otherwise we have a wrong number of lines!
 bad_count:
+	LDA #$EE:LDX #0:LDY #0
 	.byt	$cb				; halt here
 ; or VSYNC is way off (or not reported)
 vtime:
+	LDA #0:LDX #0:LDY #$EE
 	.byt	$cb				; halt here
 ; or HSYNC is way off (or not reported)
 htime:
+	LDA #0:LDX #$EE:LDY #0
 	.byt	$cb				; halt here
 sync_ok:
 ; *** all OK, end of test ***
