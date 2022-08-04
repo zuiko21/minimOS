@@ -367,18 +367,17 @@ void stat(void)	{
 
 /* Display STACK status */
 void stack_stat(void) {
-	// If empty stack, do nothing
-	if(s==0xff) {
-		printf("Empty stack!\n");
-		return;
-	}
 	// Copy stack pointer
 	byte i=s;
-	// Iterate stack
-	do {
-		i++;
-		printf("|%02X| \n", mem[0x0100+i]);
-	} while (i<0xff);
+
+	// If stack is not empty
+	if(i!=0xff) {
+		// Iterate stack
+		do {
+			i++;
+			printf("|%02X| \n", mem[0x0100+i]);
+		} while (i<0xff);
+	}
 	printf("|==|\n\n");
 }
 
