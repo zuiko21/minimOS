@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220804-0034
+ * last modified 20220804-2003
  * */
 
 #include <stdio.h>
@@ -40,6 +40,7 @@
 
 	word screen = 0;			// Durango screen switcher, xSSxxxxx xxxxxxxx
 	int scr_dirty = 0;			// screen update flag
+	int	err_led = 0;
 	int dec;					// decimal flag for speed penalties (CMOS only)
 	int run = 3;				// allow execution, 0 = stop, 1 = pause, 2 = single step, 3 = run
 	int ver = 0;				// verbosity mode, 0 = none, 1 = warnings, 2 = interrupts, 3 = jumps, 4 = events, 5 = all
@@ -154,6 +155,7 @@ int main(int argc, char *argv[])
 		printf("-f fast mode\n");
 		printf("-s safe mode (will stop on warnings and BRK)\n");
 		printf("-p start in STEP mode\n");
+		printf("-l enable error LED(s)\n");
 		printf("-k keep GUI open after program end\n");
 		printf("-h headless -- no graphics!\n");
 		printf("-v verbose (warnings/interrupts/jumps/events/all)\n");
@@ -162,7 +164,7 @@ int main(int argc, char *argv[])
 
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "a:fvksph")) != -1)
+	while ((c = getopt (argc, argv, "a:fvlksph")) != -1)
 	switch (c) {
 		case 'a':
 			rom_addr = optarg;
@@ -175,6 +177,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'v':
 			ver++;			// not that I like this, but...
+			break;
+		case 'l':
+			err_led = 1;
 			break;
 		case 's':
 			safe = 1;
@@ -266,7 +271,7 @@ void run_emulation () {
 			ht -= 98;
 			line++;
 			if (line >= 312) {
-				line -= 312;				// 312-line field limit
+				line = 0;						// 312-line field limit
 				frames++;
 				render_start = clock();
 				if (graf && scr_dirty)	vdu_draw_full();	// seems worth updating screen every VSYNC
@@ -299,7 +304,7 @@ void run_emulation () {
 		{
 			it -= 6144;		// restore for next
 /* get keypresses from SDL here, as this get executed every 4 ms */
-			vdu_read_keyboard();	// ***is it possible read keys without initing graphics?
+			vdu_read_keyboard();	// ***is it possible to read keys without initing graphics?
 /* generate periodic interrupt */ 
 			if (mem[0xDFA0] & 1) {
 				irq();							// if hardware interrupts are enabled, send signal to CPU
@@ -540,12 +545,13 @@ void poke(word dir, byte v) {
 				mem[0xDF9C]=0;
 				mem[0xDF9D]=0;
 			}
-		} else if (dir<=0xDF9F) {				// expansion port?
-			mem[dir] = v;		// *** is this OK?
-		} else if (dir<=0xDFAF)	// interrupt control?
-			mem[0xDFA0] = v;	// canonical address, only D0 matters
-		else if (dir<=0xDFBF) {	// beeper?
-			mem[0xDFB0] = v;	// canonical address, only D0 matters *** anything else for SDL audio?
+		} else if (dir<=0xDF9F) {	// expansion port?
+			mem[dir] = v;			// *** is this OK?
+		} else if (dir<=0xDFAF) {	// interrupt control?
+			mem[0xDFA0] = v;		// canonical address, only D0 matters
+			scr_dirty = 1;			// note window might be updated when changing the state of the LED!
+		} else if (dir<=0xDFBF) {	// beeper?
+			mem[0xDFB0] = v;		// canonical address, only D0 matters *** anything else for SDL audio?
 		} else {
 			mem[dir] = v;		// otherwise is cartridge I/O *** anything else?
 		}
@@ -2236,6 +2242,16 @@ void vdu_draw_full() {
 		for(i=screen_address; i<screen_address_end; i++) {
 			vdu_draw_hires_pixel(i);
 		}
+	}
+
+	// Display something resembling the error LED at upper right corner, if lit
+	if (err_led && (mem[0xdfa0] & 1)) {		// check interrupt status
+		// *** *** *** insert SDL code here *** *** ***
+	}
+
+	// A similar code may be used for other LEDs
+	if (err_led && (mem[0xdf80] & 4)) {		// check free bit from '174
+		// *** *** *** insert SDL code here *** *** ***
 	}
 
 	//Update screen
