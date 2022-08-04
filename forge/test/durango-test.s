@@ -13,7 +13,8 @@
 	systmp	= $FC			; %11111100
 	sysptr	= $FD			; %11111101
 	himem	= $FF			; %11111111
-	IO8lh	= $DF80
+	IO8mode	= $DF80
+	IO8lf	= $DF88			; EEEEEEEK
 	IOAen	= $DFA0
 	IOBeep	= $DFB0
 ; ****************************
@@ -30,7 +31,7 @@ reset:
 	TXS
 ; Durango-X specific stuff
 	LDA #$38				; flag init and interrupt disable, RGB
-	STA IO8lh				; set colour mode
+	STA IO8mode				; set colour mode
 	STA IOAen				; disable hardware interrupt, also for PROTO
 
 ; * zeropage test *
@@ -326,7 +327,7 @@ it_b:
 		BPL it_b			; no offset!
 ; inverse video during test (brief flash)
 	LDA #$79				; colour, inverse and interrupt enable (valid for PROTO)
-	STA IO8lh
+	STA IO8lf
 ; interrupt setup
 	LDY #<isr				; ISR address
 	LDX #>isr
@@ -348,7 +349,7 @@ it_1:
 	SEI						; no more interrupts, but hardware still generates them (LED off)
 ; back to true video
 	LDX #$38				; can no longer be zero
-	STX IO8lh
+	STX IO8lf
 ; display dots indicating how many times IRQ happened
 	LDX test				; using amount as index
 		BEQ it_slow			; did not respond at all! eeeeeek
@@ -386,9 +387,9 @@ vsync:
 			DEY
 			BEQ vtime		; up to ~3.8 ms
 vcont:
-		BIT IO8lh			; check VBLANK (4)
+		BIT IO8lf			; check VBLANK (4)
 		BVS vsync			; wait until sync ends (3)
-	LDY #211;9					; vertical display is ~16.3 ms, X cycles every ~2 ms...
+	LDY #9					; vertical display is ~16.3 ms, X cycles every ~2 ms...
 	LDX #192				; ...so make first iteration shorter (by ~1.5 ms)
 vden:
 		INX					; (2)
@@ -396,7 +397,7 @@ vden:
 			DEY
 			BEQ vtime2		; up to ~16.5 ms
 vdisp:
-		BIT IO8lh			; check VBLANK (4)
+		BIT IO8lf			; check VBLANK (4)
 		BVC vden			; wait until vertical display ends
 ; if arrived here, VSYNC is at least not exceedingly slow
 ; let's check at least the presence of HSYNC
@@ -404,33 +405,33 @@ vdisp:
 hsync:
 		DEY					; (2)
 			BEQ htime		; timeout at ~44t (2)
-		BIT IO8lh			; check HBLANK (4)
+		BIT IO8lf			; check HBLANK (4)
 		BMI hsync			; until sync ends (3)
 	LDY #6					; loop takes 11t, display is 64, thus limit at ~66t
 hden:
 		DEY					; (2)
 			BEQ htime2		; timeout at ~44t (2)
-		BIT IO8lh			; check HBLANK (4)
+		BIT IO8lf			; check HBLANK (4)
 		BMI hden			; until sync ends (3)
 	LDY #3					; loop takes 11t, HBLANK is 34, thus limit at ~44t (might do 3 as per overhead)
 ; and measure hsync again, just for the sake of it
 hmeas:
 		DEY					; (2)
 			BEQ htime3		; timeout at ~44t (2)
-		BIT IO8lh			; check HBLANK (4)
+		BIT IO8lf			; check HBLANK (4)
 		BMI hmeas			; until sync ends (3)
 ; there's HSYNC at reasonable speed
 ; now wait for VSYNC to end and count visible lines
 	LDX #0					; line counter
 vwait:
-		BIT IO8lh
+		BIT IO8lf
 		BVS vwait
 lcount:
-			BIT IO8lh
+			BIT IO8lf
 			BPL lcount		; still within visible part of the line
 		INX					; one more line
 lend:
-			BIT IO8lh
+			BIT IO8lf
 			BMI lend		; wait until the end of the H-blanking...
 		BVC lcount			; ...while not at V-blank
 ; all visible lines are done, should be 256!
@@ -584,7 +585,7 @@ addr_bad:
 ; flashing screen and intermittent beep ~0.21s
 ; note that inverse video runs on $FF1x while true video on $FF2x
 	LDA #$78				; initial inverse video
-	STA IO8lh				; set flags
+	STA IO8lf				; set flags
 ab_1:
 			INY
 			BNE ab_1		; delay 1.28 kt (~830 µs, 600 Hz)
@@ -592,7 +593,7 @@ ab_1:
 		STX IOBeep			; toggle buzzer output
 		BNE ab_1
 	EOR #$40
-	STA IO8lh				; this returns to true video, buzzer was off
+	STA IO8lf				; this returns to true video, buzzer was off
 ab_2:
 			INY
 			BNE ab_2		; delay 1.28 kt (~830 µs)
@@ -607,7 +608,7 @@ ram_bad:
 ; inverse bars and continuous beep
 	LDA #$79
 rb_0:
-	STA IO8lh				; set flags
+	STA IO8lf				; set flags
 	STA IOBeep				; set buzzer output
 rb_1:
 		INX
