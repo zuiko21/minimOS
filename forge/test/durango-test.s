@@ -1,6 +1,6 @@
 ; FULL test of Durango-X/S/R (ROMmable version)
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220804-0050
+; last modified 20220804-1158
 
 ;#define	NMOS	_NMOS
 
@@ -19,7 +19,7 @@
 	IOBeep	= $DFB0
 ; ****************************
 
-* = $C000					; 16 KiB start address
+* = $F000					; 4 KiB start address
 
 ; ******************
 ; *** test suite ***
@@ -261,6 +261,125 @@ ro_4:
 		INX
 		BNE ro_4			; 1K-byte banner as 4x256!
 
+; *** next is testing for HSYNC and VSYNC... ***
+; print initial GREEN banner
+	LDX #2					; max. offset
+lf_l:
+		LDA sync_b, X		; put banner data...
+		STA $6680, X		; ...in appropriate screen place
+		LDA sync_b+3, X
+		STA $66C0, X
+		LDA sync_b+6, X
+		STA $6700, X
+		LDA sync_b+9, X
+		STA $6740, X
+		DEX
+		BPL lf_l			; note offset-avoiding BPL
+; is there any detected VSYNC?
+	LDX #25					; each iteration is 12t, X cycles every 3075t ~2 ms
+	LDY #2					; VBLANK takes ~3.6 ms, so one iteration is ~10% shorter for ~3.8 ms
+vsync:
+		INX					; (2)
+		BNE vcont			; count cycles... (3...)
+			DEY
+			BEQ vtime		; up to ~3.8 ms
+vcont:
+		BIT IO8lf			; check VBLANK (4)
+		BVS vsync			; wait until sync ends (3)
+	LDY #9					; vertical display is ~16.3 ms, X cycles every ~2 ms...
+	LDX #192				; ...so make first iteration shorter (by ~1.5 ms)
+vden:
+		INX					; (2)
+		BNE vdisp			; count cycles... (3...)
+			DEY
+			BEQ vtime2		; up to ~16.5 ms
+vdisp:
+		BIT IO8lf			; check VBLANK (4)
+		BVC vden			; wait until vertical display ends
+; if arrived here, VSYNC is at least not exceedingly slow
+; let's check at least the presence of HSYNC
+	LDY #3					; loop takes 11t, HBLANK is 34, thus limit at ~33t (overhead allows it)
+hsync:
+		DEY					; (2)
+			BEQ htime		; timeout at ~44t (2)
+		BIT IO8lf			; check HBLANK (4)
+		BMI hsync			; until sync ends (3)
+	LDY #6					; loop takes 11t, display is 64, thus limit at ~66t
+hden:
+		DEY					; (2)
+			BEQ htime2		; timeout at ~44t (2)
+		BIT IO8lf			; check HBLANK (4)
+		BMI hden			; until sync ends (3)
+	LDY #3					; loop takes 11t, HBLANK is 34, thus limit at ~33t (overhead allows it)
+; and measure hsync again, just for the sake of it
+hmeas:
+		DEY					; (2)
+			BEQ htime3		; timeout at ~44t (2)
+		BIT IO8lf			; check HBLANK (4)
+		BMI hmeas			; until sync ends (3)
+; there's HSYNC at reasonable speed
+; now wait for VSYNC to end and count visible lines
+	LDX #0					; line counter
+vwait:
+		BIT IO8lf
+		BVS vwait
+lcount:
+			BIT IO8lf
+			BPL lcount		; still within visible part of the line
+		INX					; one more line
+lend:
+			BIT IO8lf
+			BMI lend		; wait until the end of the H-blanking...
+		BVC lcount			; ...while not at V-blank
+; all visible lines are done, should be 256!
+	TXA						; quickly check
+	BEQ sync_ok				; 0 = 256, hopefully!
+; otherwise we have a wrong number of lines!
+bad_count:
+	LDY #3					; max offset
+bc_l:
+		LDX lof, Y			; get line offset
+		LDA $6682, X		; position of 'F'
+		STA posi
+		ASL
+		ORA posi
+		STA $6682, X		; will turn green into orange
+		DEY
+		BPL bc_l
+	LDA #$FF
+	STA $67C2				; white underline
+	BMI sync_ok				; probably NTSC, just a warning
+; or VSYNC is way off (or not reported)
+vtime:
+vtime2:
+	LDY #3					; max offset
+vs_l:
+		LDX lof, Y			; get line offset
+		ASL $6682, X		; position of 'F', will turn into red
+		DEY
+		BPL vs_l
+	LDA #$FF
+	STA $67C2				; white underline
+	BMI sync_ok				; STOP here? should PANIC!
+; or HSYNC is way off (or not reported, no big deal, though)
+htime:
+htime2:
+htime3:
+	LDY #3					; max offset
+hs_l:
+		LDX lof, Y			; get line offset
+		LDA $6680, X		; position of 'L'
+		STA posi
+		ASL
+		ORA posi
+		STA $6680, X		; will turn green into orange (warning)
+		DEY
+		BPL hs_l
+	LDA #$FF
+	STA $67C0				; white underline
+
+sync_ok:
+
 ; * NMI test *
 ; wait a few seconds for NMI
 	LDY #<isr				; ISR address
@@ -271,9 +390,9 @@ ro_4:
 	LDX #5					; max. horizontal offset
 nt_b:
 		LDA nmi_b, X		; copy banner data into screen
-		STA $6800, X
+		STA $6B00, X
 		LDA nmi_b+6, X
-		STA $6840, X
+		STA $6B40, X
 		DEX
 		BPL nt_b			; no offset!
 ; proceed with timeout
@@ -308,7 +427,7 @@ nt_3:
 	BEQ irq_test			; did not respond, don't bother printing dots EEEEEEEK
 		LDA #$0F			; nice white value in all modes
 nt_4:
-			STA $6845, X	; place 'dot', note offset as zero does not count
+			STA $6B45, X	; place 'dot', note offset as zero does not count
 			DEX
 			BNE nt_4
 
@@ -377,86 +496,6 @@ it_3:
 it_ok:
 	SEI						; video test needs decent timing
 
-; *** next is testing for HSYNC and VSYNC... ***
-; make sure X ends at 0, or load after!
-	LDX #25					; each iteration is 12t, X cycles every 3075t ~2 ms
-	LDY #2					; VBLANK takes ~3.6 ms, so one iteration is ~10% shorter for ~3.8 ms
-vsync:
-		INX					; (2)
-		BNE vcont			; count cycles... (3...)
-			DEY
-			BEQ vtime		; up to ~3.8 ms
-vcont:
-		BIT IO8lf			; check VBLANK (4)
-		BVS vsync			; wait until sync ends (3)
-	LDY #9					; vertical display is ~16.3 ms, X cycles every ~2 ms...
-	LDX #192				; ...so make first iteration shorter (by ~1.5 ms)
-vden:
-		INX					; (2)
-		BNE vdisp			; count cycles... (3...)
-			DEY
-			BEQ vtime2		; up to ~16.5 ms
-vdisp:
-		BIT IO8lf			; check VBLANK (4)
-		BVC vden			; wait until vertical display ends
-; if arrived here, VSYNC is at least not exceedingly slow
-; let's check at least the presence of HSYNC
-	LDY #4					; loop takes 11t, HBLANK is 34, thus limit at ~44t (might do 3 as per overhead)
-hsync:
-		DEY					; (2)
-			BEQ htime		; timeout at ~44t (2)
-		BIT IO8lf			; check HBLANK (4)
-		BMI hsync			; until sync ends (3)
-	LDY #6					; loop takes 11t, display is 64, thus limit at ~66t
-hden:
-		DEY					; (2)
-			BEQ htime2		; timeout at ~44t (2)
-		BIT IO8lf			; check HBLANK (4)
-		BMI hden			; until sync ends (3)
-	LDY #3					; loop takes 11t, HBLANK is 34, thus limit at ~44t (might do 3 as per overhead)
-; and measure hsync again, just for the sake of it
-hmeas:
-		DEY					; (2)
-			BEQ htime3		; timeout at ~44t (2)
-		BIT IO8lf			; check HBLANK (4)
-		BMI hmeas			; until sync ends (3)
-; there's HSYNC at reasonable speed
-; now wait for VSYNC to end and count visible lines
-	LDX #0					; line counter
-vwait:
-		BIT IO8lf
-		BVS vwait
-lcount:
-			BIT IO8lf
-			BPL lcount		; still within visible part of the line
-		INX					; one more line
-lend:
-			BIT IO8lf
-			BMI lend		; wait until the end of the H-blanking...
-		BVC lcount			; ...while not at V-blank
-; all visible lines are done, should be 256!
-	TXA						; quickly check
-	BEQ sync_ok				; 0 = 256, hopefully!
-; otherwise we have a wrong number of lines!
-bad_count:
-	LDA #$EE:LDX #0:LDY #0:.byt $cb:BRA sync_ok
-; or VSYNC is way off (or not reported)
-vtime:
-	LDA #0:LDX #0:LDY #$11:.byt $cb:BRA sync_ok
-vtime2:
-	LDA #0:LDX #0:LDY #$22
-	.byt	$cb:BRA sync_ok				; halt here
-; or HSYNC is way off (or not reported)
-htime:
-	LDA #0:LDX #$11:LDY #0
-	.byt	$cb:BRA sync_ok				; halt here
-htime2:
-	LDA #0:LDX #$22:LDY #0
-	.byt	$cb:BRA sync_ok				; halt here
-htime3:
-	LDA #0:LDX #$33:LDY #0
-	.byt	$cb:BRA sync_ok				; halt here
-sync_ok:
 ; *** all OK, end of test ***
 ; sweep sound, print OK banner and lock
 	STX IOAen				; interrupts are masked, let's turn the LED on anyway, suitable for all
@@ -507,34 +546,27 @@ nmi:
 
 ; interrupt routine (for both IRQ and NMI test) *** could be elsewhere
 isr:
-	PHA						; universal comprehensive ISR
-	TXA
-	PHA						; X saved, NMOS savvy
-	TSX
-	LDA $101, X				; get saved PSR
-	AND #$10				; B 'flag'
-	BEQ do_isr				; not set, expected IRQ, all OK
-		LDX test
-		LDA #$02			; otherwise print a red dot below
-		STA $7080, X
-do_isr:
+	NOP						; make sure it takes over 13-15 µsec
 	INC test				; increment standard zeropage address (no longer DEC)
-	PLA						; restore status
-	TAX
-	PLA
+	NOP
 exit:
 	RTI
 
 ; *** mini banners *** could be elsewhere
+sync_b:
+	.byt	$10, $00, $11					; mid green 'LF'
+	.byt	$10, $00, $10
+	.byt	$10, $00, $11
+	.byt	$11, $00, $10
 nmi_b:
-	.byt	$DD, $0D, $0D, $D0, $DD, $0D	; cyan
+	.byt	$DD, $0D, $0D, $D0, $DD, $0D	; cyan 'NMI'
 	.byt	$D0, $DD, $0D, $0D, $0D, $0D
 irq_b:
-	.byt	$60, $66, $60, $66, $60			; 'brick' colour
+	.byt	$60, $66, $60, $66, $60			; brick colour 'IRQ'
 	.byt	$60, $66, $00, $60, $60
 	.byt	$60, $60, $60, $66, $06
 ok_b:
-	.byt	$55, $50, $50, $50				; green
+	.byt	$55, $50, $50, $50				; green 'OK'
 	.byt	$50, $50, $55, $00
 	.byt	$55, $50, $50, $50
 
@@ -554,12 +586,17 @@ bit_l:
 bit_h:
 	.byt    $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $02, $04, $08, $10, $20, $40
 
+; *** line offset table ***
+lof:
+	.byt	$00, $40, $80, $C0
+
 misc_end:
 
 ; *** banner data *** 1 Kbyte raw file!
 banner:
 	.bin	0, 1024, "../../other/data/durango-x.sv"
 
+pic_end:
 
 	.dsb	$FF00-*, $FF	; padding
 
@@ -668,8 +705,7 @@ fi_2:
 ; $FFFx = ERROR FREE final lock
 * = $FFF0
 all_ok:
-;	JMP all_ok
-	.byt	$cb				; pause here
+	JMP all_ok
 suite_end:
 
 ; *** padding and hardware vectors ***
