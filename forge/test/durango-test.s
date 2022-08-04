@@ -1,6 +1,6 @@
 ; FULL test of Durango-X/S/R (ROMmable version)
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220804-1158
+; last modified 20220805-0112
 
 ;#define	NMOS	_NMOS
 
@@ -32,7 +32,7 @@ reset:
 ; Durango-X specific stuff
 	LDA #$38				; flag init and interrupt disable, RGB
 	STA IO8mode				; set colour mode
-	STA IOAen				; disable hardware interrupt, also for PROTO
+	STA IOAen				; disable hardware interrupt (LED turns on)
 
 ; * zeropage test *
 ; make high pitched chirp during test
@@ -41,27 +41,28 @@ zp_1:
 		TXA
 		STA 0, X			; try storing address itself (2+4)
 		CMP 0, X			; properly stored? (4+2)
-			BNE zp_3
+			BNE zp_bad
 		LDA #0				; A=0 during whole ZP test (2)
 		STA 0, X			; clear byte (4)
 		CMP 0, X			; must be clear right now! sets carry too (4+2)
-			BNE zp_3
+			BNE zp_bad
 ;		SEC					; prepare for shifting bit (2)
 		LDY #10				; number of shifts +1 (2, 26t up here)
 zp_2:
 			DEY				; avoid infinite loop (2+2)
-				BEQ zp_3
+				BEQ zp_bad
 			ROL 0, X		; rotate (6)
 			BNE zp_2		; only zero at the end (3...)
-			BCC zp_3		; C must be set at the end (...or 5 last time) (total inner loop = 119t)
+			BCC zp_bad		; C must be set at the end (...or 5 last time) (total inner loop = 119t)
 		CPY #1				; expected value after 9 shifts (2+2)
-			BNE zp_3
+			BNE zp_bad
 		INX					; next address (2+4)
 		STX IOBeep			; make beep at 158t ~4.86 kHz
 		BNE zp_1			; complete page (3, post 13t)
 	BEQ zp_ok
-zp_3:
-		JMP zp_bad			; panic if failed
+zp_bad:
+		LDA #$FF			; *** bad ZP, LED code = %1 00000000 ***
+		JMP panic			; panic if failed
 zp_ok:
 
 ; * simple mirroring test *
@@ -198,7 +199,8 @@ at_5:
 		BNE at_3			; this will disable bubble, too
 	BEQ addr_ok
 at_bad:
-		JMP addr_bad
+		LDA #%10111111		; *** bad address lines, LED code = %1 01000000 ***
+		JMP panic
 addr_ok:
 
 ; * RAM test *
@@ -215,7 +217,7 @@ rt_2:
 			STX test+1		; update pointer
 			STA (test), Y	; store...
 			CMP (test), Y	; ...and check
-				BNE rt_3	; mismatch!
+				BNE ram_bad	; mismatch!
 			INY
 			BNE rt_2
 				INX			; next page
@@ -234,8 +236,9 @@ rt_2:
 		BNE rt_1			; test with new value
 		BCS rt_1			; EEEEEEEEEEEEK
 	BCC ram_ok				; if arrived here SECOND time, C is CLEAR and A=0
-rt_3:
-		JMP ram_bad			; panic if failed
+ram_bad:
+		LDA #%10101111		; *** bad RAM, LED code = %1 01010000 ***
+		JMP panic			; panic if failed
 ram_ok:
 
 ; * ROM test *
@@ -243,9 +246,9 @@ ram_ok:
 
 
 
-ro_3:
-;		JMP rom_bad			; jump as easily as possible (Z is clear)
-
+rom_bad:
+;		LDA #%10100000		; *** bad ROM, LED code = %1 01011111 ***
+;		JMP panic
 rom_ok:
 ; show banner if ROM checked OK 8worth using RLE?)
 	LDX #0					; reset index
@@ -261,7 +264,9 @@ ro_4:
 		INX
 		BNE ro_4			; 1K-byte banner as 4x256!
 
-; *** next is testing for HSYNC and VSYNC... ***
+; *** why not add a video mode flags tester?
+
+; *** next is testing for HSYNC and VSYNC ***
 ; print initial GREEN banner
 	LDX #2					; max. offset
 lf_l:
@@ -346,9 +351,11 @@ bc_l:
 		STA $6682, X		; will turn green into orange
 		DEY
 		BPL bc_l
-	LDA #$FF
-	STA $67C2				; white underline
-	BMI sync_ok				; probably NTSC, just a warning
+	LDA #$BB
+	STA $67C2				; fuchsia underline
+	BMI sync_ok				; probably NTSC, just a warning, or...
+;	LDA #%11000000			; *** bad VSYNC, LED code = %1 00111111 ***
+;	JMP panic
 ; or VSYNC is way off (or not reported)
 vtime:
 vtime2:
@@ -360,7 +367,10 @@ vs_l:
 		BPL vs_l
 	LDA #$FF
 	STA $67C2				; white underline
-	BMI sync_ok				; STOP here? should PANIC!
+; this is serious, thus panic
+	LDA #%11000000			; *** bad VSYNC, LED code = %1 00111111 ***
+	JMP panic
+
 ; or HSYNC is way off (or not reported, no big deal, though)
 htime:
 htime2:
@@ -377,7 +387,8 @@ hs_l:
 		BPL hs_l
 	LDA #$FF
 	STA $67C0				; white underline
-
+;	LDA #%10010010			; *** bad HSYNC, LED code = %1 01101101 ***
+;	JMP panic
 sync_ok:
 
 ; * NMI test *
@@ -445,8 +456,8 @@ it_b:
 		DEX
 		BPL it_b			; no offset!
 ; inverse video during test (brief flash)
-	LDA #$79				; colour, inverse and interrupt enable (valid for PROTO)
-	STA IO8lf
+	LDA #$78				; colour, inverse, RGB
+	STA IO8attr				; eeeeek
 ; interrupt setup
 	LDY #<isr				; ISR address
 	LDX #>isr
@@ -455,7 +466,7 @@ it_b:
 	LDY #0					; initial value and inner counter reset
 	STY test
 ; must enable interrupts!
-	STA IOAen+1				; hardware interrupt enable (LED goes off) suitable for all
+	STA IOAen				; hardware interrupt enable (LED goes off)
 	LDX #154				; about 129 ms, time for 32 interrupts
 	CLI						; start counting!
 ; this provides timeout
@@ -468,7 +479,7 @@ it_1:
 	SEI						; no more interrupts, but hardware still generates them (LED off)
 ; back to true video
 	LDX #$38				; can no longer be zero
-	STX IO8lf
+	STX IO8attr
 ; display dots indicating how many times IRQ happened
 	LDX test				; using amount as index
 		BEQ it_slow			; did not respond at all! eeeeeek
@@ -484,21 +495,17 @@ it_2:
 	CMP #31					; one less is aceptable
 	BCS it_3				; <31 is slow 
 it_slow:
-#ifndef	PROTO
-		LDA #1				; ready for LED off
-#endif
-		JMP slow_irq
+		LDA #%00011111		; *** slow IRQ, LED code = %1 11100000 ***
+		JMP panic
 it_3:
 	CMP #34					; up to 33 is fine
-	BCC it_ok				; 31-33 accepted
-		JMP fast_irq		; >33 is fast
-
+	BCC it_ok				; 31-33 accepted, >33 is fast
+		LDA #%10101011		; *** fast IRQ, LED code = %1 01010100 ***
+		JMP panic 
 it_ok:
-	SEI						; video test needs decent timing
 
 ; *** all OK, end of test ***
 ; sweep sound, print OK banner and lock
-	STX IOAen				; interrupts are masked, let's turn the LED on anyway, suitable for all
 	STX test				; sweep counter
 	TXA						; X known to be zero, again
 sweep:
@@ -530,8 +537,8 @@ ok_l:
 		STA $785C, X
 		DEX
 		BPL ok_l			; note offset-avoiding BPL
-
-	JMP all_ok				; final lock at $FFFx
+all_ok:
+	BMI all_ok				; final lock (X=$FF)
 test_end: 
 
 ; ********************************************
@@ -548,6 +555,7 @@ nmi:
 isr:
 	NOP						; make sure it takes over 13-15 µsec
 	INC test				; increment standard zeropage address (no longer DEC)
+	NOP
 	NOP
 exit:
 	RTI
@@ -600,115 +608,30 @@ pic_end:
 
 	.dsb	$FF00-*, $FF	; padding
 
-; **********************
-; *** panic routines ***
-; **********************
-* = $FF00					; *** zero page fail ***
-zp_bad:
-; high pitched beep (158t ~4.86 kHz)
-	LDY #29
-zb_1:
-		DEY
-		BNE zb_1			; inner loop is 5Y-1
-	NOP						; perfect timing!
-	INX
-	STX IOBeep				; toggle buzzer output
-	BRA zp_bad				; outer loop is 11t 
-
-	.dsb	$FF10-*, $FF	; padding from $FF0D
-
-* = $FF10					; *** bad address bus ***
-addr_bad:
-; flashing screen and intermittent beep ~0.21s
-; note that inverse video runs on $FF1x while true video on $FF2x
-	LDA #$78				; initial inverse video
-	STA IO8lf				; set flags
-ab_1:
+; *********************
+; *** panic routine ***
+; *********************
+panic:
+; *** display 9 bit pattern on ERROR LED *** and FLASH screen
+	CLC						; at least one bit will flash
+ploop:
+			NOP
 			INY
-			BNE ab_1		; delay 1.28 kt (~830 µs, 600 Hz)
+			BNE ploop
 		INX
-		STX IOBeep			; toggle buzzer output
-		BNE ab_1
-	EOR #$40
-	STA IO8lf				; this returns to true video, buzzer was off
-ab_2:
-			INY
-			BNE ab_2		; delay 1.28 kt (~830 µs)
-		INX
-		BNE ab_2
-	BEQ addr_bad
+		BNE ploop			; total cycle is ~300 ms
+	ROL						; keep rotating pattern (cycle ~2.7 s)
+	STA IOAen				; LED is on only when D0=0
+	TAY
+	AND #%01000000			; keep inverse position...
+	EOR IO8attr				; and invert that video flag
+	STA IO8attr
+	TYA
+	BNE ploop				; A is NEVER zero
 
-	.dsb	$FF30-*, $FF	; padding
-
-* = $FF30					; *** bad RAM ***
-ram_bad:
-; inverse bars and continuous beep
-	LDA #$79
-rb_0:
-	STA IO8lf				; set flags
-	STA IOBeep				; set buzzer output
-rb_1:
-		INX
-		BNE rb_1			; delay 1.28 kt (~830 µs, 600 Hz)
-	EOR #$41				; toggle inverse mode... and buzzer output
-	BRA rb_0
-ramend:
-	.dsb	$FF40-*, $FF	; padding
-
-* = $FF40					; *** bad ROM ***
-rom_bad:
-; silent, will not show banner, try to use as few ROM addresses as possible, arrive with Z clear
-	BEQ rom_bad
-
-	.dsb	$FF50-*, $FF	; padding
-
-* = $FF50					; *** slow or missing IRQ ***
-slow_irq:
-; keep IRQ LED off, low pitch buzz (~125 Hz)
-	STA IOAen+1				; LED off, suitable for all (assume A=1)
-	LDY #116				; 116x53t ~4 ms
-si_1:
-		JSR delay
-		DEY
-		BPL si_1
-	INX
-	STX IOBeep				; toggle buzzer output
-	BRA slow_irq
-si_end:
-	.dsb	$FF70-*, $FF	; padding
-
-* = $FF70					; *** fast or spurious IRQ ***
-fast_irq:
-; 1.7 kHz beep while IRQ LED blinks
-	LDA #$0F				; %00001111·1, ~44% duty cycle for LED (note C is set in test!)
-fi_1:
-		LDY #91
-fi_2:
-			DEY
-			BNE fi_2		; delay 455t (~296 µs, 1688 Hz)
-		INX
-		STX IOBeep			; set buzzer output
-		BNE fi_1			; 256 times is ~76 ms
-	ROL						; keep rotating pattern (cycle ~0.68 s)
-#ifndef	PROTO
-	STA IOAen				; LED is on only when A0=0, ~44% the time
-#else
-	TAY						; use as index
-	STA IOAen, Y			; LED is on only when A0=0, ~44% the time
-#endif
-	BNE fi_1				; A/X are NEVER zero
-
-	.dsb	$FFF0-*, $FF	; padding
-
-; *** next is testing for HSYNC and VSYNC... ***
-
-; $FFFx = ERROR FREE final lock
-* = $FFF0
-all_ok:
-	JMP all_ok
-suite_end:
-
+; ************************************
 ; *** padding and hardware vectors ***
+; ************************************
 
 	.dsb	$FFFA-*, $FF	; padding
 
