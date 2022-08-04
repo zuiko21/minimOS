@@ -75,6 +75,7 @@
 	void load(const char name[], word adr);		// load firmware
 	void ROMload(const char name[]);			// load ROM at the end, calling load()
 	void stat(void);		// display processor status
+	void stack_stat(void);	// display stack status
 	void dump(word dir);	// display 16 bytes of memory
 	void run_emulation();	// Run emulator
 	int  exec(void);		// execute one opcode, returning number of cycles
@@ -364,6 +365,22 @@ void stat(void)	{
 	printf(">\n");
 }
 
+/* Display STACK status */
+void stack_stat(void) {
+	// Copy stack pointer
+	byte i=s;
+
+	// If stack is not empty
+	if(i!=0xff) {
+		// Iterate stack
+		do {
+			i++;
+			printf("|%02X| \n", mem[0x0100+i]);
+		} while (i<0xff);
+	}
+	printf("|==|\n\n");
+}
+
 /* display 16 bytes of memory */
 void dump(word dir) {
 	int i;
@@ -493,7 +510,15 @@ void poke(word dir, byte v) {
 				// Print ascii
 				printf("%c", mem[dir]);
 			}
-			// If ascii mode enabled
+			// If memory dump mode
+			else if(mem[0xDF94]==0xFD) {
+				full_dump();
+			}
+			// If stack print mode
+			else if(mem[0xDF94]==0xFE) {
+				stack_stat();
+			}
+			// If stat print mode
 			else if(mem[0xDF94]==0xFF) {
 				// Print stat
 				stat();
