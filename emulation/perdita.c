@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220804-2003
+ * last modified 20220805-1010
  * */
 
 #include <stdio.h>
@@ -586,6 +586,7 @@ void reset(void) {
 	p |= 0b00110100;						// these always 1, includes SEI
 	dec = 0;								// per CLD above
 	mem[0xDFA0] = 0;						// interrupt gets disabled on RESET!
+	mem[0xDFB0] = 0;						// ...and so does BUZZER
 	gamepads[0] = 0;						// Reset gamepad 1 register
 	gamepads[1] = 0;						// Reset gamepad 2 register
 
@@ -2246,19 +2247,25 @@ void vdu_draw_full() {
 	}
 
 	// Display something resembling the error LED at upper right corner, if lit
-	if (err_led && (mem[0xdfa0] & 1)) {		// check interrupt status
+	if (err_led && !(mem[0xdfa0] & 1)) {	// check interrupt status
+		// black surrounding
+		SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 0xff);
+		draw_circle(sdl_renderer, 490, 490, 10);
 		// Set color to red
 		SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x00, 0x00, 0xff);
 		// Draw red led
-		draw_circle(sdl_renderer, 490, 490, 10);
+		draw_circle(sdl_renderer, 490, 490, 8);
 	}
 
 	// A similar code may be used for other LEDs
 	if (err_led && (mem[0xdf80] & 4)) {		// check free bit from '174
+		// black surrounding
+		SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 0xff);
+		draw_circle(sdl_renderer, 460, 490, 10);
 		// Set color to white
 		SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0xff, 0xff);
 		// Draw white led
-		draw_circle(sdl_renderer, 460, 490, 10);
+		draw_circle(sdl_renderer, 460, 490, 8);
 	}
 
 	//Update screen
