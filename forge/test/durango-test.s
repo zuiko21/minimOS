@@ -1,6 +1,6 @@
 ; FULL test of Durango-X/S/R (ROMmable version)
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220805-1018
+; last modified 20220805-1148
 
 ;#define	NMOS	_NMOS
 
@@ -30,11 +30,11 @@ reset:
 	LDX #$FF
 	TXS
 ; Durango-X specific stuff
-	LDA #$38				; flag init and interrupt disable, RGB
+	LDA #$38				; flag init and interrupt disable
 	STA IO8mode				; set colour mode
 	STA IOAen				; disable hardware interrupt (LED turns on)
 
-; * zeropage test *
+; ** zeropage test **
 ; make high pitched chirp during test
 	LDX #<test				; 6510-savvy...
 zp_1:
@@ -67,7 +67,7 @@ zp_ok:
 
 ; * simple mirroring test *
 ; probe responding size first
-	LDY #63					; max 16 KB, also a fairly good offset
+	LDY #127				; max 32 KB, also a fairly good offset EEEEK
 	STY test+1				; pointer set (test.LSB known to be zero)
 mt_1:
 		LDA #$AA			; first test value
@@ -107,7 +107,7 @@ mt_6:
 		BCC mt_6
 	STY posi				; X & Y cannot reach this in address lines test
 
-; * address lines test *
+; ** address lines test **
 ; X=bubble bit, Y=base bit (An+1)
 ; written value =$XY
 ; first write all values
@@ -203,7 +203,7 @@ at_bad:
 		JMP panic
 addr_ok:
 
-; * RAM test *
+; ** RAM test **
 ; silent but will show up on screen
 	LDA #$F0				; initial value
 	LDY #0
@@ -241,16 +241,65 @@ ram_bad:
 		JMP panic			; panic if failed
 ram_ok:
 
-; * ROM test *
+; ** ROM test **
 ; unlike previous version, should apply Fletcher-16 algorithm as usual
+; based on CHK_SUM, verify Fletcher-16 sum v0.9.6a4
 
+; usually expects signature value at $FFDE(sum)-$FFDF(chk) for a final checksum of 0 (assuming ends at $FFFF)
+; just reserve a couple of bytes for checksum matching
 
+; * declare some temporary vars *
+sum		= systmp			; included as output parameters
+chk		= posi				; sum of sums
 
+; *** compute checksum *** initial setup is 12b, 16t
+	LDX #>reset				; start page as per interface (MUST be page-aligned!)
+	STX sysptr+1			; temporary ZP pointer
+	LDY #0					; this will reset index too
+	STY sysptr
+	STY sum					; reset values too
+	STY chk
+; *** main loop *** original version takes 20b, 426kt for 16KB ~0.28s on Durango-X
+cs_loop:
+			LDA (sysptr), Y	; get ROM byte (5+2)
+			CLC
+			ADC sum			; add to previous (3+3+2)
+			STA sum
+			CLC
+			ADC chk			; compute sum of sums too (3+3+2)
+			STA chk
+			INY
+			BNE cs_loop		; complete one page (3..., 6655t per page)
+; *** MUST skip IO page (usually $DF), very little penalty though ***
+		CPX #$DE			; just before I/O space?
+		BNE f16_noio
+			INX				; next INX will skip it!
+f16_noio:
+		INX					; next page (2)
+		STX sysptr+1		; update pointer (3)
+;		CPX af_pg			; VRAM is the limit for downloaded modules, otherwise 0
+		BNE cs_loop			; will end at last address! (3...)
+; *** now compare computed checksum with ZERO *** 4b
+;	LDA chk					; this is the stored value in A, saves two bytes
+	ORA sum					; any non-zero bit will show up
+	BEQ rom_ok				; otherwise, all OK!
+; show minibanner to tell this from RAM error (no display)
 rom_bad:
-;		LDA #%10100000		; *** bad ROM, LED code = %1 01011111 ***
-;		JMP panic
+		LDX #6				; max. horizontal offset
+ck_b:
+			LDA rom_b, X	; copy banner data into screen
+			STA $6F1C, X
+			LDA rom_b+7, X
+			STA $6F5C, X
+			LDA rom_b+14, X
+			STA $6F9C, X
+			DEX
+			BPL ck_b		; no offset!
+		LDA #%10100000		; *** bad ROM, LED code = %1 01011111 ***
+		JMP panic
+
 rom_ok:
-; show banner if ROM checked OK 8worth using RLE?)
+; show banner if ROM checked OK (worth using RLE?)
 	LDX #0					; reset index
 ro_4:
 		LDA banner, X		; put data...
@@ -264,9 +313,37 @@ ro_4:
 		INX
 		BNE ro_4			; 1K-byte banner as 4x256!
 
-; *** why not add a video mode flags tester?
+; ** why not add a video mode flags tester? **
+	LDX #0
+	STX posi				; will store unresponding bits
+	LDY IO8mode				; save previous mode
+mt_loop:
+		STX IO8mode			; try setting this mode...
+		TXA
+		EOR IO8mode			; ...and compare to what is read...
+		ORA posi
+		STA posi			; ...storing differences
+		INX
+		BNE mt_loop
+	STY IO8mode				; back to original mode
+	LDX #7					; maximum bit offset
+mt_disp:
+		LSR posi			; extract rightmost bit into C
+		LDA #1				; green for responding bits...
+		ADC #0				; ...or red for non-responding
+		CPX #4				; rightmost 4 are not essential
+		BCC mt_ess
+			ORA #8			; add blue to non-essential
+mt_ess:
+		STA $66E8, X		; display dots to the right
+		BIT #2				; recheck non-responding
+		BEQ mt_bitok
+			STA $6768, X	; mark them down again for clarity
+mt_bitok:
+		DEX
+		BPL mt_disp
 
-; *** next is testing for HSYNC and VSYNC ***
+; ** next is testing for HSYNC and VSYNC **
 ; print initial GREEN banner
 	LDX #2					; max. offset
 lf_l:
@@ -443,7 +520,7 @@ nt_4:
 			DEX
 			BNE nt_4
 
-; * IRQ test *
+; ** IRQ test **
 irq_test:
 ; prepare screen with minibanner
 	LDX #4					; max. horizontal offset
@@ -505,7 +582,10 @@ it_fast:
 		JMP panic 
 it_ok:
 
+; ***************************
 ; *** all OK, end of test ***
+; ***************************
+
 ; sweep sound, print OK banner and lock
 	STX test				; sweep counter
 	TXA						; X known to be zero, again
@@ -540,74 +620,6 @@ ok_l:
 		BPL ok_l			; note offset-avoiding BPL
 all_ok:
 	BMI all_ok				; final lock (X=$FF)
-test_end: 
-
-; ********************************************
-; *** miscelaneous stuff, may be elsewhere ***
-; ********************************************
-
-; *** interrupt handlers *** could be elsewhere, ROM only
-irq:
-	JMP (fw_irq)
-nmi:
-	JMP (fw_nmi)
-
-; interrupt routine (for both IRQ and NMI test) *** could be elsewhere
-isr:
-	NOP						; make sure it takes over 13-15 µsec
-	INC test				; increment standard zeropage address (no longer DEC)
-	NOP
-	NOP
-exit:
-	RTI
-
-; *** mini banners *** could be elsewhere
-sync_b:
-	.byt	$10, $00, $11					; mid green 'LF'
-	.byt	$10, $00, $10
-	.byt	$10, $00, $11
-	.byt	$11, $00, $10
-nmi_b:
-	.byt	$DD, $0D, $0D, $D0, $DD, $0D	; cyan 'NMI'
-	.byt	$D0, $DD, $0D, $0D, $0D, $0D
-irq_b:
-	.byt	$60, $66, $60, $66, $60			; brick colour 'IRQ'
-	.byt	$60, $66, $00, $60, $60
-	.byt	$60, $60, $60, $66, $06
-ok_b:
-	.byt	$55, $50, $50, $50				; green 'OK'
-	.byt	$50, $50, $55, $00
-	.byt	$55, $50, $50, $50
-
-; *** delay routine (may be elsewhere)
-delay:
-	JSR dl_1				; (12)
-	JSR dl_1				; (12)
-	JSR dl_1				; (12... +12 total overhead =48)
-dl_1:
-	RTS						; for timeout counters
-
-; *** bit position table ***
-; INDEX =    0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
-bit_l:
-	.byt	$00, $01, $02, $04, $08, $10, $20, $40, $80, $00, $00, $00, $00, $00, $00, $00
-;            -    A0   A1   A2   A3   A4   A5   A6   A7   A8   A9   AA   AB   AC   AD   AE (A14)
-bit_h:
-	.byt    $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $02, $04, $08, $10, $20, $40
-
-; *** line offset table ***
-lof:
-	.byt	$00, $40, $80, $C0
-
-misc_end:
-
-; *** banner data *** 1 Kbyte raw file!
-banner:
-	.bin	0, 1024, "../../other/data/durango-x.sv"
-
-pic_end:
-
-	.dsb	$FF00-*, $FF	; padding
 
 ; *********************
 ; *** panic routine ***
@@ -636,12 +648,90 @@ fl_set:
 	STA IO8mode				; set inverse flag according to bit
 	TYA
 	BNE ploop				; A is NEVER zero
+test_end: 
 
-; ************************************
-; *** padding and hardware vectors ***
-; ************************************
+; ********************************************
+; *** miscelaneous stuff, may be elsewhere ***
+; ********************************************
 
-	.dsb	$FFFA-*, $FF	; padding
+; *** interrupt handlers *** could be elsewhere, ROM only
+irq:
+	JMP (fw_irq)
+nmi:
+	JMP (fw_nmi)
+
+; *** interrupt routine (for both IRQ and NMI test) *** could be elsewhere
+isr:
+	NOP						; make sure it takes over 13-15 µsec
+	INC test				; increment standard zeropage address (no longer DEC)
+	NOP
+	NOP
+exit:
+	RTI
+
+; *** delay routine *** (may be elsewhere)
+delay:
+	JSR dl_1				; (12)
+	JSR dl_1				; (12)
+	JSR dl_1				; (12... +12 total overhead =48)
+dl_1:
+	RTS						; for timeout counters
+
+; *** *** data *** ***
+
+; *** mini banners *** could be elsewhere
+sync_b:
+	.byt	$10, $00, $11					; mid green 'LF'
+	.byt	$10, $00, $10
+	.byt	$10, $00, $11
+	.byt	$11, $00, $10
+nmi_b:
+	.byt	$DD, $0D, $0D, $D0, $DD, $0D	; cyan 'NMI'
+	.byt	$D0, $DD, $0D, $0D, $0D, $0D
+irq_b:
+	.byt	$60, $66, $60, $66, $60			; brick colour 'IRQ'
+	.byt	$60, $66, $00, $60, $60
+	.byt	$60, $60, $60, $66, $06
+ok_b:
+	.byt	$55, $50, $50, $50				; green 'OK'
+	.byt	$50, $50, $55, $00
+	.byt	$55, $50, $50, $50
+rom_b:
+	.byt	$DD, $D0, $DD, $D0, $DD, $0D, $D0	; red 'ROM' (actually cyan as most of the time will show in inverse)
+	.byt	$DD, $00, $D0, $D0, $D0, $D0, $D0
+	.byt	$D0, $D0, $DD, $D0, $D0, $00, $D0
+
+; *** bit position table ***
+; INDEX =    0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
+bit_l:
+	.byt	$00, $01, $02, $04, $08, $10, $20, $40, $80, $00, $00, $00, $00, $00, $00, $00
+;            -    A0   A1   A2   A3   A4   A5   A6   A7   A8   A9   AA   AB   AC   AD   AE (A14)
+bit_h:
+	.byt    $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $02, $04, $08, $10, $20, $40
+
+; *** line offset table ***
+lof:
+	.byt	$00, $40, $80, $C0
+
+misc_end:
+
+; *** banner data *** 1 Kbyte raw file!
+banner:
+	.bin	0, 1024, "../../other/data/durango-x.sv"
+pic_end:
+
+; ****************************************
+; *** padding, ID and hardware vectors ***
+; ****************************************
+
+	.dsb	$FFD6-*, $FF	; padding
+
+	.asc	"DmOS"			; Durango-X cartridge signature
+	.word	$FFFF			; extra padding
+	.word	$FFFF
+	.word	0				; this will hold checksum at $FFDE-$FFDF
+
+	.dsb	$FFFA-*, $FF
 
 	.word	nmi
 	.word	reset
