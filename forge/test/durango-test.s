@@ -1,6 +1,6 @@
 ; FULL test of Durango-X/S/R (ROMmable version)
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220805-0112
+; last modified 20220805-1018
 
 ;#define	NMOS	_NMOS
 
@@ -399,6 +399,7 @@ sync_ok:
 	STX fw_nmi+1
 ; print minibanner
 	LDX #5					; max. horizontal offset
+	STX IOAen				; hardware interrupt enable (LED goes off), will be needed for IRQ test
 nt_b:
 		LDA nmi_b, X		; copy banner data into screen
 		STA $6B00, X
@@ -457,7 +458,7 @@ it_b:
 		BPL it_b			; no offset!
 ; inverse video during test (brief flash)
 	LDA #$78				; colour, inverse, RGB
-	STA IO8attr				; eeeeek
+	STA IO8mode				; eeeeek
 ; interrupt setup
 	LDY #<isr				; ISR address
 	LDX #>isr
@@ -465,8 +466,7 @@ it_b:
 	STX fw_irq+1
 	LDY #0					; initial value and inner counter reset
 	STY test
-; must enable interrupts!
-	STA IOAen				; hardware interrupt enable (LED goes off)
+; assume HW interrupt is on
 	LDX #154				; about 129 ms, time for 32 interrupts
 	CLI						; start counting!
 ; this provides timeout
@@ -479,7 +479,7 @@ it_1:
 	SEI						; no more interrupts, but hardware still generates them (LED off)
 ; back to true video
 	LDX #$38				; can no longer be zero
-	STX IO8attr
+	STX IO8mode
 ; display dots indicating how many times IRQ happened
 	LDX test				; using amount as index
 		BEQ it_slow			; did not respond at all! eeeeeek
@@ -500,6 +500,7 @@ it_slow:
 it_3:
 	CMP #34					; up to 33 is fine
 	BCC it_ok				; 31-33 accepted, >33 is fast
+it_fast:
 		LDA #%10101011		; *** fast IRQ, LED code = %1 01010100 ***
 		JMP panic 
 it_ok:
@@ -623,9 +624,16 @@ ploop:
 	ROL						; keep rotating pattern (cycle ~2.7 s)
 	STA IOAen				; LED is on only when D0=0
 	TAY
-	AND #%01000000			; keep inverse position...
-	EOR IO8attr				; and invert that video flag
-	STA IO8attr
+	AND #%00000001			; keep LED bit...
+	BNE fl_off				; ...which works the opposite...
+		LDA IO8mode			; ...and set that video flag
+		ORA #64
+		BNE fl_set
+fl_off:
+	LDA IO8mode				; otherwise clear inverse mode
+	AND #%10111111
+fl_set:
+	STA IO8mode				; set inverse flag according to bit
 	TYA
 	BNE ploop				; A is NEVER zero
 
