@@ -135,6 +135,7 @@
 	void vdu_set_hires_pixel(byte);
 	void vdu_draw_color_pixel(word);
 	void vdu_draw_hires_pixel(word);
+	void draw_circle(SDL_Renderer*, int32_t, int32_t, int32_t);
 
 
 /* ************************************************* */
@@ -2246,12 +2247,18 @@ void vdu_draw_full() {
 
 	// Display something resembling the error LED at upper right corner, if lit
 	if (err_led && (mem[0xdfa0] & 1)) {		// check interrupt status
-		// *** *** *** insert SDL code here *** *** ***
+		// Set color to red
+		SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x00, 0x00, 0xff);
+		// Draw red led
+		draw_circle(sdl_renderer, 490, 490, 10);
 	}
 
 	// A similar code may be used for other LEDs
 	if (err_led && (mem[0xdf80] & 4)) {		// check free bit from '174
-		// *** *** *** insert SDL code here *** *** ***
+		// Set color to white
+		SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0xff, 0xff);
+		// Draw white led
+		draw_circle(sdl_renderer, 460, 490, 10);
 	}
 
 	//Update screen
@@ -2618,3 +2625,21 @@ void vdu_read_keyboard() {
 		}
 	}
 }
+
+/* Aux procedure to draw circles using SDL */
+void draw_circle(SDL_Renderer * renderer, int32_t x, int32_t y, int32_t radius) {
+   for (int w = 0; w < radius * 2; w++)
+    {
+        for (int h = 0; h < radius * 2; h++)
+        {
+            int dx = radius - w; // horizontal offset
+            int dy = radius - h; // vertical offset
+            if ((dx*dx + dy*dy) <= (radius * radius))
+            {
+                SDL_RenderDrawPoint(sdl_renderer, x + dx, y + dy);
+            }
+        }
+    }
+
+}
+
