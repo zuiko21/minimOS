@@ -1,6 +1,6 @@
 ; nyan cat demo for Durango-X (or -S)
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220808-1656
+; last modified 20220808-1802
 
 ; *** usual definitions ***
 IO8attr	= $DF80				; video mode register
@@ -28,22 +28,22 @@ org		= anim+2			; local copy of animation pointer
 ; **********************
 ; all frames 90x42 pixels, as 2K-aligned there will be 158 free bytes in between (1890/frame)
 anim0:
-	.bin	0, 1890, "../other/data/nyancat.sv"
+	.bin	0, $762, "../other/data/cataa"
 	.dsb	$C800-*, $FF	; padding
 anim1:
-	.bin	1890, 1890, "../other/data/nyancat.sv"
+	.bin	0, $762, "../other/data/catab"
 	.dsb	$D000-*, $FF	; padding
 anim2:
-	.bin	3780, 1890, "../other/data/nyancat.sv"
+	.bin	0, $762, "../other/data/catac"
 	.dsb	$D800-*, $FF	; padding
 anim3:
-	.bin	5670, 1890, "../other/data/nyancat.sv"
+	.bin	0, $762, "../other/data/catad"
 	.dsb	$E000-*, $FF	; padding, will skip I/O at $DFxx
 anim4:
-	.bin	7560, 1890, "../other/data/nyancat.sv"
+	.bin	0, $762, "../other/data/catae"
 	.dsb	$E800-*, $FF	; padding
 anim5:
-	.bin	9450, 1890, "../other/data/nyancat.sv"
+	.bin	0, $762, "../other/data/cataf"
 	.dsb	$F000-*, $FF	; padding
 
 ; ***********************
@@ -91,6 +91,7 @@ blue:
 	STX anim+1				; reset animation pointer
 	STY anim
 ; *** maybe copy first sprite into hidden screen?
+	JSR draw_frame
 
 ; *** should play initial music here (TBD)
 
@@ -166,7 +167,14 @@ org_nw:
 ; *** wait for VSYNC ***
 wait_frame:
 	BIT IO8blk
-	BVC wait_frame
+	BVS wait_frame
+wait_sync:
+	BIT IO8blk
+	BVC wait_sync
+wait_en
+	BIT IO8blk
+	BVS wait_en
+
 	RTS
 
 ; non-existent interrupt routine (this far)
