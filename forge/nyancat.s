@@ -1,6 +1,6 @@
 ; nyan cat demo for Durango-X (or -S)
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220808-1802
+; last modified 20220809-0046
 
 ; *** usual definitions ***
 IO8attr	= $DF80				; video mode register
@@ -14,7 +14,7 @@ screen3	= $6000
 fwidth	= 90				; frame width in pixels (45 bytes)
 swidth	= 128				; screen width in pixels (64 bytes)
 fheight	= 42				; frame height in pixels
-homepos	= screen3 + $AC0	; address of leftmost upper corner of frames
+homepos	= screen3 + $AC0	; address of leftmost upper corner of frames (0,43)
 
 ; *** memory allocation ***
 ptr		= 3					; safe ZP address for indirect pointers (.w)
@@ -115,8 +115,22 @@ JSR wait_frame				; delay animation at half the frame rate
 		LDA #>anim0			; back to beginning
 nowrap:
 	STA anim+1				; update frame pointer
+; time to show some stars... TBD, *** experimental
+	SEC
+	SBC #>anim0				; convert to index
+	TAY
+	LDA cl_lst, Y			; look first entry in clear list
+	TAX
+	LDA #$88				; clear value
+	JSR call_star			; emulate indirect indexed call
+	LDA dr_lst, Y			; look first entry in draw list
+	TAX
+	LDA #$FF				; draw value
+	JSR call_star			; emulate indirect indexed call
+; should show more, perhaps incrementing Y...
+
+; draw animation frame
 	JSR draw_frame			; show me now!
-; time to show some stars... TBD
 
 ; anything else?
 	JMP loop				; in aeternum
@@ -177,10 +191,139 @@ wait_en
 
 	RTS
 
+; *** indirect indexed call emulation ***
+	JMP (star_tab, X)
+
 ; non-existent interrupt routine (this far)
 intexit:
 	RTI
 
+; ******************
+; *** stars code *** TBD
+; ******************
+; assume A is $FF to set, $88 to clear!
+; adjust base accordingly
+base = 0	; placeholder
+
+; pointer table
+star_tab:
+	.word star_0
+	.word star_1
+	.word star_2
+	.word star_3
+	.word star_4
+	.word star_5
+
+; star routines
+star_0:
+-base=$180+$3C
+	STA screen3+base		; (0,0), reference upper left
+	STA screen3+base+$40	; (0,1)
+	RTS
+
+star_1:
+-base=$140+$38
+	STA screen3+base+1		; (1,0), centre offset by (1,1)
+	STA screen3+base+$41	; (1,1)
+	STA screen3+base+$80	; (0,2)
+	STA screen3+base+$82	; (2,2)
+	STA screen3+base+$C0	; (0,3)
+	STA screen3+base+$C2	; (2,3)
+	STA screen3+base+$101	; (1,4)
+	STA screen3+base+$141	; (1,5)
+	RTS
+
+star_2:
+-base=$100+$30
+	STA screen3+base+2		; (2,0), centre offset by (2,2)
+	STA screen3+base+$42	; (2,1)
+	STA screen3+base+$82	; (2,2)
+	STA screen3+base+$C2	; (2,3)
+	STA screen3+base+$100	; (0,4)
+	STA screen3+base+$101	; (1,4)
+	STA screen3+base+$103	; (3,4)
+	STA screen3+base+$104	; (4,4)
+	STA screen3+base+$140	; (0,5)
+	STA screen3+base+$141	; (1,5)
+	STA screen3+base+$143	; (3,5)
+	STA screen3+base+$144	; (4,5)
+	STA screen3+base+$182	; (2,6)
+	STA screen3+base+$1C2	; (2,7)
+	STA screen3+base+$202	; (2,8)
+	STA screen3+base+$242	; (2,9)
+	RTS
+
+star_3:
+-base=$C0+$24
+	STA screen3+base+3		; (3,0), centre offset by (3,3)
+	STA screen3+base+$43	; (3,1)
+	STA screen3+base+$83	; (3,2)
+	STA screen3+base+$C3	; (3,3)
+	STA screen3+base+$180	; (0,6)
+	STA screen3+base+$181	; (1,6)
+	STA screen3+base+$183	; (3,6)
+	STA screen3+base+$185	; (5,6)
+	STA screen3+base+$186	; (6,6)
+	STA screen3+base+$1C0	; (0,7)
+	STA screen3+base+$1C1	; (1,7)
+	STA screen3+base+$1C3	; (3,7)
+	STA screen3+base+$1C5	; (5,7)
+	STA screen3+base+$1C6	; (6,7)
+	STA screen3+base+$283	; (3,10)
+	STA screen3+base+$2C3	; (3,11)
+	STA screen3+base+$303	; (3,12)
+	STA screen3+base+$343	; (3,13)
+	RTS
+
+star_4:
+-base=$C0+$14
+	STA screen3+base+3		; (3,0), centre offset by (3,3)
+	STA screen3+base+$43	; (3,1)
+	STA screen3+base+$81	; (1,2)
+	STA screen3+base+$85	; (5,2)
+	STA screen3+base+$C1	; (1,3)
+	STA screen3+base+$C5	; (5,3)
+	STA screen3+base+$180	; (0,6)
+	STA screen3+base+$186	; (6,6)
+	STA screen3+base+$1C0	; (0,7)
+	STA screen3+base+$1C6	; (6,7)
+	STA screen3+base+$281	; (1,10)
+	STA screen3+base+$285	; (5,10)
+	STA screen3+base+$2C1	; (1,11)
+	STA screen3+base+$2C5	; (5,11)
+	STA screen3+base+$303	; (3,12)
+	STA screen3+base+$343	; (3,13)
+	RTS
+
+star_5:
+-base=$C0+$04
+	STA screen3+base+3		; (3,0), centre offset by (3,3)
+	STA screen3+base+$43	; (3,1)
+	STA screen3+base+$180	; (0,6)
+	STA screen3+base+$186	; (6,6)
+	STA screen3+base+$1C0	; (0,7)
+	STA screen3+base+$1C6	; (6,7)
+	STA screen3+base+$303	; (3,12)
+	STA screen3+base+$343	; (3,13)
+	RTS
+
+; experimental data
+; clear list
+cl_lst:
+	.byt	10, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+	.byt	 0, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+	.byt	 2, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+	.byt	 4, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+	.byt	 6, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+	.byt	 8, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+; draw list
+dr_lst:
+	.byt	 0, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+	.byt	 2, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+	.byt	 4, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+	.byt	 6, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+	.byt	 8, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+	.byt	10, $ff, $ff, $ff, $ff, $ff, $ff, $ff
 ; ************************
 ; *** hardware vectors ***
 ; ************************
