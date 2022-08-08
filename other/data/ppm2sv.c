@@ -64,7 +64,7 @@ int main(void) {
 /* add index for rightmost pixel */
 		c|=b<<3|gl<<2|r<<1|gh;
 /* write into output file */
-		fputc(c, o);
+		if (!feof(f))	fputc(c, o);
 	} while(!feof(f));
 /* clean up */
 	fclose(f);
