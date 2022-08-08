@@ -192,6 +192,7 @@ wait_en
 	RTS
 
 ; *** indirect indexed call emulation ***
+call_star:
 	JMP (star_tab, X)
 
 ; non-existent interrupt routine (this far)
@@ -214,15 +215,16 @@ star_tab:
 	.word star_4
 	.word star_5
 
+-screen3=$6680
 ; star routines
 star_0:
--base=$180+$3C
+-base=$240+$3C
 	STA screen3+base		; (0,0), reference upper left
 	STA screen3+base+$40	; (0,1)
 	RTS
 
 star_1:
--base=$140+$38
+-base=$1C0+$38
 	STA screen3+base+1		; (1,0), centre offset by (1,1)
 	STA screen3+base+$41	; (1,1)
 	STA screen3+base+$80	; (0,2)
@@ -234,7 +236,7 @@ star_1:
 	RTS
 
 star_2:
--base=$100+$30
+-base=$140+$30
 	STA screen3+base+2		; (2,0), centre offset by (2,2)
 	STA screen3+base+$42	; (2,1)
 	STA screen3+base+$82	; (2,2)
