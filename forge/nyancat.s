@@ -1,6 +1,6 @@
 ; nyan cat demo for Durango-X (or -S)
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220809-1051
+; last modified 20220809-1058
 
 ; *** usual definitions ***
 IO8attr	= $DF80				; video mode register
@@ -22,6 +22,11 @@ anim	= ptr+2				; animation pointer, will increment by 2K
 org		= anim+2			; local copy of animation pointer
 togg12	= org+2				; switch between both 6-frame banks
 
+_last	= togg12+1
+
+; ********************
+; *** ROM contents ***
+; ********************
 	*	= $C000				; 16K ROM
 
 ; **********************
@@ -115,7 +120,7 @@ JSR wait_frame				; delay animation at half the frame rate
 	CMP #>start				; did all frames?
 	BNE nowrap
 		LDA togg12			; the other 6 frames... ***
-		EOR #8				; 8 steps further, for easier logic op. ***
+		EOR #64				; 8 lines further, for easier logic op. ***
 		STA togg12			; update switch ***
 		LDA #>anim0			; back to beginning
 nowrap:
@@ -123,7 +128,7 @@ nowrap:
 ; time to show some stars...
 	SEC
 	SBC #>anim0				; convert to index
-;	ORA togg12				; switching between both 6-frame lists ***
+	ORA togg12				; switching between both 6-frame lists ***
 	PHA						; save for later
 	TAY
 	LDA #$88				; clear value
