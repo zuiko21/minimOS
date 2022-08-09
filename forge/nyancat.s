@@ -1,6 +1,6 @@
 ; nyan cat demo for Durango-X (or -S)
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220809-0046
+; last modified 20220809-1051
 
 ; *** usual definitions ***
 IO8attr	= $DF80				; video mode register
@@ -20,6 +20,7 @@ homepos	= screen3 + $AC0	; address of leftmost upper corner of frames (0,43)
 ptr		= 3					; safe ZP address for indirect pointers (.w)
 anim	= ptr+2				; animation pointer, will increment by 2K
 org		= anim+2			; local copy of animation pointer
+togg12	= org+2				; switch between both 6-frame banks
 
 	*	= $C000				; 16K ROM
 
@@ -65,6 +66,7 @@ start:
 	LDX #>screen2			; SCREEN 2 initial page
 	LDY #0					; reset LSB and index
 	STY ptr					; set indirect pointer to clear screen
+	STY togg12				; clear frame bank switch
 	TYA						; will be all zeroes
 cl_page:
 		STX ptr+1			; pointer complete after update
@@ -112,22 +114,35 @@ JSR wait_frame				; delay animation at half the frame rate
 	ADC #8					; $800 bytes = 2 kiB
 	CMP #>start				; did all frames?
 	BNE nowrap
+		LDA togg12			; the other 6 frames... ***
+		EOR #8				; 8 steps further, for easier logic op. ***
+		STA togg12			; update switch ***
 		LDA #>anim0			; back to beginning
 nowrap:
 	STA anim+1				; update frame pointer
-; time to show some stars... TBD, *** experimental
+; time to show some stars...
 	SEC
 	SBC #>anim0				; convert to index
+;	ORA togg12				; switching between both 6-frame lists ***
+	PHA						; save for later
 	TAY
-	LDA cl_lst, Y			; look first entry in clear list
-	TAX
 	LDA #$88				; clear value
-	JSR call_star			; emulate indirect indexed call
-	LDA dr_lst, Y			; look first entry in draw list
-	TAX
+cl_loop:
+		LDX cl_lst, Y		; look first entry in clear list
+		BMI cl_end			; negative means end of list
+		JSR call_star		; emulate indirect indexed call
+		INY
+		BRA cl_loop
+cl_end:
+	PLY						; retrieve index on list (use PLA,TAY on NMOS)
 	LDA #$FF				; draw value
-	JSR call_star			; emulate indirect indexed call
-; should show more, perhaps incrementing Y...
+dr_loop:
+		LDX dr_lst, Y		; look first entry in draw list
+		BMI dr_end			; negative means end of list
+		JSR call_star		; emulate indirect indexed call
+		INY					; try next entry in list
+		BRA dr_loop
+dr_end:
 
 ; draw animation frame
 	JSR draw_frame			; show me now!
@@ -312,12 +327,15 @@ star_5:
 ; experimental data
 ; clear list
 cl_lst:
-	.byt	10, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+	.byt	10, $ff, $ff, $ff, $ff, $ff, $ff, $ff	; not needed for 12-frame version, but won't harm anyway
 	.byt	 0, $ff, $ff, $ff, $ff, $ff, $ff, $ff
 	.byt	 2, $ff, $ff, $ff, $ff, $ff, $ff, $ff
 	.byt	 4, $ff, $ff, $ff, $ff, $ff, $ff, $ff
 	.byt	 6, $ff, $ff, $ff, $ff, $ff, $ff, $ff
 	.byt	 8, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+	.dsb	16, $FF			; complete 8 rows for each 6-frame bank
+	.byt	10, $ff, $ff, $ff, $ff, $ff, $ff, $ff	; but clear last star
+	.dsb	56, $FF			; no stars in last 6 frames, for testing
 ; draw list
 dr_lst:
 	.byt	 0, $ff, $ff, $ff, $ff, $ff, $ff, $ff
@@ -326,6 +344,8 @@ dr_lst:
 	.byt	 6, $ff, $ff, $ff, $ff, $ff, $ff, $ff
 	.byt	 8, $ff, $ff, $ff, $ff, $ff, $ff, $ff
 	.byt	10, $ff, $ff, $ff, $ff, $ff, $ff, $ff
+	.dsb	16, $FF			; complete 8 rows for each 6-frame bank
+	.dsb	64, $FF			; no stars in last 6 frames, for testing
 ; ************************
 ; *** hardware vectors ***
 ; ************************
