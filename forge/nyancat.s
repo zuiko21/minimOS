@@ -1,6 +1,6 @@
 ; nyan cat demo for Durango-X (or -S)
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220809-1310
+; last modified 20220809-2256
 
 ; *** usual definitions ***
 IO8attr	= $DF80				; video mode register
@@ -22,8 +22,9 @@ anim	= ptr+2				; animation pointer, will increment by 2K
 org		= anim+2			; local copy of animation pointer
 togg12	= org+2				; switch between both 6-frame banks
 temp	= togg12+1			; temporary use, for cleanliness
+mus_pt	= temp+1
 
-_last	= temp+1
+_last	= mus_pt+1
 
 ; ********************
 ; *** ROM contents ***
@@ -115,8 +116,10 @@ intro:
 note_pb:
 		JSR note			; play sound
 next_n:
-		INY
+		INC mus_pt			; next note EEEEEEK
 		BNE intro			; continue intro, no need for BRA
+mus_end:
+	STX mus_pt				; reset pointer for main melody
 
 ; switch to standard screen
 	LDA #%00111000			; colour, RGB mode, SCREEN 3 as usual
@@ -126,8 +129,26 @@ next_n:
 ; *** main loop ***
 ; *****************
 loop:
-; *** if first frame is already on screen, maybe start music frame instead of updating screen?
-	JSR wait_frame			; delay animation at half the frame rate
+; almost TWO frames (~35 ms) are devoted to audio, then the next one for video rendering
+		LDY mus_pt			; get offset to current note
+		LDA m_freq, Y		; get pitch
+		BPL m_cont			; negative pitch at end of list
+			STZ mus_pt
+			JMP loop		; get first note again
+;			JMP start		; *** OK?
+m_cont:
+		BNE m_pb			; is audible note, play it back
+			JSR wait_frame
+			JSR wait_frame
+			BRA end_r
+m_pb:
+		TAY					; use as index
+		LDX m_cyc, Y		; get length for this particular frequency (~35 ms length)
+		JSR note			; play sound
+end_r:
+		INC mus_pt			; next note EEEEEEK
+end_note:
+	JSR wait_frame			; delay animation at 1/3 frame rate
 
 ; advance to next sprite, resetting if needed
 	LDA anim+1				; get frame page
@@ -141,34 +162,10 @@ loop:
 		LDA #>anim0			; back to beginning
 nowrap:
 	STA anim+1				; update frame pointer
-; time to show some stars...
-	SEC
-	SBC #>anim0				; convert to index
-	ORA togg12				; switching between both 6-frame lists ***
-	PHA						; save for later
-	TAY
-	LDA #$88				; clear value
-cl_loop:
-		LDX cl_lst, Y		; look first entry in clear list
-		BEQ cl_end			; zero means end of list
-		JSR call_star		; emulate indirect indexed call
-		INY
-		BRA cl_loop
-cl_end:
-	PLY						; retrieve index on list (use PLA,TAY on NMOS)
-	LDA #$FF				; draw value
-dr_loop:
-		LDX dr_lst, Y		; look first entry in draw list
-		BEQ dr_end			; zero means end of list
-		JSR call_star		; emulate indirect indexed call
-		INY					; try next entry in list
-		BRA dr_loop
 
-; *** indirect indexed call emulation ***
-call_star:
-	JMP (star_tab, X)		; LDA st,X;STA ptr;LDA st+1,X;STA ptr+1;JMP(ptr) for NMOS
+; time to show some stars... routine needs anim.H in A
+	JSR update_stars		; just for clarity
 
-dr_end:
 ; draw animation frame after stars
 	JSR draw_frame			; show me now!
 
@@ -218,6 +215,36 @@ org_nw:
 		BNE line_loop
 	RTS
 
+; *** update starfield *** needs A with anim.H
+update_stars:
+	SEC
+	SBC #>anim0				; convert to index
+	ORA togg12				; switching between both 6-frame lists ***
+	PHA						; save for later
+	TAY
+	LDA #$88				; clear value
+cl_loop:
+		LDX cl_lst, Y		; look first entry in clear list
+		BEQ cl_end			; zero means end of list
+		JSR call_star		; emulate indirect indexed call
+		INY
+		BRA cl_loop
+cl_end:
+	PLY						; retrieve index on list (use PLA,TAY on NMOS)
+	LDA #$FF				; draw value
+dr_loop:
+		LDX dr_lst, Y		; look first entry in draw list
+		BEQ dr_end			; zero means end of list
+		JSR call_star		; emulate indirect indexed call
+		INY					; try next entry in list
+		BRA dr_loop
+dr_end:
+	RTS
+
+; *** indirect indexed call emulation ***
+call_star:
+	JMP (star_tab, X)		; PHA;LDA st,X;STA ptr;LDA st+1,X;STA ptr+1;PLA;JMP(ptr) for NMOS
+
 ; *** wait for VSYNC ***
 wait_frame:
 	BIT IO8blk
@@ -225,22 +252,19 @@ wait_frame:
 wait_sync:
 	BIT IO8blk
 	BVC wait_sync
-wait_en
-	BIT IO8blk
-	BVS wait_en
-
 	RTS
 
 ; *** basic note play ***
 note:
 ; *** X = length, A = freq. ***
 ; *** X = 2*cycles-1        *** returns with N
-; *** tcyc = 16 A + 20      ***
+; *** tcyc = 18 A + 20      ***
 ; ***     @1.536 MHz        ***
 		TAY					; determines frequency (2)
 		STX IOBeep			; send X's LSB to beeper, <=127 is max. 64 cycles! (4)
 n_tim:
 			STY temp		; small delay for 1.536 MHz! (3)
+			NOP				; a bit more delay! (2)
 			DEY				; count pulse length (y*2)
 			BNE n_tim		; stay this way for a while (y*3-1)
 		DEX					; toggles even/odd number (2)
@@ -253,7 +277,7 @@ n_tim:
 rest:
 		LDY #0				; this resets the counter
 r_loop:
-			STY bp_dly		; delay for 1.536 MHz
+			STY temp		; delay for 1.536 MHz
 			INY
 			BNE r_loop		; this will take ~ 1.33 ms
 		DEX					; continue
@@ -270,192 +294,191 @@ intexit:
 ; assume A is $FF to set, $88 to clear!
 ; adjust base accordingly
 
-base = 0	; placeholder
 -screen3=$6680
 
 star_0:
--base=$240+$3C
-	STA screen3+base		; (0,0), reference upper left
-	STA screen3+base+$40	; (0,1)
+-base=$6680+$240+$3C
+	STA base		; (0,0), reference upper left
+	STA base+$40	; (0,1)
 none:
 	RTS
 
 star_1:
--base=$1C0+$38
-	STA screen3+base+1		; (1,0), centre offset by (1,1)
-	STA screen3+base+$41	; (1,1)
-	STA screen3+base+$80	; (0,2)
-	STA screen3+base+$82	; (2,2)
-	STA screen3+base+$C0	; (0,3)
-	STA screen3+base+$C2	; (2,3)
-	STA screen3+base+$101	; (1,4)
-	STA screen3+base+$141	; (1,5)
+-base=$6680+$1C0+$38
+	STA base+1		; (1,0), centre offset by (1,1)
+	STA base+$41	; (1,1)
+	STA base+$80	; (0,2)
+	STA base+$82	; (2,2)
+	STA base+$C0	; (0,3)
+	STA base+$C2	; (2,3)
+	STA base+$101	; (1,4)
+	STA base+$141	; (1,5)
 	RTS
 
 star_2:
--base=$140+$30
-	STA screen3+base+2		; (2,0), centre offset by (2,2)
-	STA screen3+base+$42	; (2,1)
-	STA screen3+base+$82	; (2,2)
-	STA screen3+base+$C2	; (2,3)
-	STA screen3+base+$100	; (0,4)
-	STA screen3+base+$101	; (1,4)
-	STA screen3+base+$103	; (3,4)
-	STA screen3+base+$104	; (4,4)
-	STA screen3+base+$140	; (0,5)
-	STA screen3+base+$141	; (1,5)
-	STA screen3+base+$143	; (3,5)
-	STA screen3+base+$144	; (4,5)
-	STA screen3+base+$182	; (2,6)
-	STA screen3+base+$1C2	; (2,7)
-	STA screen3+base+$202	; (2,8)
-	STA screen3+base+$242	; (2,9)
+-base=$6680+$140+$30
+	STA base+2		; (2,0), centre offset by (2,2)
+	STA base+$42	; (2,1)
+	STA base+$82	; (2,2)
+	STA base+$C2	; (2,3)
+	STA base+$100	; (0,4)
+	STA base+$101	; (1,4)
+	STA base+$103	; (3,4)
+	STA base+$104	; (4,4)
+	STA base+$140	; (0,5)
+	STA base+$141	; (1,5)
+	STA base+$143	; (3,5)
+	STA base+$144	; (4,5)
+	STA base+$182	; (2,6)
+	STA base+$1C2	; (2,7)
+	STA base+$202	; (2,8)
+	STA base+$242	; (2,9)
 	RTS
 
 star_3:
--base=$C0+$24
-	STA screen3+base+3		; (3,0), centre offset by (3,3)
-	STA screen3+base+$43	; (3,1)
-	STA screen3+base+$83	; (3,2)
-	STA screen3+base+$C3	; (3,3)
-	STA screen3+base+$180	; (0,6)
-	STA screen3+base+$181	; (1,6)
-	STA screen3+base+$183	; (3,6)
-	STA screen3+base+$185	; (5,6)
-	STA screen3+base+$186	; (6,6)
-	STA screen3+base+$1C0	; (0,7)
-	STA screen3+base+$1C1	; (1,7)
-	STA screen3+base+$1C3	; (3,7)
-	STA screen3+base+$1C5	; (5,7)
-	STA screen3+base+$1C6	; (6,7)
-	STA screen3+base+$283	; (3,10)
-	STA screen3+base+$2C3	; (3,11)
-	STA screen3+base+$303	; (3,12)
-	STA screen3+base+$343	; (3,13)
+-base=$6680+$C0+$24
+	STA base+3		; (3,0), centre offset by (3,3)
+	STA base+$43	; (3,1)
+	STA base+$83	; (3,2)
+	STA base+$C3	; (3,3)
+	STA base+$180	; (0,6)
+	STA base+$181	; (1,6)
+	STA base+$183	; (3,6)
+	STA base+$185	; (5,6)
+	STA base+$186	; (6,6)
+	STA base+$1C0	; (0,7)
+	STA base+$1C1	; (1,7)
+	STA base+$1C3	; (3,7)
+	STA base+$1C5	; (5,7)
+	STA base+$1C6	; (6,7)
+	STA base+$283	; (3,10)
+	STA base+$2C3	; (3,11)
+	STA base+$303	; (3,12)
+	STA base+$343	; (3,13)
 	RTS
 
 star_4:
--base=$C0+$14
-	STA screen3+base+3		; (3,0), centre offset by (3,3)
-	STA screen3+base+$43	; (3,1)
-	STA screen3+base+$81	; (1,2)
-	STA screen3+base+$85	; (5,2)
-	STA screen3+base+$C1	; (1,3)
-	STA screen3+base+$C5	; (5,3)
-	STA screen3+base+$180	; (0,6)
-	STA screen3+base+$186	; (6,6)
-	STA screen3+base+$1C0	; (0,7)
-	STA screen3+base+$1C6	; (6,7)
-	STA screen3+base+$281	; (1,10)
-	STA screen3+base+$285	; (5,10)
-	STA screen3+base+$2C1	; (1,11)
-	STA screen3+base+$2C5	; (5,11)
-	STA screen3+base+$303	; (3,12)
-	STA screen3+base+$343	; (3,13)
+-base=$6680+$C0+$14
+	STA base+3		; (3,0), centre offset by (3,3)
+	STA base+$43	; (3,1)
+	STA base+$81	; (1,2)
+	STA base+$85	; (5,2)
+	STA base+$C1	; (1,3)
+	STA base+$C5	; (5,3)
+	STA base+$180	; (0,6)
+	STA base+$186	; (6,6)
+	STA base+$1C0	; (0,7)
+	STA base+$1C6	; (6,7)
+	STA base+$281	; (1,10)
+	STA base+$285	; (5,10)
+	STA base+$2C1	; (1,11)
+	STA base+$2C5	; (5,11)
+	STA base+$303	; (3,12)
+	STA base+$343	; (3,13)
 	RTS
 
 star_5:
--base=$C0+$04
-	STA screen3+base+3		; (3,0), centre offset by (3,3)
-	STA screen3+base+$43	; (3,1)
-	STA screen3+base+$180	; (0,6)
-	STA screen3+base+$186	; (6,6)
-	STA screen3+base+$1C0	; (0,7)
-	STA screen3+base+$1C6	; (6,7)
-	STA screen3+base+$303	; (3,12)
-	STA screen3+base+$343	; (3,13)
+-base=$6680+$C0+$04
+	STA base+3		; (3,0), centre offset by (3,3)
+	STA base+$43	; (3,1)
+	STA base+$180	; (0,6)
+	STA base+$186	; (6,6)
+	STA base+$1C0	; (0,7)
+	STA base+$1C6	; (6,7)
+	STA base+$303	; (3,12)
+	STA base+$343	; (3,13)
 	RTS
 
 star_0b:
--base=$1240+$3C
-	STA screen3+base		; (0,0), reference upper left
-	STA screen3+base+$40	; (0,1)
+-base=$6680+$1240+$3C
+	STA base		; (0,0), reference upper left
+	STA base+$40	; (0,1)
 	RTS
 
 star_1b:
--base=$11C0+$38
-	STA screen3+base+1		; (1,0), centre offset by (1,1)
-	STA screen3+base+$41	; (1,1)
-	STA screen3+base+$80	; (0,2)
-	STA screen3+base+$82	; (2,2)
-	STA screen3+base+$C0	; (0,3)
-	STA screen3+base+$C2	; (2,3)
-	STA screen3+base+$101	; (1,4)
-	STA screen3+base+$141	; (1,5)
+-base=$6680+$11C0+$38
+	STA base+1		; (1,0), centre offset by (1,1)
+	STA base+$41	; (1,1)
+	STA base+$80	; (0,2)
+	STA base+$82	; (2,2)
+	STA base+$C0	; (0,3)
+	STA base+$C2	; (2,3)
+	STA base+$101	; (1,4)
+	STA base+$141	; (1,5)
 	RTS
 
 star_2b:
--base=$1140+$30
-	STA screen3+base+2		; (2,0), centre offset by (2,2)
-	STA screen3+base+$42	; (2,1)
-	STA screen3+base+$82	; (2,2)
-	STA screen3+base+$C2	; (2,3)
-	STA screen3+base+$100	; (0,4)
-	STA screen3+base+$101	; (1,4)
-	STA screen3+base+$103	; (3,4)
-	STA screen3+base+$104	; (4,4)
-	STA screen3+base+$140	; (0,5)
-	STA screen3+base+$141	; (1,5)
-	STA screen3+base+$143	; (3,5)
-	STA screen3+base+$144	; (4,5)
-	STA screen3+base+$182	; (2,6)
-	STA screen3+base+$1C2	; (2,7)
-	STA screen3+base+$202	; (2,8)
-	STA screen3+base+$242	; (2,9)
+-base=$6680+$1140+$30
+	STA base+2		; (2,0), centre offset by (2,2)
+	STA base+$42	; (2,1)
+	STA base+$82	; (2,2)
+	STA base+$C2	; (2,3)
+	STA base+$100	; (0,4)
+	STA base+$101	; (1,4)
+	STA base+$103	; (3,4)
+	STA base+$104	; (4,4)
+	STA base+$140	; (0,5)
+	STA base+$141	; (1,5)
+	STA base+$143	; (3,5)
+	STA base+$144	; (4,5)
+	STA base+$182	; (2,6)
+	STA base+$1C2	; (2,7)
+	STA base+$202	; (2,8)
+	STA base+$242	; (2,9)
 	RTS
 
 star_3b:
--base=$10C0+$24
-	STA screen3+base+3		; (3,0), centre offset by (3,3)
-	STA screen3+base+$43	; (3,1)
-	STA screen3+base+$83	; (3,2)
-	STA screen3+base+$C3	; (3,3)
-	STA screen3+base+$180	; (0,6)
-	STA screen3+base+$181	; (1,6)
-	STA screen3+base+$183	; (3,6)
-	STA screen3+base+$185	; (5,6)
-	STA screen3+base+$186	; (6,6)
-	STA screen3+base+$1C0	; (0,7)
-	STA screen3+base+$1C1	; (1,7)
-	STA screen3+base+$1C3	; (3,7)
-	STA screen3+base+$1C5	; (5,7)
-	STA screen3+base+$1C6	; (6,7)
-	STA screen3+base+$283	; (3,10)
-	STA screen3+base+$2C3	; (3,11)
-	STA screen3+base+$303	; (3,12)
-	STA screen3+base+$343	; (3,13)
+-base=$6680+$10C0+$24
+	STA base+3		; (3,0), centre offset by (3,3)
+	STA base+$43	; (3,1)
+	STA base+$83	; (3,2)
+	STA base+$C3	; (3,3)
+	STA base+$180	; (0,6)
+	STA base+$181	; (1,6)
+	STA base+$183	; (3,6)
+	STA base+$185	; (5,6)
+	STA base+$186	; (6,6)
+	STA base+$1C0	; (0,7)
+	STA base+$1C1	; (1,7)
+	STA base+$1C3	; (3,7)
+	STA base+$1C5	; (5,7)
+	STA base+$1C6	; (6,7)
+	STA base+$283	; (3,10)
+	STA base+$2C3	; (3,11)
+	STA base+$303	; (3,12)
+	STA base+$343	; (3,13)
 	RTS
 
 star_4b:
--base=$10C0+$14
-	STA screen3+base+3		; (3,0), centre offset by (3,3)
-	STA screen3+base+$43	; (3,1)
-	STA screen3+base+$81	; (1,2)
-	STA screen3+base+$85	; (5,2)
-	STA screen3+base+$C1	; (1,3)
-	STA screen3+base+$C5	; (5,3)
-	STA screen3+base+$180	; (0,6)
-	STA screen3+base+$186	; (6,6)
-	STA screen3+base+$1C0	; (0,7)
-	STA screen3+base+$1C6	; (6,7)
-	STA screen3+base+$281	; (1,10)
-	STA screen3+base+$285	; (5,10)
-	STA screen3+base+$2C1	; (1,11)
-	STA screen3+base+$2C5	; (5,11)
-	STA screen3+base+$303	; (3,12)
-	STA screen3+base+$343	; (3,13)
+-base=$6680+$10C0+$14
+	STA base+3		; (3,0), centre offset by (3,3)
+	STA base+$43	; (3,1)
+	STA base+$81	; (1,2)
+	STA base+$85	; (5,2)
+	STA base+$C1	; (1,3)
+	STA base+$C5	; (5,3)
+	STA base+$180	; (0,6)
+	STA base+$186	; (6,6)
+	STA base+$1C0	; (0,7)
+	STA base+$1C6	; (6,7)
+	STA base+$281	; (1,10)
+	STA base+$285	; (5,10)
+	STA base+$2C1	; (1,11)
+	STA base+$2C5	; (5,11)
+	STA base+$303	; (3,12)
+	STA base+$343	; (3,13)
 	RTS
 
 star_5b:
--base=$10C0+$04
-	STA screen3+base+3		; (3,0), centre offset by (3,3)
-	STA screen3+base+$43	; (3,1)
-	STA screen3+base+$180	; (0,6)
-	STA screen3+base+$186	; (6,6)
-	STA screen3+base+$1C0	; (0,7)
-	STA screen3+base+$1C6	; (6,7)
-	STA screen3+base+$303	; (3,12)
-	STA screen3+base+$343	; (3,13)
+-base=$6680+$10C0+$04
+	STA base+3		; (3,0), centre offset by (3,3)
+	STA base+$43	; (3,1)
+	STA base+$180	; (0,6)
+	STA base+$186	; (6,6)
+	STA base+$1C0	; (0,7)
+	STA base+$1C6	; (6,7)
+	STA base+$303	; (3,12)
+	STA base+$343	; (3,13)
 	RTS
 
 ; *** pointer table (leave first entry clear) ***
@@ -510,11 +533,17 @@ dr_lst:
 	.byt	 0, 0, 0, 0, 0, 0, 0,$0
 
 ; *** music scores ***
+; intro music
 i_dur:
-	.byt	255, $0	; duration list, placeholder (0-terminated)
+	.byt	127, 127, $0	; duration list, placeholder (0-terminated)
 i_freq:
-	.byt	0		; pitch list, placeholder
-
+	.byt	0, 0			; pitch list, placeholder
+; music during animation
+m_freq:
+	.byt	0, $FF			; negative is end of list, placeholder
+; lenght of each pitch to make ~35 ms notes
+m_cyc:
+	.byt	0				; cycles per note, placeholder
 ; ************************
 ; *** hardware vectors ***
 ; ************************
