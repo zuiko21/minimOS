@@ -1,6 +1,6 @@
 ; nyan cat demo for Durango-X (or -S)
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220809-1058
+; last modified 20220809-1137
 
 ; *** usual definitions ***
 IO8attr	= $DF80				; video mode register
@@ -111,7 +111,7 @@ blue:
 ; *****************
 loop:
 ; *** if first frame is already on screen, maybe start music frame instead of updating screen?
-JSR wait_frame				; delay animation at half the frame rate
+	JSR wait_frame			; delay animation at half the frame rate
 
 ; advance to next sprite, resetting if needed
 	LDA anim+1				; get frame page
@@ -134,7 +134,7 @@ nowrap:
 	LDA #$88				; clear value
 cl_loop:
 		LDX cl_lst, Y		; look first entry in clear list
-		BMI cl_end			; negative means end of list
+		BEQ cl_end			; zero means end of list
 		JSR call_star		; emulate indirect indexed call
 		INY
 		BRA cl_loop
@@ -143,13 +143,17 @@ cl_end:
 	LDA #$FF				; draw value
 dr_loop:
 		LDX dr_lst, Y		; look first entry in draw list
-		BMI dr_end			; negative means end of list
+		BEQ dr_end			; zero means end of list
 		JSR call_star		; emulate indirect indexed call
 		INY					; try next entry in list
 		BRA dr_loop
-dr_end:
 
-; draw animation frame
+; *** indirect indexed call emulation ***
+call_star:
+	JMP (star_tab, X)		; LDA st,X;STA ptr;LDA st+1,X;STA ptr+1;JMP(ptr) for NMOS
+
+dr_end:
+; draw animation frame after stars
 	JSR draw_frame			; show me now!
 
 ; anything else?
@@ -211,10 +215,6 @@ wait_en
 
 	RTS
 
-; *** indirect indexed call emulation ***
-call_star:
-	JMP (star_tab, X)
-
 ; non-existent interrupt routine (this far)
 intexit:
 	RTI
@@ -226,21 +226,13 @@ intexit:
 ; adjust base accordingly
 base = 0	; placeholder
 
-; pointer table
-star_tab:
-	.word star_0
-	.word star_1
-	.word star_2
-	.word star_3
-	.word star_4
-	.word star_5
-
 -screen3=$6680
 ; star routines
 star_0:
 -base=$240+$3C
 	STA screen3+base		; (0,0), reference upper left
 	STA screen3+base+$40	; (0,1)
+none:
 	RTS
 
 star_1:
@@ -329,28 +321,145 @@ star_5:
 	STA screen3+base+$343	; (3,13)
 	RTS
 
-; experimental data
+star_0b:
+-base=$1240+$3C
+	STA screen3+base		; (0,0), reference upper left
+	STA screen3+base+$40	; (0,1)
+	RTS
+
+star_1b:
+-base=$11C0+$38
+	STA screen3+base+1		; (1,0), centre offset by (1,1)
+	STA screen3+base+$41	; (1,1)
+	STA screen3+base+$80	; (0,2)
+	STA screen3+base+$82	; (2,2)
+	STA screen3+base+$C0	; (0,3)
+	STA screen3+base+$C2	; (2,3)
+	STA screen3+base+$101	; (1,4)
+	STA screen3+base+$141	; (1,5)
+	RTS
+
+star_2b:
+-base=$1140+$30
+	STA screen3+base+2		; (2,0), centre offset by (2,2)
+	STA screen3+base+$42	; (2,1)
+	STA screen3+base+$82	; (2,2)
+	STA screen3+base+$C2	; (2,3)
+	STA screen3+base+$100	; (0,4)
+	STA screen3+base+$101	; (1,4)
+	STA screen3+base+$103	; (3,4)
+	STA screen3+base+$104	; (4,4)
+	STA screen3+base+$140	; (0,5)
+	STA screen3+base+$141	; (1,5)
+	STA screen3+base+$143	; (3,5)
+	STA screen3+base+$144	; (4,5)
+	STA screen3+base+$182	; (2,6)
+	STA screen3+base+$1C2	; (2,7)
+	STA screen3+base+$202	; (2,8)
+	STA screen3+base+$242	; (2,9)
+	RTS
+
+star_3b:
+-base=$10C0+$24
+	STA screen3+base+3		; (3,0), centre offset by (3,3)
+	STA screen3+base+$43	; (3,1)
+	STA screen3+base+$83	; (3,2)
+	STA screen3+base+$C3	; (3,3)
+	STA screen3+base+$180	; (0,6)
+	STA screen3+base+$181	; (1,6)
+	STA screen3+base+$183	; (3,6)
+	STA screen3+base+$185	; (5,6)
+	STA screen3+base+$186	; (6,6)
+	STA screen3+base+$1C0	; (0,7)
+	STA screen3+base+$1C1	; (1,7)
+	STA screen3+base+$1C3	; (3,7)
+	STA screen3+base+$1C5	; (5,7)
+	STA screen3+base+$1C6	; (6,7)
+	STA screen3+base+$283	; (3,10)
+	STA screen3+base+$2C3	; (3,11)
+	STA screen3+base+$303	; (3,12)
+	STA screen3+base+$343	; (3,13)
+	RTS
+
+star_4b:
+-base=$10C0+$14
+	STA screen3+base+3		; (3,0), centre offset by (3,3)
+	STA screen3+base+$43	; (3,1)
+	STA screen3+base+$81	; (1,2)
+	STA screen3+base+$85	; (5,2)
+	STA screen3+base+$C1	; (1,3)
+	STA screen3+base+$C5	; (5,3)
+	STA screen3+base+$180	; (0,6)
+	STA screen3+base+$186	; (6,6)
+	STA screen3+base+$1C0	; (0,7)
+	STA screen3+base+$1C6	; (6,7)
+	STA screen3+base+$281	; (1,10)
+	STA screen3+base+$285	; (5,10)
+	STA screen3+base+$2C1	; (1,11)
+	STA screen3+base+$2C5	; (5,11)
+	STA screen3+base+$303	; (3,12)
+	STA screen3+base+$343	; (3,13)
+	RTS
+
+star_5b:
+-base=$10C0+$04
+	STA screen3+base+3		; (3,0), centre offset by (3,3)
+	STA screen3+base+$43	; (3,1)
+	STA screen3+base+$180	; (0,6)
+	STA screen3+base+$186	; (6,6)
+	STA screen3+base+$1C0	; (0,7)
+	STA screen3+base+$1C6	; (6,7)
+	STA screen3+base+$303	; (3,12)
+	STA screen3+base+$343	; (3,13)
+	RTS
+
+; pointer table (leave first entry clear)
+star_tab:
+	.word	none			; entry 0 is free
+	.word	star_0
+	.word	star_1
+	.word	star_2
+	.word	star_3
+	.word	star_4
+	.word	star_5
+	.word	star_0b			; index 14...
+	.word	star_1b			; 16
+	.word	star_2b			; 18
+	.word	star_3b			; 20
+	.word	star_4b			; 22
+	.word	star_5b			; 24
+
 ; clear list
 cl_lst:
-	.byt	10, $ff, $ff, $ff, $ff, $ff, $ff, $ff	; not needed for 12-frame version, but won't harm anyway
-	.byt	 0, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-	.byt	 2, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-	.byt	 4, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-	.byt	 6, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-	.byt	 8, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-	.dsb	16, $FF			; complete 8 rows for each 6-frame bank
-	.byt	10, $ff, $ff, $ff, $ff, $ff, $ff, $ff	; but clear last star
-	.dsb	56, $FF			; no stars in last 6 frames, for testing
+	.byt	 0, 0, 0, 0, 0, 0, 0, 0	; not needed for 12-frame version, but won't harm anyway
+	.byt	 2, 0, 0, 0, 0, 0, 0, 0
+	.byt	 4, 0, 0, 0, 0, 0, 0, 0
+	.byt	 6, 0, 0, 0, 0, 0, 0, 0
+	.byt	 8,20, 0, 0, 0, 0, 0, 0
+	.byt	10, 0, 0, 0, 0, 0, 0, 0
+	.dsb	16, 0			; complete 8 rows for each 6-frame bank
+	.byt	12,14, 0, 0, 0, 0, 0, 0
+	.byt	16, 0, 0, 0, 0, 0, 0, 0
+	.byt	18, 0, 0, 0, 0, 0, 0, 0
+	.byt	20, 0, 0, 0, 0, 0, 0, 0
+	.byt	22, 0, 0, 0, 0, 0, 0, 0
+	.byt	24, 0, 0, 0, 0, 0, 0, 0
+
 ; draw list
 dr_lst:
-	.byt	 0, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-	.byt	 2, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-	.byt	 4, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-	.byt	 6, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-	.byt	 8, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-	.byt	10, $ff, $ff, $ff, $ff, $ff, $ff, $ff
-	.dsb	16, $FF			; complete 8 rows for each 6-frame bank
-	.dsb	64, $FF			; no stars in last 6 frames, for testing
+	.byt	 2, 0, 0, 0, 0, 0, 0, 0
+	.byt	 4, 0, 0, 0, 0, 0, 0, 0
+	.byt	 6, 0, 0, 0, 0, 0, 0, 0
+	.byt	 8, 0, 0, 0, 0, 0, 0, 0
+	.byt	10, 0, 0, 0, 0, 0, 0, 0
+	.byt	12,14, 0, 0, 0, 0, 0, 0
+	.dsb	16, 0			; complete 8 rows for each 6-frame bank
+	.byt	16, 0, 0, 0, 0, 0, 0, 0
+	.byt	18, 0, 0, 0, 0, 0, 0, 0
+	.byt	20, 0, 0, 0, 0, 0, 0, 0
+	.byt	22, 0, 0, 0, 0, 0, 0, 0
+	.byt	24, 0, 0, 0, 0, 0, 0, 0
+	.byt	 0, 0, 0, 0, 0, 0, 0, 0
 ; ************************
 ; *** hardware vectors ***
 ; ************************
