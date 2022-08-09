@@ -1,6 +1,6 @@
 ; nyan cat demo for Durango-X (or -S)
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220809-1137
+; last modified 20220809-1310
 
 ; *** usual definitions ***
 IO8attr	= $DF80				; video mode register
@@ -21,8 +21,9 @@ ptr		= 3					; safe ZP address for indirect pointers (.w)
 anim	= ptr+2				; animation pointer, will increment by 2K
 org		= anim+2			; local copy of animation pointer
 togg12	= org+2				; switch between both 6-frame banks
+temp	= togg12+1			; temporary use, for cleanliness
 
-_last	= togg12+1
+_last	= temp+1
 
 ; ********************
 ; *** ROM contents ***
@@ -72,7 +73,8 @@ start:
 	LDY #0					; reset LSB and index
 	STY ptr					; set indirect pointer to clear screen
 	STY togg12				; clear frame bank switch
-	TYA						; will be all zeroes
+	STY mus_pt				; reset music player cursor
+	TYA						; will fill the screen with zeroes
 cl_page:
 		STX ptr+1			; pointer complete after update
 cls:
@@ -92,15 +94,29 @@ blue:
 			BNE blue
 		INX					; next page
 		BPL bl_page			; until beginning of ROM (may use CPX #;BNE if not using SCREEN3 for this)
+
 ; some more data init
 	LDX #>anim0
 	LDY #<anim0
 	STX anim+1				; reset animation pointer
 	STY anim
-; *** maybe copy first sprite into hidden screen?
+; copy first sprite into hidden screen
 	JSR draw_frame
 
-; *** should play initial music here (TBD)
+; play initial music here
+intro:
+		LDY mus_pt			; get offset to current note
+		LDX i_dur, Y		; get duration
+			BEQ mus_end		; zero is end of score, go for animation
+		LDA i_freq, Y		; get pitch
+		BNE note_pb			; is audible note, play it back
+			JSR rest		; otherwise is rest
+			BEQ next_n		; no need for BRA
+note_pb:
+		JSR note			; play sound
+next_n:
+		INY
+		BNE intro			; continue intro, no need for BRA
 
 ; switch to standard screen
 	LDA #%00111000			; colour, RGB mode, SCREEN 3 as usual
@@ -215,19 +231,48 @@ wait_en
 
 	RTS
 
+; *** basic note play ***
+note:
+; *** X = length, A = freq. ***
+; *** X = 2*cycles-1        *** returns with N
+; *** tcyc = 16 A + 20      ***
+; ***     @1.536 MHz        ***
+		TAY					; determines frequency (2)
+		STX IOBeep			; send X's LSB to beeper, <=127 is max. 64 cycles! (4)
+n_tim:
+			STY temp		; small delay for 1.536 MHz! (3)
+			DEY				; count pulse length (y*2)
+			BNE n_tim		; stay this way for a while (y*3-1)
+		DEX					; toggles even/odd number (2)
+		BPL note			; new half cycle, beeper ends off (3)
+	RTS
+
+; *** ** rest routine ** ***
+; ***     X = length     *** returns with Z
+; *** X 1.33 ms @ 1.536M ***
+rest:
+		LDY #0				; this resets the counter
+r_loop:
+			STY bp_dly		; delay for 1.536 MHz
+			INY
+			BNE r_loop		; this will take ~ 1.33 ms
+		DEX					; continue
+		BNE rest
+	RTS
+
 ; non-existent interrupt routine (this far)
 intexit:
 	RTI
 
-; ******************
-; *** stars code *** TBD
-; ******************
+; **********************
+; *** star templates ***
+; **********************
 ; assume A is $FF to set, $88 to clear!
 ; adjust base accordingly
-base = 0	; placeholder
 
+base = 0	; placeholder
 -screen3=$6680
-; star routines
+
 star_0:
 -base=$240+$3C
 	STA screen3+base		; (0,0), reference upper left
@@ -413,7 +458,7 @@ star_5b:
 	STA screen3+base+$343	; (3,13)
 	RTS
 
-; pointer table (leave first entry clear)
+; *** pointer table (leave first entry clear) ***
 star_tab:
 	.word	none			; entry 0 is free
 	.word	star_0
@@ -429,37 +474,47 @@ star_tab:
 	.word	star_4b			; 22
 	.word	star_5b			; 24
 
+; ***********************
+; *** data structures ***
+; ***********************
 ; clear list
 cl_lst:
-	.byt	 0, 0, 0, 0, 0, 0, 0, 0	; not needed for 12-frame version, but won't harm anyway
-	.byt	 2, 0, 0, 0, 0, 0, 0, 0
-	.byt	 4, 0, 0, 0, 0, 0, 0, 0
-	.byt	 6, 0, 0, 0, 0, 0, 0, 0
-	.byt	 8,20, 0, 0, 0, 0, 0, 0
-	.byt	10, 0, 0, 0, 0, 0, 0, 0
+	.byt	 0, 0, 0, 0, 0, 0, 0,$0	; every row (frame) is 0-terminated
+	.byt	 2, 0, 0, 0, 0, 0, 0,$0
+	.byt	 4, 0, 0, 0, 0, 0, 0,$0
+	.byt	 6, 0, 0, 0, 0, 0, 0,$0
+	.byt	 8, 0, 0, 0, 0, 0, 0,$0
+	.byt	10, 0, 0, 0, 0, 0, 0,$0
 	.dsb	16, 0			; complete 8 rows for each 6-frame bank
-	.byt	12,14, 0, 0, 0, 0, 0, 0
-	.byt	16, 0, 0, 0, 0, 0, 0, 0
-	.byt	18, 0, 0, 0, 0, 0, 0, 0
-	.byt	20, 0, 0, 0, 0, 0, 0, 0
-	.byt	22, 0, 0, 0, 0, 0, 0, 0
-	.byt	24, 0, 0, 0, 0, 0, 0, 0
+	.byt	12,14, 0, 0, 0, 0, 0,$0
+	.byt	16, 0, 0, 0, 0, 0, 0,$0
+	.byt	18, 0, 0, 0, 0, 0, 0,$0
+	.byt	20, 0, 0, 0, 0, 0, 0,$0
+	.byt	22, 0, 0, 0, 0, 0, 0,$0
+	.byt	24, 0, 0, 0, 0, 0, 0,$0
 
 ; draw list
 dr_lst:
-	.byt	 2, 0, 0, 0, 0, 0, 0, 0
-	.byt	 4, 0, 0, 0, 0, 0, 0, 0
-	.byt	 6, 0, 0, 0, 0, 0, 0, 0
-	.byt	 8, 0, 0, 0, 0, 0, 0, 0
-	.byt	10, 0, 0, 0, 0, 0, 0, 0
-	.byt	12,14, 0, 0, 0, 0, 0, 0
+	.byt	 2, 0, 0, 0, 0, 0, 0,$0
+	.byt	 4, 0, 0, 0, 0, 0, 0,$0
+	.byt	 6, 0, 0, 0, 0, 0, 0,$0
+	.byt	 8, 0, 0, 0, 0, 0, 0,$0
+	.byt	10, 0, 0, 0, 0, 0, 0,$0
+	.byt	12,14, 0, 0, 0, 0, 0,$0
 	.dsb	16, 0			; complete 8 rows for each 6-frame bank
-	.byt	16, 0, 0, 0, 0, 0, 0, 0
-	.byt	18, 0, 0, 0, 0, 0, 0, 0
-	.byt	20, 0, 0, 0, 0, 0, 0, 0
-	.byt	22, 0, 0, 0, 0, 0, 0, 0
-	.byt	24, 0, 0, 0, 0, 0, 0, 0
-	.byt	 0, 0, 0, 0, 0, 0, 0, 0
+	.byt	16, 0, 0, 0, 0, 0, 0,$0
+	.byt	18, 0, 0, 0, 0, 0, 0,$0
+	.byt	20, 0, 0, 0, 0, 0, 0,$0
+	.byt	22, 0, 0, 0, 0, 0, 0,$0
+	.byt	24, 0, 0, 0, 0, 0, 0,$0
+	.byt	 0, 0, 0, 0, 0, 0, 0,$0
+
+; *** music scores ***
+i_dur:
+	.byt	255, $0	; duration list, placeholder (0-terminated)
+i_freq:
+	.byt	0		; pitch list, placeholder
+
 ; ************************
 ; *** hardware vectors ***
 ; ************************
