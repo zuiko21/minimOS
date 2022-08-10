@@ -1,6 +1,6 @@
 ; nyan cat demo for Durango-X (or -S)
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220810-1326
+; last modified 20220810-1641
 
 ; *** usual definitions ***
 IO8attr	= $DF80				; video mode register
@@ -111,7 +111,7 @@ intro:
 			BEQ mus_end		; zero is end of score, go for animation
 		LDA i_note, Y		; get pitch
 		BNE note_pb			; is audible note, play it back
-			LDA #12			; base cycles for 32 ms rest
+			LDA #10			; base cycles for 32 ms rest
 rs_loop:
 				ASL				; times two
 				DEX
@@ -273,22 +273,42 @@ wait_sync:
 ; *** basic note play ***
 note:
 ; *** X = length, A = freq. ***
-; *** X = cycles (even)     *** returns with Z, X=0
-; *** tcyc = 10 A + 20      ***
+; *** X = cycles (HALF)     *** returns with Z, X=0
+; *** tcyc = 2 (5A + 12)    ***
 ; ***     @1.536 MHz        ***
 		TAY					; determines frequency (2)
 n_tim:
 			DEY				; count pulse length (y*2)
 			BNE n_tim		; stay this way for a while (y*3-1)
-		DEX					; toggles even/odd number (2)
-		STX IOBeep			; send X's LSB to beeper (4)
-		STY temp			; equalising delay (3)
+		LDY #1
+		STY IOBeep			; toggle beeper hi (2+4)
+		NOP
+		STY temp			; equalising delay (2+3)
+		TAY
 n_tim2:
 			DEY				; count pulse length (y*2)
 			BNE n_tim2		; stay this way for a while (y*3-1)
+		LDY #0
+		STY IOBeep			; toggle beeper lo (2+4)
+		NOP
+		STY temp			; equalising delay (2+3)
+		TAY
+n_tim3:
+			DEY				; count pulse length (y*2)
+			BNE n_tim3		; stay this way for a while (y*3-1)
+		LDY #1
+		STY IOBeep			; toggle beeper hi (2+4)
+		NOP
+		STY temp			; equalising delay (2+3)
+		TAY
+n_tim4:
+			DEY				; count pulse length (y*2)
+			BNE n_tim4		; stay this way for a while (y*3-1)
+		LDY #0
+		STY IOBeep			; toggle beeper lo (2+4)
 		DEX					; toggles even/odd number (2)
-		STX IOBeep			; send X's LSB to beeper (4)
-		BNE note			; new half cycle, beeper ends off (3)
+		BNE note			; new cycle, beeper ends off (3)
+n_exit:
 	RTS
 
 ; *** ** rest routine ** ***
@@ -567,11 +587,11 @@ m_freq:
 ; *** musical data ***
 ; conversion from chromatic scale (C#5-E7) to frequency (actually period) (first entry not used)
 c2freq:
-	.byt	$FF, 137, 129, 121, 115, 108, 102, 96, 90, 85, 80, 76, 71, 67, 63, 60, 56, 53, 50, 47, 44
-	.byt	 42,  39,  37,  35,  33,  31,  29, 27	; these for intro only
+	.byt	$FF, 137, 129, 121, 115, 108, 102, 96, 90, 85, 80, 75, 71, 67, 63, 59, 56, 53, 50, 47, 44
+	.byt	 41,  39,  37,  35,  33,  31,  29, 27	; these for intro only
 ; lenght of each pitch to make ~32 ms notes
 m_cyc:
-	.byt	0				; cycles per note, placeholder
+	.byt	$FF,  9, 9, 10, 10, 10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 28, 30, 31, 33, 35, 37, 39, 42	; pair of cycles per note for ~32 ms
 ; ************************
 ; *** hardware vectors ***
 ; ************************
