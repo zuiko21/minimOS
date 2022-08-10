@@ -1,6 +1,6 @@
 ; nyan cat demo for Durango-X (or -S)
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220809-2256
+; last modified 20220810-1326
 
 ; *** usual definitions ***
 IO8attr	= $DF80				; video mode register
@@ -107,13 +107,29 @@ blue:
 ; play initial music here
 intro:
 		LDY mus_pt			; get offset to current note
-		LDX i_dur, Y		; get duration
+		LDX i_dur, Y		; get duration (log scale, 2=semiquaver, 3=quaver etc)
 			BEQ mus_end		; zero is end of score, go for animation
-		LDA i_freq, Y		; get pitch
+		LDA i_note, Y		; get pitch
 		BNE note_pb			; is audible note, play it back
+			LDA #12			; base cycles for 32 ms rest
+rs_loop:
+				ASL				; times two
+				DEX
+				BNE rs_loop
+			TAX					; actual duration
 			JSR rest		; otherwise is rest
 			BEQ next_n		; no need for BRA
 note_pb:
+		TAY					; use chromatic note as index
+		LDA c2freq, Y		; convert to frequency
+		TAY					; save period!
+		LDA m_cyc, Y		; get base cycles for this note
+len_loop:
+			ASL				; times two
+			DEX
+			BNE len_loop
+		TAX					; actual duration
+		TYA					; retrieve pitch
 		JSR note			; play sound
 next_n:
 		INC mus_pt			; next note EEEEEEK
@@ -129,7 +145,7 @@ mus_end:
 ; *** main loop ***
 ; *****************
 loop:
-; almost TWO frames (~35 ms) are devoted to audio, then the next one for video rendering
+; almost TWO frames (~32 ms) are devoted to audio, then the next one for video rendering
 		LDY mus_pt			; get offset to current note
 		LDA m_freq, Y		; get pitch
 		BPL m_cont			; negative pitch at end of list
@@ -257,29 +273,34 @@ wait_sync:
 ; *** basic note play ***
 note:
 ; *** X = length, A = freq. ***
-; *** X = 2*cycles-1        *** returns with N
-; *** tcyc = 18 A + 20      ***
+; *** X = cycles (even)     *** returns with Z, X=0
+; *** tcyc = 10 A + 20      ***
 ; ***     @1.536 MHz        ***
 		TAY					; determines frequency (2)
-		STX IOBeep			; send X's LSB to beeper, <=127 is max. 64 cycles! (4)
 n_tim:
-			STY temp		; small delay for 1.536 MHz! (3)
-			NOP				; a bit more delay! (2)
 			DEY				; count pulse length (y*2)
 			BNE n_tim		; stay this way for a while (y*3-1)
 		DEX					; toggles even/odd number (2)
-		BPL note			; new half cycle, beeper ends off (3)
+		STX IOBeep			; send X's LSB to beeper (4)
+		STY temp			; equalising delay (3)
+n_tim2:
+			DEY				; count pulse length (y*2)
+			BNE n_tim2		; stay this way for a while (y*3-1)
+		DEX					; toggles even/odd number (2)
+		STX IOBeep			; send X's LSB to beeper (4)
+		BNE note			; new half cycle, beeper ends off (3)
 	RTS
 
 ; *** ** rest routine ** ***
-; ***     X = length     *** returns with Z
-; *** X 1.33 ms @ 1.536M ***
+; ***     X = length     *** returns with Z, X=0
+; *** X 3.2 ms @ 1.536M ***
 rest:
 		LDY #0				; this resets the counter
 r_loop:
-			STY temp		; delay for 1.536 MHz
+			NOP
+			JSR none		; delay at 1.536 MHz
 			INY
-			BNE r_loop		; this will take ~ 1.33 ms
+			BNE r_loop		; this will take ~ 3.2 ms
 		DEX					; continue
 		BNE rest
 	RTS
@@ -535,13 +556,20 @@ dr_lst:
 ; *** music scores ***
 ; intro music
 i_dur:
-	.byt	127, 127, $0	; duration list, placeholder (0-terminated)
-i_freq:
-	.byt	0, 0			; pitch list, placeholder
+	.byt	 2,  2,  2,  2,	 2,  2,  2,  2,	 2,  2,  2,  2,	 2,  2,  2,  2
+	.byt	 2,  2,  2,  2,	 2,  2,  3,		 2,  2,  2,  2,	 2,  2,  2,  2,	$0	; duration list, placeholder (0-terminated)
+i_note:
+	.byt	15, 16, 18,  0,	23, 16, 15, 16,	18, 23, 27, 28,	27, 22, 23,  0	; chromatic note list
+	.byt	18,  0, 15, 16,	18,  0, 23,		25, 22, 23, 25,	28, 27, 28, 25
 ; music during animation
 m_freq:
-	.byt	0, $FF			; negative is end of list, placeholder
-; lenght of each pitch to make ~35 ms notes
+	.byt	0, $FF			; chromatic indices, zero is rest, negative is end of list, placeholder
+; *** musical data ***
+; conversion from chromatic scale (C#5-E7) to frequency (actually period) (first entry not used)
+c2freq:
+	.byt	$FF, 137, 129, 121, 115, 108, 102, 96, 90, 85, 80, 76, 71, 67, 63, 60, 56, 53, 50, 47, 44
+	.byt	 42,  39,  37,  35,  33,  31,  29, 27	; these for intro only
+; lenght of each pitch to make ~32 ms notes
 m_cyc:
 	.byt	0				; cycles per note, placeholder
 ; ************************
