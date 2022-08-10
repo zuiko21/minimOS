@@ -618,8 +618,10 @@ ok_l:
 		STA $785C, X
 		DEX
 		BPL ok_l			; note offset-avoiding BPL
+	LDA #$3C				; turn on extra LED
+	STA IO8mode
 all_ok:
-	BMI all_ok				; final lock (X=$FF)
+	JMP all_ok				; final lock (X=$FF)
 
 ; *********************
 ; *** panic routine ***
