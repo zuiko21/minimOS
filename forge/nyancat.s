@@ -573,25 +573,39 @@ dr_lst:
 	.byt	24, 0, 0, 0, 0, 0, 0,$0
 	.byt	 0, 0, 0, 0, 0, 0, 0,$0
 
+; ********************
 ; *** music scores ***
-; intro music
+; ********************
+
+; * intro music *
 i_dur:
+; duration list, placeholder (0-terminated)
 	.byt	 2,  2,  2,  2,	 2,  2,  2,  2,	 2,  2,  2,  2,	 2,  2,  2,  2
-	.byt	 2,  2,  2,  2,	 2,  2,  3,		 2,  2,  2,  2,	 2,  2,  2,  2,	$0	; duration list, placeholder (0-terminated)
+	.byt	 2,  2,  2,  2,	 2,  2,  3,		 2,  2,  2,  2,	 2,  2,  2,  2,	$0
 i_note:
-	.byt	15, 16, 18,  0,	23, 16, 15, 16,	18, 23, 27, 28,	27, 22, 23,  0	; chromatic note list
+; chromatic note list
+	.byt	15, 16, 18,  0,	23, 16, 15, 16,	18, 23, 27, 28,	27, 22, 23,  0
 	.byt	18,  0, 15, 16,	18,  0, 23,		25, 22, 23, 25,	28, 27, 28, 25
-; music during animation
+
+; * music during animation *
 m_freq:
 	.byt	0, $FF			; chromatic indices, zero is rest, negative is end of list, placeholder
+
+; ********************
 ; *** musical data ***
+; ********************
 ; conversion from chromatic scale (C#5-E7) to frequency (actually period) (first entry not used)
 c2freq:
-	.byt	$FF, 137, 129, 121, 115, 108, 102, 96, 90, 85, 80, 75, 71, 67, 63, 59, 56, 53, 50, 47, 44
-	.byt	 41,  39,  37,  35,  33,  31,  29, 27	; these for intro only
-; lenght of each pitch to make ~32 ms notes
+	.byt	$FF, 137, 129, 121, 115, 108, 102, 96, 90
+	.byt		  85,  80,  75,  71,  67,  63, 59, 56
+	.byt		  53,  50,  47,  44,  41,  39, 37, 35
+	.byt 		  33,  31,  29,  27
+; lenght (pair of cycles) of each pitch to make ~32 ms notes
 m_cyc:
-	.byt	$FF,  9, 9, 10, 10, 10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 28, 30, 31, 33, 35, 37, 39, 42	; pair of cycles per note for ~32 ms
+	.byt	$FF,   8,   9,   9,  10,  11,  11, 12, 13
+	.byt		  14,  14,  15,  16,  17,  18, 20, 21
+	.byt		  22,  23,  24,  26,  28,  29, 31, 32
+	.byt		  34,  36,  39,  41
 ; ************************
 ; *** hardware vectors ***
 ; ************************
