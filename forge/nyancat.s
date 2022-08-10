@@ -1,6 +1,6 @@
 ; nyan cat demo for Durango-X (or -S)
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220810-1641
+; last modified 20220811-0038
 
 ; *** usual definitions ***
 IO8attr	= $DF80				; video mode register
@@ -122,14 +122,14 @@ rs_loop:
 note_pb:
 		TAY					; use chromatic note as index
 		LDA c2freq, Y		; convert to frequency
-		TAY					; save period!
+		PHA					; save pitch! EEEEEEEK
 		LDA m_cyc, Y		; get base cycles for this note
 len_loop:
 			ASL				; times two
 			DEX
 			BNE len_loop
 		TAX					; actual duration
-		TYA					; retrieve pitch
+		PLA					; retrieve pitch
 		JSR note			; play sound
 next_n:
 		INC mus_pt			; next note EEEEEEK
