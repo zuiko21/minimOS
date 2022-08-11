@@ -165,6 +165,8 @@ loop:
 		BEQ m_play 			; if the end of rest, go playing
 			BRA end_r
 m_play:
+		LDA #$3C
+		STA IO8attr			; EXPERIMENTAL, turn on white LED when not in rest
 		LDY mus_pt			; get offset to current note
 		LDA m_note, Y		; get chromatic pitch
 		BNE m_cont			; zero at end of list
@@ -174,6 +176,8 @@ m_play:
 m_cont:
 		BPL m_pb			; is audible note, play it back
 			STA rest_f		; otherwise set remaining frames and exit
+			LDA #$38
+			STA IO8attr			; EXPERIMENTAL, turn off white LED while in rest
 			BRA end_r
 m_pb:
 		TAY					; use as index
@@ -182,7 +186,6 @@ m_pb:
 		BRA end_note
 end_r:
 		JSR wait_frame		; wait for the approximate length of sound
-		JSR wait_frame
 end_note:
 	INC mus_pt				; next note EEEEEEK
 
