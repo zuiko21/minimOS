@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b4
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220110-2240
+; last modified 20220811-0949
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -25,10 +25,10 @@
 ;		14	= inverse video
 ;		15	= true video
 ;		16	= DLE, do not execute next control char
-;		17	= cursor on (no cursor yet?) actually show current position for a split second
+;		17	= cursor on [NEW]
 ;		18	= set ink colour (MOD 16 for colour mode, hires will set it as well but will be ignored)*
-;		19	= cursor off (no cursor yet, simply IGNORED)
-;		20	= set paper colour (ditto)*
+;		19	= cursor off [NEW]
+;		20	= set paper colour (same as INK colour)*
 ;		21	= home without clear
 ;		23	= set cursor position**
 ;		31	= back to text mode (simply IGNORED)
@@ -59,13 +59,14 @@
 
 ; *** firmware variables to be reset upon FF ***
 ; fw_ccol.p (array 00.01.10.11 of two-pixel combos, will store ink & paper)
-; * NEW* FF will reconstruct it from [1] (PAPER-INK)
+;	FF will reconstruct it from [1] (PAPER-INK)
 ; fw_ciop.w (upper scan of cursor position)
-; fw_fnt.w (new, pointer to relocatable 2KB font file)
+; fw_fnt.w (pointer to relocatable 2KB font file)
 ; fw_mask (for inverse/emphasis mode)
-; fw_cbin (binary or multibyte mode)
-; fw_vbot (new, first VRAM page, allows screen switching upon FF)
-; fw_vtop (new, first non-VRAM page, allows screen switching upon FF)
+; fw_cbin (binary or multibyte mode, must be reset prior to first use)
+; fw_vbot (first VRAM page, allows screen switching upon FF)
+; fw_vtop (first non-VRAM page, allows screen switching upon FF)
+; fw_scur ([NEW] flag D7=cursor ON)
 
 ; first two modes are directly processed, note BM_DLE is the shifted X
 #define	BM_CMD		0
@@ -195,12 +196,18 @@ cpc_rend:					; end segment has not changed, takes 6x11 + 2x24 - 1, 113t (66+46-
 			INC cio_pt+1	; next page for the last 4 raster (5)
 			DEC fw_chalf	; only one half done? go for next and last (*6+3)
 		BNE cpc_do
-; advance screen pointer before exit, no need for jump if cursor-right is just here!
+; advance screen pointer before exit, no need for jump if cursor-right is just here...
+; ...but should NOT delete (XOR) previous cursor, as has disappeared while printing
+	BEQ do_cur_r			; advance cursor without clearing previous
 
 ; **********************
 ; *** cursor advance *** placed here for convenience of printing routine
 ; **********************
 cur_r:
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_cur_r
+		JSR draw_cur		; ...must delete previous one
+do_cur_r:
 	LDA #1					; base character width (in bytes) for hires mode
 	BIT IO8attr				; check mode
 	BMI rcu_hr				; already OK if hires
@@ -233,6 +240,10 @@ wr_hr:
 	TYA						; prepare mask and guarantee Y>1 for auto LF
 	AND fw_ciop				; are scanline bits clear?
 		BNE cn_begin		; nope, do NEWLINE
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_ckw
+		JSR draw_cur		; ...must draw new one
+do_ckw:
 	_DR_OK					; continue normally otherwise (better clear C)
 
 ; ************************
@@ -248,6 +259,10 @@ cur_l:
 ; colour mode subtracts 4, but only 1 if in hires
 ; only if LSB is not zero, assuming non-corrupted scanline bits
 ; could use N flag after subtraction, as clear scanline bits guarantee its value
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_cur_l
+		JSR draw_cur		; ...must delete previous one
+do_cur_l:
 	LDA #1					; hires decrement (these 9 bytes are the same as cur_r)
 	BIT IO8attr
 	BMI cl_hr				; right mode for the decrement EEEEEK
@@ -260,6 +275,10 @@ cl_hr:
 	BMI cl_end				; ...ignore operation if went negative
 		STA fw_ciop			; update pointer
 cl_end:
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_cle
+		JSR draw_cur		; ...must draw new one
+do_cle:
 	_DR_OK					; C known to be set, though
 
 cn_newl:
@@ -267,6 +286,10 @@ cn_newl:
 		TAY					; Y=26>1, thus allows full newline
 cn_begin:
 ; do CR... but keep Y
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_cr
+		JSR draw_cur		; ...must delete previous one
+do_cr:
 ; note address format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
 ; actually is a good idea to clear scanline bits, just in case
 	_STZA fw_ciop			; all must clear! helps in case of tab wrapping too (eeeeeeeeek...)
@@ -289,10 +312,15 @@ cn_lmok:
 	DEY						; LF needed?
 	BEQ cn_ok				; not if Y was 1 (use BMI if Y was zeroed for LF)
 ; *** will do LF if Y was >1 ONLY ***
+	BNE do_lf				; [NEW]
 cn_lf:
 ; do LF, adds 1 (hires) or 2 (colour) to MSB
 ; even simpler, INCrement MSB once... or two if in colour mode
 ; hopefully highest scan bit is intact!!!
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_lf
+		JSR draw_cur		; ...must delete previous one
+do_lf:
 	INC fw_ciop+1			; increment MSB accordingly, this is OK for hires
 	BIT IO8attr			; was it in hires mode?
 	BMI cn_hmok
@@ -337,12 +365,20 @@ sc_loop:
 	SBC #1					; with C set (hires) this subtracts 1, but 2 if C is clear! (colour)
 	STA fw_ciop+1
 cn_ok:
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_cnok
+		JSR draw_cur		; ...must draw new one
+do_cnok:
 	_DR_OK					; note that some code might set C
 
 cn_tab:
 ; advance column to the next 8x position (all modes)
 ; this means adding 8 to LSB in hires mode, or 32 in colour mode
 ; remember format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_tab
+		JSR draw_cur		; ...must delete previous one
+do_tab:
 	LDA #%11111000			; hires mask first
 	STA fw_ctmp				; store temporarily
 	LDA #8					; lesser value in hires mode
@@ -389,7 +425,7 @@ cio_bs:
 	LDX #0					; last index offset should be 0 for hires!
 	TXA						; hires takes no account of paper colour
 	LDY #31					; this is what must be added to Y each scanline, in hires
-	BIT IO8attr			; check mode
+	BIT IO8attr				; check mode
 	BMI bs_hr
 		LDA fw_ccol			; this is two pixels of paper colour
 		LDX #3				; last index offset per scan (colour)
@@ -419,6 +455,10 @@ bs_scw:
 
 cio_up:
 ; cursor up, no big deal, will stop at top row (NMOS savvy, always 23b and 39t)
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_cup
+		JSR draw_cur		; ...must delete previous one
+do_cup:
 	LDA IO8attr				; check mode
 	ROL						; now C is set in hires!
 	PHP						; keep for later?
@@ -432,6 +472,10 @@ cio_up:
 		ORA fw_vbot			; EEEEEEK must complete pointer address (5b, 6t)
 		STA fw_ciop+1
 cu_end:
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_cu_end
+		JSR draw_cur		; ...must draw new one
+do_cu_end:
 	_DR_OK					; ending this with C set is a minor nitpick, must reset anyway
 
 ; FF, clear screen AND intialise values!
@@ -488,6 +532,10 @@ sc_clr:
 	LDX cio_pt+1			; but must check variable limits!
 	CPX fw_vtop
 		BNE sc_clr
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_ff
+		JSR draw_cur		; ...must draw new one, as the one from home was cleared
+do_ff:
 	RTS
 
 ; SO, set inverse mode
@@ -508,33 +556,38 @@ md_dle:
 	RTS
 
 cio_cur:
-; XON, we have no cursor, but show its position for a moment
-	LDY fw_ciop				; get current position pointer
-	LDX fw_ciop+1
-	STY cio_pt
-	LDY #224				; offset for last scanline at cursor position... in hires
-	BIT IO8attr				; are we in colour mode? that offset won't be valid!
-	BMI ccur_ok				; hires mode, all OK
-		INX					; otherwise, must advance pointer MSB
-		LDY #192			; new LSB offset
-ccur_ok:
-	STX cio_pt+1			; pointer complete
-	JSR xon_inv				; invert current contents (will return to caller the second time!)
-	LDX #5					; 5 frames (0.1s)
-xon_del:
-			BIT IO8blk		; check blanking
-			BVS xon_del		; in case we are already blanking
-xon_wait:
-			BIT IO8blk		; check blanking
-			BVC xon_wait	; wait for it
-		DEX					; next frame
-		BNE xon_del
-xon_inv:
-	LDA (cio_pt), Y			; revert to original
-	EOR #$FF
-	STA (cio_pt), Y
+; XON, we now have cursor! [NEW]
+	LDA #128				; flag for cursor on
+#ifndef	NMOS
+	TSB fw_scur				; check previous flag (and set it now)
+#else
+	BIT fw_scur
+	PHP
+	ORA fw_scur
+	STA fw_scur
+	PLP
+#endif
+	BNE ignore				; if was set, shouldn't draw cursor again
+		JSR draw_cur
 ignore:
 	RTS						; *** note generic exit ***
+
+cio_curoff:
+; XOFF, disable cursor [NEW]
+#ifndef	NMOS
+	LDA #128				; flag for cursor on
+	TRB fw_scur				; check previous flag (and clear it now)
+	BNE ignore				; if was set, shouldn't draw cursor again
+#else
+	LDA fw_scur
+	PHP
+	AND #127
+	STA fw_scur
+	PLP
+	BPL ignore
+#endif
+		JSR draw_cur
+	RTS
 
 md_ink:
 ; just set binary mode for receiving ink! *** could use some tricks to unify with paper mode setting
@@ -554,6 +607,10 @@ cio_home:
 	LDA fw_vbot				; current screen setting!
 	STY fw_ciop				; just set pointer
 	STA fw_ciop+1
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_home
+		JSR draw_cur		; ...must draw new one
+do_home:
 	RTS						; C is clear, right?
 
 md_atyx:
@@ -561,6 +618,31 @@ md_atyx:
 	LDX #BM_ATY				; next byte will set Y and then expect X for the next one
 	STX fw_cbin				; set new mode, called routine will set back to normal
 	RTS
+
+draw_cur:
+; draw (XOR) cursor [NEW]
+	LDX fw_ciop+1			; get cursor position
+	LDY fw_ciop
+	STY cio_pt				; set pointer LSB (common)
+	BIT IO8attr				; check screen mode
+	BPL dc_col				; skip if in colour mode
+		STX cio_pt+1		; set pointer MSB
+		LDY #224			; seven rasters down
+		LDX #1				; single byte cursor
+		BNE dc_loop			; no need for BRA
+dc_col:
+	INX						; this goes into next page (4 rasters down)
+	STX cio_pt+1			; complete pointer
+	LDY #192				; 3 rasters further down
+	LDX #4					; bytes per char raster
+dc_loop:
+		LDA (cio_pt), Y		; get screen data...
+		EOR #$FF			; ...invert it...
+		STA (cio_pt), Y		; ...and update it
+		INY					; next byte in raster
+		DEX
+		BNE dc_loop
+	RTS						; should I clear C?
 
 ; *******************************
 ; *** some multibyte routines ***
@@ -623,6 +705,12 @@ md_std:
 	RTS
 
 cn_sety:					; 6= Y to be set, advance mode to 8
+	PHA						; eeeeeek [NEW]
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_sety
+		JSR draw_cur		; ...must delete previous one
+do_sety:
+	PLA						; [NEW]
 	JSR coord_ok			; common coordinate check as is a square screen
 #ifdef	SAFE
 	LDX fw_vbot
@@ -672,6 +760,10 @@ do_atx:
 	CLC						; not necessarily clear in hires?
 	ADC fw_vbot
 	STA fw_ciop+1
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_atyx
+		JSR draw_cur		; ...must draw new one
+do_atyx:
 	_BRA md_std
 
 ; **********************
@@ -714,9 +806,9 @@ cio_ctl:
 	.word	cn_so			; 14, inverse
 	.word	cn_si			; 15, true video
 	.word	md_dle			; 16, DLE, set flag
-	.word	cio_cur			; 17, show cursor position
+	.word	cio_cur			; 17, show cursor
 	.word	md_ink			; 18, set ink from next char
-	.word	ignore			; 19, ignore XOFF (as there is no cursor to hide)
+	.word	cio_curoff		; 19, hide cursor
 	.word	md_ppr			; 20, set paper from next char
 	.word	cio_home		; 21, home (what is done after CLS)
 	.word	cio_prn			; 22 ***
