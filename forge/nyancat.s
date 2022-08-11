@@ -603,17 +603,19 @@ dr_lst:
 
 ; * intro music *
 i_dur:
-; duration list, placeholder (0-terminated)
+; duration list (0-terminated)
 	.byt	 2,  2,  2,  2,	 2,  2,  2,  2,	 2,  2,  2,  2,	 2,  2,  2,  2
 	.byt	 2,  2,  2,  2,	 2,  2,  3,		 2,  2,  2,  2,	 2,  2,  2,  2,	$0
 i_note:
 ; chromatic note list
-	.byt	15, 16, 18,  0,	23, 16, 15, 16,	18, 23, 27, 28,	27, 22, 23,  0
-	.byt	18,  0, 15, 16,	18,  0, 23,		25, 22, 23, 25,	28, 27, 28, 25
+	.byt	 3,  4,  6,  0,	11,  4,  3,  4,	 6, 11, 15, 16,	15, 10, 11,  0
+	.byt	 6,  0,  3,  4,	 6,  0, 11,		13, 10, 11, 13,	16, 15, 16, 13
 
 ; * music during animation *
 m_note:
-	.byt	15, 16, 18,254,	23, 16, 15, 16,	18, 23, 27, 28,	27, 22, 23, $0	; chromatic indices, zero is END, negative is rest counter
+; chromatic indices, zero is END, negative is rest counter
+	.byt	
+	.byt	$0
 
 ; ********************
 ; *** musical data ***
