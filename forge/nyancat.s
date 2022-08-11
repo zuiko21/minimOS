@@ -1,6 +1,6 @@
 ; nyan cat demo for Durango-X (or -S)
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220811-0038
+; last modified 20220811-1116
 
 ; *** usual definitions ***
 IO8attr	= $DF80				; video mode register
@@ -22,9 +22,10 @@ anim	= ptr+2				; animation pointer, will increment by 2K
 org		= anim+2			; local copy of animation pointer
 togg12	= org+2				; switch between both 6-frame banks
 temp	= togg12+1			; temporary use, for cleanliness
-mus_pt	= temp+1
+mus_pt	= temp+1			; score cursor
+rest_f	= mus_pt+1			; remaining animation frames of rest
 
-_last	= mus_pt+1
+_last	= rest_f+1
 
 ; ********************
 ; *** ROM contents ***
@@ -75,6 +76,7 @@ start:
 	STY ptr					; set indirect pointer to clear screen
 	STY togg12				; clear frame bank switch
 	STY mus_pt				; reset music player cursor
+	STY rest_f				; and rest counter
 	TYA						; will fill the screen with zeroes
 cl_page:
 		STX ptr+1			; pointer complete after update
@@ -105,6 +107,12 @@ blue:
 	JSR draw_frame
 
 ; play initial music here
+; ** format for intro music **
+; log duration list @i_dur (2=semiquaver... 0=end)
+; chromatic notes @i_note (0=rest, 1..28=C#5-E7)
+; convert to loop iterations @c2freq (first entry free)
+; for proper timing, number of cycles/2 for ~32 ms play @m_cyc (same indices as @i_note)
+; rest takes 3.2 ms per iteration, like m_cyc shift according to i_dur
 intro:
 		LDY mus_pt			; get offset to current note
 		LDX i_dur, Y		; get duration (log scale, 2=semiquaver, 3=quaver etc)
@@ -146,25 +154,37 @@ mus_end:
 ; *****************
 loop:
 ; almost TWO frames (~32 ms) are devoted to audio, then the next one for video rendering
+; ** format for in-demo music **
+; chromatic notes @m_note (0=END, 1..28=C#5-E7, negative=REST)
+; each tone is always played ~32 ms according to m_cyc, longer notes are simulated with rests
+; the number of "animation frames" of silence is the negative pitch in two's-complement
+		LDX rest_f			; check any active rest
+		BPL m_play			; no longer negative, time to play
+			INX
+			STX rest_f		; one frame less of rest
+		BEQ m_play 			; if the end of rest, go playing
+			BRA end_r
+m_play:
 		LDY mus_pt			; get offset to current note
-		LDA m_freq, Y		; get pitch
-		BPL m_cont			; negative pitch at end of list
+		LDA m_note, Y		; get chromatic pitch
+		BNE m_cont			; zero at end of list
 			STZ mus_pt
 			JMP loop		; get first note again
 ;			JMP start		; *** OK?
 m_cont:
-		BNE m_pb			; is audible note, play it back
-			JSR wait_frame
-			JSR wait_frame
+		BPL m_pb			; is audible note, play it back
+			STA rest_f		; otherwise set remaining frames and exit
 			BRA end_r
 m_pb:
 		TAY					; use as index
 		LDX m_cyc, Y		; get length for this particular frequency (~35 ms length)
 		JSR note			; play sound
+		BRA end_note
 end_r:
-		INC mus_pt			; next note EEEEEEK
+		JSR wait_frame		; wait for the approximate length of sound
+		JSR wait_frame
 end_note:
-	JSR wait_frame			; delay animation at 1/3 frame rate
+	INC mus_pt				; next note EEEEEEK
 
 ; advance to next sprite, resetting if needed
 	LDA anim+1				; get frame page
@@ -184,6 +204,7 @@ nowrap:
 
 ; draw animation frame after stars
 	JSR draw_frame			; show me now!
+	JSR wait_frame			; delay animation at 1/3 frame rate
 
 ; anything else?
 	JMP loop				; in aeternum
@@ -588,8 +609,8 @@ i_note:
 	.byt	18,  0, 15, 16,	18,  0, 23,		25, 22, 23, 25,	28, 27, 28, 25
 
 ; * music during animation *
-m_freq:
-	.byt	0, $FF			; chromatic indices, zero is rest, negative is end of list, placeholder
+m_note:
+	.byt	15, 16, 18,254,	23, 16, 15, 16,	18, 23, 27, 28,	27, 22, 23, $0	; chromatic indices, zero is END, negative is rest counter
 
 ; ********************
 ; *** musical data ***
