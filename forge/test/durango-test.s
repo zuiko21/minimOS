@@ -1,6 +1,6 @@
 ; FULL test of Durango-X/S/R (ROMmable version)
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220805-1148
+; last modified 20220812-2250
 
 ;#define	NMOS	_NMOS
 
@@ -316,7 +316,7 @@ ro_4:
 ; ** why not add a video mode flags tester? **
 	LDX #0
 	STX posi				; will store unresponding bits
-	LDY IO8mode				; save previous mode
+;	LDY IO8mode				; save previous mode
 mt_loop:
 		STX IO8mode			; try setting this mode...
 		TXA
@@ -325,6 +325,7 @@ mt_loop:
 		STA posi			; ...storing differences
 		INX
 		BNE mt_loop
+	LDY #$38				; * restore usual video mode, extra LED off *
 	STY IO8mode				; back to original mode
 	LDX #7					; maximum bit offset
 mt_disp:
@@ -620,6 +621,13 @@ ok_l:
 		BPL ok_l			; note offset-avoiding BPL
 	LDA #$3C				; turn on extra LED
 	STA IO8mode
+
+; *** all checked OK, wait for NMI press to show delay adjust screen ***
+	LDX #>testcard
+	LDY #<testcard
+	STX fw_nmi+1			; set NMI vector to test card
+	STY fw_nmi
+
 all_ok:
 	JMP all_ok				; final lock (X=$FF)
 
@@ -650,6 +658,108 @@ fl_set:
 	STA IO8mode				; set inverse flag according to bit
 	TYA
 	BNE ploop				; A is NEVER zero
+
+testcard:
+; *** display test patter for video delay adjustment ***
+; minimal hardware init
+	LDA #$38				; systmp mode, true video, screen 3, RGB enabled, extra LED off!
+	STA IO8mode				; set hardware mode register
+; init variables
+	LDX #$60				; screen 3 address
+	LDY #0
+	STY sysptr				; set pointer
+	STX sysptr+1
+	TYA						; initial value is 0
+; clear screen, just in case
+clear:
+		STA (sysptr), Y
+		INY
+		BNE clear
+			INC sysptr+1
+		BPL clear
+	LDX #$60				; restore pointer
+	STX sysptr+1
+; finish init
+	LDA #%11110000			; white at MSB
+	STA systmp				; preset first ink systmp
+; pattern loop
+loop:
+		LDA systmp			; left pixel systmp
+		LDX #6				; six wide patterns... (2+4)
+lwide:
+			STA (sysptr), Y	; set this pattern
+			INY				; leave one or three blank bytes
+			INY
+			CPX #5			; within first half?
+			BCC lskip
+				INY			; skip three then
+				INY
+lskip:
+			DEX
+			BNE lwide
+tight:
+			STA (sysptr), Y	; set all bytes this way
+			INY
+			INX				; this counter was reset, now goes up
+			CPX #16			; middle of the pattern?
+			BNE top_t
+				LSR			; if so, shift to right pixel
+				LSR
+				LSR
+				LSR
+top_t:
+			CPX #32			; end of tight pattern?
+			BNE tight
+		LDX #6				; six wide patterns again
+rwide:
+			STA (sysptr), Y	; set this pattern
+			INY				; leave one or three blank bytes
+			INY
+			CPX #3			; within last half?
+			BCS rskip
+				INY			; skip three then
+				INY
+rskip:
+			DEX
+			BNE rwide
+		TYA					; check offset
+		BNE loop
+		INC sysptr+1		; next page is big chunks
+; enable delay test
+		LDA systmp			; get MSN
+		LSR					; turn into LSN
+		LSR
+		LSR
+		LSR
+		ORA systmp			; both pixels
+		LDY #31				; half line
+lhalf:
+			STA (sysptr), Y
+			DEY
+			BPL lhalf
+		LDY #64				; next raster to the left
+		STA (sysptr), Y
+		LDY #160			; right half, third raster
+rhalf:
+			STA (sysptr), Y
+			INY
+			CPY #192		; until end of raster
+			BNE rhalf
+		LDY #224			; middle of last raster
+		STA (sysptr), Y
+		INY
+		STA (sysptr), Y		; two bytes
+; change systmp and advance page
+		INC sysptr+1
+		LDY #0				; eeeeek
+		LDA systmp
+		SEC
+		SBC #$10			; eeeeeeek, it's MSN
+		STA systmp
+		BNE loop			; continue (black is not used)
+
+	JMP all_ok 
+
 test_end: 
 
 ; ********************************************
