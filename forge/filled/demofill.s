@@ -1,10 +1,11 @@
 ; Durango-X filled rectangles demo!
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220813-1714
+; last modified 202208115-0023
 
 #include "fill.s"
 seed	= $FF
 
+#define	MONDRIAN _MONDRIAN
 reset:
 	SEI
 	CLD
@@ -24,22 +25,26 @@ loop:
 
 ; set random seed
 randomize:
+#ifdef	MONDRIAN
 	LDX #$88
 	STX seed
 	INX
 	STX seed+1
-/*	LDA #0
+#else
+	LDA #1
 	STA x1
 	STA y1
-	LDA #2
+	LDA #3
 	STA x2
 	STA y2
 	LDA #0
-	STA col */
+	STA col
+#endif
 	RTS
 
 ; fill coordinates randomly
 random:
+#ifdef	MONDRIAN
 	JSR rnd
 	AND #127
 	STA x1
@@ -61,7 +66,7 @@ random:
 	ASL
 	ORA tmp
 	STA col
-/*
+#else
 	INC x1
 	INC y1
 	INC x1
@@ -86,7 +91,8 @@ within:
 		STA IO8attr
 		LDA #0
 col_ok:
-	STA col */
+	STA col
+#endif
 	RTS
 
 ; generate random number (TBD)
