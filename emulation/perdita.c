@@ -3,6 +3,18 @@
  * last modified 20220805-1010
  * */
 
+#define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
+#define BYTE_TO_BINARY(byte)  \
+  (byte & 0x80 ? '1' : '0'), \
+  (byte & 0x40 ? '1' : '0'), \
+  (byte & 0x20 ? '1' : '0'), \
+  (byte & 0x10 ? '1' : '0'), \
+  (byte & 0x08 ? '1' : '0'), \
+  (byte & 0x04 ? '1' : '0'), \
+  (byte & 0x02 ? '1' : '0'), \
+  (byte & 0x01 ? '1' : '0') 
+
+
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
@@ -515,6 +527,11 @@ void poke(word dir, byte v) {
 			else if(mem[0xDF94]==0x01) {
 				// Print ascii
 				printf("%c", mem[dir]);
+			}
+			// If binary mode enabled
+			else if(mem[0xDF94]==0x02) {
+				// Print binary
+				printf(BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(mem[dir]));
 			}
 			// If memory dump mode
 			else if(mem[0xDF94]==0xFD) {
