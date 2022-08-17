@@ -328,7 +328,7 @@ void run_emulation () {
 			it -= 6144;		// restore for next
 			sample_nr = it;	// see above
 /* generate audio sample */
-			
+			sample_audio(sample_nr, old_v);		// generate audio sample			
 /* get keypresses from SDL here, as this get executed every 4 ms */
 			vdu_read_keyboard();	// ***is it possible to read keys without initing graphics?
 /* generate periodic interrupt */ 
@@ -2721,13 +2721,13 @@ void audio_callback(void *user_data, Uint8 *raw_buffer, int bytes) {
 
 /* custom audio function */
 void sample_audio(int time, int value) {
-	int i;
+	int i, nt, ot;
 
 //	value = (value&1)?255:0;			// admisible sample values
 	if (time < old_t)	time += 6144;	// check wrap jitter
-	time >>= 5;							// divide by 32 (1536000 Hz CPU clock / 48000 Hz sample rate)
-	old_t >>= 5;
-	for (i=old_t; i<time; i++) {
+	nt = time >> 5;						// divide by 32 (1536000 Hz CPU clock / 48000 Hz sample rate)
+	ot = old_t >> 5;
+	for (i=ot; i<nt; i++) {
 		aud_buff[i%192] = old_v;		// fill buffer so far with previous value but I DO NOT LIKE THIS
 	}
 	old_v = value;
