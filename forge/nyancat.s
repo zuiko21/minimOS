@@ -129,27 +129,25 @@ intro:
 rs_loop:
 				ASL				; times two
 				DEX
-				BNE rs_loop
+				BPL rs_loop
 			TAX					; actual duration
 			JSR rest		; otherwise is rest
 			BEQ next_n		; no need for BRA
 note_pb:
 		TAY					; use chromatic note as index
-		LDA c2freq, Y		; convert to frequency
-		PHA					; save pitch! EEEEEEEK
 		LDA m_cyc, Y		; get base cycles for this note
 len_loop:
 			ASL				; times two
 			DEX
-			BNE len_loop
+			BPL len_loop
 		TAX					; actual duration
-		PLA					; retrieve pitch
+		LDA c2freq, Y		; convert note to frequency
 		JSR note			; play sound
 next_n:
 		INC mus_pt			; next note EEEEEEK
 		BNE intro			; continue intro, no need for BRA
 mus_end:
-	STX mus_pt				; reset pointer for main melody
+	STZ mus_pt				; reset pointer for main melody eeeeek
 
 ; switch to standard screen
 	LDA #%00111000			; colour, RGB mode, SCREEN 3 as usual
@@ -189,6 +187,7 @@ m_cont:
 m_pb:
 		TAY					; use as index
 		LDX m_cyc, Y		; get length for this particular frequency (~35 ms length)
+		LDA c2freq, Y		; convert note to frequency EEEEEEEEEK
 		JSR note			; play sound
 		LDX #255			; default rest between notes = 60 ms
 		STX rest_f
