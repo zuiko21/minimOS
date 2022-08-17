@@ -2049,7 +2049,7 @@ void illegal(byte s, byte op) {
 /* Initialize vdu display window */
 int init_vdu() {
 	//Initialize SDL
-	if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_JOYSTICK ) < 0 )
+	if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_AUDIO ) < 0 )
 	{
 		printf("SDL could not be initialized! SDL Error: %s\n", SDL_GetError());
 		return -1;
@@ -2115,6 +2115,15 @@ int init_vdu() {
 
 /* Close vdu display window */
 void close_vdu() {
+	SDL_CloseAudio();
+
+	// Close gamepads
+	for(int i=0; i<2 && i<SDL_NumJoysticks(); i++)
+	{
+		SDL_JoystickClose(sdl_gamepads[i]);
+		sdl_gamepads[i]=NULL;
+	}
+
 	//Destroy renderer
 	if(sdl_renderer!=NULL)
 	{
@@ -2129,13 +2138,7 @@ void close_vdu() {
 		sdl_window=NULL;
 	}
 
-	// Close gamepads
-	for(int i=0; i<2 && i<SDL_NumJoysticks(); i++)
-	{
-		SDL_JoystickClose(sdl_gamepads[i]);
-		sdl_gamepads[i]=NULL;
-	}
-
+	
 	// Close SDL
 	SDL_Quit();
 }
