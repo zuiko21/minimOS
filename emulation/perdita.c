@@ -80,6 +80,9 @@
 	SDL_Joystick *sdl_gamepads[2];
 	// Do not close GUI after program end
 	int keep_open = 0;
+/* global sound variables */
+	int sample_nr = 0;
+	SDL_AudioSpec want;
 
 /* ******************* */
 /* function prototypes */
@@ -148,7 +151,7 @@
 	void vdu_draw_color_pixel(word);
 	void vdu_draw_hires_pixel(word);
 	void draw_circle(SDL_Renderer*, int32_t, int32_t, int32_t);
-
+	void audio_callback(void *user_data, Uint8 *raw_buffer, int bytes);
 
 /* ************************************************* */
 /* ******************* main loop ******************* */
@@ -2049,7 +2052,7 @@ void illegal(byte s, byte op) {
 /* Initialize vdu display window */
 int init_vdu() {
 	//Initialize SDL
-	if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_JOYSTICK ) < 0 )
+	if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_AUDIO ) < 0 )
 	{
 		printf("SDL could not be initialized! SDL Error: %s\n", SDL_GetError());
 		return -1;
@@ -2106,15 +2109,51 @@ int init_vdu() {
 	}
 
     //Clear screen
-    SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xFF);
-    SDL_RenderClear(sdl_renderer);
-    SDL_RenderPresent(sdl_renderer);
+	SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xFF);
+	SDL_RenderClear(sdl_renderer);
+	SDL_RenderPresent(sdl_renderer);
+
+	// Initialize sound
+	want.freq = 48000; // number of samples per second
+	want.format = AUDIO_U8; // sample type (here: signed short i.e. 16 bit)
+	want.channels = 1; // only one channel
+	want.samples = 192; // buffer-size
+	want.callback = audio_callback; // function SDL calls periodically to refill the buffer
+	want.userdata = &sample_nr; // counter, keeping track of current sample number
+
+    SDL_AudioSpec have;
+	if(SDL_OpenAudio(&want, &have) != 0)
+	{
+		printf("Failed to open SDL audio! SDL Error: %s\n", SDL_GetError());
+		return -6;
+	}
+	if(want.format != have.format)
+	{
+		printf("Failed to setup SDL audio! SDL Error: %s\n", SDL_GetError());
+		return -7;
+	}
+
+	// Start audio playback
+	SDL_PauseAudio(0);
     
     return 0;
 }
 
 /* Close vdu display window */
 void close_vdu() {
+	// Stop audio
+	SDL_PauseAudio(1);
+
+	// Close audio module
+	SDL_CloseAudio();
+
+	// Close gamepads
+	for(int i=0; i<2 && i<SDL_NumJoysticks(); i++)
+	{
+		SDL_JoystickClose(sdl_gamepads[i]);
+		sdl_gamepads[i]=NULL;
+	}
+
 	//Destroy renderer
 	if(sdl_renderer!=NULL)
 	{
@@ -2129,13 +2168,7 @@ void close_vdu() {
 		sdl_window=NULL;
 	}
 
-	// Close gamepads
-	for(int i=0; i<2 && i<SDL_NumJoysticks(); i++)
-	{
-		SDL_JoystickClose(sdl_gamepads[i]);
-		sdl_gamepads[i]=NULL;
-	}
-
+	
 	// Close SDL
 	SDL_Quit();
 }
@@ -2664,6 +2697,15 @@ void draw_circle(SDL_Renderer * renderer, int32_t x, int32_t y, int32_t radius) 
             }
         }
     }
+}
 
+/* SDL audio call back function */
+void audio_callback(void *user_data, Uint8 *raw_buffer, int bytes) {
+    // Plaback buffer to fill up
+	Sint16 *buffer = (Sint16*)raw_buffer;
+	// Fill buffer with new audio to play
+	for(int i=0; i<bytes; i++) {
+		buffer[i] = 0xff*(i/10%2);
+	}
 }
 
