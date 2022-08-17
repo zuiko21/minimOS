@@ -1,6 +1,6 @@
 ; nyan cat demo for Durango-X (or -S)
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220811-1116
+; last modified 20220817-1234
 
 ; *** usual definitions ***
 IO8attr	= $DF80				; video mode register
@@ -38,25 +38,31 @@ _last	= rest_f+1
 ; all frames 90x42 pixels, as 2K-aligned there will be 158 free bytes in between (1890/frame)
 anim0:
 	.bin	0, $762, "../other/data/cataa"
+; 158 free bytes for some code (star templates?)
 	.dsb	$C800-*, $FF	; padding
 anim1:
 	.bin	0, $762, "../other/data/catab"
+; 158 free bytes for some code (star templates?)
 	.dsb	$D000-*, $FF	; padding
 anim2:
 	.bin	0, $762, "../other/data/catac"
+; 158 free bytes for some code (star templates?)
 	.dsb	$D800-*, $FF	; padding
 anim3:
 	.bin	0, $762, "../other/data/catad"
+; 158 free bytes for some code (star templates?)
 	.dsb	$E000-*, $FF	; padding, will skip I/O at $DFxx
 anim4:
 	.bin	0, $762, "../other/data/catae"
+; 158 free bytes for some code (star templates?)
 	.dsb	$E800-*, $FF	; padding
 anim5:
 	.bin	0, $762, "../other/data/cataf"
+; 158 free bytes for some code (star templates?)
 	.dsb	$F000-*, $FF	; padding
 
 ; ***********************
-; *** executable code ***
+; *** executable code *** at $F000
 ; ***********************
 start:
 ; usual 6502 stuff
@@ -158,6 +164,7 @@ loop:
 ; chromatic notes @m_note (0=END, 1..28=C#5-E7, negative=REST)
 ; each tone is always played ~32 ms according to m_cyc, longer notes are simulated with rests
 ; the number of "animation frames" of silence is the negative pitch in two's-complement
+; as each play/anim cycle takes ~60 ms, a default one-cycle rest makes semiquaver as default (tempo ~ 8 semiq/sec)
 		LDX rest_f			; check any active rest
 		BPL m_play			; no longer negative, time to play
 			INX
@@ -183,6 +190,8 @@ m_pb:
 		TAY					; use as index
 		LDX m_cyc, Y		; get length for this particular frequency (~35 ms length)
 		JSR note			; play sound
+		LDX #255			; default rest between notes = 60 ms
+		STX rest_f
 		BRA end_note
 end_r:
 		JSR wait_frame		; wait for the approximate length of sound
@@ -613,8 +622,15 @@ i_note:
 
 ; * music during animation *
 m_note:
-; chromatic indices, zero is END, negative is rest counter
-	.byt	
+; chromatic indices, zero is END, negative is rest counter (adding one rest cycle by default, $FE is semiquaver rest, or quaver length)
+	.byt	 18,$FE, 20,$FE,	 14, 15,$FE, 13,	 14, 13, 11,$FE,	 11,$FE, 13,$FE
+	.byt	 14,$FE, 14, 13,	 11, 13, 15, 18,	 20, 15, 18, 13,	 15, 11, 13, 11
+	.byt	 15,$FE, 18,$FE,	 20, 15, 18, 13,	 15, 11, 14, 15,	 14, 13, 11, 13
+	.byt	 15,$FE, 11, 13,	 15, 18, 13, 14,	 13, 11, 13,$FE,	 11,$FE, 13,$FE
+	.byt	 18,$FE, 20,$FE,	 14, 15,$FE, 13,	 14, 13, 11,$FE,	 11,$FE, 13,$FE
+	.byt	 14,$FE, 14, 13,	 11, 13, 15, 18,	 20, 15, 18, 13,	 15, 11, 13, 11
+	.byt	 15,$FE, 18,$FE,	 20, 15, 18, 13,	 15, 11, 14, 15,	 14, 13, 11, 13
+	.byt	 15,$FE, 11, 13,	 15, 18, 13, 14,	 13, 11, 13,$FE,	 11,$FE, 11,$FE
 	.byt	$0
 
 ; ********************
