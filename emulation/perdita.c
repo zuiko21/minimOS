@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220817-1739
+ * last modified 20220817-1932
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -81,8 +81,12 @@
 	// Do not close GUI after program end
 	int keep_open = 0;
 /* global sound variables */
-	int sample_nr = 0;
+	int sample_nr = 0;		// actually local 'it' variable
 	SDL_AudioSpec want;
+
+	Uint8	aud_buff[192];	// room for 4 ms of 48 kHz 8-bit mono audio
+	int		old_t = 0;		// time of last sample creation
+	int		old_v = 0;		// last sample value
 
 /* ******************* */
 /* function prototypes */
@@ -151,7 +155,9 @@
 	void vdu_draw_color_pixel(word);
 	void vdu_draw_hires_pixel(word);
 	void draw_circle(SDL_Renderer*, int32_t, int32_t, int32_t);
+/* audio functions */
 	void audio_callback(void *user_data, Uint8 *raw_buffer, int bytes);
+	void sample_audio(int time, int value);
 
 /* ************************************************* */
 /* ******************* main loop ******************* */
@@ -281,6 +287,7 @@ void run_emulation () {
 		cyc = exec();		// count elapsed clock cycles for this instruction
 		cont += cyc;		// add last instruction cycle count
 		it += cyc;			// advance interrupt counter
+		sample_nr = it;		// keep track of time for sound samples (may use 'it' as global)
 		ht += cyc;			// both get slightly out-of-sync during interrupts, but...
 /* check horizontal counter for HSYNC flag and count lines for VSYNC */
 		if (ht >= 98) {
@@ -319,6 +326,9 @@ void run_emulation () {
 		if (it >= 6144)		// 250 Hz interrupt @ 1.536 MHz
 		{
 			it -= 6144;		// restore for next
+			sample_nr = it;	// see above
+/* generate audio sample */
+			
 /* get keypresses from SDL here, as this get executed every 4 ms */
 			vdu_read_keyboard();	// ***is it possible to read keys without initing graphics?
 /* generate periodic interrupt */ 
@@ -572,7 +582,8 @@ void poke(word dir, byte v) {
 			mem[0xDFA0] = v;		// canonical address, only D0 matters
 			scr_dirty = 1;			// note window might be updated when changing the state of the LED!
 		} else if (dir<=0xDFBF) {	// beeper?
-			mem[0xDFB0] = v;		// canonical address, only D0 matters *** anything else for SDL audio?
+			mem[0xDFB0] = v;		// canonical address, only D0 matters
+			sample_audio(sample_nr, (v&1)?255:0);	// generate audio sample
 		} else {
 			mem[dir] = v;		// otherwise is cartridge I/O *** anything else?
 		}
@@ -2704,7 +2715,21 @@ void draw_circle(SDL_Renderer * renderer, int32_t x, int32_t y, int32_t radius) 
 void audio_callback(void *user_data, Uint8 *raw_buffer, int bytes) {
 	// Fill buffer with new audio to play
 	for(int i=0; i<bytes; i++) {
-		raw_buffer[i] = (i&16)?255:0;
+		raw_buffer[i] = aud_buff[i];
 	}
 }
 
+/* custom audio function */
+void sample_audio(int time, int value) {
+	int i;
+
+//	value = (value&1)?255:0;			// admisible sample values
+	if (time < old_t)	time += 6144;	// check wrap jitter
+	time >>= 5;							// divide by 32 (1536000 Hz CPU clock / 48000 Hz sample rate)
+	old_t >>= 5;
+	for (i=old_t; i<time; i++) {
+		aud_buff[i%192] = old_v;		// fill buffer so far with previous value but I DO NOT LIKE THIS
+	}
+	old_v = value;
+	old_t = time % 6144;				// ready for next load
+}
