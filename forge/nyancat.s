@@ -125,7 +125,7 @@ intro:
 			BEQ mus_end		; zero is end of score, go for animation
 		LDA i_note, Y		; get pitch
 		BNE note_pb			; is audible note, play it back
-			LDA #10			; base cycles for 32 ms rest
+			LDA #5			; base cycles for 32 ms rest
 rs_loop:
 				ASL				; times two
 				DEX
@@ -186,7 +186,10 @@ m_cont:
 			BRA end_r
 m_pb:
 		TAY					; use as index
-		LDX m_cyc, Y		; get length for this particular frequency (~35 ms length)
+		LDa m_cyc, Y		; get length for this particular frequency (~35 ms length)
+asl
+asl
+tax
 		LDA c2freq, Y		; convert note to frequency EEEEEEEEEK
 		JSR note			; play sound
 		LDX #255			; default rest between notes = 60 ms
