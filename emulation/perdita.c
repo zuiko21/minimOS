@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220817-1932
+ * last modified 20220817-2344
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -84,7 +84,8 @@
 	int sample_nr = 0;		// actually local 'it' variable
 	SDL_AudioSpec want;
 
-	Uint8	aud_buff[192];	// room for 4 ms of 48 kHz 8-bit mono audio
+//	Uint8	aud_buff[192];	// room for 4 ms of 48 kHz 8-bit mono audio
+	Uint8	aud_buff[6144];	// room for 4 ms of 8-bit mono audio at CPU rate!
 	int		old_t = 0;		// time of last sample creation
 	int		old_v = 0;		// last sample value
 
@@ -327,8 +328,8 @@ void run_emulation () {
 		{
 			it -= 6144;		// restore for next
 			sample_nr = it;	// see above
-/* generate audio sample */
-			sample_audio(sample_nr, old_v);		// generate audio sample			
+/* end current audio sample */
+			sample_audio(sample_nr, old_v);		// generate audio sample
 /* get keypresses from SDL here, as this get executed every 4 ms */
 			vdu_read_keyboard();	// ***is it possible to read keys without initing graphics?
 /* generate periodic interrupt */ 
@@ -2715,21 +2716,17 @@ void draw_circle(SDL_Renderer * renderer, int32_t x, int32_t y, int32_t radius) 
 void audio_callback(void *user_data, Uint8 *raw_buffer, int bytes) {
 	// Fill buffer with new audio to play
 	for(int i=0; i<bytes; i++) {
-		raw_buffer[i] = aud_buff[i];
+		raw_buffer[i] = aud_buff[i<<5];
 	}
 }
 
 /* custom audio function */
 void sample_audio(int time, int value) {
-	int i, nt, ot;
-
 //	value = (value&1)?255:0;			// admisible sample values
-	if (time < old_t)	time += 6144;	// check wrap jitter
-	nt = time >> 5;						// divide by 32 (1536000 Hz CPU clock / 48000 Hz sample rate)
-	ot = old_t >> 5;
-	for (i=ot; i<nt; i++) {
-		aud_buff[i%192] = old_v;		// fill buffer so far with previous value but I DO NOT LIKE THIS
+	while (old_t != time) {
+		aud_buff[old_t++] = old_v;
+		old_t %= 6144;					// don't like this...
 	}
 	old_v = value;
-	old_t = time % 6144;				// ready for next load
+//	old_t = time % 6144;				// ready for next load
 }
