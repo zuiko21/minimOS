@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220805-1010
+ * last modified 20220817-1739
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -2115,11 +2115,11 @@ int init_vdu() {
 
 	// Initialize sound
 	want.freq = 48000; // number of samples per second
-	want.format = AUDIO_U8; // sample type (here: signed short i.e. 16 bit)
+	want.format = AUDIO_U8; // sample type (trying UNsigned 8 bit)
 	want.channels = 1; // only one channel
-	want.samples = 192; // buffer-size
+	want.samples = 192; // buffer-size, does it need to be power of two?
 	want.callback = audio_callback; // function SDL calls periodically to refill the buffer
-	want.userdata = &sample_nr; // counter, keeping track of current sample number
+	want.userdata = &(want.silence);
 
     SDL_AudioSpec have;
 	if(SDL_OpenAudio(&want, &have) != 0)
@@ -2130,6 +2130,7 @@ int init_vdu() {
 	if(want.format != have.format)
 	{
 		printf("Failed to setup SDL audio! SDL Error: %s\n", SDL_GetError());
+if (have.format == AUDIO_U8) printf("**** era U8 *****");
 		return -7;
 	}
 
@@ -2701,11 +2702,9 @@ void draw_circle(SDL_Renderer * renderer, int32_t x, int32_t y, int32_t radius) 
 
 /* SDL audio call back function */
 void audio_callback(void *user_data, Uint8 *raw_buffer, int bytes) {
-    // Plaback buffer to fill up
-	Sint16 *buffer = (Sint16*)raw_buffer;
 	// Fill buffer with new audio to play
 	for(int i=0; i<bytes; i++) {
-		buffer[i] = 0xff*(i/10%2);
+		raw_buffer[i] = (i&16)?255:0;
 	}
 }
 
