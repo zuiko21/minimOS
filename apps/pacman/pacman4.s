@@ -5,7 +5,7 @@
 ; can be assembled from this folder
 
 ; uncomment if using PASK standard (ASCII key on port), otherwise is decoding standard matrix
-;#define	PASK	_PASK
+#define	PASK	_PASK
 
 ; variables, esp. zeropage
 #include "pacman4.h"
@@ -18,10 +18,10 @@
 
 ; I/O addresses
 	IO8attr	= $DF80			; screen latch high, actually video mode flags
-	IO9in	= $DF9F			; joystick/keyboard input
+	IO9in	= $DF9a			; joystick/keyboard input
 	IO9kbd	= $DF9D			; matrix keyboard port, caps lock off (write column D7...D4, read rows D3...D0)
 	IOAie	= $DFAF			; enable hardware interrupt, note status is controlled via D0
-	IOBeep	= $DFBF			; beeper address (latches D0 value)
+	IOBeep	= $DFB0			; beeper address (latches D0 value)
 	LTCdo	= $FFFF			; LTC display port
 
 ; *** actual code starts here ***
@@ -36,13 +36,13 @@ start:
 	LDX #$FF
 	TXS
 
-	STX LTCdo				; turn off Durango debug display, just in case
+;	STX LTCdo				; turn off Durango debug display, just in case
 
 	LDA #$39				; colour mode, non-inverted, screen 3, non-grey, also interrupt enable
 	STA IO8attr				; Durango-X hardware init
 ; this value may enable interrupts in any machine
 	STA IOAie				; hardware interrupts enabled, not yet in software!
-
+jmp music
 ; the pseudo-random number generator must have a proper seed...
 ; ...will time it upon joystick/keyboard selection screen!
 ; NES Tetris used $8988, but might randomise it with some EOR with zp bytes?
@@ -76,7 +76,7 @@ start:
 ; *** continue with screen setup ***
 	JSR positions			; reset initial positions (and show 'Ready!' message)
 	JSR sprites				; draw all ghosts and pacman on screen
-
+music:
 ; **********************************************************
 ; screen is ready, now play the tune... that started it all!
 	LDX #0					; *** don't know if X is still zero after positions AND drawing sprites
