@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220818-1109
+ * last modified 20220818-1645
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -2721,14 +2721,12 @@ void audio_callback(void *user_data, Uint8 *raw_buffer, int bytes) {
 
 /* custom audio function */
 void sample_audio(int time, int value) {
-//	value = (value&1)?255:0;			// admisible sample values
-	if (time < old_t) {
+	if (time <= old_t) {			// EEEEEEEEEEK, not '<'
 		time = 30576;
-//		for (int i=0;i<8;i++) 	aud_buff[i]=old_v;	// clear jitter zone, just in case
 	}
 	while (old_t != time) {
 		aud_buff[old_t++] = old_v;
 	}
 	old_v = value;
-	old_t %= 30576;					// don't like this...
+	old_t %= 30576;
 }
