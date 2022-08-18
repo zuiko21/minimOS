@@ -2722,10 +2722,13 @@ void audio_callback(void *user_data, Uint8 *raw_buffer, int bytes) {
 /* custom audio function */
 void sample_audio(int time, int value) {
 //	value = (value&1)?255:0;			// admisible sample values
+	if (time < old_t) {
+		time = 30576;
+//		for (int i=0;i<8;i++) 	aud_buff[i]=old_v;	// clear jitter zone, just in case
+	}
 	while (old_t != time) {
 		aud_buff[old_t++] = old_v;
-		old_t %= 30576;					// don't like this...
 	}
 	old_v = value;
-//	old_t = time % 6144;				// ready for next load
+	old_t %= 30576;					// don't like this...
 }
