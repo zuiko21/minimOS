@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220818-1043
+ * last modified 20220818-1109
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -81,11 +81,11 @@
 	// Do not close GUI after program end
 	int keep_open = 0;
 /* global sound variables */
-	int sample_nr = 0;		// actually local 'it' variable
+	int sample_nr = 0;
 	SDL_AudioSpec want;
 
 //	Uint8	aud_buff[192];	// room for 4 ms of 48 kHz 8-bit mono audio
-	Uint8	aud_buff[6144];	// room for 4 ms of 8-bit mono audio at CPU rate!
+	Uint8	aud_buff[30576];// room for ~20 ms (one field) of 8-bit mono audio at CPU rate!
 	int		old_t = 0;		// time of last sample creation
 	int		old_v = 0;		// last sample value
 
@@ -279,16 +279,16 @@ void run_emulation () {
 	init_vdu();
 	reset();				// ready to start!
 
-	next=clock()+20000;		// set delay counter, assumes CLOCKS_PER_SEC is 1000000!
-	min_sleep = 20000;		// EEEEEEK
+	next=clock()+19906;		// set delay counter, assumes CLOCKS_PER_SEC is 1000000!
+	min_sleep = 19906;		// EEEEEEK
 	max_render = 0;
 
 	while (run) {
 /* execute current opcode */
 		cyc = exec();		// count elapsed clock cycles for this instruction
 		cont += cyc;		// add last instruction cycle count
+		sample_nr += cyc;	// advance audio sample cursor (at CPU rate!)
 		it += cyc;			// advance interrupt counter
-		sample_nr = it;		// keep track of time for sound samples (may use 'it' as global)
 		ht += cyc;			// both get slightly out-of-sync during interrupts, but...
 /* check horizontal counter for HSYNC flag and count lines for VSYNC */
 		if (ht >= 98) {
@@ -296,6 +296,8 @@ void run_emulation () {
 			line++;
 			if (line >= 312) {
 				line = 0;						// 312-line field limit
+				sample_nr -= 30576;				// refresh audio sample
+				sample_audio(sample_nr, old_v);
 				frames++;
 				render_start = clock();
 				if (graf && scr_dirty)	vdu_draw_full();	// seems worth updating screen every VSYNC
@@ -315,7 +317,7 @@ void run_emulation () {
 							printf("!");		// not enough CPU power!
 						}
 					}
-					next=clock()+20000;			// set next frame time (more like 19932)
+					next=clock()+19906;			// set next frame time (more like 19932)
 				}
 			}
 			mem[0xDF88] &= 0b10111111;			// replace bit 6 (VSYNC)...
@@ -327,9 +329,6 @@ void run_emulation () {
 		if (it >= 6144)		// 250 Hz interrupt @ 1.536 MHz
 		{
 			it -= 6144;		// restore for next
-			sample_nr = it;	// see above
-/* end current audio sample */
-			sample_audio(sample_nr, old_v);		// generate audio sample
 /* get keypresses from SDL here, as this get executed every 4 ms */
 			vdu_read_keyboard();	// ***is it possible to read keys without initing graphics?
 /* generate periodic interrupt */ 
@@ -584,7 +583,7 @@ void poke(word dir, byte v) {
 			scr_dirty = 1;			// note window might be updated when changing the state of the LED!
 		} else if (dir<=0xDFBF) {	// beeper?
 			mem[0xDFB0] = v;		// canonical address, only D0 matters
-			sample_audio(sample_nr, (old_v&1)?255:0);	// generate audio sample eeeek
+			sample_audio(sample_nr, (v&1)?255:0);	// generate audio sample
 		} else {
 			mem[dir] = v;		// otherwise is cartridge I/O *** anything else?
 		}
@@ -2129,7 +2128,7 @@ int init_vdu() {
 	want.freq = 48000; // number of samples per second
 	want.format = AUDIO_U8; // sample type (trying UNsigned 8 bit)
 	want.channels = 1; // only one channel
-	want.samples = 192; // buffer-size, does it need to be power of two?
+	want.samples = 956; // buffer-size, does it need to be power of two? now every frame
 	want.callback = audio_callback; // function SDL calls periodically to refill the buffer
 	want.userdata = &(want.silence);
 
@@ -2725,7 +2724,7 @@ void sample_audio(int time, int value) {
 //	value = (value&1)?255:0;			// admisible sample values
 	while (old_t != time) {
 		aud_buff[old_t++] = old_v;
-		old_t %= 6144;					// don't like this...
+		old_t %= 30576;					// don't like this...
 	}
 	old_v = value;
 //	old_t = time % 6144;				// ready for next load
