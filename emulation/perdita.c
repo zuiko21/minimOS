@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220817-2344
+ * last modified 20220818-1043
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -584,7 +584,7 @@ void poke(word dir, byte v) {
 			scr_dirty = 1;			// note window might be updated when changing the state of the LED!
 		} else if (dir<=0xDFBF) {	// beeper?
 			mem[0xDFB0] = v;		// canonical address, only D0 matters
-			sample_audio(sample_nr, (v&1)?255:0);	// generate audio sample
+			sample_audio(sample_nr, (old_v&1)?255:0);	// generate audio sample eeeek
 		} else {
 			mem[dir] = v;		// otherwise is cartridge I/O *** anything else?
 		}
