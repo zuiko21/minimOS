@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220818-1645
+ * last modified 20220819-2319
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -173,15 +173,7 @@ int main(int argc, char *argv[])
 	int rom_addr_int;
 
 	if(argc==1) {
-		printf("usage: %s [-a rom_address] [-v] rom_file\n", argv[0]);	// in case user renames the executable
-		printf("-a: load ROM at supplied address, example 0x8000\n");
-		printf("-f fast mode\n");
-		printf("-s safe mode (will stop on warnings and BRK)\n");
-		printf("-p start in STEP mode\n");
-		printf("-l enable error LED(s)\n");
-		printf("-k keep GUI open after program end\n");
-		printf("-h headless -- no graphics!\n");
-		printf("-v verbose (warnings/interrupts/jumps/events/all)\n");
+		usage();
 		return 1;
 	}
 
@@ -215,6 +207,7 @@ int main(int argc, char *argv[])
 			break;
 		case '?':
 			fprintf (stderr, "Unknown option\n");
+			usage();
 			return 1;
 		default:
 			abort ();
@@ -243,21 +236,35 @@ int main(int argc, char *argv[])
 		rom_addr_int = (int)strtol(rom_addr, NULL, 0);
 		load(filename, rom_addr_int);
 /* set some standard vectors and base ROM contents */
-		mem[0xFFF6] = 0x6C;					// JMP ($0200) as recommended
-		mem[0xFFF7] = 0x00;
+		mem[0xFFF4] = 0x6C;					// JMP ($0200) as recommended for IRQ
+		mem[0xFFF5] = 0x00;
+		mem[0xFFF6] = 0x02;
+		mem[0xFFF7] = 0x6C;					// JMP ($0202) as recommended for NMI
 		mem[0xFFF8] = 0x02;
-		mem[0xFFF9] = 0x40;					// RTI for unused NMI vector
-		mem[0xFFFA] = 0xF9;					// standard NMI vector points to RTI
+		mem[0xFFF9] = 0x02;
+		mem[0xFFFA] = 0xF7;					// standard NMI vector points to recommended indirect jump
 		mem[0xFFFB] = 0xFF;
 		mem[0xFFFC] = rom_addr_int & 0xFF;	// set RESET vector pointing to loaded code
 		mem[0xFFFD] = rom_addr_int >> 8;
-		mem[0xFFFE] = 0xF6;					// standard IRQ vector points to recommended indirect jump
+		mem[0xFFFE] = 0xF4;					// standard IRQ vector points to recommended indirect jump
 		mem[0xFFFF] = 0xFF;
 	}
 
 	run_emulation();
 
 	return 0;
+}
+
+void usage() {
+	printf("usage: %s [-a rom_address] [-v] rom_file\n", argv[0]);	// in case user renames the executable
+	printf("-a: load ROM at supplied address, example 0x8000\n");
+	printf("-f fast mode\n");
+	printf("-s safe mode (will stop on warnings and BRK)\n");
+	printf("-p start in STEP mode\n");
+	printf("-l enable error LED(s)\n");
+	printf("-k keep GUI open after program end\n");
+	printf("-h headless -- no graphics!\n");
+	printf("-v verbose (warnings/interrupts/jumps/events/all)\n");
 }
 
 void run_emulation () {
