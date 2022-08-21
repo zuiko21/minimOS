@@ -73,7 +73,10 @@ y_ok:
 	LSR cio_pt+1
 	ROR						; divide by 4 instead of times 64, already OK for colour (2+5+2+5)
 	BIT IO8attr				; check screen mode (4)
+		BPL colfill
 		BMI hrfill			; jump to HIRES routine
+exit:
+		RTS
 colfill:
 	STA cio_pt				; temporary storage
 	LDA x1					; get W coordinate
@@ -145,6 +148,11 @@ hrfill:
 	LSR cio_pt+1
 	ROR						; divide by 8 instead of times 32 in HIRES mode
 	STA cio_pt				; temporary storage
+	LDA IO8attr				; get flags... (4)
+	AND #$30				; ...for the selected screen... (2)
+	ASL						; ...and shift them to final position (2)
+	ORA cio_pt+1			; add to MSB (3+3)
+	STA cio_pt+1
 ; lines is OK, but both 'bytes' and new l_ex & r_ex values must be recomputed, plus 'exc'
 ; determine extra EW pixels
 	LDA x2

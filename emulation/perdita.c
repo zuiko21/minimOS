@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220819-2319
+ * last modified 20220821-1933
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -95,6 +95,7 @@
 /* emulator control */
 	void load(const char name[], word adr);		// load firmware
 	void ROMload(const char name[]);			// load ROM at the end, calling load()
+	void usage(char name[]);// help with command line options
 	void stat(void);		// display processor status
 	void stack_stat(void);	// display stack status
 	void dump(word dir);	// display 16 bytes of memory
@@ -173,7 +174,7 @@ int main(int argc, char *argv[])
 	int rom_addr_int;
 
 	if(argc==1) {
-		usage();
+		usage(argv[0]);
 		return 1;
 	}
 
@@ -207,7 +208,7 @@ int main(int argc, char *argv[])
 			break;
 		case '?':
 			fprintf (stderr, "Unknown option\n");
-			usage();
+			usage(argv[0]);
 			return 1;
 		default:
 			abort ();
@@ -255,8 +256,8 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-void usage() {
-	printf("usage: %s [-a rom_address] [-v] rom_file\n", argv[0]);	// in case user renames the executable
+void usage(char name[]) {
+	printf("usage: %s [-a rom_address] [-v] rom_file\n", name);	// in case user renames the executable
 	printf("-a: load ROM at supplied address, example 0x8000\n");
 	printf("-f fast mode\n");
 	printf("-s safe mode (will stop on warnings and BRK)\n");

@@ -3,10 +3,16 @@
 ; last modified 20220821-1924
 
 #include "fill.s"
-seed	= $FF
+seed	= $FE
 
-#define	HIRES		_HIRES
-#define	MONDRIAN	_MONDRIAN
+;#define	HIRES		_HIRES
+;#define	MONDRIAN	_MONDRIAN
+
+#ifdef	HIRES
+#define	LIMIT	255
+#else
+#define	LIMIT	127
+#endif
 
 reset:
 	SEI
@@ -52,22 +58,24 @@ randomize:
 random:
 #ifdef	MONDRIAN
 	JSR rnd
-	AND #127
+	AND #LIMIT
 	STA x1
 	JSR rnd
-	AND #127
+	AND #LIMIT
 	STA x2
 	JSR rnd
-	AND #127
+	AND #LIMIT
 	STA y1
 	JSR rnd
-	AND #127
+	AND #LIMIT
 	STA y2
 	JSR rnd
 #ifdef	HIRES
+#ifndef	TEXTURE
 	LSR
 	LDA #0
 	SBC #0		; $FF if C was clear, 0 if set
+#endif
 #else
 	AND #15
 	STA tmp
