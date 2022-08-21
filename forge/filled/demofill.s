@@ -1,11 +1,13 @@
 ; Durango-X filled rectangles demo!
 ; (c) 2022 Carlos J. Santisteban
-; last modified 202208115-0023
+; last modified 20220821-1924
 
 #include "fill.s"
 seed	= $FF
 
-#define	MONDRIAN _MONDRIAN
+#define	HIRES		_HIRES
+#define	MONDRIAN	_MONDRIAN
+
 reset:
 	SEI
 	CLD
@@ -13,7 +15,11 @@ reset:
 	TXS
 	STX $DFA0				; will turn off LED for peace of mind
 	STX col					; original colour (white)
+#ifdef	HIRES
+	LDA #$B0
+#else
 	LDA #$38
+#endif
 	STA IO8attr
 
 	JSR randomize
@@ -58,6 +64,11 @@ random:
 	AND #127
 	STA y2
 	JSR rnd
+#ifdef	HIRES
+	LSR
+	LDA #0
+	SBC #0		; $FF if C was clear, 0 if set
+#else
 	AND #15
 	STA tmp
 	ASL
@@ -65,6 +76,7 @@ random:
 	ASL
 	ASL
 	ORA tmp
+#endif
 	STA col
 #else
 	INC x1
@@ -83,6 +95,9 @@ random:
 		JSR randomize
 within:
 	LDA col
+#ifdef	HIRES
+	EOR #$FF
+#else
 	CLC
 	ADC #$11
 	BCC col_ok
@@ -91,6 +106,7 @@ within:
 		STA IO8attr
 		LDA #0
 col_ok:
+#endif
 	STA col
 #endif
 	RTS
