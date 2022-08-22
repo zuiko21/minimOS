@@ -395,7 +395,7 @@ void stat(void)	{
 	byte psr = p;			// local copy of status
 	const char flag[8]="NV.bDIZC";	// flag names
 
-	printf("<PC=$%04X, A=$%02X, X=$%02X, Y=$%02X, S=$%02X>\n<PSR: ", pc-1, a, x, y, s);
+	printf("<PC=$%04X, A=$%02X, X=$%02X, Y=$%02X, S=$%02X, CLK=%ld>\n<PSR: ", pc-1, a, x, y, s, cont);
 	for (i=0; i<8; i++) {
 		if (psr&128)	printf("%c", flag[i]);
 		else			printf("·");
