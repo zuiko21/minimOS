@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20220821-0059
+; last modified 20220822-0201
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -49,45 +49,50 @@ nums_3		= nums_1+2	; number to bin/hex string convert LSB
 
 Srchc		= nums_3+1	; search character *** $0A, no longer $5B
 Temp3		= Srchc		; temp byte used in number routines *** $0A
-Scnquo		= Srchc+1	; scan-between-quotes flag *** $0B, no longer $5C
-Asrch		= Scnquo	; alt search character *** $0B
 
-XOAw_l		= Srchc		; eXclusive OR, OR and AND word low byte *** $0A-0B
-XOAw_h		= Scnquo	; eXclusive OR, OR and AND word high byte
+;USR vector EEEEEK
+Usrjpl		= Temp3+1	; USR function JMP vector low byte $0B
+Usrjph		= Usrjpl+1	; USR function JMP vector high byte $0C
 
-Ibptr		= Scnquo+1	; input buffer pointer *** $0C, no longer $5D
-Dimcnt		= Ibptr		; # of dimensions *** $0C
-Tindx		= Ibptr		; token index *** $0C
+Scnquo		= Usrjph+1	; scan-between-quotes flag *** $0D, no longer $5C
+Asrch		= Scnquo	; alt search character *** $0D
 
-Defdim		= Ibptr+1	; default DIM flag *** $0D, no longer $5E
-Dtypef		= Defdim+1	; data type flag, $FF=string, $00=numeric *** $0E, no longer $5F
-Oquote		= Dtypef+1	; open quote flag (b7) (Flag- DATA scan; LIST quote; memory) *** $0F, no longer $60
-Gclctd		= Oquote	; garbage collected flag *** $0F
-Sufnxf		= Oquote+1	; subscript/FNX flag, 1xxx xxx = FN(0xxx xxx) *** $10, no longer $61
-Imode		= Sufnxf+1	; input mode flag, $00=INPUT, $80=READ *** $11, no longer $62
+XOAw_l		= Srchc		; eXclusive OR, OR and AND word low byte *** $0A
+XOAw_h		= Scnquo	; eXclusive OR, OR and AND word high byte *** $0D
 
-Cflag		= Imode+1	; comparison evaluation flag *** $12, no longer $63
+Ibptr		= Scnquo+1	; input buffer pointer *** $0E, no longer $5D
+Dimcnt		= Ibptr		; # of dimensions *** $0E
+Tindx		= Ibptr		; token index *** $0E
 
-TabSiz		= Cflag+1	; TAB step size (was input flag) *** $13, no longer $64
+Defdim		= Ibptr+1	; default DIM flag *** $0F, no longer $5E
+Dtypef		= Defdim+1	; data type flag, $FF=string, $00=numeric *** $10, no longer $5F
+Oquote		= Dtypef+1	; open quote flag (b7) (Flag- DATA scan; LIST quote; memory) *** $11, no longer $60
+Gclctd		= Oquote	; garbage collected flag *** $11
+Sufnxf		= Oquote+1	; subscript/FNX flag, 1xxx xxx = FN(0xxx xxx) *** $12, no longer $61
+Imode		= Sufnxf+1	; input mode flag, $00=INPUT, $80=READ *** $13, no longer $62
 
-next_s		= TabSiz+1	; next descriptor stack address *** $14, no longer $65
+Cflag		= Imode+1	; comparison evaluation flag *** $14, no longer $63
+
+TabSiz		= Cflag+1	; TAB step size (was input flag) *** $15, no longer $64
+
+next_s		= TabSiz+1	; next descriptor stack address *** $16, no longer $65
 
 						; these two bytes form a word pointer to the item
 						; currently on top of the descriptor stack
-last_sl		= next_s+1	; last descriptor stack address low byte *** $15, no longer $66
-last_sh		= last_sl+1	; last descriptor stack address high byte (always $00 or D.H) *** $16, no longer $67
+last_sl		= next_s+1	; last descriptor stack address low byte *** $17, no longer $66
+last_sh		= last_sl+1	; last descriptor stack address high byte (always $00 or D.H) *** $18, no longer $67
 
-des_sk		= last_sh+1	; descriptor stack start address (temp strings) *** $17, no longer $68 eeeeeeeeeeek
-; *** seems to need 9-byte space here $17-$1F ***
+des_sk		= last_sh+1	; descriptor stack start address (temp strings) *** $19, no longer $68 eeeeeeeeeeek
+; *** seems to need 9-byte space here $19-$21 ***
 
 ; these were on page 2... but $0200 is DEADLY in minimOS, now $20-22
 ; *** might compact these somewhat ***
-ccflag		= $20		; BASIC CTRL-C flag, 00 = enabled, 01 = dis
+ccflag		= $22		; BASIC CTRL-C flag, 00 = enabled, 01 = dis
 ccbyte		= ccflag+1	; BASIC CTRL-C byte
 ccnull		= ccbyte+1	; BASIC CTRL-C byte timeout
 ; *** no longer need for CTRL_C vector ***
 
-; *** $23-26 free for 65C02 ***
+; *** $25-26 free for 65C02 ***
 
 ; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80
 Ibuffs		= $27		; changed for SBC-2, again for minimOS, $27...6E [CHECK]
@@ -504,7 +509,7 @@ LAB_GMEM
 						; character was null so get memory size the hard way
 						; we get here with Y=0 and Itempl/h = Ram_base
 LAB_2D93
-	INC	Itempl			; increment temporary integer low byte
+	INC	Itempl			; increment temporary integer low byte *** must be loaded
 	BNE	LAB_2D99		; branch if no overflow
 
 	INC	Itemph			; increment temporary integer high byte
@@ -6951,9 +6956,10 @@ LAB_2C74
 ; perform USR()
 
 LAB_USR
-	JSR LAB_FCER		; call user-code *** non-vectored ***
+	JSR Usrjmp			; call user-code *** vectored again ***
 	JMP	LAB_1BFB		; scan for ")", else do syntax error then warm start
-
+Usrjmp
+	JMP (Usrjpl)
 ; perform ATN()
 
 LAB_ATN
@@ -7832,14 +7838,16 @@ LAB_2CF4
 LAB_2D05
 	RTS
 
-; page zero initialisation table was $00-$12 inclusive *** now $03-$06
-
+; page zero initialisation table was $00-$12 inclusive *** now $03-$0C EEEEEK
 StrTab
-;	.word	LAB_FCER	; initial user function vector ("Function call" error) B,C
 	.byte	$00			; default NULL count D *** now $03
 	.byte	$00			; clear terminal position E *** now $04
 	.byte	$00			; default terminal width byte F *** now $05
 	.byte	$F2			; default limit for TAB = 14 $10 *** now $06
+	.word	Ram_base	; start of user RAM *** now $07-08 EEEEEEK
+	.word	0			; (not used) *** $09-0A
+	.word	LAB_FCER	; initial user function vector ("Function call" error) *** $0B-0C *** eeeek
+
 EndTab
 
 LAB_MSZM
