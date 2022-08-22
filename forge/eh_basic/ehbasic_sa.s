@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20220822-1019
+; last modified 20220822-1308
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -7777,9 +7777,12 @@ V_INPT					; non halting scan input device
 	PHY
 	LDY #0				; ##### CONIO interface #####
 	JSR conio
+	TYA
+	PLY
+	PLX
+	RTS
 ; could check C and Y here for safety
 ; note C works opposite than the original EhBASIC, has been modified
-	BRA io_end			; *** skim some bytes ***
 
 V_OUTP					; send byte to output device
 ;	STA io_c
@@ -7788,7 +7791,6 @@ V_OUTP					; send byte to output device
 	PHY
 	TAY					; ##### CONIO interface #####
 	JSR conio
-io_end:
 	PLY					; *** this ignores errors ***
 	PLX
 ;	LDA io_c			; *** worth recovering it ***
