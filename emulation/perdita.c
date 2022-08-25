@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220821-1933
+ * last modified 20220825-1722
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -283,7 +283,7 @@ void run_emulation () {
 	long us_render = 0;		// total microseconds of rendering
 	long skip = 0;			// total skipped frames
 
-	printf("[F1=STOP, F2=NMI, F3=IRQ, F4=RESET, F5=PAUSE, F6=DUMP, F7=STEP, F8=RESUME]\n");
+	printf("[F1=STOP, F2=NMI, F3=IRQ, F4=RESET, F5=PAUSE, F6=DUMP, F7=STEP, F8=CONT, F9=KEY]\n");
 	init_vdu();
 	reset();				// ready to start!
 
@@ -2641,8 +2641,10 @@ void emulate_gamepad2(SDL_Event *e) {
 
 /* Process GUI events in VDU window */
 void vdu_read_keyboard() {
+	int ascii;
 	//Event handler
     SDL_Event e;
+    
 	//Handle events on queue
 	while( SDL_PollEvent( &e ) != 0 )
 	{
@@ -2683,8 +2685,18 @@ void vdu_read_keyboard() {
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F8) {
 			run = 3;		// resume normal execution
 		}
-		// Press F9
+		// Press F9 = INSERT ASCII
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F9) {
+			printf("\nASCII code? ");
+			scanf("%d", &ascii);
+			ascii &= 255;
+	e.key.keysym.sym = ascii;
+	e.type = SDL_KEYDOWN;
+	process_keyboard(&e);
+//			mem[0xDF9A] = ascii;
+			printf("Typed %02X (%c)\n", ascii, ascii);
+	e.type = SDL_KEYUP;
+	process_keyboard(&e);
 		}
 		// Press F10
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F10) {
