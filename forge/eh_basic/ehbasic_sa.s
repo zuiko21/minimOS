@@ -120,7 +120,7 @@ last_sh		= last_sl+1	; last descriptor stack address high byte (always $00 or D.
 des_sk		= last_sh+1	; descriptor stack start address (temp strings) *** $19, no longer $68 eeeeeeeeeeek
 ; *** seems to need 9-byte space here $19-$21 ***
 
-; these were on page 2... but $0200 is DEADLY in minimOS, now $20-22
+; these were on page 2... but $0200 is DEADLY in minimOS, now $22-24
 ; *** might compact these somewhat ***
 ccflag		= $22		; BASIC CTRL-C flag, 00 = enabled, 01 = dis
 ccbyte		= ccflag+1	; BASIC CTRL-C byte
@@ -496,8 +496,7 @@ LAB_2D13
 	DEX					; decrement count
 	BPL	LAB_2D13		; loop if not done
 
-;	LDX	#$FF			; set byte
-	DEX					; as known to be zero here, will become $FF
+;	LDX	#$FF			; set byte (known to be $FF as per BPL above EEEEEEK)
 	STX	Clineh			; set current line high byte (set immediate mode)
 
 ; copy block from StrTab to $0000 - $0012 *** now $03-$06 in mOS
@@ -604,7 +603,7 @@ MEM_OK
 
 ; this line is only needed if Ram_base is not $xx00
 ;	LDY	#$00			; clear Y
-	TYA				; clear A
+	TYA					; clear A
 	STA	(Smeml)			; clear first byte *** CMOS only ***
 	INC	Smeml			; increment start of mem low byte
 ; these two lines are only needed if Ram_base is $xxFF
@@ -621,6 +620,7 @@ LAB_2E05
 	TAX					; copy to X
 	LDA	Ememh			; get end of mem high byte
 	SBC	Smemh			; subtract start of mem high byte
+.byt $cb
 	JSR	LAB_295E		; print XA as unsigned integer (bytes free)
 	LDA	#<LAB_SMSG		; point to sign-on message (low addr)
 	LDY	#>LAB_SMSG		; point to sign-on message (high addr)
