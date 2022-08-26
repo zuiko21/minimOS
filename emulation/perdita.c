@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220826-1024
+ * last modified 20220826-1039
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -2478,7 +2478,7 @@ void vdu_draw_full() {
 
 /* Process keyboard / mouse events */
 void process_keyboard(SDL_Event *e) {
-	int asc;
+	int asc, shift;
 	/*
 	 * Type:
 	 * SDL_KEYDOWN
@@ -2510,43 +2510,25 @@ void process_keyboard(SDL_Event *e) {
 	if(e->type == SDL_KEYDOWN) {
 		if (ver>1) printf("key: %c (%d)\n", e->key.keysym.sym, e->key.keysym.scancode);
 		
-		if(SDL_GetModState() & KMOD_LSHIFT) {
-			printf("Left shift key is pressed\n");
+		shift = 0;			// default unshifted state
+		if(SDL_GetModState() & KMOD_SHIFT) {			// SHIFT
+			shift |= 1;		// d0 = SHIFT
 		}
-		if(SDL_GetModState() & KMOD_RSHIFT) {
-			printf("Right shift key is pressed\n");
+		if(SDL_GetModState() & KMOD_CTRL) {				// CONTROL
+			shift |= 2;		// d1 = CONTROL
 		}
-		if(SDL_GetModState() & KMOD_LCTRL) {
-			printf("Left ctrl key is pressed\n");
+		if(SDL_GetModState() & KMOD_ALT) {				// ALT
+			shift |= 4;		// d2 = ALTERNATE
 		}
-		if(SDL_GetModState() & KMOD_RCTRL) {
-			printf("Right ctrl key is pressed\n");
-		}
-		if(SDL_GetModState() & KMOD_LALT) {
-			printf("Left alt key is pressed\n");
-		}
-		if(SDL_GetModState() & KMOD_RALT) {
-			printf("Right alt key is pressed\n");
-		}
-		if (SDL_GetModState() & KMOD_CTRL)
-		{
-//			printf("Control key state is pressed\n");
-		}
-		if (SDL_GetModState() & KMOD_SHIFT)
-		{
-//			printf("KMOD_SHIFT is pressed\n");
-		}
-
 		if (SDL_GetModState() & KMOD_CAPS)
 		{
-			printf("KMOD_CAPS is pressed\n");
+			printf("KMOD_CAPS is pressed\n");	// no CAPS LOCK support yet!
 		}
 		asc = e->key.keysym.sym;
 		if (asc<256) {
 			asc = keys[shift][asc];	// read from keyboard table
 			mem[0xDF9A] = asc;		// will temporarily store ASCII at 0xDF9A, as per PASK standard :-)
 		}
-	}
 	}
 	// detect key release for PASK compatibility
 	else if(e->type == SDL_KEYUP) {
