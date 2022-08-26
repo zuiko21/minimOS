@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220825-1722
+ * last modified 20220826-1008
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -2376,7 +2376,7 @@ void process_keyboard(SDL_Event *e) {
 	 * KMOD_CAPS -> caps key is down
 	 */
 	if(e->type == SDL_KEYDOWN) {
-		if (ver) printf("key: %c (%d)\n", e->key.keysym.sym, e->key.keysym.scancode);
+		if (ver>1) printf("key: %c (%d)\n", e->key.keysym.sym, e->key.keysym.scancode);
 		
 		if(SDL_GetModState() & KMOD_LSHIFT) {
 			printf("Left shift key is pressed\n");
@@ -2410,7 +2410,11 @@ void process_keyboard(SDL_Event *e) {
 			printf("KMOD_CAPS is pressed\n");
 		}
 		asc = e->key.keysym.sym;
-		if (asc<256)	mem[0xDF9A] = asc;		// will temporarily store ASCII at 0xDF9A, as per PASK standard :-)
+		if (asc<256) {
+			asc = keys[shift][asc];	// read from keyboard table
+			mem[0xDF9A] = asc;		// will temporarily store ASCII at 0xDF9A, as per PASK standard :-)
+		}
+	}
 	}
 	// detect key release for PASK compatibility
 	else if(e->type == SDL_KEYUP) {
