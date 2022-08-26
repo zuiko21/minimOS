@@ -2376,7 +2376,7 @@ void process_keyboard(SDL_Event *e) {
 	 * KMOD_CAPS -> caps key is down
 	 */
 	if(e->type == SDL_KEYDOWN) {
-		if (ver) printf("key: %c (%d)\n", e->key.keysym.sym, e->key.keysym.sym);
+		if (ver) printf("key: %c (%d)\n", e->key.keysym.sym, e->key.keysym.scancode);
 		
 		if(SDL_GetModState() & KMOD_LSHIFT) {
 			printf("Left shift key is pressed\n");
