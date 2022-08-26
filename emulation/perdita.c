@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220826-1039
+ * last modified 20220826-1749
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -16,6 +16,7 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <time.h>
 #include <unistd.h>
@@ -93,7 +94,7 @@
  * *** KEYMAP ***
  * ************** */
 
-/* Array with all key combos, first index is 1=SHIFT, 2=CONTROL, 4=ALT, unused give '?', binaries set as '*' */
+/* Array with all key combos, first index is 1=SHIFT, 2=CONTROL, 4=ALT, unused give '$', binaries set as '*' */
 /*		 0               1               2               3
 		 0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
 4               5               6               7
@@ -104,35 +105,35 @@ C               D               E               F
 		"$$$$$$$$**$$$*$$$$$$$$$$$$$*$$$$ $$$$$$'$$$+,-.$0123456789$$<$$$\
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$abcdefghijklmnopqrstuvwxyz$$$$*\
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$\
-$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$",
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$",	// normal
 		"$$$$$$$$**$$$*$$$$$$$$$$$$$*$$$$*$$$$$$?$$$*;_:$=!**$%&/()$$>$$$\
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ABCDEFGHIJKLMNOPQRSTUVWXYZ$$$$*\
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$\
-$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$",
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$",	// shift
 		"$$$$$$$$**$$$*$$$$$$$$$$$$$*$$$$*$$$$$$'$$$+,-.$_+'.,:;-<>$$<$$$\
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*\
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$\
-$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$",
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$",	// control
 		"$$$$$$$$**$$$*$$$$$$$$$$$$$*$$$$ $$$$$$'$$$+,-.$******^?[]$$<$$$\
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$**************************$$$$*\
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$\
-$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$",
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$",	// ctrl+shift
 		"$$$$$$$$**$$$*$$$$$$$$$$$$$*$$$$*$$$$$$'$$$+,-.$~|@#****{}$$<$$$\
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$**************************$$$$*\
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$\
-$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$",
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$",	// alt
 		"$$$$$$$$**$$$*$$$$$$$$$$$$$*$$$$ $$$$$$'$$$+,-.$**********$$<$$$\
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$**************************$$$$*\
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$\
-$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$",
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$",	// alt+shift
 		"$$$$$$$$**$$$*$$$$$$$$$$$$$*$$$$ $$$$$$'$$$+,-.$******`***$$<$$$\
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$**************************$$$$*\
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$\
-$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$",
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$",	// ctrl+alt
 		"$$$$$$$$**$$$*$$$$$$$$$$$$$*$$$$ $$$$$$'$$$+,-.$**********$$<$$$\
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$**************************$$$$*\
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$\
-$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$"
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$"	// ctrl+alt+shift
 	};
 
 /* ******************* */
@@ -157,6 +158,7 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$"
 	void poke(word dir, byte v);	// write memory or I/O
 	void push(byte b)		{ poke(0x100 + s--, b); }		// standard stack ops
 	byte pop(void)			{ return peek(++s + 0x100); }
+	void randomize(void);
 
 /* interrupt support */
 	void intack(void);		// save status for interrupt acknowledge
@@ -190,88 +192,7 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*$$$$$$$$$*$$$$$$$$$$$$$$"
 	void rel(int*);			// relative branches, possible penalty
 
 /* keymap */
-	void redefine(void) {
-/* unshifted special keys */
-		keys[0][8]		=  8;	// backspace
-		keys[0][9]		=  9;	// tab
-		keys[0][0x0d]	= 13;	// newline
-		keys[0][0x1b]	= 27;	// escape
-		keys[0][0x7f]	=127;	// delete
-		keys[0][0xa1]	=161;	// ¡
-		keys[0][0xba]	=186;	// º
-		keys[0][0xe7]	=231;	// ç
-		keys[0][0xf1]	=241;	// ñ
-/* SHIFT + special keys */
-		keys[1][8]		=  8;	// backspace (mac)
-		keys[1][9]		= 24;	// backtab
-		keys[1][0x0d]	= 13;	// newline (mac)
-		keys[1][0x1b]	= 27;	// escape (mac)
-		keys[1][0x7f]	=127;		// delete??
-		keys[1][0xa1]	=191;	// ¿
-		keys[1][0xba]	=170;	// ª
-		keys[1][0xe7]	=199;	// Ç
-		keys[1][0xf1]	=209;	// Ñ
-/* CONTROL + special keys */
-		keys[2][8]		=  8;		// backspace??
-		keys[2][9]		=  9;		// tab!!
-		keys[2][0x0d]	= 13;		// newline??
-		keys[2][0x1b]	= 27;	// escape (mac)
-		keys[2][0x7f]	=127;		// delete??
-		keys[2][0xa1]	=161;		// ¡
-		keys[2][0xba]	=186;		// º
-		keys[2][0xe7]	=231;		// ç
-		keys[2][0xf1]	=241;		// ñ
-/* CTRL+SHIFT + special keys */
-		keys[3][8]		=  8;		// backspace??
-		keys[3][9]		=  9;		// tab!!
-		keys[3][0x0d]	= 13;		// newline??
-		keys[3][0x1b]	= 27;	// escape (mac)
-		keys[3][0x7f]	=127;		// delete?
-		keys[3][0xa1]	=161;		// ¡
-		keys[3][0xba]	=186;		// º
-		keys[3][0xe7]	=231;		// ç
-		keys[3][0xf1]	=241;		// ñ
-/* ALTERNATE + special keys */
-		keys[4][8]		=  8;		// backspace??
-		keys[4][9]		=  9;		// tab?? *
-		keys[4][0x0d]	= 13;		// newline??
-		keys[4][0x1b]	= 27;	// escape (mac)
-		keys[4][0x7f]	=127;		// delete??
-		keys[4][0xa1]	=161;		// ¡
-		keys[4][0xba]	=92;	// '\'
-		keys[4][0xe7]	=125;	// }
-		keys[4][0xf1]	=126;	// ~
-/* ALT+SHIFT + special keys */
-		keys[5][8]		=  8;		// backspace??
-		keys[5][9]		=  9;	// tab (mac)
-		keys[5][0x0d]	= 13;		// newline??
-		keys[5][0x1b]	= 27;	// escape (mac)
-		keys[5][0x7f]	=127;		// delete
-		keys[5][0xa1]	=161;		// ¡
-		keys[5][0xba]	=176;	// ° (mac)
-		keys[5][0xe7]	=187;	// » (mac)
-		keys[5][0xf1]	=126;	// ~
-/* CTRL+ALT + special keys */
-		keys[6][8]		=  8;		// backspace??
-		keys[6][9]		=  9;	// tab (mac)
-		keys[6][0x0d]	= 13;	// newline (mac)
-		keys[6][0x1b]	= 27;	// escape (mac)
-		keys[6][0x7f]	=127;		// delete?? RESET!
-		keys[6][0xa1]	=161;		// ¡
-		keys[6][0xba]	=186;		// º
-		keys[6][0xe7]	=231;		// ç
-		keys[6][0xf1]	=241;		// ñ
-/* CTRL+ALT+SHIFT + special keys */
-		keys[7][8]		=  8;		// backspace??
-		keys[7][9]		=  9;	// tab (mac)
-		keys[7][0x0d]	= 13;	// newline (mac)
-		keys[7][0x1b]	= 27;	// escape (mac)
-		keys[7][0x7f]	=127;		// delete??
-		keys[7][0xa1]	=161;		// ¡
-		keys[7][0xba]	=186;		// º
-		keys[7][0xe7]	=231;		// ç
-		keys[7][0xf1]	=241;		// ñ
-}
+	void redefine(void);
 
 /* *********************** */
 /* vdu function prototypes */
@@ -304,6 +225,7 @@ int main(int argc, char *argv[])
 	int rom_addr_int;
 
 	redefine();		// finish keyboard layout definitions
+	randomize();	// randomize memory contents
 
 	if(argc==1) {
 		usage(argv[0]);
@@ -2198,6 +2120,103 @@ void illegal(byte s, byte op) {
 	run = 0;
 }
 
+/* *** randomize memory contents *** */
+void randomize(void) {
+	int i;
+
+	srand(time(NULL));
+	for (i=0; i<32768; i++)		mem[i]=rand() & 255;	// RAM contents
+	mem[0xDF80] = rand() & 255;							// random video mode at powerup
+}
+
+/* *** redefine keymap *** */
+void redefine(void) {
+		int i;
+/* unshifted special keys */
+		keys[0][8]		=0x08;	// backspace
+		keys[0][9]		=0x09;	// tab
+		keys[0][0x0d]	=0x0d;	// newline
+		keys[0][0x1b]	=0x1b;	// escape
+		keys[0][0x7f]	=0x7f;	// delete
+		keys[0][0xa1]	=0xa1;	// ¡
+		keys[0][0xba]	=0xba;	// º
+		keys[0][0xe7]	=0xe7;	// ç
+		keys[0][0xf1]	=0xf1;	// ñ
+/* SHIFT + special keys */
+		keys[1][8]		=0x08;	// backspace (mac)
+		keys[1][9]		=0x18;	// backtab
+		keys[1][0x0d]	=0x0d;	// newline (mac)
+		keys[1][0x1b]	=0x1b;	// escape (mac)
+		keys[1][0x32]	=0x22;	// quote
+		keys[1][0x33]	=0xb7;	// interpunct
+		keys[1][0x7f]	=0x7f;		// delete??
+		keys[1][0xa1]	=0xbf;	// ¿
+		keys[1][0xba]	=0xaa;	// ª
+		keys[1][0xe7]	=0xc7;	// Ç
+		keys[1][0xf1]	=0xd1;	// Ñ
+/* CONTROL + special keys */
+		keys[2][8]		=  8;		// backspace??
+		keys[2][9]		=  9;		// tab!!
+		keys[2][0x0d]	= 13;		// newline??
+		keys[2][0x1b]	= 27;	// escape (mac)
+		keys[2][0x7f]	=127;		// delete??
+		keys[2][0xa1]	=161;		// ¡
+		keys[2][0xba]	=186;		// º
+		keys[2][0xe7]	=231;		// ç
+		keys[2][0xf1]	=241;		// ñ
+		for (i=1; i<=26; i++)	keys[2][i+0x60]=i;	// control+letter
+/* CTRL+SHIFT + special keys */
+		keys[3][8]		=  8;		// backspace??
+		keys[3][9]		=  9;		// tab!!
+		keys[3][0x0d]	= 13;		// newline??
+		keys[3][0x1b]	= 27;	// escape (mac)
+		keys[3][0x7f]	=127;		// delete?
+		keys[3][0xa1]	=161;		// ¡
+		keys[3][0xba]	=186;		// º
+		keys[3][0xe7]	=231;		// ç
+		keys[3][0xf1]	=241;		// ñ
+/* ALTERNATE + special keys */
+		keys[4][8]		=  8;		// backspace??
+		keys[4][9]		=  9;		// tab?? *
+		keys[4][0x0d]	= 13;		// newline??
+		keys[4][0x1b]	= 27;	// escape (mac)
+		keys[4][0x7f]	=127;		// delete??
+		keys[4][0xa1]	=161;		// ¡
+		keys[4][0xba]	=92;	// '\'
+		keys[4][0xe7]	=125;	// }
+		keys[4][0xf1]	=126;	// ~
+/* ALT+SHIFT + special keys */
+		keys[5][8]		=  8;		// backspace??
+		keys[5][9]		=  9;	// tab (mac)
+		keys[5][0x0d]	= 13;		// newline??
+		keys[5][0x1b]	= 27;	// escape (mac)
+		keys[5][0x7f]	=127;		// delete
+		keys[5][0xa1]	=161;		// ¡
+		keys[5][0xba]	=176;	// ° (mac)
+		keys[5][0xe7]	=187;	// » (mac)
+		keys[5][0xf1]	=126;	// ~
+/* CTRL+ALT + special keys */
+		keys[6][8]		=  8;		// backspace??
+		keys[6][9]		=  9;	// tab (mac)
+		keys[6][0x0d]	= 13;	// newline (mac)
+		keys[6][0x1b]	= 27;	// escape (mac)
+		keys[6][0x7f]	=127;		// delete?? RESET!
+		keys[6][0xa1]	=161;		// ¡
+		keys[6][0xba]	=186;		// º
+		keys[6][0xe7]	=231;		// ç
+		keys[6][0xf1]	=241;		// ñ
+/* CTRL+ALT+SHIFT + special keys */
+		keys[7][8]		=  8;		// backspace??
+		keys[7][9]		=  9;	// tab (mac)
+		keys[7][0x0d]	= 13;	// newline (mac)
+		keys[7][0x1b]	= 27;	// escape (mac)
+		keys[7][0x7f]	=127;		// delete??
+		keys[7][0xa1]	=161;		// ¡
+		keys[7][0xba]	=186;		// º
+		keys[7][0xe7]	=231;		// ç
+		keys[7][0xf1]	=241;		// ñ
+}
+
 /* *** *** VDU SECTION *** *** */
 
 /* Initialize vdu display window */
@@ -2508,7 +2527,7 @@ void process_keyboard(SDL_Event *e) {
 	 * KMOD_CAPS -> caps key is down
 	 */
 	if(e->type == SDL_KEYDOWN) {
-		if (ver>1) printf("key: %c (%d)\n", e->key.keysym.sym, e->key.keysym.scancode);
+		if (ver)		printf("key: %c ($%x)\n", e->key.keysym.sym, e->key.keysym.scancode);
 		
 		shift = 0;			// default unshifted state
 		if(SDL_GetModState() & KMOD_SHIFT) {			// SHIFT
@@ -2532,6 +2551,7 @@ void process_keyboard(SDL_Event *e) {
 	}
 	// detect key release for PASK compatibility
 	else if(e->type == SDL_KEYUP) {
+		if (ver)	printf("->down. ");
 		mem[0xDF9A] = 0;
 	}
 	// gamepad button down
@@ -2805,16 +2825,16 @@ void vdu_read_keyboard() {
 		}
 		// Press F9 = INSERT ASCII
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F9) {
-			printf("\nASCII code? ");
-			scanf("%d", &ascii);
-			ascii &= 255;
-	e.key.keysym.sym = ascii;
-	e.type = SDL_KEYDOWN;
-	process_keyboard(&e);
+//			printf("\nASCII code? ");
+//			scanf("%d", &ascii);
+//			ascii &= 255;
+//	e.key.keysym.sym = ascii;
+//	e.type = SDL_KEYDOWN;
+//	process_keyboard(&e);
 //			mem[0xDF9A] = ascii;
-			printf("Typed %02X (%c)\n", ascii, ascii);
-	e.type = SDL_KEYUP;
-	process_keyboard(&e);
+//			printf("Typed %02X (%c)\n", ascii, ascii);
+//	e.type = SDL_KEYUP;
+//	process_keyboard(&e);
 		}
 		// Press F10
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F10) {
