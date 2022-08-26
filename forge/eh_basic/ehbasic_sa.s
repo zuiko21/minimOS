@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20220822-0201
+; last modified 20220822-1308
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -23,6 +23,41 @@
 ; 2.22	fixed RND() breaking the get byte routine
 
 	* = $C000
+
+; try to assemble from here with
+; xa ehbasic_sa.s -I ../../OS/firmware -l labels 
+
+; *****************************************************
+; *** firmware & hardware definitions for Durango-X ***
+; *****************************************************
+fw_irq		= $0200		; ### usual minimOS interrupt vectors ###
+fw_nmi		= $0202
+ticks		= $0205		; jiffy counter
+; CONIO specific variables
+fw_cbin		= ticks+4				; integrated picoVDU/Durango-X specifics
+fw_fnt		= fw_cbin+1				; (new, pointer to relocatable 2KB font file)
+fw_mask		= fw_fnt+2				; (for inverse/emphasis mode)
+fw_chalf	= fw_mask+1				; (remaining pages to write)
+fw_sind		= fw_chalf+1
+fw_ccol		= fw_sind+3				; (no longer SPARSE array of two-pixel combos, will store ink & paper)
+fw_ctmp		= fw_ccol+4
+fw_cbyt		= fw_ctmp				; (temporary glyph storage) other tmp
+fw_ccnt		= fw_cbyt+1				; (bytes per raster counter, no longer X) other tmp
+fw_ciop		= fw_ccnt+1				; cursor position
+fw_vbot		= fw_ciop+2				; page start of screen at current hardware setting (updated upon FF)
+fw_vtop		= fw_vbot+1				; first non-VRAM page (new)
+fw_io9		= fw_vtop+1				; received keypress
+fw_scur		= fw_io9+1				; NEW, cursor control
+; CONIO zeropage usage
+cio_pt		= $E6
+cio_src		= $E4
+
+; *** Durango-X hardware definitions ****
+-IO8attr	= $DF80		; video mode register
+-IO8blk		= $DF88		; video blanking signals
+-IO9di		= $DF9A		; data input (PASK standard)
+-IOAie		= $DFAF		; canonical interrupt enable address (d0)
+-IOBeep		= $DFBF		; canonical buzzer address (d0)
 
 .(
 	.asc	"Derived from EhBASIC v2.22 by Lee Davison", 0		; comment with IMPORTANT attribution
@@ -280,7 +315,7 @@ Rbyte1		= Rbyte4+1	; most significant PRNG byte
 Rbyte2		= Rbyte4+2	; middle PRNG byte
 Rbyte3		= Rbyte4+3	; least significant PRNG byte
 
-NmiBase		= Rbyte3+1	; NMI handler enabled/setup/triggered flags was $DC *** skipped code to $C2
++NmiBase	= Rbyte3+1	; NMI handler enabled/setup/triggered flags was $DC *** skipped code to $C2
 						; bit	function
 						; ===	========
 						; 7	interrupt enabled
@@ -288,7 +323,7 @@ NmiBase		= Rbyte3+1	; NMI handler enabled/setup/triggered flags was $DC *** skip
 						; 5	interrupt happened
 ;			= $C3		; NMI handler addr low byte was $DD
 ;			= $C4		; NMI handler addr high byte was $DE
-IrqBase		= NmiBase+3	; IRQ handler enabled/setup/triggered flags was $DF *** skipped code to $C5
++IrqBase	= NmiBase+3	; IRQ handler enabled/setup/triggered flags was $DF *** skipped code to $C5
 ;			= $C6		; IRQ handler addr low byte was $E0
 ;			= $C7		; IRQ handler addr high byte was $E1
 
@@ -425,15 +460,15 @@ PLUS_3		= $03		; X or Y plus 3
 
 LAB_STAK	= $0100		; stack bottom, no offset
 ; *** flushed stack address (minus 2) will be stored at emptsk in runtime ***
-; *** no real need for I/O vectors ***
 
+; *** EhBASIC definitions for Durango-X ***
 Ram_base	= $0400		; start of user RAM (set as needed, should be page aligned)
 Ram_top		= $6000		; end of user RAM+1 (set as needed, should be page aligned) KEEP CLEAR Durango-X screen!
 
 ; ***************************
 ; *** initialisation code ***
 ; ***************************
-eh_basic:
++eh_basic:
 ; *** keep track of flushed stack address ***
 ; this is needed in minimOS but will work fine on other systems too
 	TSX					; current stack pointer
@@ -442,10 +477,6 @@ eh_basic:
 	STX	emptsk			; store for later
 	LDA	#1				; standard 6502 stack page
 	STA	emptsk+1		; *** must be indirect-pointer-ready on either CPU ***
-
-; (must retrieve ^C checking)
-
-; supposedly ignoring any errors...
 
 ; ********************************
 ; *** EhBASIC code starts here ***
@@ -7746,9 +7777,12 @@ V_INPT					; non halting scan input device
 	PHY
 	LDY #0				; ##### CONIO interface #####
 	JSR conio
+	TYA
+	PLY
+	PLX
+	RTS
 ; could check C and Y here for safety
 ; note C works opposite than the original EhBASIC, has been modified
-	BRA io_end			; *** skim some bytes ***
 
 V_OUTP					; send byte to output device
 ;	STA io_c
@@ -7757,18 +7791,18 @@ V_OUTP					; send byte to output device
 	PHY
 	TAY					; ##### CONIO interface #####
 	JSR conio
-io_end:
 	PLY					; *** this ignores errors ***
 	PLX
 ;	LDA io_c			; *** worth recovering it ***
 	PLA					; good?
 	RTS
 
-V_LOAD					; load BASIC program
+V_LOAD					; load BASIC program *** not yet implemented ***
 
-V_SAVE					; save BASIC program
+V_SAVE					; save BASIC program *** not yet implemented ***
 
-	RTS					; *** not yet implemented *** PLACEHOLDER
+	LDX #$20			; (Undefined Function) error
+	JMP LAB_XERR
 
 ; perform BYE	##### minimOS #####
 LAB_EXIT
@@ -7785,7 +7819,7 @@ LAB_EXIT
 
 ; the rest of the code is tables and BASIC start-up code
 
-; this is no longer in ZP
+; this is now in ZP
 PG2_TABS
 	.byte	$00			; ctrl-c flag		-	$00 = enabled
 	.byte	$00			; ctrl-c byte		-	GET needs this
@@ -8796,24 +8830,104 @@ LAB_REDO	.byte	" Redo from start",$0D,$00
 AA_end_basic		; for easier size computation
 .)
 
+; *****************************
 ; *** include firmware here ***
+; *****************************
 ; POST
 reset:
+	SEI						; usual 6502 stuff
+	CLD
+	LDX #$FF
+	TXS
+	STX IOAie				; ### enable Durango-X hardware interrupt ###
+	LDA #$B8				; start in HIRES mode, if possible (note RGB bit set, just in case)
+	STA IO8attr
+	LDX #3					; max jiffy counter index
+jf_res:
+		STZ ticks, X		; reset all jiffy counter bytes
+		DEX
+		BPL jf_res
+	LDX #>std_irq
+	LDY #<std_irq
+	STY fw_irq				; set standard interrupt vectors
+	STX fw_irq+1
+;	LDX #>std_nmi			; danger if commented!
+	LDY #<std_nmi
+	STY fw_nmi
+	STX fw_nmi+1
+	LDY #12					; FF = clear screen
+	JSR conio
 
-; interrupt handlers
+	JMP eh_basic			; start BASIC!
+
+; **************************
+; *** interrupt handlers ***
+; **************************
 irq:
-	JMP ($0200)
+	JMP (fw_irq)			; standard minimOS vector
+std_irq:					; IRQ support for EhBASIC, from min_mon.asm
+; *** minimOS jiffy counter ***
+	INC ticks
+	BNE irq_sup
+		INC ticks+1
+	BNE irq_sup
+		INC ticks+2
+	BNE irq_sup
+		INC ticks+3
+irq_sup:
+; min_mon code follows
+	PHA
+	LDA IrqBase
+	LSR
+	ORA IrqBase
+	STA IrqBase
+; in extremis check for (catastrophic) BRK
+	PHX
+	TSX
+	LDA $103, X				; get pushed PSR
+	AND #$10				; check BRK bit
+	BEQ not_brk
+; *** BRK happened *** will keep the LED flashing, as no debugger is installed
+brk_panic:
+				INX
+				BNE brk_panic
+			INY
+			BNE brk_panic	; 0.2s delay
+		INC					; cycle LED
+		STA IOAie
+		BRA brk_panic
+not_brk:
+	PLX
+	PLA
+	RTI
 nmi:
-	JMP ($0202)
+	JMP (fw_nmi)			; standard minimOS vector
+std_nmi:					; NMI support for EhBASIC, from min_mon.asm
+	PHA
+	LDA NmiBase
+	LSR
+	ORA NmiBase
+	STA NmiBase
+	PLA
+	RTI
 
 ; BIOS
-conio:
+#include "../../OS/macros.h"
+; EMPTY definition from abi.h
+#define	EMPTY	6
+-conio:
+#include "../../OS/firmware/modules/conio-durango-fast.s"
 
-; *** padding and hardware vectors ***
+; *** padding, signatures and hardware vectors ***
 
-	.dsb $FFFA-*, $FF
+	.dsb	$FFD6-*, $FF
+	.asc	"DmOS"			; minimOS-compliant Durango-X cartridge signature
+	.dsb	$FFDE-*, $FF
+	.word	$FFFF			; Fletcher-16 checksum placeholder
 
-	.word	nmi
+	.dsb	$FFFA-*, $FF	; *** may place PANIC routine here ***
+
+	.word	nmi				; standard 6502 hardware vectors
 	.word	reset
 	.word	irq
 

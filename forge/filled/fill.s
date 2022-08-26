@@ -1,16 +1,18 @@
 ; Durango-X filled rectangle routine
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220821-1919
+; last modified 20220822-1105
 
 .bss
 ; *** input ***
 	*	= $F4				; *** placeholder (zpar2) ***
 
-x1:		.byt	0			; NW corner x coordinate (<128 in colour, <256 in HIRES), but all NW/NE/SW/SE combos are accepted
-y1:		.byt	0			; NW corner y coordinate (<128 in colour, <256 in HIRES), but all NW/NE/SW/SE combos are accepted
-x2:		.byt	0			; _not included_ SE corner x coordinate (<128 in colour, <256 in HIRES), but all NW/NE/SW/SE combos are accepted
-y2:		.byt	0			; _not included_ SE corner y coordinate (<128 in colour, <256 in HIRES), but all NW/NE/SW/SE combos are accepted
-col:	.byt	0			; pixel colour, in II format (17*index), ignored in HIRES (actually zpar)
+x1:		.byt	0			; NW corner x coordinate (<128 in colour, <256 in HIRES)
+y1:		.byt	0			; NW corner y coordinate (<128 in colour, <256 in HIRES)
+x2:wid:	.byt	0			; _not included_ SE corner x coordinate (<128 in colour, <256 in HIRES)
+							; alternatively, width (will be converted into x1,x2 format
+y2:hei:	.byt	0			; _not included_ SE corner y coordinate (<128 in colour, <256 in HIRES)
+							; alternatively, height (will be converted into y1,y2 format
+col:	.byt	0			; pixel colour, in II format (17*index), HIRES expects 0 (black) or $FF (white), actually zpar
 
 ; *** zeropage usage and local variables ***
 	*	= $E4				; *** placeholder (local1) ***
@@ -31,24 +33,39 @@ r_ex:	.byt	0			; extra E pixels (id, HIRES only)
 .text
 	*	= $F000				; *** placeholder ***
 
-filled:
-; first of all, check whether coordinates are inverted in any way, to get them sorted as NW-SE
-	LDA x2					; should be W
-	CMP x1					; thus less than E
+; *** interface for (x,y,w,h) format ***
+fill_xywh:
+	LDA wid
 	BEQ exit				; don't draw anything if zero width!
-	BCS x_ok
-		LDX x1				; otherwise, swap x1-x2
-		STX x2
-		STA x1
-x_ok:
-	LDA y2					; should be S
-	CMP y1					; thus less than N
+	CLC
+	ADC x1
+	STA x2					; swap width for East coordinate
+	LDA hei
 	BEQ exit				; don't draw anything if zero height!
-	BCS y_ok
-		LDX y1				; otherwise swap y1-y2
-		STX y2
-		STA y1
-y_ok:
+	CLC
+	ADC y1
+	STA y2					; swap height for South coordinate
+; *** original (x1,y1,x2,y2) format interface ***
+fill_xyxy:
+filled:						; old labe for compatibility
+; first of all, check whether coordinates are inverted in any way, to get them sorted as NW-SE
+; * no longer checked as usually interfaced as (x,y,w,h) but check for non-existent rectangle *
+;	LDA x2					; should be W (or width)
+;	CMP x1					; thus less than E
+;	BEQ exit				; don't draw anything if zero width!
+;	BCS x_ok
+;		LDX x1				; otherwise, swap x1-x2
+;		STX x2
+;		STA x1
+;x_ok:
+;	LDA y2					; should be S
+;	CMP y1					; thus less than N
+;	BEQ exit				; don't draw anything if zero height!
+;	BCS y_ok
+;		LDX y1				; otherwise swap y1-y2
+;		STX y2
+;		STA y1
+;y_ok:
 ; may now compute number of lines and bytes ***(bytes could be done later, as differs from HIRES)
 	LDA x1					; lower limit
 	LSR						; check odd bit into C

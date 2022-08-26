@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; Durango-X firmware console 0.9.6b4
+; Durango-X firmware console 0.9.6b5
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220811-0949
+; last modified 20220822-1219
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -332,7 +332,7 @@ cn_hmok:
 	BNE cn_ok				; below limit means no scroll
 ; ** scroll routine **
 ; rows are 256 bytes apart in hires mode, but 512 in colour mode
-	LDY #<pvdu				; LSB *must* be zero, anyway
+	LDY #<0					; LSB *must* be zero, anyway
 ; MSB is actually OK for destination, but take from current value
 	LDX fw_vbot
 	STY cio_pt				; set both LSBs
@@ -603,7 +603,7 @@ md_ppr:
 
 cio_home:
 ; just reset cursor pointer, to be done after (or before!) CLS
-	LDY #<pvdu				; base address for all modes, actually 0
+	LDY #0					; base address for all modes, actually 0
 	LDA fw_vbot				; current screen setting!
 	STY fw_ciop				; just set pointer
 	STA fw_ciop+1
