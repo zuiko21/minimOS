@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220826-1749
+ * last modified 20220827-0133
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -2131,7 +2131,92 @@ void randomize(void) {
 
 /* *** redefine keymap *** */
 void redefine(void) {
-		int i;
+	int i, j;
+/* some awkward sequences */
+	unsigned char n_a[10]	= {0x7e, 0x7c, 0x40, 0x23, 0xa4, 0xba, 0xac, 0xa6, 0x7b, 0x7d};	// number keys with ALT
+	unsigned char n_as[10]	= {0x9d, 0xa1,    0, 0xbc, 0xa3, 0xaa, 0xb4, 0x5c, 0xab, 0xbb}; // number keys with SHIFT+ALT
+	unsigned char n_ac[10]	= {0xad, 0x2a, 0xa2, 0xb1, 0xa5, 0xf7, 0x60, 0xbf, 0x96, 0x98}; // number keys with CTRL+ALT
+	unsigned char acute[5]	= {0xe1, 0xe9, 0xed, 0xf3, 0xfa};	// lowercase acute accents (sub $20 for uppercase, 1 for grave; add 1 for circumflex, 2 for umlaut*) except ä ($e4) and ö ($f6, both acute+3)
+	unsigned char tilde[5]	= {0xe3, 0xe6,    0, 0xf5, 0xe5};	// lowercase ã, ae, -, õ, å (sub $20 for uppercase)
+
+/* indices for some sequences */
+	unsigned char vowel[5]	= {'a', 'e', 'i', 'o', 'u'};		// position of lowercase circumflex, acute and umlaut vowels
+	unsigned char middle[5]	= {'g', 'h', 'j', 'k', 'l'};		// position of uppercase circumflex, grave and some with tilde
+
+	for (i=0; i<8; i++)
+		for (j=0;j<256;j++)
+			keys[i][j]=0;		// clear entries by default
+
+/* * usual special keys * */
+	for (i=0; i<8; i++) {		// set some common keys to (almost) all shifted combos
+		keys[i][0x08]	=0x08;	// backspace
+		keys[i][0x09]	=0x09;	// tab
+		keys[i][0x0d]	=0x0d;	// newline
+		keys[i][0x1b]	=0x1b;	// escape
+		keys[i][0x20]	=0x20;	// space bar
+		keys[i][0x7f]	=0x7f;	// delete
+	}
+// manual TBD...
+
+/* * number keys * */
+	for (i='0'; i<='9'; i++) {
+		keys[0][i]		=i;		// unshifted numbers
+		keys[1][i]		=i-0x10;// shift all except 3 ($B7), 7 ($2F) and 0 ($3D)
+		if (i>4)
+			keys[2][i]	=i+5;	// ctrl over 5 OK except 7 ($2D) and 8 ($3C) 
+		if ((i>0)&&(i<6))
+			keys[3][i]	=i-0x16;// ctrl-shift OK between 1 and 5, randomly otherwise
+		// number keys with alternate don't make any sense, except...
+		if ((i>1)&&(i<4))
+			keys[7][i]	=i+0x80;//...these two ctrl-alt-shift keys
+		// fill remaining alt-number keys
+		keys[4][i]	=n_a[i];	// alt
+		keys[5][i]	=n_as[i];	// alt+shift
+		keys[6][i]	=n_ac[i];	// alt+ctrl
+	}
+/* manually assigned number keys */
+	keys[1]['0']		=0x3d;	// equals
+	keys[1]['3']		=0xb7;	// interpunct (shift-3)
+	keys[1]['7']		=0x2f;	// slash
+	keys[2]['7']		=0x2d;	// minus (ctrl-7)
+	keys[2]['8']		=0x3c;	// less than
+	keys[3]['0']		=0x7f;	// DEL (ctrl-shift-0)
+	keys[3]['6']		=0x5e;	// caret 
+	keys[3]['7']		=0x3f;	// question mark 
+	keys[3]['8']		=0x5b;	// open bracket 
+	keys[3]['9']		=0x5d;	// close bracket
+	keys[7]['0']		=0xaf;	// macron
+	keys[7]['8']		=0x9c;	// infinity
+
+/* * letter keys * */
+	for (i='a'; i<='z'; i++) {
+		keys[0][i]	=i;			// standard unshifted letter
+		keys[1][i]	=i-0x40;	// uppercase letters
+		keys[2][i]	=i-0x60;	// control codes
+	}							// other combos must be computed differently
+/* diacritics */
+	for (i=0; i<5; i++) {		// check vowels
+		keys[4][vowel[i]]	=acute[i];		// ALT vowel = acute
+		keys[5][vowel[i]]	=acute[i]-0x20;	// ALT+SHIFT vowel = upper acute
+		keys[4][middle[i]]	=tilde[i];		// ALT middle = tildes etc
+		if (i!=2)
+			keys[3][middle[i]]	=tilde[i]-0x20;		// CTRL+SHIFT middle = upper tildes etc
+		else
+			keys[3][middle[i]]	=0x8b;		// semigraphic alternative
+		keys[6][middle[i]]	=acute[i]-1;	// ALT+CTRL middle = grave
+		keys[7][middle[i]]	=acute[i]-0x21;	// ALT+CTRL+SHIFT middle = upper grave
+		keys[3][vowel[i]]	=acute[i]+1;	// CTRL+SHIFT vowel = circum
+		keys[5][middle[i]]	=acute[i]-0x1f;	// ALT+SHIFT middle = upper circum
+		if ((i!=0) && (i!=3)) {
+			keys[6][vowel[i]]	=acute[i]+2;	// ALT+CTRL vowel = umlaut
+			keys[7][vowel[i]]	=acute[i]-0x1e;	// ALT+CTRL+SHIFT vowel = upper umlaut
+		} else {
+			keys[6][vowel[i]]	=acute[i]+3;	// special cases for ä and ö, b/c tilde
+			keys[7][vowel[i]]	=acute[i]-0x1d;
+		}
+// ÿ and some others TBD...
+
+// check the following, many will disappear!
 /* unshifted special keys */
 		keys[0][8]		=0x08;	// backspace
 		keys[0][9]		=0x09;	// tab
@@ -2147,8 +2232,8 @@ void redefine(void) {
 		keys[1][9]		=0x18;	// backtab
 		keys[1][0x0d]	=0x0d;	// newline (mac)
 		keys[1][0x1b]	=0x1b;	// escape (mac)
-		keys[1][0x32]	=0x22;	// quote
-		keys[1][0x33]	=0xb7;	// interpunct
+//		keys[1][0x32]	=0x22;	// quote
+//		keys[1][0x33]	=0xb7;	// interpunct
 		keys[1][0x7f]	=0x7f;		// delete??
 		keys[1][0xa1]	=0xbf;	// ¿
 		keys[1][0xba]	=0xaa;	// ª
@@ -2164,7 +2249,7 @@ void redefine(void) {
 		keys[2][0xba]	=186;		// º
 		keys[2][0xe7]	=231;		// ç
 		keys[2][0xf1]	=241;		// ñ
-		for (i=1; i<=26; i++)	keys[2][i+0x60]=i;	// control+letter
+//		for (i=1; i<=26; i++)	keys[2][i+0x60]=i;	// control+letter
 /* CTRL+SHIFT + special keys */
 		keys[3][8]		=  8;		// backspace??
 		keys[3][9]		=  9;		// tab!!
