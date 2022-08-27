@@ -6,8 +6,6 @@ import java.nio.file.Files;
 
 public class RLEEncoder {
 	/* global variables, WTF */
-	byte[]	src;			// just in case, read whole input file
-	File	f;					// file handler, both source and output as not simultaneous
 	int		i;					// i = source index
 	long		siz;
 	int unc;
@@ -16,34 +14,21 @@ public class RLEEncoder {
 	int	clocks = 0;			// estimated 6502 decompression time!
 
 	/* main code */
-	private int main() throws Exception {
+	private int encode(byte[] src) throws Exception {
 		byte	base;				// repeated character
-		String	name;			// input filename
 		int		thres;				// compression threshold (usually 2 is optimum, but ~19 is faster)
-	/* read source file into memory */
-		System.out.println("File to compress: ");
-		name = "/tmp/pongimg.bin";			// does this put terminator? I think so
-		f = new File(name);		// open source file
-		if (f==null) {
-			System.out.println("\n*** No input file ***\n");
-			return -1;
-		}
-		siz = f.length();				// get length
+	
+		siz = src.length;				// get length
 				
 		if (siz>32768) {
 			System.out.println("\n*** File is too large ***\n");
 			return -2;
 		}
-		src = Files.readAllBytes(f.toPath()); // read file into memory
+		
 				
 	/* prepare output file */
-		f = new File("/tmp/srcjava.rle");		// get ready for output file
-		FileOutputStream out = new FileOutputStream(f);
-		if (f==null) {
-			System.out.println("\n*** Cannot create output file ***\n");
-			out.close();
-			return -3;
-		}
+		FileOutputStream out = new FileOutputStream(new File("/tmp/srcjava.rle")); // get ready for output file
+		
 	/* compress array */
 		System.out.println("Compression threshold? (optimum ~2): ");
 		thres=2;
@@ -61,7 +46,7 @@ public class RLEEncoder {
 			}
 			if (count>thres) {		// any actual repetition?
 				if (unc>0)
-					send_u(out);		// send previous uncompressed chunk, if any!
+					send_u(src, out);		// send previous uncompressed chunk, if any!
 				out.write(count);	// first goes 'command', positive means repeat following byte
 				out.write(base);		// this was the repeated value
 				output += 2;
@@ -69,14 +54,14 @@ public class RLEEncoder {
 			} else {
 				unc+=count;			// different, thus more for the uncompressed chunk EEEEEEK
 				if (unc>=128) {
-					send_u(out);		// cannot add more to chunk
+					send_u(src, out);		// cannot add more to chunk
 				}
 			}
 		}
 	/* input stream ended, but check for anything in progress! */
 		count=0;					// EEEEEEEEEEEK
 		if (unc>0)
-			send_u(out);				// send uncompressed chunk in progress!
+			send_u(src, out);				// send uncompressed chunk in progress!
 	
 	/* end output stream and cleanout */
 		out.write(0);				// end of stream
@@ -89,7 +74,7 @@ public class RLEEncoder {
 	}
 
 /* function definitions */
-	private void send_u(FileOutputStream out) throws Exception {	// go backwards and send uncompressed chunk
+	private void send_u(byte[] src, FileOutputStream out) throws Exception {	// go backwards and send uncompressed chunk
 		int		x, y;				// x = uncompressed chunk index, y = min(unc,128)
 	
 		x = i - unc - count;		// compute start of chunk
@@ -105,6 +90,6 @@ public class RLEEncoder {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		new RLEEncoder().main();
+		new RLEEncoder().encode(Files.readAllBytes(new File("/tmp/pongimg.bin").toPath())); // read file into memory);
 	}
 }
