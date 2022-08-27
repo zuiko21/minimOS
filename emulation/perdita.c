@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220827-1246
+ * last modified 20220827-2256
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -175,13 +175,12 @@ int main(int argc, char *argv[])
 {
 	int index;
 	int arg_index;
-	int c;
+	int c, do_rand=1;
 	char *filename;
 	char *rom_addr=NULL;
 	int rom_addr_int;
 
 	redefine();		// finish keyboard layout definitions
-	randomize();	// randomize memory contents
 
 	if(argc==1) {
 		usage(argv[0]);
@@ -190,7 +189,7 @@ int main(int argc, char *argv[])
 
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "a:fvlksph")) != -1)
+	while ((c = getopt (argc, argv, "a:fvlksphr")) != -1)
 	switch (c) {
 		case 'a':
 			rom_addr = optarg;
@@ -215,6 +214,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'h':
 			graf = 0;
+			break;
+		case 'r':
+			do_rand = 0;
 			break;
 		case '?':
 			fprintf (stderr, "Unknown option\n");
@@ -261,6 +263,8 @@ int main(int argc, char *argv[])
 		mem[0xFFFF] = 0xFF;
 	}
 
+	if (do_rand)		randomize();		// randomize memory contents
+
 	run_emulation();
 
 	return 0;
@@ -276,6 +280,7 @@ void usage(char name[]) {
 	printf("-k keep GUI open after program end\n");
 	printf("-h headless -- no graphics!\n");
 	printf("-v verbose (warnings/interrupts/jumps/events/all)\n");
+	printf("-r do NOT randomize memory at startup\n");
 }
 
 void run_emulation () {
@@ -509,7 +514,7 @@ void ROMload(const char name[]) {
 /* *** memory management *** */
 /* read from memory or I/O */
 byte peek(word dir) {
-	byte d = 0xFF;				// supposed floating databus value?
+	byte d = 0;					// supposed floating databus value?
 
 	if (dir>=0xDF80 && dir<=0xDFFF) {	// *** I/O ***
 		if (dir<=0xDF87) {		// video mode (high nibble readable)
@@ -2092,6 +2097,10 @@ void redefine(void) {
 	byte n_a[10]	= {0x7e, 0x7c, 0x40, 0x23, 0xa4, 0xba, 0xac, 0xa6, 0x7b, 0x7d};	// number keys with ALT
 	byte n_as[10]	= {0x9d, 0xa1,    0, 0xbc, 0xa3, 0xaa, 0xb4, 0x5c, 0xab, 0xbb}; // number keys with SHIFT+ALT
 	byte n_ac[10]	= {0xad, 0x2a, 0xa2, 0xb1, 0xa5, 0xf7, 0x60, 0xbf, 0x96, 0x98}; // number keys with CTRL+ALT
+	byte nl_c[5]	= {0x5f, 0x2b, 0x27, 0x2e, 0x2c};	// low half number keys with CTRL
+//	byte nh_cs[4]	= {0x5e, 0x3f, 0x5b, 0x5d};			// higher half number keys with CTRL+SHIFT
+	byte n_cs[10]	= {0x7f, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x5e, 0x3f, 0x5b, 0x5d};	// number keys with CTRL+SHIFT
+
 	byte acute[5]	= {0xe1, 0xe9, 0xed, 0xf3, 0xfa};	// lowercase acute accents (sub $20 for uppercase, 1 for grave; add 1 for circumflex, 2 for umlaut*) except ä ($e4) and ö ($f6, both acute+3)
 	byte tilde[5]	= {0xe3, 0xe6,    0, 0xf5, 0xe5};	// lowercase ã, ae, -, õ, å (sub $20 for uppercase)
 
@@ -2147,19 +2156,24 @@ void redefine(void) {
 
 /* * number keys * */
 	for (i='0'; i<='9'; i++) {
-		keys[0][i]		=i;		// unshifted numbers
-		keys[1][i]		=i-0x10;// shift all except 3 ($B7), 7 ($2F) and 0 ($3D)
-		if (i>4)
-			keys[2][i]	=i+5;	// ctrl over 5 OK except 7 ($2D) and 8 ($3C) 
-		if ((i>0)&&(i<6))
-			keys[3][i]	=i-0x16;// ctrl-shift OK between 1 and 5, randomly otherwise
+		keys[0][i]		=i;				// unshifted numbers
+		keys[1][i]		=i-0x10;		// shift all except 3 ($B7), 7 ($2F) and 0 ($3D)
+		if (i>'4')
+			keys[2][i]	=i+5;			// ctrl over 5 OK except 7 ($2D) and 8 ($3C)
+		else
+			keys[2][i]	=nl_c[i-'0'];	// first half of numbers + CTRL
+//		if ((i>'0')&&(i<'6'))
+//			keys[3][i]	=i-0x16;		// ctrl-shift OK between 1 and 5, randomly otherwise
+//		else if (i>'5')
+//			keys[3][i]	=nh_cs[i-'6'];	// highest numbers with CTRL-SHIFT, note offset!
+			keys[3][i]	=n_cs[i-'0'];	// numbers with CTRL-SHIFT
 		// number keys with alternate don't make any sense, except...
-		if ((i>1)&&(i<4))
-			keys[7][i]	=i+0x80;//...these two ctrl-alt-shift keys
+		if ((i>'1')&&(i<'4'))
+			keys[7][i]	=i+0x80;		//...these two ctrl-alt-shift keys
 		// fill remaining alt-number keys
-		keys[4][i]	=n_a[i];	// alt
-		keys[5][i]	=n_as[i];	// alt+shift
-		keys[6][i]	=n_ac[i];	// alt+ctrl
+		keys[4][i]	=n_a[i-'0'];		// alt
+		keys[5][i]	=n_as[i-'0'];		// alt+shift
+		keys[6][i]	=n_ac[i-'0'];		// alt+ctrl
 	}
 /* manually assigned number keys */
 	keys[1]['0']		=0x3d;	// equals
@@ -2167,18 +2181,14 @@ void redefine(void) {
 	keys[1]['7']		=0x2f;	// slash
 	keys[2]['7']		=0x2d;	// minus (ctrl-7)
 	keys[2]['8']		=0x3c;	// less than
-	keys[3]['0']		=0x7f;	// DEL (ctrl-shift-0)
-	keys[3]['6']		=0x5e;	// caret 
-	keys[3]['7']		=0x3f;	// question mark 
-	keys[3]['8']		=0x5b;	// open bracket 
-	keys[3]['9']		=0x5d;	// close bracket
+//	keys[3]['0']		=0x7f;	// DEL (ctrl-shift-0)
 	keys[7]['0']		=0xaf;	// macron
 	keys[7]['8']		=0x9c;	// infinity
 
 /* * letter keys * */
 	for (i='a'; i<='z'; i++) {
 		keys[0][i]	=i;			// standard unshifted letter
-		keys[1][i]	=i-0x40;	// uppercase letters
+		keys[1][i]	=i-0x20;	// uppercase letters
 		keys[2][i]	=i-0x60;	// control codes
 	}							// other combos must be computed differently
 /* diacritics */
@@ -2201,7 +2211,12 @@ void redefine(void) {
 			keys[6][vowel[i]]	=acute[i]+3;	// special cases for ä and ö, b/c tilde
 			keys[7][vowel[i]]	=acute[i]-0x1d;
 		}
+	}
 // ÿ and some others TBD...
+	keys[0]['+']	=0x2b;	// plus
+	keys[1]['+']	=0x2a;	// star
+	keys[4]['+']	=0x5d;	// close bracket
+	keys[5]['+']	=0xb1;	// plus-minus
 
 // check the following, many will disappear!**********
 		keys[0][0xe7]	=0xe7;	// ç
