@@ -2118,6 +2118,7 @@ void redefine(void) {
 				break;
 			case 4:
 				keys[4][0x20]	=0xA0;	// ALT-SPACE
+				keys[4][0xba]	=0x5c;	// ALT-ord (backslash)
 				break;
 			case 6:
 				keys[6][0x20]	=0;		// ALT+CTRL-SPACE
@@ -2126,6 +2127,21 @@ void redefine(void) {
 				keys[i][0x20]	=0x20;	// space bar, except CTRL ($80), ALT ($A0) and CTRL+ALT (0)
 		}
 		keys[i][0x7f]	=0x7f;	// delete
+		if (i&1) {				// some SHIFTed combos, not affected by ALT/CTRL
+			keys[i][',']=';';
+			keys[i]['.']=':';
+			keys[i]['-']='_';	// no dashes here, just hyphen/underscore
+			keys[i][0x27]='?';	// apostrophe key
+			keys[i][0xa1]=0xbf;	// reverse question
+			if (i==1)	keys[1][0xba]=0xaa;		// ord f.
+		} else {
+			keys[i][',']=',';
+			keys[i]['.']='.';
+			keys[i]['-']='-';	// no dashes here, just hyphen/underscore
+			keys[i][0x27]=0x27;	// apostrophe
+			keys[i][0xa1]=0xa1;	// reverse exclamation
+			if (i==0)	keys[0][0xba]=0xba;		// ord m.
+		}
 	}
 // TO DO: accents, cursors, pgup/pgdn (need SDL scancodes)
 
@@ -2171,7 +2187,7 @@ void redefine(void) {
 		keys[5][vowel[i]]	=acute[i]-0x20;	// ALT+SHIFT vowel = upper acute
 		keys[4][middle[i]]	=tilde[i];		// ALT middle = tildes etc
 		if (i!=2)
-			keys[3][middle[i]]	=tilde[i]-0x20;		// CTRL+SHIFT middle = upper tildes etc
+			keys[3][middle[i]]	=tilde[i]-0x20;	// CTRL+SHIFT middle = upper tildes etc
 		else
 			keys[3][middle[i]]	=0x8b;		// semigraphic alternative
 		keys[6][middle[i]]	=acute[i]-1;	// ALT+CTRL middle = grave
@@ -2187,92 +2203,17 @@ void redefine(void) {
 		}
 // ÿ and some others TBD...
 
-// check the following, many will disappear!
-/* unshifted special keys */
-		keys[0][8]		=0x08;	// backspace
-		keys[0][9]		=0x09;	// tab
-		keys[0][0x0d]	=0x0d;	// newline
-		keys[0][0x1b]	=0x1b;	// escape
-		keys[0][0x7f]	=0x7f;	// delete
-		keys[0][0xa1]	=0xa1;	// ¡
-		keys[0][0xba]	=0xba;	// º
+// check the following, many will disappear!**********
 		keys[0][0xe7]	=0xe7;	// ç
 		keys[0][0xf1]	=0xf1;	// ñ
-/* SHIFT + special keys */
-		keys[1][8]		=0x08;	// backspace (mac)
-		keys[1][9]		=0x18;	// backtab
-		keys[1][0x0d]	=0x0d;	// newline (mac)
-		keys[1][0x1b]	=0x1b;	// escape (mac)
-//		keys[1][0x32]	=0x22;	// quote
-//		keys[1][0x33]	=0xb7;	// interpunct
-		keys[1][0x7f]	=0x7f;		// delete??
-		keys[1][0xa1]	=0xbf;	// ¿
-		keys[1][0xba]	=0xaa;	// ª
 		keys[1][0xe7]	=0xc7;	// Ç
 		keys[1][0xf1]	=0xd1;	// Ñ
-		
-		
-/* CONTROL + special keys */ //**BAD
-		keys[2][8]		=  8;		// backspace??
-		keys[2][9]		=  9;		// tab!!
-		keys[2][0x0d]	= 13;		// newline??
-		keys[2][0x1b]	= 27;	// escape (mac)
-		keys[2][0x7f]	=127;		// delete??
-		keys[2][0xa1]	=161;		// ¡
-		keys[2][0xba]	=186;		// º
-		keys[2][0xe7]	=231;		// ç
-		keys[2][0xf1]	=241;		// ñ
-//		for (i=1; i<=26; i++)	keys[2][i+0x60]=i;	// control+letter
-/* CTRL+SHIFT + special keys */
-		keys[3][8]		=  8;		// backspace??
-		keys[3][9]		=  9;		// tab!!
-		keys[3][0x0d]	= 13;		// newline??
-		keys[3][0x1b]	= 27;	// escape (mac)
-		keys[3][0x7f]	=127;		// delete?
-		keys[3][0xa1]	=161;		// ¡
-		keys[3][0xba]	=186;		// º
-		keys[3][0xe7]	=231;		// ç
-		keys[3][0xf1]	=241;		// ñ
-/* ALTERNATE + special keys */
-		keys[4][8]		=  8;		// backspace??
-		keys[4][9]		=  9;		// tab?? *
-		keys[4][0x0d]	= 13;		// newline??
-		keys[4][0x1b]	= 27;	// escape (mac)
-		keys[4][0x7f]	=127;		// delete??
-		keys[4][0xa1]	=161;		// ¡
-		keys[4][0xba]	=92;	// '\'
+
 		keys[4][0xe7]	=125;	// }
 		keys[4][0xf1]	=126;	// ~
-/* ALT+SHIFT + special keys */
-		keys[5][8]		=  8;		// backspace??
-		keys[5][9]		=  9;	// tab (mac)
-		keys[5][0x0d]	= 13;		// newline??
-		keys[5][0x1b]	= 27;	// escape (mac)
-		keys[5][0x7f]	=127;		// delete
-		keys[5][0xa1]	=161;		// ¡
-		keys[5][0xba]	=176;	// ° (mac)
+		keys[5][0xba]	=176;	// ° (mac)???
 		keys[5][0xe7]	=187;	// » (mac)
 		keys[5][0xf1]	=126;	// ~
-/* CTRL+ALT + special keys */
-		keys[6][8]		=  8;		// backspace??
-		keys[6][9]		=  9;	// tab (mac)
-		keys[6][0x0d]	= 13;	// newline (mac)
-		keys[6][0x1b]	= 27;	// escape (mac)
-		keys[6][0x7f]	=127;		// delete?? RESET!
-		keys[6][0xa1]	=161;		// ¡
-		keys[6][0xba]	=186;		// º
-		keys[6][0xe7]	=231;		// ç
-		keys[6][0xf1]	=241;		// ñ
-/* CTRL+ALT+SHIFT + special keys */
-		keys[7][8]		=  8;		// backspace??
-		keys[7][9]		=  9;	// tab (mac)
-		keys[7][0x0d]	= 13;	// newline (mac)
-		keys[7][0x1b]	= 27;	// escape (mac)
-		keys[7][0x7f]	=127;		// delete??
-		keys[7][0xa1]	=161;		// ¡
-		keys[7][0xba]	=186;		// º
-		keys[7][0xe7]	=231;		// ç
-		keys[7][0xf1]	=241;		// ñ
 }
 
 /* *** *** VDU SECTION *** *** */
