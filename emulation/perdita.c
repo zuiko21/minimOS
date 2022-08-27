@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220827-0133
+ * last modified 20220827-1246
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -90,7 +90,7 @@
 	int		old_t = 0;		// time of last sample creation
 	int		old_v = 0;		// last sample value
 
-	unsigned char keys[8][256];
+	byte keys[8][256];
 
 /* ******************* */
 /* function prototypes */
@@ -2089,30 +2089,45 @@ void randomize(void) {
 void redefine(void) {
 	int i, j;
 /* some awkward sequences */
-	unsigned char n_a[10]	= {0x7e, 0x7c, 0x40, 0x23, 0xa4, 0xba, 0xac, 0xa6, 0x7b, 0x7d};	// number keys with ALT
-	unsigned char n_as[10]	= {0x9d, 0xa1,    0, 0xbc, 0xa3, 0xaa, 0xb4, 0x5c, 0xab, 0xbb}; // number keys with SHIFT+ALT
-	unsigned char n_ac[10]	= {0xad, 0x2a, 0xa2, 0xb1, 0xa5, 0xf7, 0x60, 0xbf, 0x96, 0x98}; // number keys with CTRL+ALT
-	unsigned char acute[5]	= {0xe1, 0xe9, 0xed, 0xf3, 0xfa};	// lowercase acute accents (sub $20 for uppercase, 1 for grave; add 1 for circumflex, 2 for umlaut*) except ä ($e4) and ö ($f6, both acute+3)
-	unsigned char tilde[5]	= {0xe3, 0xe6,    0, 0xf5, 0xe5};	// lowercase ã, ae, -, õ, å (sub $20 for uppercase)
+	byte n_a[10]	= {0x7e, 0x7c, 0x40, 0x23, 0xa4, 0xba, 0xac, 0xa6, 0x7b, 0x7d};	// number keys with ALT
+	byte n_as[10]	= {0x9d, 0xa1,    0, 0xbc, 0xa3, 0xaa, 0xb4, 0x5c, 0xab, 0xbb}; // number keys with SHIFT+ALT
+	byte n_ac[10]	= {0xad, 0x2a, 0xa2, 0xb1, 0xa5, 0xf7, 0x60, 0xbf, 0x96, 0x98}; // number keys with CTRL+ALT
+	byte acute[5]	= {0xe1, 0xe9, 0xed, 0xf3, 0xfa};	// lowercase acute accents (sub $20 for uppercase, 1 for grave; add 1 for circumflex, 2 for umlaut*) except ä ($e4) and ö ($f6, both acute+3)
+	byte tilde[5]	= {0xe3, 0xe6,    0, 0xf5, 0xe5};	// lowercase ã, ae, -, õ, å (sub $20 for uppercase)
 
 /* indices for some sequences */
-	unsigned char vowel[5]	= {'a', 'e', 'i', 'o', 'u'};		// position of lowercase circumflex, acute and umlaut vowels
-	unsigned char middle[5]	= {'g', 'h', 'j', 'k', 'l'};		// position of uppercase circumflex, grave and some with tilde
+	byte vowel[5]	= {'a', 'e', 'i', 'o', 'u'};		// position of lowercase circumflex, acute and umlaut vowels
+	byte middle[5]	= {'g', 'h', 'j', 'k', 'l'};		// position of uppercase circumflex, grave and some with tilde
 
 	for (i=0; i<8; i++)
 		for (j=0;j<256;j++)
 			keys[i][j]=0;		// clear entries by default
 
-/* * usual special keys * */
+/* * some dedicated keys * */
 	for (i=0; i<8; i++) {		// set some common keys to (almost) all shifted combos
 		keys[i][0x08]	=0x08;	// backspace
-		keys[i][0x09]	=0x09;	// tab
+		if (i<4)
+			keys[i][0x09]=0x09;	// tab, except all ALTs (SWTC, 0 or $1A?)
+		else
+			keys[i][0x09]=0x00;	// tab, except all ALTs (SWTC, 0 or $1A?)***TBD
 		keys[i][0x0d]	=0x0d;	// newline
 		keys[i][0x1b]	=0x1b;	// escape
-		keys[i][0x20]	=0x20;	// space bar
+		switch(i) {
+			case 2:
+				keys[2][0x20]	=0x80;	// CTRL-SPACE
+				break;
+			case 4:
+				keys[4][0x20]	=0xA0;	// ALT-SPACE
+				break;
+			case 6:
+				keys[6][0x20]	=0;		// ALT+CTRL-SPACE
+				break;
+			default:
+				keys[i][0x20]	=0x20;	// space bar, except CTRL ($80), ALT ($A0) and CTRL+ALT (0)
+		}
 		keys[i][0x7f]	=0x7f;	// delete
 	}
-// manual TBD...
+// TO DO: accents, cursors, pgup/pgdn (need SDL scancodes)
 
 /* * number keys * */
 	for (i='0'; i<='9'; i++) {
@@ -2195,7 +2210,9 @@ void redefine(void) {
 		keys[1][0xba]	=0xaa;	// ª
 		keys[1][0xe7]	=0xc7;	// Ç
 		keys[1][0xf1]	=0xd1;	// Ñ
-/* CONTROL + special keys */
+		
+		
+/* CONTROL + special keys */ //**BAD
 		keys[2][8]		=  8;		// backspace??
 		keys[2][9]		=  9;		// tab!!
 		keys[2][0x0d]	= 13;		// newline??
