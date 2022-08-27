@@ -1,7 +1,9 @@
 package net.emiliollbb.durango;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 
 public class RLEEncoder {
@@ -13,21 +15,25 @@ public class RLEEncoder {
 	int output;
 	int	clocks = 0;			// estimated 6502 decompression time!
 
-	/* main code */
-	private int encode(byte[] src) throws Exception {
-		byte	base;				// repeated character
-		int		thres;				// compression threshold (usually 2 is optimum, but ~19 is faster)
-	
+	/**
+	 * 
+	 * @param thres compression threshold (usually 2 is optimum, but ~19 is faster)
+	 * @param src input to compress
+	 * @return encoded data as byte array
+	 * @throws Exception
+	 */
+	private byte[] encode(int thres, byte[] src) throws Exception {
+		byte base;				// repeated character
+			
 		siz = src.length;				// get length
 				
 		if (siz>32768) {
-			System.out.println("\n*** File is too large ***\n");
-			return -2;
+			throw new Exception("\n*** File is too large ***\n");			
 		}
 		
 				
 	/* prepare output file */
-		FileOutputStream out = new FileOutputStream(new File("/tmp/srcjava.rle")); // get ready for output file
+		ByteArrayOutputStream out = new ByteArrayOutputStream(); // get ready for output file
 		
 	/* compress array */
 		System.out.println("Compression threshold? (optimum ~2): ");
@@ -70,11 +76,11 @@ public class RLEEncoder {
 		System.out.println("\nDone! Encoded "+siz+" bytes into "+output+" ("+(100*output/siz)+")\n");
 		System.out.println("Estimated 6502 timing: "+clocks+" clock cycles\n");
 	
-		return 0;
+		return out.toByteArray();
 	}
 
 /* function definitions */
-	private void send_u(byte[] src, FileOutputStream out) throws Exception {	// go backwards and send uncompressed chunk
+	private void send_u(byte[] src, OutputStream out) throws Exception {	// go backwards and send uncompressed chunk
 		int		x, y;				// x = uncompressed chunk index, y = min(unc,128)
 	
 		x = i - unc - count;		// compute start of chunk
@@ -90,6 +96,9 @@ public class RLEEncoder {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		new RLEEncoder().encode(Files.readAllBytes(new File("/tmp/pongimg.bin").toPath())); // read file into memory);
+		FileOutputStream out = new FileOutputStream(new File("/tmp/srcjava.rle"));
+		byte[] encoded = new RLEEncoder().encode(2, Files.readAllBytes(new File("/tmp/pongimg.bin").toPath())); // read file into memory);
+		out.write(encoded);
+		out.close();
 	}
 }
