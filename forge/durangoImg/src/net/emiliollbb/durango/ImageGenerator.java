@@ -52,11 +52,11 @@ public class ImageGenerator {
 	public static String getHexString(byte[] pixels) {
 		StringBuilder sb = new StringBuilder(500);		
 		for(int i=0; i<pixels.length; i++) {
-			if(i%16==0) {
+			if(i%32==0) {
 				sb.append(".byt ");
 			}
 			sb.append(String.format("$%02X",pixels[i])).append(',');
-			if(i%16==15) {
+			if(i%32==31) {
 				sb.append("\n");
 			}
 		}		
