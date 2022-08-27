@@ -65,9 +65,10 @@ public class ImageGenerator {
 	
 		
 	public static void main(final String args[]) throws Exception {
-		byte[] pixels = convertToDurango("/tmp/pong.png");		
+		byte[] pixels = convertToDurango("/tmp/pong.png");
+		byte [] encoded = new RLEEncoder().encode(2, pixels);
 		System.out.println("----- IMAGE ------");
-		System.out.println(getHexString(pixels));
+		System.out.println(getHexString(encoded));
 		System.out.println("\n----- ----- ------");				
 	}
 }
