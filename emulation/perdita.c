@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220828-1300
+ * last modified 20220828-1706
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -2136,7 +2136,7 @@ int init_vdu() {
 	VDU_SCREEN_HEIGHT=VDU_SCREEN_WIDTH;
 
 	//Create window
-	sdl_window = SDL_CreateWindow("Durango", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, VDU_SCREEN_WIDTH, VDU_SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
+	sdl_window = SDL_CreateWindow("Durango-X", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, VDU_SCREEN_WIDTH, VDU_SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
 	if( sdl_window == NULL )
 	{
 		printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
@@ -2513,6 +2513,10 @@ void redefine(void) {
 	keys[1][0xe7]	=0xc7;	// Ç
 	keys[4][0xe7]	=0x7d;	// close braces
 	keys[5][0xe7]	=0xbb;	// close guillemet
+	keys[0][0x3c]	=0x3c;	// <
+	keys[1][0x3c]	=0x3e;	// >
+	keys[4][0x3c]	=0x96;	// less or equal
+	keys[5][0x3c]	=0x98;	// more or equal
 }
 
 void process_keyboard(SDL_Event *e) {
@@ -2603,7 +2607,7 @@ void process_keyboard(SDL_Event *e) {
 	}
 	// detect key release for PASK compatibility
 	else if(e->type == SDL_KEYUP) {
-		if (ver)	printf("->down. ");
+		if (ver)	printf("·");
 		mem[0xDF9A] = 0;
 	}
 	// gamepad button down
@@ -2666,7 +2670,7 @@ void process_keyboard(SDL_Event *e) {
 			gamepads[e->jaxis.which] &= ~BUTTON_DOWN;
 		}
 		if (ver > 2) printf("gamepads[0] = $%x\n", gamepads[0]);
-		if (ver > 2) printf("gamepads[0] = $%x\n", gamepads[1]);
+		if (ver > 2) printf("gamepads[1] = $%x\n", gamepads[1]);
 	}
 	// Emulate gamepads
 	if(gp1_emulated) {
