@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220828-1706
+ * last modified 20220829-1715
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -242,6 +242,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	if (do_rand)		randomize();		// randomize memory contents
+
 	if(rom_addr == NULL) {
 		ROMload(filename);
 	}
@@ -262,8 +264,6 @@ int main(int argc, char *argv[])
 		mem[0xFFFE] = 0xF4;					// standard IRQ vector points to recommended indirect jump
 		mem[0xFFFF] = 0xFF;
 	}
-
-	if (do_rand)		randomize();		// randomize memory contents
 
 	run_emulation();
 
@@ -416,7 +416,7 @@ void stat(void)	{
 		else			printf("·");
 		psr<<=1;			// next flag
 	}
-	printf(">\n");
+	printf("> [%04X]=%02X\n",pc-1, mem[pc-1]);
 }
 
 /* Display STACK status */
@@ -801,7 +801,7 @@ void adc(byte d) {
 	bits_nz(a);									// set N & Z as usual
 }
 
-/* SBC, sutract with borrow */	// *** check
+/* SBC, subtract with borrow */ //EEEEEEEEEEEEEEEEK
 void sbc(byte d) {
 	byte old = a;
 	word big = a;
@@ -819,8 +819,8 @@ void sbc(byte d) {
 		}
 	}
 
-	if (big & 256)			p |= 0b00000001;	// set Carry if needed
-	else					p &= 0b11111110;
+	if (big & 256)			p &= 0b11111110;	// set Carry if needed EEEEEEEEEEEEK
+	else					p |= 0b00000001;
 	if ((a&128)^(old&128))	p |= 0b01000000;	// set oVerflow if needed
 	else					p &= 0b10111111;
 	bits_nz(a);									// set N & Z as usual

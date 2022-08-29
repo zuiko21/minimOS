@@ -489,7 +489,7 @@ cio_ff:
 ; fw_cbin (binary or multibyte mode, but must be reset BEFORE first FF)
 
 	STZ fw_mask				; true video *** no real need to reset this
-	STZ fw_cbin				; standard character mode *** not much sense anyway
+;	STZ fw_cbin				; standard character mode *** not much sense anyway
 	JSR rs_col				; restore array from whatever is at fw_ccol[1] (will restore fw_cbin)
 	LDY #<cio_fnt			; supplied font address
 	LDA #>cio_fnt

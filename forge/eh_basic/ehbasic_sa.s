@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20220822-1308
+; last modified 20220829-1137
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -595,7 +595,6 @@ MEM_OK
 	STY	Ememh			; set end of mem high byte
 	STA	Sstorl		; set bottom of string space low byte
 	STY	Sstorh		; set bottom of string space high byte
-
 	LDY	#<Ram_base		; set start addr low byte
 	LDX	#>Ram_base		; set start addr high byte
 	STY	Smeml			; save start of mem low byte
@@ -620,7 +619,10 @@ LAB_2E05
 	TAX					; copy to X
 	LDA	Ememh			; get end of mem high byte
 	SBC	Smemh			; subtract start of mem high byte
-.byt $cb
+stz$df94
+sta$df93
+stx$df93
+
 	JSR	LAB_295E		; print XA as unsigned integer (bytes free)
 	LDA	#<LAB_SMSG		; point to sign-on message (low addr)
 	LDY	#>LAB_SMSG		; point to sign-on message (high addr)
@@ -8851,10 +8853,15 @@ jf_res:
 	LDY #<std_irq
 	STY fw_irq				; set standard interrupt vectors
 	STX fw_irq+1
-;	LDX #>std_nmi			; danger if commented!
+	LDX #>std_nmi			; danger if commented!
 	LDY #<std_nmi
 	STY fw_nmi
 	STX fw_nmi+1
+; * init CONIO *
+	STZ fw_cbin				; EEEEEEK
+	STZ fw_mask
+	STZ fw_scur
+	STZ fw_io9
 	LDY #12					; FF = clear screen
 	JSR conio
 
