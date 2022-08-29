@@ -48,9 +48,10 @@ int		main(void) {
 
 	i = output = 0;				// cursor and output size reset
 	unc = 0;					// this gets reset every time but first
-	while (i < siz) {
+	while (i < siz) {			// ** < siz-1 ?? porque luego haces i++
 		base = src[i++];		// read this first byte and point to following one
 		count = 1;				// assume not yet repeated
+								// ** Añadir i<siz ?? porque el bucle puede sobrepasarlo
 		while (src[i]==base && count<127 && i<siz) {	// next one is the same?
 			count++;									// count it
 			i++;										// and check the next one

@@ -177,90 +177,6 @@ Entry Wire Line
 Entry Wire Line
 	4150 2550 4250 2450
 Wire Wire Line
-	4500 1050 4350 1050
-Wire Wire Line
-	4500 1150 4350 1150
-Wire Wire Line
-	4500 1250 4350 1250
-Wire Wire Line
-	4500 1350 4350 1350
-Wire Wire Line
-	4500 1450 4350 1450
-Wire Wire Line
-	4500 1550 4350 1550
-Wire Wire Line
-	4500 1650 4350 1650
-Wire Wire Line
-	4500 1750 4350 1750
-Wire Wire Line
-	4500 1850 4350 1850
-Wire Wire Line
-	4500 1950 4350 1950
-Wire Wire Line
-	4500 2050 4350 2050
-Wire Wire Line
-	4500 2150 4350 2150
-Wire Wire Line
-	4500 2250 4350 2250
-Wire Wire Line
-	4500 2350 4350 2350
-Entry Wire Line
-	4250 950  4350 1050
-Entry Wire Line
-	4250 1050 4350 1150
-Entry Wire Line
-	4250 1150 4350 1250
-Entry Wire Line
-	4250 1250 4350 1350
-Entry Wire Line
-	4250 1350 4350 1450
-Entry Wire Line
-	4250 1450 4350 1550
-Entry Wire Line
-	4250 1550 4350 1650
-Entry Wire Line
-	4250 1650 4350 1750
-Entry Wire Line
-	4250 1750 4350 1850
-Entry Wire Line
-	4250 1850 4350 1950
-Entry Wire Line
-	4250 1950 4350 2050
-Entry Wire Line
-	4250 2050 4350 2150
-Entry Wire Line
-	4250 2150 4350 2250
-Entry Wire Line
-	4250 2250 4350 2350
-Text Label 4350 1050 0    50   ~ 0
-A0
-Text Label 4350 1150 0    50   ~ 0
-A1
-Text Label 4350 1250 0    50   ~ 0
-A2
-Text Label 4350 1350 0    50   ~ 0
-A3
-Text Label 4350 1450 0    50   ~ 0
-A4
-Text Label 4350 1550 0    50   ~ 0
-A5
-Text Label 4350 1650 0    50   ~ 0
-A6
-Text Label 4350 1750 0    50   ~ 0
-A7
-Text Label 4350 1850 0    50   ~ 0
-A8
-Text Label 4350 1950 0    50   ~ 0
-A9
-Text Label 4350 2050 0    50   ~ 0
-A10
-Text Label 4350 2150 0    50   ~ 0
-A11
-Text Label 4350 2250 0    50   ~ 0
-A12
-Text Label 4350 2350 0    50   ~ 0
-A13
-Wire Wire Line
 	9400 1050 9200 1050
 Wire Wire Line
 	9400 1150 9200 1150
@@ -344,54 +260,6 @@ Text Label 9200 1950 0    50   ~ 0
 MA12
 Text Label 9200 1850 0    50   ~ 0
 MA13
-Wire Wire Line
-	5300 1050 5400 1050
-Wire Wire Line
-	5300 1150 5400 1150
-Wire Wire Line
-	5300 1250 5400 1250
-Wire Wire Line
-	5300 1350 5400 1350
-Wire Wire Line
-	5300 1450 5400 1450
-Wire Wire Line
-	5300 1550 5400 1550
-Wire Wire Line
-	5300 1650 5400 1650
-Wire Wire Line
-	5400 1750 5300 1750
-Entry Wire Line
-	5400 1050 5500 950 
-Entry Wire Line
-	5400 1150 5500 1050
-Entry Wire Line
-	5400 1250 5500 1150
-Entry Wire Line
-	5400 1350 5500 1250
-Entry Wire Line
-	5400 1450 5500 1350
-Entry Wire Line
-	5400 1550 5500 1450
-Entry Wire Line
-	5400 1650 5500 1550
-Entry Wire Line
-	5400 1750 5500 1650
-Text Label 5300 1050 0    50   ~ 0
-D0
-Text Label 5300 1150 0    50   ~ 0
-D1
-Text Label 5300 1250 0    50   ~ 0
-D2
-Text Label 5300 1350 0    50   ~ 0
-D3
-Text Label 5300 1450 0    50   ~ 0
-D4
-Text Label 5300 1550 0    50   ~ 0
-D5
-Text Label 5300 1650 0    50   ~ 0
-D6
-Text Label 5300 1750 0    50   ~ 0
-D7
 Wire Wire Line
 	10600 1150 10700 1150
 Wire Wire Line
@@ -759,11 +627,6 @@ Wire Wire Line
 Wire Bus Line
 	7450 5050 9100 5050
 Wire Bus Line
-	2800 650  5500 650 
-Connection ~ 5500 650 
-Wire Bus Line
-	5500 650  10800 650 
-Wire Bus Line
 	7500 5100 5850 5100
 Wire Wire Line
 	6650 2900 6950 2900
@@ -807,17 +670,6 @@ F 3 "" H 10000 3150 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L power:GND #PWR0104
-U 1 1 60AEA0F0
-P 4900 3050
-F 0 "#PWR0104" H 4900 2800 50  0001 C CNN
-F 1 "GND" H 5000 3050 50  0000 C CNN
-F 2 "" H 4900 3050 50  0001 C CNN
-F 3 "" H 4900 3050 50  0001 C CNN
-	1    4900 3050
-	1    0    0    -1  
-$EndComp
-$Comp
 L power:GND #PWR0107
 U 1 1 60AEA38E
 P 3600 3650
@@ -829,14 +681,7 @@ F 3 "" H 3600 3650 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	6650 750  4900 750 
-Wire Wire Line
 	3500 750  3500 850 
-Wire Wire Line
-	4900 750  4900 850 
-Connection ~ 4900 750 
-Wire Wire Line
-	4900 750  3500 750 
 Text Label 7650 650  0    50   ~ 0
 D[0..7]
 Text Label 7550 850  0    50   ~ 0
@@ -845,19 +690,6 @@ Text Label 5850 2950 2    50   ~ 0
 VA[0..13]
 Text Label 8700 5050 0    50   ~ 0
 MA[0..14]
-Wire Wire Line
-	4500 2650 4400 2650
-$Comp
-L power:+5V #PWR0108
-U 1 1 60BFF56F
-P 4400 2650
-F 0 "#PWR0108" H 4400 2500 50  0001 C CNN
-F 1 "+5V" H 4450 2800 50  0000 C CNN
-F 2 "" H 4400 2650 50  0001 C CNN
-F 3 "" H 4400 2650 50  0001 C CNN
-	1    4400 2650
-	1    0    0    -1  
-$EndComp
 $Sheet
 S 0    8550 11700 8300
 U 60C42E7C
@@ -1247,7 +1079,7 @@ Wire Wire Line
 Wire Wire Line
 	3450 4500 4100 4500
 Wire Wire Line
-	4100 2850 4500 2850
+	4100 2900 4500 2900
 Wire Wire Line
 	9200 2850 5300 2850
 $Comp
@@ -1912,7 +1744,7 @@ Wire Wire Line
 Wire Wire Line
 	4300 5000 2750 5000
 Wire Wire Line
-	4100 2850 4100 4500
+	4100 2900 4100 4500
 Wire Wire Line
 	2750 3450 2750 5000
 Text Label 4300 4650 0    50   ~ 0
@@ -1979,7 +1811,7 @@ Wire Wire Line
 	2900 2550 3000 2550
 Wire Wire Line
 	3000 2050 2950 2050
-Text GLabel 2950 2050 1    50   Input ~ 0
+Text GLabel 2950 4500 2    50   Input ~ 0
 VCLK
 Wire Wire Line
 	2750 3450 2650 3450
@@ -2231,23 +2063,6 @@ Wire Wire Line
 	2800 5350 2800 5450
 Text Label 2900 5450 1    50   ~ 0
 D3
-$Comp
-L Memory_EPROM:27C256 U2
-U 1 1 6153D194
-P 4900 1950
-F 0 "U2" H 4700 3000 50  0000 C CNN
-F 1 "27C256" H 5100 3000 50  0000 C CNN
-F 2 "Socket:DIP_Socket-28_W11.9_W12.7_W15.24_W17.78_W18.5_3M_228-1277-00-0602J" H 4900 1950 50  0001 C CNN
-F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/doc0014.pdf" H 4900 1950 50  0001 C CNN
-	1    4900 1950
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	4500 2450 4350 2450
-Entry Wire Line
-	4250 2350 4350 2450
-Text Label 4350 2450 0    50   ~ 0
-A14
 Wire Wire Line
 	1950 7750 1950 5600
 $Comp
@@ -2629,9 +2444,9 @@ Text GLabel 10400 3750 2    50   Input ~ 0
 ~WE
 Text Label 1950 5600 0    50   ~ 0
 ~IO
-Text GLabel 4150 3200 2    50   Input ~ 0
+Text GLabel 4500 2750 2    50   Input ~ 0
 ~ROM_CS
-Text GLabel 4100 3000 2    50   Input ~ 0
+Text GLabel 4500 2900 2    50   Input ~ 0
 ~ROM_OE
 Text GLabel 10150 5400 2    50   Input ~ 0
 AUDIO_IN
@@ -2764,8 +2579,8 @@ Text Label 1500 4650 0    50   ~ 0
 C4K
 Text Label 850  4550 3    50   ~ 0
 ~250HZ
-Text Notes 5600 2650 1    50   ~ 0
-ACTUALLY IN CARTRIDGE!\nREMOVE FOOTPRINT FROM PCB
+Text Notes 5700 2650 2    50   ~ 0
+U2 EPROM ACTUALLY IN CARTRIDGE!\nFOOTPRINT REMOVED FROM PCB
 Text Label 10000 5400 1    50   ~ 0
 AFB
 Entry Wire Line
@@ -2875,6 +2690,10 @@ Text Label 7700 4700 1    50   ~ 0
 HIRES
 Text Notes 7700 2600 1    50   ~ 0
 = ~LOW
+Wire Wire Line
+	3500 750  6650 750 
+Wire Bus Line
+	2800 650  10800 650 
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Bus Line
@@ -2903,8 +2722,6 @@ Wire Bus Line
 	2800 650  2800 5250
 Wire Bus Line
 	10800 650  10800 1650
-Wire Bus Line
-	5500 650  5500 1650
 Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
