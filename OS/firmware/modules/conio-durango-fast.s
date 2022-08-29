@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; Durango-X firmware console 0.9.6b5
+; Durango-X firmware console 0.9.6b6
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220822-1219
+; last modified 20220829-1134
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -488,8 +488,8 @@ cio_ff:
 ; fw_mask (for inverse/emphasis mode)
 ; fw_cbin (binary or multibyte mode, but must be reset BEFORE first FF)
 
-;	STZ fw_mask				; true video *** no real need to reset this
-;	STZ fw_cbin				; standard character mode *** not much sense anyway
+	STZ fw_mask				; true video *** no real need to reset this
+	STZ fw_cbin				; standard character mode *** not much sense anyway
 	JSR rs_col				; restore array from whatever is at fw_ccol[1] (will restore fw_cbin)
 	LDY #<cio_fnt			; supplied font address
 	LDA #>cio_fnt
