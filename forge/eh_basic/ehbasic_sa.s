@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20220830-1548
+; last modified 20220830-1601
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -513,6 +513,7 @@ TabLoop
 
 	STZ	NmiBase			; clear NMI handler enabled flag
 	STZ	IrqBase			; clear IRQ handler enabled flag
+	CLI					; *** enable interrupts for timer ***
 	STZ	FAC1_o			; clear FAC1 overflow byte
 	STZ	last_sh			; clear descriptor stack top item pointer high byte EEEEEEEEK
 
