@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b6
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220829-1134
+; last modified 20220830-1541
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -148,7 +148,11 @@ cpc_col:
 	STX fw_chalf			; two pages must be written (2+4*)
 cpc_do:						; outside loop (done 8 times) is 8x(45+inner)+113=969, 8x(42+inner)+111=919 in ZP  (was ~1497/1407)
 		_LDAX(cio_src)		; glyph pattern (5)
-		EOR fw_mask			; in case inverse mode is set, much better here (4)
+;		EOR fw_mask			; in case inverse mode is set, much better here (4)
+; experimental 'bold' code below
+		LSR					; shift left...
+		AND fw_mask			; ...but only in case we're in SHIFT OUT
+		ORA (cio_src)		; CMOS only, would get original byte in any case
 ; *** *** glyph pattern is loaded and masked, let's try an even faster alternative, store all 4 positions premasked as sparse indexes
 		TAX					; keep safe (2)
 		AND #%00000011		; rightmost pixels (2)
