@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20220829-1137
+; last modified 20220830-1548
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -32,7 +32,7 @@
 ; *****************************************************
 fw_irq		= $0200		; ### usual minimOS interrupt vectors ###
 fw_nmi		= $0202
-ticks		= $0205		; jiffy counter
+ticks		= $0206		; jiffy counter EEEEK
 ; CONIO specific variables
 fw_cbin		= ticks+4				; integrated picoVDU/Durango-X specifics
 fw_fnt		= fw_cbin+1				; (new, pointer to relocatable 2KB font file)
