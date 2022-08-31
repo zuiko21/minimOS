@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; Durango-X firmware console 0.9.6b6
+; Durango-X firmware console 0.9.6b7
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220830-1541
+; last modified 20220831-1757
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -68,6 +68,15 @@
 ; fw_vtop (first non-VRAM page, allows screen switching upon FF)
 ; fw_scur ([NEW] flag D7=cursor ON)
 
+; *** new option, keyboard control by NES gamepad ***
+; *** UP/DOWN    = +/- 32 to ASCII                ***
+; *** LEFT/RIGHT = next/prev ASCII                ***
+; *** A          = put char into buffer           ***
+; *** B          = press RETURN                   ***
+; *** START      = press ESCAPE                   ***
+; *** SELECT     = press BACKSPACE                ***
+;#define	KBBYPAD
+
 ; first two modes are directly processed, note BM_DLE is the shifted X
 #define	BM_CMD		0
 #define	BM_DLE		32
@@ -84,6 +93,9 @@
 -IO8blk	= $DF88				; video blanking signals
 -IO9di	= $DF9A				; data input (TBD)
 -IOBeep	= $DFBF				; canonical buzzer address (d0)
+-IO9nes0= $DF9C				; NES controller for alternative keyboard emulation & latch
+-IO9nes1= $DF9D				; NES controller clock port
+-fw_knes= $020A				; is this a safe address?
 #endif
 
 	TYA						; is going to be needed here anyway
@@ -780,6 +792,7 @@ cn_in:
 	LDY IO9di				; get current data at port *** must set lower address nibble
 ; *** should this properly address a matrix keyboard?
 	BEQ cn_empty			; no transfer is in the making
+cn_chk:
 		CPY fw_io9			; otherwise compare with last received
 	BEQ cn_ack				; same as last, keep trying
 		STY fw_io9			; this is received and different
@@ -787,8 +800,95 @@ cn_in:
 cn_empty:
 	STY fw_io9				; keep clear
 cn_ack:
+; *** optional module for key-by-NESpad control ***
+#ifdef	KBBYPAD
+	JSR read_nes			; check gamepad
+; nesdatX holds D7=A, D6=B, D5=Select, D4=Start, D3=Up, D2=Down, D1=Left, D0=Right
+	BEQ nes_none			; skip if no buttons
+		LSR					; check right
+		BCC no_r
+			INC fw_knes		; ASCII+1
+			JMP nes_upd		; show new character... and return
+no_r:
+		LSR					; check left
+		BCC no_l
+			DEC fw_knes		; ASCII-1
+			JMP nes_upd		; show new character... and return
+no_l:
+		LSR					; check down
+		BCC no_d
+			LDA fw_knes
+			SEC
+			SBC #32			; ASCII-32
+			STA fw_knes
+			JMP nes_upd		; show new character... and return
+no_d:
+		LSR					; check up
+		BCC no_u
+			LDA fw_knes
+			CLC
+			ADC #32			; ASCII+32
+			STA fw_knes
+			JMP nes_upd		; show new character... and return
+no_u:
+		LSR					; check start (=ESCAPE)
+		BCC no_st
+			JSR nes_del		; delete current
+			LDY #27			; insert ESC...
+			JMP cn_chk		; ...and process as if pressed
+no_st:
+		LSR					; check select (=BACKSPACE)
+		BCC no_sel
+			JSR nes_del		; delete current
+			LDY #8			; insert BS...
+			JMP cn_chk		; ...and process as if pressed
+no_sel:
+		LSR					; check B (=RETURN)
+		BCC no_b
+			JSR nes_del		; delete current
+			LDY #13			; insert CR...
+			JMP cn_chk		; ...and process as if pressed
+no_b:
+		LSR					; check A
+		BCC nes_none
+			JSR nes_wait	; wait for button up
+			LDA #7			; BEL
+			JSR cio_cmd
+			LDY fw_knes		; get selected keycode
+			JMP cn_chk		; ...and process as if pressed
+nes_none:
+#endif
+; *** end of optional KBBYPAD module ***
 	_DR_ERR(EMPTY)			; set C instead eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 
+; *** extra routines for KBBYPAD module ***
+#ifdef	KBBYPAD
+nes_pad:					; *** read pad value in A ***
+	STA IO9nes0				; latch pad status
+	LDX #8					; number of bits to read
+nes_loop:
+		STA IO9nes1			; send clock pulse
+		DEX
+		BNE nes_loop		; all bits read @ IO9nes0
+	LDA IO9nes0				; get bits
+	RTS
+
+nes_upd:					; *** show current character ***
+	LDA fw_knes				; temporary ASCII
+	JSR cio_prn				; direct print
+	LDA #2					; LEFT cursor
+	JSR cio_cmd				; return cursor
+nes_wait:
+		JSR nes_pad			; ...but wait until button is released
+		BNE new_wait
+	_DR_ERR(EMPTY)			; standard exit, just in case
+
+nes_del:					; *** delete temporary char ***
+	LDA #' '				; print a space
+	JSR cio_prn				; direct print
+	LDA #2					; LEFT cursor
+	JMP cio_cmd				; return cursor and continue
+#endif
 ; **************************************************
 ; *** table of pointers to control char routines ***
 ; **************************************************
