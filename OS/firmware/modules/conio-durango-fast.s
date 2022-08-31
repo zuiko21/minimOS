@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b7
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220831-1757
+; last modified 20220831-2010
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -802,19 +802,14 @@ cn_empty:
 cn_ack:
 ; *** optional module for key-by-NESpad control ***
 #ifdef	KBBYPAD
-	JSR read_nes			; check gamepad
-; nesdatX holds D7=A, D6=B, D5=Select, D4=Start, D3=Up, D2=Down, D1=Left, D0=Right
+	JSR nes_pad				; check gamepad
+; d7-d0 = AtBeULDR format
 	BEQ nes_none			; skip if no buttons
 		LSR					; check right
 		BCC no_r
 			INC fw_knes		; ASCII+1
 			JMP nes_upd		; show new character... and return
 no_r:
-		LSR					; check left
-		BCC no_l
-			DEC fw_knes		; ASCII-1
-			JMP nes_upd		; show new character... and return
-no_l:
 		LSR					; check down
 		BCC no_d
 			LDA fw_knes
@@ -823,6 +818,11 @@ no_l:
 			STA fw_knes
 			JMP nes_upd		; show new character... and return
 no_d:
+		LSR					; check left
+		BCC no_l
+			DEC fw_knes		; ASCII-1
+			JMP nes_upd		; show new character... and return
+no_l:
 		LSR					; check up
 		BCC no_u
 			LDA fw_knes
@@ -831,25 +831,28 @@ no_d:
 			STA fw_knes
 			JMP nes_upd		; show new character... and return
 no_u:
-		LSR					; check start (=ESCAPE)
-		BCC no_st
-			JSR nes_del		; delete current
-			LDY #27			; insert ESC...
-			JMP cn_chk		; ...and process as if pressed
-no_st:
-		LSR					; check select (=BACKSPACE)
+		LSR					; check select (=ESCAPE)
 		BCC no_sel
 			JSR nes_del		; delete current
-			LDY #8			; insert BS...
+			JSR nes_wait	; until button up
+			LDY #27			; insert ESC...
 			JMP cn_chk		; ...and process as if pressed
 no_sel:
-		LSR					; check B (=RETURN)
+		LSR					; check B (=BACKSPACE)
 		BCC no_b
 			JSR nes_del		; delete current
-			LDY #13			; insert CR...
+			JSR nes_wait	; until button up
+			LDY #8			; insert BS...
 			JMP cn_chk		; ...and process as if pressed
 no_b:
-		LSR					; check A
+		LSR					; check start (=RETURN)
+		BCC no_st
+			JSR nes_del		; just in case...
+			JSR nes_wait	; until button up
+			LDY #13			; insert CR...
+			JMP cn_chk		; ...and process as if pressed
+no_st:
+		LSR					; check A (Confirm character)
 		BCC nes_none
 			JSR nes_wait	; wait for button up
 			LDA #7			; BEL
@@ -880,7 +883,7 @@ nes_upd:					; *** show current character ***
 	JSR cio_cmd				; return cursor
 nes_wait:
 		JSR nes_pad			; ...but wait until button is released
-		BNE new_wait
+		BNE nes_wait
 	_DR_ERR(EMPTY)			; standard exit, just in case
 
 nes_del:					; *** delete temporary char ***
