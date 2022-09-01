@@ -900,9 +900,9 @@ cio_ctl:
 	.word	cn_in			; 0, INPUT mode
 	.word	cn_cr			; 1, CR
 	.word	cur_l			; 2, cursor left
-	.word	cio_prn			; 3 ***
-	.word	cio_prn			; 4 ***
-	.word	cio_prn			; 5 ***
+	.word	ignore			; 3 ***
+	.word	ignore			; 4 ***
+	.word	ignore			; 5 ***
 	.word	cur_r			; 6, cursor right
 	.word	cio_bel			; 7, beep
 	.word	cio_bs			; 8, backspace
@@ -919,15 +919,15 @@ cio_ctl:
 	.word	cio_curoff		; 19, hide cursor
 	.word	md_ppr			; 20, set paper from next char
 	.word	cio_home		; 21, home (what is done after CLS)
-	.word	cio_prn			; 22 ***
+	.word	ignore			; 22 ***
 	.word	md_atyx			; 23, ATYX will set cursor position
-	.word	cio_prn			; 24 ***
-	.word	cio_prn			; 25 ***
-	.word	cio_prn			; 26 ***
-	.word	cio_prn			; 27 ***
-	.word	cio_prn			; 28 ***
-	.word	cio_prn			; 29 ***
-	.word	cio_prn			; 30 ***
+	.word	ignore			; 24 ***
+	.word	ignore			; 25 ***
+	.word	ignore			; 26 ***
+	.word	ignore			; 27 ***
+	.word	ignore			; 28 ***
+	.word	ignore			; 29 ***
+	.word	ignore			; 30 ***
 	.word	ignore			; 31, IGNORE back to text mode
 
 ; *** table of pointers to multi-byte routines *** order must check BM_ definitions!
