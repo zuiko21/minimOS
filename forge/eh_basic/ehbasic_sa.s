@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20220831-1721
+; last modified 20220901-2340
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -8935,6 +8935,7 @@ std_nmi:					; NMI support for EhBASIC, from min_mon.asm
 #include "../../OS/macros.h"
 ; EMPTY definition from abi.h
 #define	EMPTY	6
+#define	SAFE
 -conio:
 #include "../../OS/firmware/modules/conio-durango-fast.s"
 
