@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b7
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220901-2335
+; last modified 20220901-2353
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -77,6 +77,9 @@
 ; *** SELECT     = press BACKSPACE                ***
 ;#define	KBBYPAD
 
+; *** experimental BOLD emphasis instead of inverse ***
+;#define	SO_BOLD
+
 ; first two modes are directly processed, note BM_DLE is the shifted X
 #define	BM_CMD		0
 #define	BM_DLE		32
@@ -141,7 +144,13 @@ cio_prn:
 ; hires version (17b for CMOS, usually 231t, plus jump to cursor-right)
 cph_loop:
 			_LDAX(cio_src)	; glyph pattern (5)
-			EOR fw_mask		; eeeeeeeeeek (4)
+#ifndef	SO_BOLD
+			EOR fw_mask		; in case inverse mode is set, much better here (4)
+#else
+			LSR				; shift left...
+			AND fw_mask		; ...but only in case we're in SHIFT OUT
+			ORA (cio_src)	; CMOS only, would get original byte in any case
+#endif
 			STA (cio_pt), Y	; put it on screen (5)
 			INC cio_src		; advance to next glyph byte (5)
 			BNE cph_nw		; (usually 3, rarely 7)
@@ -160,11 +169,13 @@ cpc_col:
 	STX fw_chalf			; two pages must be written (2+4*)
 cpc_do:						; outside loop (done 8 times) is 8x(45+inner)+113=969, 8x(42+inner)+111=919 in ZP  (was ~1497/1407)
 		_LDAX(cio_src)		; glyph pattern (5)
-;		EOR fw_mask			; in case inverse mode is set, much better here (4)
-; experimental 'bold' code below
+#ifndef	SO_BOLD
+		EOR fw_mask			; in case inverse mode is set, much better here (4)
+#else
 		LSR					; shift left...
 		AND fw_mask			; ...but only in case we're in SHIFT OUT
 		ORA (cio_src)		; CMOS only, would get original byte in any case
+#endif
 ; *** *** glyph pattern is loaded and masked, let's try an even faster alternative, store all 4 positions premasked as sparse indexes
 		TAX					; keep safe (2)
 		AND #%00000011		; rightmost pixels (2)
@@ -430,6 +441,10 @@ cbp_del:
 
 cio_bs:
 ; BACKSPACE, go back one char and clear cursor position
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_bs
+		JSR draw_cur		; ...must delete previous one
+do_bs:
 	JSR cur_l				; back one char, if possible, then clear cursor position
 	LDY fw_ciop
 	LDA fw_ciop+1			; get current cursor position...
