@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b7
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220831-2010
+; last modified 20220901-2324
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -800,6 +800,7 @@ cn_chk:
 cn_empty:
 	STY fw_io9				; keep clear
 cn_ack:
+; *************************************************
 ; *** optional module for key-by-NESpad control ***
 #ifdef	KBBYPAD
 	JSR nes_pad				; check gamepad
@@ -833,22 +834,19 @@ no_l:
 no_u:
 		LSR					; check select (=ESCAPE)
 		BCC no_sel
-			JSR nes_del		; delete current
-			JSR nes_wait	; until button up
+			JSR nes_del		; delete current and wait
 			LDY #27			; insert ESC...
 			JMP cn_chk		; ...and process as if pressed
 no_sel:
 		LSR					; check B (=BACKSPACE)
 		BCC no_b
-			JSR nes_del		; delete current
-			JSR nes_wait	; until button up
+			JSR nes_del		; delete current and wait
 			LDY #8			; insert BS...
 			JMP cn_chk		; ...and process as if pressed
 no_b:
 		LSR					; check start (=RETURN)
 		BCC no_st
-			JSR nes_del		; just in case...
-			JSR nes_wait	; until button up
+			JSR nes_del		; wait, at least
 			LDY #13			; insert CR...
 			JMP cn_chk		; ...and process as if pressed
 no_st:
@@ -859,13 +857,8 @@ no_st:
 			JSR cio_cmd
 			LDY fw_knes		; get selected keycode
 			JMP cn_chk		; ...and process as if pressed
-nes_none:
-#endif
-; *** end of optional KBBYPAD module ***
-	_DR_ERR(EMPTY)			; set C instead eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
-
+; *****************************************
 ; *** extra routines for KBBYPAD module ***
-#ifdef	KBBYPAD
 nes_pad:					; *** read pad value in A ***
 	STA IO9nes0				; latch pad status
 	LDX #8					; number of bits to read
@@ -881,17 +874,25 @@ nes_upd:					; *** show current character ***
 	JSR cio_prn				; direct print
 	LDA #2					; LEFT cursor
 	JSR cio_cmd				; return cursor
-nes_wait:
-		JSR nes_pad			; ...but wait until button is released
-		BNE nes_wait
-	_DR_ERR(EMPTY)			; standard exit, just in case
+	BRA nes_wait			; and wait for button release!
 
 nes_del:					; *** delete temporary char ***
 	LDA #' '				; print a space
 	JSR cio_prn				; direct print
 	LDA #2					; LEFT cursor
-	JMP cio_cmd				; return cursor and continue
+	JSR cio_cmd				; return cursor...
+nes_wait:
+		JSR nes_pad			; ...but wait until button is released
+		BNE nes_wait
+	_DR_ERR(EMPTY)			; standard exit, just in case
+; *** end of routines ***
+; ***********************
+nes_none:
 #endif
+; *** end of optional KBBYPAD module ***
+; **************************************
+	_DR_ERR(EMPTY)			; set C instead eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
+
 ; **************************************************
 ; *** table of pointers to control char routines ***
 ; **************************************************
