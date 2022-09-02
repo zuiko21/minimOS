@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220829-1715
+ * last modified 20220902-2352
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -585,12 +585,12 @@ void poke(word dir, byte v) {
 			// flush stdout
 			fflush(stdout);
 		} else if (dir==0xDF9C) { // gamepad 1 at $df9c
-			if (ver)	printf("Latch gamepads\n");
+			if (ver>2)	printf("Latch gamepads\n");
 			gamepads_latch[0] = gamepads[0];
 			gamepads_latch[1] = gamepads[1];
 			gp_shift_counter = 0;
 		} else if (dir==0xDF9D) { // gamepads 2 at $df9d 
-			if (ver)	printf("Shift gamepads\n");
+			if (ver>2)	printf("Shift gamepads\n");
 			if(++gp_shift_counter == 8) {
 				mem[0xDF9C]=gamepads_latch[0];
 				mem[0xDF9D]=gamepads_latch[1];
@@ -2596,6 +2596,46 @@ void process_keyboard(SDL_Event *e) {
 				break;
 			case 0x4d:				// end
 				asc = 0x05;
+				break;
+			case 0x62:				// numpad 0
+				shift = 0;			// any numpad key will disable all modificators
+				asc = '0';
+				break;
+			case 0x59:				// numpad 1-9
+			case 0x5a:
+			case 0x5b:
+			case 0x5c:
+			case 0x5d:
+			case 0x5e:
+			case 0x5f:
+			case 0x60:
+			case 0x61:
+				shift = 0;
+				asc = e->key.keysym.scancode - 0x28;
+				break;
+			case 0x58:				// numpad ENTER
+				shift = 0;
+				asc = 0x0d;
+				break;
+			case 0x63:				// numpad DECIMAL POINT
+				shift = 0;
+				asc = '.';			// desired value for EhBASIC
+				break;
+			case 0x57:				// numpad +
+				shift = 0;
+				asc = '+';
+				break;
+			case 0x56:				// numpad -
+				shift = 0;
+				asc = '-';
+				break;
+			case 0x55:				// numpad *
+				shift = 1;			// actually SHIFT and '+'
+				asc = '+';
+				break;
+			case 0x54:				// numpad /
+				shift = 1;			// actually SHIFT and 7
+				asc = '7';
 				break;
 			default:
 				asc = e->key.keysym.sym;
