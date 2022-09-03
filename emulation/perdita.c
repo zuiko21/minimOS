@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220902-2352
+ * last modified 20220903-1119
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -696,7 +696,7 @@ word am_ay(int *bound) {
 
 /* indirect */
 word am_iz(void) {
-	word pt = peek(peek(pc)) | (peek(peek(pc)+1)<<8);
+	word pt = peek(peek(pc)) | (peek((peek(pc)+1)&255)<<8);	// EEEEEEEK
 	pc++;
 
 	return pt;
@@ -713,7 +713,7 @@ word am_iy(int *bound) {
 
 /* pre-indexed indirect */
 word am_ix(void) {
-	word pt = (peek(peek(pc)+x)|(peek(peek(pc)+x+1)<<8));
+	word pt = (peek((peek(pc)+x)&255)|(peek((peek(pc)+x+1)&255)<<8));	// EEEEEEK
 	pc++;
 
 	return pt;
