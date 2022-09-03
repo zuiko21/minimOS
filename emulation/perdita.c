@@ -44,6 +44,7 @@
 	byte mem[65536];			// unified memory map
 	byte gamepads[2];		 	// 2 gamepad hardware status
 	byte gamepads_latch[2];	 	// 2 gamepad register latch
+	int emulate_gamepads = 0;	// Allow gamepad emulation
 	int gp1_emulated = 0; 		// Use keyboard as gamepad 1
 	int gp2_emulated = 0; 		// Use keyboard as gamepad 2
 	int gp_shift_counter = 0;	// gamepad shift counter
@@ -63,6 +64,7 @@
 	int nmi_flag = 0;			// interrupt control
 	int irq_flag = 0;
 	long cont = 0;				// total elapsed cycles
+	long stopwatch = 0;			// cycles stopwatch
 
 /* global vdu variables */
 	// Screen width in pixels
@@ -189,7 +191,7 @@ int main(int argc, char *argv[])
 
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "a:fvlksphr")) != -1)
+	while ((c = getopt (argc, argv, "a:fvlksphrg")) != -1)
 	switch (c) {
 		case 'a':
 			rom_addr = optarg;
@@ -217,6 +219,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'r':
 			do_rand = 0;
+			break;
+		case 'g':
+			emulate_gamepads = 1;
 			break;
 		case '?':
 			fprintf (stderr, "Unknown option\n");
@@ -281,6 +286,7 @@ void usage(char name[]) {
 	printf("-h headless -- no graphics!\n");
 	printf("-v verbose (warnings/interrupts/jumps/events/all)\n");
 	printf("-r do NOT randomize memory at startup\n");
+	printf("-g emulate controllers");
 }
 
 void run_emulation () {
@@ -569,18 +575,38 @@ void poke(word dir, byte v) {
 				// Print binary
 				printf(BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(mem[dir]));
 			}
-			// If memory dump mode
-			else if(mem[0xDF94]==0xFD) {
-				full_dump();
+			// If decimal mode enabled
+			else if(mem[0xDF94]==0x03) {
+				// Print decimal
+				printf("[%u]", mem[dir]);
 			}
-			// If stack print mode
-			else if(mem[0xDF94]==0xFE) {
-				stack_stat();
-			}
+			// flush stdout
+			fflush(stdout);
+		} else if (dir==0xDF94) { // virtual serial port config at $df94
 			// If stat print mode
-			else if(mem[0xDF94]==0xFF) {
+			if(v==0xFF) {
 				// Print stat
 				stat();
+			}
+			// If stack print mode
+			else if(v==0xFE) {
+				stack_stat();
+			}
+			// If memory dump mode
+			else if(v==0xFD) {
+				full_dump();
+			}
+			// If stop stopwatch
+			else if(v==0xFC) {
+				printf("t=%ld cycles\n", cont-stopwatch);
+			}
+			// If start stopwatch
+			else if(v==0xFB) {
+				stopwatch = cont;
+			}
+			else {
+				// Cache value
+				mem[dir]=v;
 			}
 			// flush stdout
 			fflush(stdout);
@@ -2115,11 +2141,11 @@ int init_vdu() {
 		 return -2;
 		}
 	}
-	if(SDL_NumJoysticks()==0) {
+	if(emulate_gamepads && SDL_NumJoysticks()==0) {
 		gp1_emulated = 1;
 		gp2_emulated = 1;
 	}
-	else if(SDL_NumJoysticks()==1) {
+	else if(emulate_gamepads && SDL_NumJoysticks()==1) {
 		gp1_emulated = 0;
 		gp2_emulated = 1;
 	}
