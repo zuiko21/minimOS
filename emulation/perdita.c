@@ -219,6 +219,9 @@ int main(int argc, char *argv[])
 		case 'r':
 			do_rand = 0;
 			break;
+		case 'g':
+			emulate_gamepads = 1;
+			break;
 		case '?':
 			fprintf (stderr, "Unknown option\n");
 			usage(argv[0]);
@@ -2129,11 +2132,11 @@ int init_vdu() {
 		 return -2;
 		}
 	}
-	if(SDL_NumJoysticks()==0) {
+	if(emulate_gamepads && SDL_NumJoysticks()==0) {
 		gp1_emulated = 1;
 		gp2_emulated = 1;
 	}
-	else if(SDL_NumJoysticks()==1) {
+	else if(emulate_gamepads && SDL_NumJoysticks()==1) {
 		gp1_emulated = 0;
 		gp2_emulated = 1;
 	}
