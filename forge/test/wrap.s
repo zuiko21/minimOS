@@ -35,7 +35,7 @@ b_loop:
 	
 	STA $FF			; vector LSB
 	STX 0			; vector MSB location if wraps
-	STY $101		; vector MSB location if no wrap
+	STY $100		; vector MSB location if no wrap EEEEEEEEEEEK
 
 	STX $204		; destination if wraps
 	STY $304		; destination if no wrap
