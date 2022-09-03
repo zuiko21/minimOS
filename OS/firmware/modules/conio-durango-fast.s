@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b7
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220902-0040
+; last modified 20220903-1148
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -658,6 +658,8 @@ md_atyx:
 draw_cur:
 ; draw (XOR) cursor [NEW]
 	LDX fw_ciop+1			; get cursor position
+	CPX fw_vtop				; outside bounds?
+		BCS no_cur			; do not attempt to write!
 	LDY fw_ciop
 	STY cio_pt				; set pointer LSB (common)
 	STX cio_pt+1			; set pointer MSB
@@ -677,6 +679,7 @@ dc_loop:
 		INY					; next byte in raster
 		DEX
 		BNE dc_loop
+no_cur:
 	RTS						; should I clear C?
 
 ; *******************************
