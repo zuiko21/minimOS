@@ -44,6 +44,7 @@
 	byte mem[65536];			// unified memory map
 	byte gamepads[2];		 	// 2 gamepad hardware status
 	byte gamepads_latch[2];	 	// 2 gamepad register latch
+	int emulate_gamepads = 0;	// Allow gamepad emulation
 	int gp1_emulated = 0; 		// Use keyboard as gamepad 1
 	int gp2_emulated = 0; 		// Use keyboard as gamepad 2
 	int gp_shift_counter = 0;	// gamepad shift counter
@@ -189,7 +190,7 @@ int main(int argc, char *argv[])
 
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "a:fvlksphr")) != -1)
+	while ((c = getopt (argc, argv, "a:fvlksphrg")) != -1)
 	switch (c) {
 		case 'a':
 			rom_addr = optarg;
@@ -281,6 +282,7 @@ void usage(char name[]) {
 	printf("-h headless -- no graphics!\n");
 	printf("-v verbose (warnings/interrupts/jumps/events/all)\n");
 	printf("-r do NOT randomize memory at startup\n");
+	printf("-g emulate controllers");
 }
 
 void run_emulation () {
