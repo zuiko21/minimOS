@@ -64,6 +64,7 @@
 	int nmi_flag = 0;			// interrupt control
 	int irq_flag = 0;
 	long cont = 0;				// total elapsed cycles
+	long stopwatch = 0;			// cycles stopwatch
 
 /* global vdu variables */
 	// Screen width in pixels
@@ -582,18 +583,26 @@ void poke(word dir, byte v) {
 			// flush stdout
 			fflush(stdout);
 		} else if (dir==0xDF94) { // virtual serial port config at $df94
-			// If memory dump mode
-			if(v==0xFD) {
-				full_dump();
+			// If stat print mode
+			if(v==0xFF) {
+				// Print stat
+				stat();
 			}
 			// If stack print mode
 			else if(v==0xFE) {
 				stack_stat();
 			}
-			// If stat print mode
-			else if(v==0xFF) {
-				// Print stat
-				stat();
+			// If memory dump mode
+			else if(v==0xFD) {
+				full_dump();
+			}
+			// If stop stopwatch
+			else if(v==0xFC) {
+				printf("t=%ld cycles\n", cont-stopwatch);
+			}
+			// If start stopwatch
+			else if(v==0xFB) {
+				stopwatch = cont;
 			}
 			else {
 				// Cache value
