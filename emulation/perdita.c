@@ -569,18 +569,30 @@ void poke(word dir, byte v) {
 				// Print binary
 				printf(BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(mem[dir]));
 			}
+			// If decimal mode enabled
+			else if(mem[0xDF94]==0x03) {
+				// Print decimal
+				printf("[%u]", mem[dir]);
+			}
+			// flush stdout
+			fflush(stdout);
+		} else if (dir==0xDF94) { // virtual serial port config at $df94
 			// If memory dump mode
-			else if(mem[0xDF94]==0xFD) {
+			if(v==0xFD) {
 				full_dump();
 			}
 			// If stack print mode
-			else if(mem[0xDF94]==0xFE) {
+			else if(v==0xFE) {
 				stack_stat();
 			}
 			// If stat print mode
-			else if(mem[0xDF94]==0xFF) {
+			else if(v==0xFF) {
 				// Print stat
 				stat();
+			}
+			else {
+				// Cache value
+				mem[dir]=v;
 			}
 			// flush stdout
 			fflush(stdout);
