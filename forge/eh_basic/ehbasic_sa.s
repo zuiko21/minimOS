@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20220830-1601
+; last modified 20220901-2340
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -26,6 +26,9 @@
 
 ; try to assemble from here with
 ; xa ehbasic_sa.s -I ../../OS/firmware -l labels 
+; may add -DDEF=KBBYPAD for optional keyboad-by-pad
+
+#define	KBBYPAD
 
 ; *****************************************************
 ; *** firmware & hardware definitions for Durango-X ***
@@ -48,6 +51,7 @@ fw_vbot		= fw_ciop+2				; page start of screen at current hardware setting (upda
 fw_vtop		= fw_vbot+1				; first non-VRAM page (new)
 fw_io9		= fw_vtop+1				; received keypress
 fw_scur		= fw_io9+1				; NEW, cursor control
+fw_knes		= fw_scur+1				; NEW, NES-pad alternative keyboard
 ; CONIO zeropage usage
 cio_pt		= $E6
 cio_src		= $E4
@@ -56,6 +60,8 @@ cio_src		= $E4
 -IO8attr	= $DF80		; video mode register
 -IO8blk		= $DF88		; video blanking signals
 -IO9di		= $DF9A		; data input (PASK standard)
+-IO9nes0	= $DF9C		; NES controller for alternative keyboard emulation & latch
+-IO9nes1	= $DF9D		; NES controller clock port
 -IOAie		= $DFAF		; canonical interrupt enable address (d0)
 -IOBeep		= $DFBF		; canonical buzzer address (d0)
 
@@ -8858,11 +8864,17 @@ jf_res:
 	LDY #<std_nmi
 	STY fw_nmi
 	STX fw_nmi+1
+#ifdef	KBBYPAD
+	LDA #'@'				; initial character for key-by-pad
+	STA fw_knes
+#endif
 ; * init CONIO *
 	STZ fw_cbin				; EEEEEEK
 	STZ fw_mask
 	STZ fw_scur
 	STZ fw_io9
+	LDA #$87				; yellow on blue intial colours (not for HIRES)
+	STA fw_ccol+1			; will reconstruct colours from this upon FF
 	LDY #12					; FF = clear screen
 	JSR conio
 
@@ -8923,6 +8935,7 @@ std_nmi:					; NMI support for EhBASIC, from min_mon.asm
 #include "../../OS/macros.h"
 ; EMPTY definition from abi.h
 #define	EMPTY	6
+#define	SAFE
 -conio:
 #include "../../OS/firmware/modules/conio-durango-fast.s"
 
