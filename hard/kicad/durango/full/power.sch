@@ -798,22 +798,20 @@ A3
 $Comp
 L Connector:Conn_Coaxial J?
 U 1 1 631CCF99
-P 3550 3550
+P 3850 3550
 AR Path="/60C42E7C/631CCF99" Ref="J?"  Part="1" 
 AR Path="/6310B9C7/631CCF99" Ref="J006"  Part="1" 
-F 0 "J006" H 3650 3550 50  0000 L CNN
-F 1 "VIDEO/Y" H 3600 3450 50  0000 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 3550 3550 50  0001 C CNN
-F 3 " ~" H 3550 3550 50  0001 C CNN
-	1    3550 3550
+F 0 "J006" H 3950 3550 50  0000 L CNN
+F 1 "VIDEO/Y" H 3900 3450 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 3850 3550 50  0001 C CNN
+F 3 " ~" H 3850 3550 50  0001 C CNN
+	1    3850 3550
 	1    0    0    -1  
 $EndComp
-Text GLabel 3350 3550 0    50   Input ~ 0
-VIDEO
 Wire Wire Line
-	3550 3750 2750 3750
+	3850 3750 2750 3750
 Connection ~ 2750 3750
-Text Notes 3200 3450 0    50   Italic 10
+Text Notes 3900 3800 0    50   Italic 10
 ALSO SYNC-ON-GREEN
 Wire Wire Line
 	3250 2700 3350 2700
@@ -842,7 +840,7 @@ Wire Wire Line
 	3350 2700 3600 2700
 Text Label 3750 4700 0    50   ~ 0
 BA4
-Text Notes 3950 4700 3    50   ~ 0
+Text Notes 4100 4700 0    50   ~ 0
 =~BWR
 Wire Wire Line
 	1200 1750 1200 2150
@@ -853,6 +851,157 @@ Wire Wire Line
 Wire Wire Line
 	2750 1750 2750 2200
 Connection ~ 1200 1750
+$Comp
+L Connector_Generic:Conn_02x08_Odd_Even J11
+U 1 1 631CA641
+P 1550 6500
+F 0 "J11" H 1600 5950 50  0000 C CNN
+F 1 "GAMEPADS" H 1600 5850 50  0000 C CNN
+F 2 "Connector_PinSocket_2.54mm:PinSocket_2x08_P2.54mm_Horizontal" H 1550 6500 50  0001 C CNN
+F 3 "~" H 1550 6500 50  0001 C CNN
+	1    1550 6500
+	1    0    0    -1  
+$EndComp
+Text Label 1850 6200 0    50   ~ 0
+PD0
+Text Label 1850 6300 0    50   ~ 0
+PD1
+Text Label 1850 6400 0    50   ~ 0
+PD2
+Text Label 1850 6500 0    50   ~ 0
+PD3
+Text Label 1850 6600 0    50   ~ 0
+PD4
+Text Label 1850 6700 0    50   ~ 0
+PD5
+Text Label 1850 6800 0    50   ~ 0
+PD6
+Text Label 1850 6900 0    50   ~ 0
+PD7
+Text Label 1350 6300 2    50   ~ 0
+BA0
+Text Label 1350 6400 2    50   ~ 0
+BA1
+Text Label 1350 6500 2    50   ~ 0
+BA2
+Text Label 1350 6600 2    50   ~ 0
+BA3
+Wire Wire Line
+	1150 6300 1350 6300
+Wire Wire Line
+	1150 6400 1350 6400
+Wire Wire Line
+	1150 6500 1350 6500
+Wire Wire Line
+	1150 6600 1350 6600
+Wire Wire Line
+	1150 6700 1350 6700
+Entry Wire Line
+	1150 6300 1050 6400
+Entry Wire Line
+	1150 6400 1050 6500
+Entry Wire Line
+	1150 6500 1050 6600
+Entry Wire Line
+	1150 6600 1050 6700
+Entry Wire Line
+	1150 6700 1050 6800
+Text GLabel 1050 6900 3    50   Input ~ 0
+BA[0..4]
+Text Label 1350 6700 2    50   ~ 0
+BA4
+Text Notes 1000 6700 2    50   ~ 0
+BA4=~BWR
+$Comp
+L power:+5V #PWR0104
+U 1 1 631E84E6
+P 1350 6200
+F 0 "#PWR0104" H 1350 6050 50  0001 C CNN
+F 1 "+5V" H 1365 6373 50  0000 C CNN
+F 2 "" H 1350 6200 50  0001 C CNN
+F 3 "" H 1350 6200 50  0001 C CNN
+	1    1350 6200
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0108
+U 1 1 631E8D69
+P 1350 6900
+F 0 "#PWR0108" H 1350 6650 50  0001 C CNN
+F 1 "GND" H 1300 6750 50  0000 C CNN
+F 2 "" H 1350 6900 50  0001 C CNN
+F 3 "" H 1350 6900 50  0001 C CNN
+	1    1350 6900
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1850 6200 2050 6200
+Wire Wire Line
+	1850 6300 2050 6300
+Wire Wire Line
+	1850 6400 2050 6400
+Wire Wire Line
+	1850 6500 2050 6500
+Wire Wire Line
+	1850 6600 2050 6600
+Wire Wire Line
+	1850 6700 2050 6700
+Wire Wire Line
+	1850 6800 2050 6800
+Wire Wire Line
+	1850 6900 2050 6900
+Entry Wire Line
+	2050 6200 2150 6300
+Entry Wire Line
+	2050 6300 2150 6400
+Entry Wire Line
+	2050 6400 2150 6500
+Entry Wire Line
+	2050 6500 2150 6600
+Entry Wire Line
+	2050 6600 2150 6700
+Entry Wire Line
+	2050 6700 2150 6800
+Entry Wire Line
+	2050 6800 2150 6900
+Entry Wire Line
+	2050 6900 2150 7000
+Text GLabel 2150 7000 3    50   Input ~ 0
+PD[0..7]
+Text GLabel 1150 6900 3    50   Input ~ 0
+~IO9Q
+Wire Wire Line
+	1350 6800 1150 6800
+Wire Wire Line
+	1150 6800 1150 6900
+$Comp
+L Device:CP C9
+U 1 1 632E74BB
+P 3500 3550
+F 0 "C9" V 3755 3550 50  0000 C CNN
+F 1 "100uF" V 3650 3500 50  0000 C CNN
+F 2 "Capacitor_THT:CP_Radial_D4.0mm_P1.50mm" H 3538 3400 50  0001 C CNN
+F 3 "~" H 3500 3550 50  0001 C CNN
+	1    3500 3550
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:R R31
+U 1 1 632E91E3
+P 3150 3550
+F 0 "R31" V 3050 3550 50  0000 C CNN
+F 1 "68" V 3150 3550 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 3080 3550 50  0001 C CNN
+F 3 "~" H 3150 3550 50  0001 C CNN
+	1    3150 3550
+	0    1    1    0   
+$EndComp
+Text GLabel 3000 3550 0    50   Input ~ 0
+MIX
+Text Label 3350 3550 1    50   ~ 0
+RMIX2
+Wire Wire Line
+	3300 3550 3350 3550
 Wire Wire Line
 	850  5100 1350 5100
 Wire Bus Line
@@ -860,11 +1009,17 @@ Wire Bus Line
 Wire Bus Line
 	3700 2150 3700 2700
 Wire Bus Line
+	1050 6400 1050 6900
+Wire Bus Line
 	2300 5200 2300 5700
 Wire Bus Line
 	2450 4400 2450 5750
 Wire Bus Line
+	2150 6300 2150 7000
+Wire Bus Line
 	900  2150 900  5700
 Wire Bus Line
 	750  2150 750  5750
+Text Label 3650 3550 3    50   ~ 0
+Y
 $EndSCHEMATC

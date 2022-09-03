@@ -2217,7 +2217,7 @@ L Device:R_Network08 RN2
 U 1 1 61FB5CB9
 P 3850 6900
 F 0 "RN2" V 3233 6900 50  0000 C CNN
-F 1 "220K" V 3324 6900 50  0000 C CNN
+F 1 "3K3" V 3324 6900 50  0000 C CNN
 F 2 "Resistor_THT:R_Array_SIP9" V 4325 6900 50  0001 C CNN
 F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 3850 6900 50  0001 C CNN
 	1    3850 6900
@@ -2608,7 +2608,7 @@ L Connector_Generic:Conn_01x02 J10
 U 1 1 62731839
 P 2150 1300
 F 0 "J10" H 2150 1400 50  0000 C CNN
-F 1 "STEP" H 2300 1200 50  0000 C CNN
+F 1 "DBG" H 2300 1200 50  0000 C CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 2150 1300 50  0001 C CNN
 F 3 "~" H 2150 1300 50  0001 C CNN
 	1    2150 1300
@@ -2694,6 +2694,38 @@ Wire Wire Line
 	3500 750  6650 750 
 Wire Bus Line
 	2800 650  10800 650 
+Text Label 4500 1050 2    50   ~ 0
+PD0
+Text Label 4500 1150 2    50   ~ 0
+PD1
+Text Label 4500 1250 2    50   ~ 0
+PD2
+Text Label 4500 1350 2    50   ~ 0
+PD3
+Text Label 4500 1450 2    50   ~ 0
+PD4
+Text Label 4500 1550 2    50   ~ 0
+PD5
+Text Label 4500 1650 2    50   ~ 0
+PD6
+Text Label 4500 1750 2    50   ~ 0
+PD7
+Entry Wire Line
+	4500 1050 4600 1150
+Entry Wire Line
+	4500 1150 4600 1250
+Entry Wire Line
+	4500 1250 4600 1350
+Entry Wire Line
+	4500 1350 4600 1450
+Entry Wire Line
+	4500 1450 4600 1550
+Entry Wire Line
+	4500 1550 4600 1650
+Entry Wire Line
+	4500 1650 4600 1750
+Entry Wire Line
+	4500 1750 4600 1850
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Bus Line
@@ -2708,6 +2740,8 @@ Wire Bus Line
 	5850 1050 5850 5100
 Wire Bus Line
 	5900 700  5900 5900
+Wire Bus Line
+	4600 1150 4600 1850
 Wire Bus Line
 	7450 950  7450 5050
 Wire Bus Line
@@ -2726,4 +2760,8 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
+Text GLabel 4600 1850 3    50   Input ~ 0
+PD[0..7]
+Text GLabel 4250 7500 1    50   Input ~ 0
+~IO9Q
 $EndSCHEMATC

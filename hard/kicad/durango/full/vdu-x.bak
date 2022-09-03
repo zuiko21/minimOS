@@ -627,7 +627,7 @@ $Comp
 L Transistor_BJT:BC547 Q5
 U 1 1 60C5B6F0
 P 7600 5000
-F 0 "Q5" H 7800 5050 50  0000 L CNN
+F 0 "Q5" H 7550 5150 50  0000 L CNN
 F 1 "BC548" H 7300 5050 50  0000 L CNN
 F 2 "Package_TO_SOT_THT:TO-92_Inline" H 7800 4925 50  0001 L CIN
 F 3 "http://www.fairchildsemi.com/ds/BC/BC547.pdf" H 7600 5000 50  0001 L CNN
@@ -1468,8 +1468,8 @@ Text Label 7050 4250 0    50   ~ 0
 FEND
 Text Notes 6900 6100 0    50   Italic 10
 *
-Text Notes 8800 6400 0    50   Italic 10
-*) R108, R110, R122, Q306\n   NOT FOR SYNC-ON-GREEN
+Text Notes 8400 6400 0    50   Italic 10
+*) R108, R110, R111, R113, R122, Q306\n   NOT FOR SYNC-ON-GREEN
 Text Notes 6900 5700 0    50   Italic 10
 *
 Text Notes 6650 6250 0    50   Italic 10
@@ -1746,16 +1746,16 @@ Wire Wire Line
 $Comp
 L Device:R R30
 U 1 1 624D4251
-P 8000 5200
-F 0 "R30" V 7900 5150 50  0000 L CNN
-F 1 "68" V 8000 5150 50  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7930 5200 50  0001 C CNN
-F 3 "~" H 8000 5200 50  0001 C CNN
-	1    8000 5200
+P 8050 5200
+F 0 "R30" V 7950 5150 50  0000 L CNN
+F 1 "68" V 8050 5150 50  0000 L CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7980 5200 50  0001 C CNN
+F 3 "~" H 8050 5200 50  0001 C CNN
+	1    8050 5200
 	0    1    1    0   
 $EndComp
 Wire Wire Line
-	7700 5200 7850 5200
+	7700 5200 7900 5200
 Connection ~ 7700 5200
 Wire Wire Line
 	8400 5200 8400 5750
@@ -1972,7 +1972,7 @@ Wire Wire Line
 Wire Wire Line
 	8250 6100 8800 6100
 Wire Wire Line
-	8400 5200 8150 5200
+	8400 5200 8200 5200
 Wire Wire Line
 	7650 5800 7650 5700
 Wire Wire Line
@@ -2065,8 +2065,6 @@ Wire Wire Line
 	6900 6500 10300 6500
 Wire Wire Line
 	8400 6100 8400 6300
-Text GLabel 8400 6300 2    50   Input ~ 0
-VIDEO
 Connection ~ 8650 5200
 Wire Wire Line
 	8650 5200 9100 5200
@@ -2320,10 +2318,16 @@ Wire Wire Line
 Wire Wire Line
 	5000 4950 5150 4950
 Connection ~ 5150 4950
+Text GLabel 7850 5200 1    50   Input ~ 0
+MIX
 Wire Bus Line
 	8800 550  10750 550 
 Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
+Text Notes 7450 6450 0    50   Italic 10
+*
+Text Notes 7450 6050 0    50   Italic 10
+*
 $EndSCHEMATC

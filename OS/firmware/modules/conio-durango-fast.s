@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; Durango-X firmware console 0.9.6b6
+; Durango-X firmware console 0.9.6b7
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220830-1541
+; last modified 20220903-1148
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -68,6 +68,18 @@
 ; fw_vtop (first non-VRAM page, allows screen switching upon FF)
 ; fw_scur ([NEW] flag D7=cursor ON)
 
+; *** new option, keyboard control by NES gamepad ***
+; *** UP/DOWN    = +/- 32 to ASCII                ***
+; *** LEFT/RIGHT = next/prev ASCII                ***
+; *** A          = put char into buffer           ***
+; *** B          = press RETURN                   ***
+; *** START      = press ESCAPE                   ***
+; *** SELECT     = press BACKSPACE                ***
+;#define	KBBYPAD
+
+; *** experimental BOLD emphasis instead of inverse ***
+;#define	SO_BOLD
+
 ; first two modes are directly processed, note BM_DLE is the shifted X
 #define	BM_CMD		0
 #define	BM_DLE		32
@@ -84,6 +96,9 @@
 -IO8blk	= $DF88				; video blanking signals
 -IO9di	= $DF9A				; data input (TBD)
 -IOBeep	= $DFBF				; canonical buzzer address (d0)
+-IO9nes0= $DF9C				; NES controller for alternative keyboard emulation & latch
+-IO9nes1= $DF9D				; NES controller clock port
+-fw_knes= $020A				; is this a safe address?
 #endif
 
 	TYA						; is going to be needed here anyway
@@ -129,7 +144,13 @@ cio_prn:
 ; hires version (17b for CMOS, usually 231t, plus jump to cursor-right)
 cph_loop:
 			_LDAX(cio_src)	; glyph pattern (5)
-			EOR fw_mask		; eeeeeeeeeek (4)
+#ifndef	SO_BOLD
+			EOR fw_mask		; in case inverse mode is set, much better here (4)
+#else
+			LSR				; shift left...
+			AND fw_mask		; ...but only in case we're in SHIFT OUT
+			ORA (cio_src)	; CMOS only, would get original byte in any case
+#endif
 			STA (cio_pt), Y	; put it on screen (5)
 			INC cio_src		; advance to next glyph byte (5)
 			BNE cph_nw		; (usually 3, rarely 7)
@@ -140,7 +161,8 @@ cph_nw:
 			ADC #32			; 32 bytes/raster EEEEEEEEK (2)
 			TAY				; offset ready (2)
 			BNE cph_loop	; offset will just wrap at the end EEEEEEEK (3)
-		BEQ cur_r			; advance to next position! no need for BRA (3)
+; ...but should NOT delete (XOR) previous cursor, as has disappeared while printing
+		BEQ do_cur_r		; advance cursor without clearing previous
 ; colour version, 85b, typically 975t (77b, 924t in ZP)
 ; new FAST version, but no longer with sparse array
 cpc_col:
@@ -148,11 +170,13 @@ cpc_col:
 	STX fw_chalf			; two pages must be written (2+4*)
 cpc_do:						; outside loop (done 8 times) is 8x(45+inner)+113=969, 8x(42+inner)+111=919 in ZP  (was ~1497/1407)
 		_LDAX(cio_src)		; glyph pattern (5)
-;		EOR fw_mask			; in case inverse mode is set, much better here (4)
-; experimental 'bold' code below
+#ifndef	SO_BOLD
+		EOR fw_mask			; in case inverse mode is set, much better here (4)
+#else
 		LSR					; shift left...
 		AND fw_mask			; ...but only in case we're in SHIFT OUT
 		ORA (cio_src)		; CMOS only, would get original byte in any case
+#endif
 ; *** *** glyph pattern is loaded and masked, let's try an even faster alternative, store all 4 positions premasked as sparse indexes
 		TAX					; keep safe (2)
 		AND #%00000011		; rightmost pixels (2)
@@ -237,13 +261,13 @@ ck_wrap:
 #ifdef	SAFE
 		LDA fw_ciop+1		; check MSB
 		LSR					; just check d0, should clear C
-			BCS cn_begin	; strange scanline, thus time for the NEWLINE (Y>1)
+			BCS do_cr;cn_begin	; strange scanline, thus time for the NEWLINE (Y>1)
 #endif
 		LDY #%11000000		; in any case, get proper mask for colour mode
 wr_hr:
 	TYA						; prepare mask and guarantee Y>1 for auto LF
 	AND fw_ciop				; are scanline bits clear?
-		BNE cn_begin		; nope, do NEWLINE
+		BNE do_cr;cn_begin		; nope, do NEWLINE
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_ckw
 		JSR draw_cur		; ...must draw new one
@@ -292,7 +316,9 @@ cn_begin:
 ; do CR... but keep Y
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_cr
+		PHY					; CMOS only eeeeeek
 		JSR draw_cur		; ...must delete previous one
+		PLY
 do_cr:
 ; note address format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
 ; actually is a good idea to clear scanline bits, just in case
@@ -419,6 +445,10 @@ cbp_del:
 cio_bs:
 ; BACKSPACE, go back one char and clear cursor position
 	JSR cur_l				; back one char, if possible, then clear cursor position
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_bs
+		JSR draw_cur		; ...must delete previous one
+do_bs:
 	LDY fw_ciop
 	LDA fw_ciop+1			; get current cursor position...
 	STY cio_pt
@@ -455,6 +485,10 @@ bs_scw:
 		PLA					; retrieved value, is there a better way?
 		DEC fw_ctmp			; one scanline less to go
 		BNE bs_scan
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL end_bs
+		JSR draw_cur		; ...must delete previous one
+end_bs:
 	_DR_OK					; should be done
 
 cio_up:
@@ -557,7 +591,8 @@ md_dle:
 ; DLE, set binary mode
 ;	LDX #BM_DLE				; X already set if 32
 	STX fw_cbin				; set binary mode and we are done
-	RTS
+ignore:
+	RTS						; *** note generic exit ***
 
 cio_cur:
 ; XON, we now have cursor! [NEW]
@@ -572,9 +607,7 @@ cio_cur:
 	PLP
 #endif
 	BNE ignore				; if was set, shouldn't draw cursor again
-		JSR draw_cur
-ignore:
-	RTS						; *** note generic exit ***
+		JMP draw_cur		; go and return
 
 cio_curoff:
 ; XOFF, disable cursor [NEW]
@@ -590,8 +623,7 @@ cio_curoff:
 	PLP
 	BPL ignore
 #endif
-		JSR draw_cur
-	RTS
+		JMP draw_cur		; go and return
 
 md_ink:
 ; just set binary mode for receiving ink! *** could use some tricks to unify with paper mode setting
@@ -607,14 +639,14 @@ md_ppr:
 
 cio_home:
 ; just reset cursor pointer, to be done after (or before!) CLS
-	LDY #0					; base address for all modes, actually 0
-	LDA fw_vbot				; current screen setting!
-	STY fw_ciop				; just set pointer
-	STA fw_ciop+1
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_home
 		JSR draw_cur		; ...must draw new one
 do_home:
+	LDY #0					; base address for all modes, actually 0 EEEEEK
+	LDA fw_vbot				; current screen setting!
+	STY fw_ciop				; just set pointer
+	STA fw_ciop+1
 	RTS						; C is clear, right?
 
 md_atyx:
@@ -626,17 +658,18 @@ md_atyx:
 draw_cur:
 ; draw (XOR) cursor [NEW]
 	LDX fw_ciop+1			; get cursor position
+	CPX fw_vtop				; outside bounds?
+		BCS no_cur			; do not attempt to write!
 	LDY fw_ciop
 	STY cio_pt				; set pointer LSB (common)
+	STX cio_pt+1			; set pointer MSB
 	BIT IO8attr				; check screen mode
 	BPL dc_col				; skip if in colour mode
-		STX cio_pt+1		; set pointer MSB
 		LDY #224			; seven rasters down
 		LDX #1				; single byte cursor
 		BNE dc_loop			; no need for BRA
 dc_col:
-	INX						; this goes into next page (4 rasters down)
-	STX cio_pt+1			; complete pointer
+	INC cio_pt+1			; this goes into next page (4 rasters down)
 	LDY #192				; 3 rasters further down
 	LDX #4					; bytes per char raster
 dc_loop:
@@ -646,6 +679,7 @@ dc_loop:
 		INY					; next byte in raster
 		DEX
 		BNE dc_loop
+no_cur:
 	RTS						; should I clear C?
 
 ; *******************************
@@ -780,6 +814,7 @@ cn_in:
 	LDY IO9di				; get current data at port *** must set lower address nibble
 ; *** should this properly address a matrix keyboard?
 	BEQ cn_empty			; no transfer is in the making
+cn_chk:
 		CPY fw_io9			; otherwise compare with last received
 	BEQ cn_ack				; same as last, keep trying
 		STY fw_io9			; this is received and different
@@ -787,6 +822,97 @@ cn_in:
 cn_empty:
 	STY fw_io9				; keep clear
 cn_ack:
+; *************************************************
+; *** optional module for key-by-NESpad control ***
+#ifdef	KBBYPAD
+	JSR nes_pad				; check gamepad
+; d7-d0 = AtBeULDR format
+;	BEQ nes_none			; skip if no buttons
+		LSR					; check right
+		BCC no_r
+			INC fw_knes		; ASCII+1
+			JMP nes_upd		; show new character... and return
+no_r:
+		LSR					; check down
+		BCC no_d
+			LDA fw_knes
+			SEC
+			SBC #32			; ASCII-32
+			STA fw_knes
+			JMP nes_upd		; show new character... and return
+no_d:
+		LSR					; check left
+		BCC no_l
+			DEC fw_knes		; ASCII-1
+			JMP nes_upd		; show new character... and return
+no_l:
+		LSR					; check up
+		BCC no_u
+			LDA fw_knes
+			CLC
+			ADC #32			; ASCII+32
+			STA fw_knes
+			JMP nes_upd		; show new character... and return
+no_u:
+		LSR					; check select (=ESCAPE)
+		BCC no_sel
+			JSR nes_del		; delete current and wait
+			LDY #27			; insert ESC...
+			JMP cn_chk		; ...and process as if pressed
+no_sel:
+		LSR					; check B (=BACKSPACE)
+		BCC no_b
+			JSR nes_del		; delete current and wait
+			LDY #8			; insert BS...
+			JMP cn_chk		; ...and process as if pressed
+no_b:
+		LSR					; check start (=RETURN)
+		BCC no_st
+			JSR nes_del		; wait, at least
+			LDY #13			; insert CR...
+			JMP cn_chk		; ...and process as if pressed
+no_st:
+		LSR					; check A (Confirm character)
+		BCC nes_none
+			JSR nes_wait	; wait for button up
+			LDA #7			; BEL
+			JSR cio_cmd
+			LDY fw_knes		; get selected keycode
+			JMP cn_chk		; ...and process as if pressed
+; *****************************************
+; *** extra routines for KBBYPAD module ***
+nes_pad:					; *** read pad value in A ***
+	STA IO9nes0				; latch pad status
+	LDX #8					; number of bits to read
+nes_loop:
+		STA IO9nes1			; send clock pulse
+		DEX
+		BNE nes_loop		; all bits read @ IO9nes0
+	LDA IO9nes0				; get bits
+	RTS
+
+nes_upd:					; *** show current character ***
+	LDA fw_knes				; temporary ASCII
+	JSR cio_prn				; direct print
+	LDA #2					; LEFT cursor
+	JSR cio_cmd				; return cursor
+	BRA nes_wait			; and wait for button release!
+
+nes_del:					; *** delete temporary char ***
+	LDA #' '				; print a space
+	JSR cio_prn				; direct print
+	LDA #2					; LEFT cursor
+	JSR cio_cmd				; return cursor...
+nes_wait:
+		JSR nes_pad			; ...but wait until button is released
+		BNE nes_wait
+	_DR_ERR(EMPTY)			; standard exit, just in case
+; *** end of routines ***
+; ***********************
+nes_none:
+#endif
+; *** end of optional KBBYPAD module ***
+; **************************************
 	_DR_ERR(EMPTY)			; set C instead eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 
 ; **************************************************
@@ -796,9 +922,9 @@ cio_ctl:
 	.word	cn_in			; 0, INPUT mode
 	.word	cn_cr			; 1, CR
 	.word	cur_l			; 2, cursor left
-	.word	cio_prn			; 3 ***
-	.word	cio_prn			; 4 ***
-	.word	cio_prn			; 5 ***
+	.word	ignore			; 3 ***
+	.word	ignore			; 4 ***
+	.word	ignore			; 5 ***
 	.word	cur_r			; 6, cursor right
 	.word	cio_bel			; 7, beep
 	.word	cio_bs			; 8, backspace
@@ -815,15 +941,15 @@ cio_ctl:
 	.word	cio_curoff		; 19, hide cursor
 	.word	md_ppr			; 20, set paper from next char
 	.word	cio_home		; 21, home (what is done after CLS)
-	.word	cio_prn			; 22 ***
+	.word	ignore			; 22 ***
 	.word	md_atyx			; 23, ATYX will set cursor position
-	.word	cio_prn			; 24 ***
-	.word	cio_prn			; 25 ***
-	.word	cio_prn			; 26 ***
-	.word	cio_prn			; 27 ***
-	.word	cio_prn			; 28 ***
-	.word	cio_prn			; 29 ***
-	.word	cio_prn			; 30 ***
+	.word	ignore			; 24 ***
+	.word	ignore			; 25 ***
+	.word	ignore			; 26 ***
+	.word	ignore			; 27 ***
+	.word	ignore			; 28 ***
+	.word	ignore			; 29 ***
+	.word	ignore			; 30 ***
 	.word	ignore			; 31, IGNORE back to text mode
 
 ; *** table of pointers to multi-byte routines *** order must check BM_ definitions!
