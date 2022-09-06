@@ -2252,7 +2252,7 @@ U 1 1 628F2E8C
 P 3350 6800
 F 0 "RV127" V 3250 6800 50  0000 C CNN
 F 1 "5K (PIXEL DELAY)" V 3550 6800 50  0000 C CNN
-F 2 "Potentiometer_THT:Potentiometer_Piher_PT-10-V10_Vertical" H 3350 6800 50  0001 C CNN
+F 2 "Potentiometer_THT:Potentiometer_Piher_PT-6-V_Vertical" H 3350 6800 50  0001 C CNN
 F 3 "~" H 3350 6800 50  0001 C CNN
 	1    3350 6800
 	0    -1   1    0   
@@ -2263,7 +2263,7 @@ U 1 1 6292D03A
 P 10450 6350
 F 0 "RV128" H 10380 6396 50  0000 R CNN
 F 1 "5K (ENABLE DLY)" H 10380 6305 50  0000 R CNN
-F 2 "Potentiometer_THT:Potentiometer_Piher_PT-10-V10_Vertical" H 10450 6350 50  0001 C CNN
+F 2 "Potentiometer_THT:Potentiometer_Piher_PT-6-V_Vertical" H 10450 6350 50  0001 C CNN
 F 3 "~" H 10450 6350 50  0001 C CNN
 	1    10450 6350
 	-1   0    0    -1  
@@ -2304,7 +2304,7 @@ U 1 1 62BC55A0
 P 5000 5100
 F 0 "RV231" V 5200 5200 50  0000 C CNN
 F 1 "5K (HR DELAY)" V 4900 4850 50  0000 C CNN
-F 2 "Potentiometer_THT:Potentiometer_Piher_PT-10-V10_Vertical" H 5000 5100 50  0001 C CNN
+F 2 "Potentiometer_THT:Potentiometer_Piher_PT-6-V_Vertical" H 5000 5100 50  0001 C CNN
 F 3 "~" H 5000 5100 50  0001 C CNN
 	1    5000 5100
 	0    -1   -1   0   
