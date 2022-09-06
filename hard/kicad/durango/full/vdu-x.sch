@@ -2320,12 +2320,6 @@ Wire Wire Line
 Connection ~ 5150 4950
 Text GLabel 7850 5200 1    50   Input ~ 0
 MIX
-Wire Bus Line
-	8800 550  10750 550 
-Wire Bus Line
-	4100 550  8050 550 
-Wire Bus Line
-	800  4350 3700 4350
 Text Notes 7450 6450 0    50   Italic 10
 *
 Text Notes 7450 6050 0    50   Italic 10
@@ -2336,4 +2330,10 @@ Text Notes 8150 5150 0    50   Italic 10
 *
 Text Notes 8600 5900 0    50   Italic 10
 *
+Wire Bus Line
+	8800 550  10750 550 
+Wire Bus Line
+	4100 550  8050 550 
+Wire Bus Line
+	800  4350 3700 4350
 $EndSCHEMATC
