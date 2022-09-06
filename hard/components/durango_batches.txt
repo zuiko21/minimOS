@@ -1,0 +1,9 @@
+############################# BATCH 0: RELEASE PARTY #############################
+
+COMPONENTE				URL										CANTIDAD	COSTE
+SCART					XXXXXXX									??			???
+Sockets NES Gamepad		https://www.ebay.es/itm/381262028895	10x2		40.60
+50PCS 74HC138 DIP		https://www.ebay.es/itm/225129331494	1x50		11.62
+
+
+###################################################################################
