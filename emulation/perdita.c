@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220903-1119
+ * last modified 20220907-1944
  * */
 
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -618,8 +618,8 @@ void poke(word dir, byte v) {
 		} else if (dir==0xDF9D) { // gamepads 2 at $df9d 
 			if (ver>2)	printf("Shift gamepads\n");
 			if(++gp_shift_counter == 8) {
-				mem[0xDF9C]=gamepads_latch[0];
-				mem[0xDF9D]=gamepads_latch[1];
+				mem[0xDF9C]=~gamepads_latch[0];
+				mem[0xDF9D]=~gamepads_latch[1];
 			}
 			else {
 				mem[0xDF9C]=0;
