@@ -2595,7 +2595,7 @@ U 1 1 6272E967
 P 3500 3650
 F 0 "JP4" H 3250 3650 50  0000 C CNN
 F 1 "~WDC" H 3450 3750 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 3500 3650 50  0001 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 3500 3650 50  0001 C CNN
 F 3 "~" H 3500 3650 50  0001 C CNN
 	1    3500 3650
 	1    0    0    1   
