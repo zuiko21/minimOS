@@ -622,8 +622,8 @@ void poke(word dir, byte v) {
 				mem[0xDF9D]=~gamepads_latch[1];
 			}
 			else {
-				mem[0xDF9C]=0;
-				mem[0xDF9D]=0;
+				mem[0xDF9C]=0xff;
+				mem[0xDF9D]=0xff;
 			}
 		} else if (dir<=0xDF9F) {	// expansion port?
 			mem[dir] = v;			// *** is this OK?
