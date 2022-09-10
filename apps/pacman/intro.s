@@ -56,7 +56,7 @@ cl_l:
 	STY orig				; set compressed data source
 	STX orig+1
 	JSR rle					; decompress!
-	LDA #15					; ~3 sec delay
+	LDA #14					; ~3 sec delay
 	JSR delay
 ; pacman animation!
 
