@@ -1,6 +1,6 @@
 ; PacMan intro
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220910-1829
+; last modified 20220910-1859
 
 #include "../../OS/macros.h"
 
@@ -56,15 +56,9 @@ cl_l:
 	STY orig				; set compressed data source
 	STX orig+1
 	JSR rle					; decompress!
-; some delay
-	LDA #15
-delay:
-				INX
-				BNE delay
-			INY
-			BNE delay
-		DEC
-		BNE delay
+	LDA #15					; ~3 sec delay
+	JSR delay
+; pacman animation!
 
 ; decompress controls
 	LDX #>ctl_pos
@@ -79,6 +73,18 @@ delay:
 	
 
 end: JMP end
+
+; *** useful routines ***
+
+; some delay (approx. A * 213 ms)
+delay:
+				INX
+				BNE delay
+			INY
+			BNE delay
+		DEC
+		BNE delay
+	RTS
 
 ; **********************
 ; *** included files ***
