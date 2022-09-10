@@ -148,6 +148,15 @@ fr_loop:
 d_now:
 		DEX					; next raster
 		BNE fr_ras
+	LDX #2					; frames to wait
+sync:
+			BIT IO8sync		; wait for vsync
+			BVS sync		; still on it
+wait:
+			BIT IO8sync
+			BVC wait
+		DEX
+		BNE sync
 	RTS
 
 ; **************************
