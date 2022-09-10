@@ -1100,6 +1100,17 @@ F 3 "~" H 2900 6100 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 NoConn ~ 2700 6100
+$Comp
+L Graphic:Logo_Open_Hardware_Large #LOGO1
+U 1 1 63275510
+P 3950 6700
+F 0 "#LOGO1" H 3950 7200 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Large" H 3950 6300 50  0001 C CNN
+F 2 "Symbol:OSHW-Logo2_9.8x8mm_SilkScreen" H 3950 6700 50  0001 C CNN
+F 3 "~" H 3950 6700 50  0001 C CNN
+	1    3950 6700
+	1    0    0    -1  
+$EndComp
 Wire Wire Line
 	850  5100 1350 5100
 Wire Bus Line
@@ -1118,15 +1129,4 @@ Wire Bus Line
 	900  2150 900  5700
 Wire Bus Line
 	750  2150 750  5750
-$Comp
-L Graphic:Logo_Open_Hardware_Large #LOGO1
-U 1 1 63275510
-P 3950 6700
-F 0 "#LOGO1" H 3950 7200 50  0001 C CNN
-F 1 "Logo_Open_Hardware_Large" H 3950 6300 50  0001 C CNN
-F 2 "" H 3950 6700 50  0001 C CNN
-F 3 "~" H 3950 6700 50  0001 C CNN
-	1    3950 6700
-	1    0    0    -1  
-$EndComp
 $EndSCHEMATC
