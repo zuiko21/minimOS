@@ -1,6 +1,6 @@
 ; PacMan intro
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220910-2205
+; last modified 20220910-2337
 
 #include "../../OS/macros.h"
 
@@ -209,7 +209,14 @@ af_ind:
 ; *** missing 'A' part *** note byte-level flip! 2301...
 ; ************************
 repeat:
-	.byt
+	.byt	$00, $80
+	.byt	$00, $80
+	.byt	$00, $88
+	.byt	$00, $78
+	.byt	$80, $78
+	.byt	$80, $77
+	.byt	$88, $88
+
 
 ; **********************
 ; *** included files ***
