@@ -16,7 +16,9 @@ sp_buf	= $1000				; sprite buffer
 ; *** zeropage usage *** placeholder
 orig	= $F0
 dest	= $F2
-tmp		= $F4
+pos		= $F4
+width	= $F5
+redraw	= $F6
 rle_src	= orig				; pointer to compressed source
 rle_ptr	= dest				; pointer to screen output
 
@@ -71,20 +73,50 @@ cl_l:
 	STX orig+1
 	JSR rle					; decompress!
 	LDA #$D1				; byte LSB to initial pacman position
-	STA tmp
+	STA pos
+; **********
+	LDX #$70				; position of area to be redrawn
+	LDY #$11
+	STY redraw
+	STX redraw+1
+; **********
 ; the fun begins!
 an_loop:
 		LDA #$6C			; position MSB
 		STA dest+1
-		LDA tmp				; current LSB
+		LDA pos				; current LSB
 		STA dest
+; *** code to correct missing part of the A ***
+		CMP #$6E			; when pacman clears A
+		BNE an_cont
+; redraw 4x7 pix area, note horizontal flip, byte level! (pixels: 2301...)
+			LDX #0
+rd_vloop:
+				LDY #1
+rd_hloop:
+					LDA repeat, X	; get original data
+					STA (redraw), Y	; restore screen
+					INX				; next origin byte
+					DEY
+					BPL rd_hloop
+				LDA redraw
+				CLC
+				ADC #64
+				STA redraw
+				BCC rd_ok
+					INC redraw+1
+rd_ok:
+				CPX #14				; finished?
+				BNE rd_vloop
+an_cont:
+; *********************************************
 		AND #7				; mod 8
 		TAX
 		LDA af_ind, X		; get frame index (MSB of sprite file)
 		STA orig+1
 		STZ orig
 		JSR frame			; draw!
-		INC tmp				; next position
+		INC pos				; next position
 		BNE an_loop
 ; decompress banner again
 	LDX #>ban_pos
@@ -124,9 +156,17 @@ delay:
 ; * draw animation frame 22x20 *
 ; set orig and dest (with byte offset) as desired
 frame:
+	LDA #$FF
+	SEC
+	SBC pos					; how many bytes until the end?
+	CMP #10					; max offset for 22-pix wide
+	BCC w_ok				; too close, use available space
+		LDA #10				; if far enough, take standard value
+w_ok:
+	STA width				; 10 or less
 	LDX #20					; raster counter
 fr_ras:
-		LDY #10				; max offset for 22-pix wide *** must be less if close to the edge
+		LDY width
 fr_loop:
 			LDA (orig), Y	; get sprite data
 			STA (dest), Y	; put on screen
@@ -164,6 +204,12 @@ wait:
 ; **************************
 af_ind:
 	.byt	$13, $10, $11, $12, $11, $10, $13, $14
+
+; ************************
+; *** missing 'A' part *** note byte-level flip! 2301...
+; ************************
+repeat:
+	.byt
 
 ; **********************
 ; *** included files ***
