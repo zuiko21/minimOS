@@ -1,6 +1,6 @@
 ; PacMan intro
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220910-2337
+; last modified 20220910-2355
 
 #include "../../OS/macros.h"
 
@@ -120,6 +120,9 @@ an_cont:
 		JSR frame			; draw!
 		INC pos				; next position
 		BNE an_loop
+; wait a bit before redrawing
+	LDA #7
+	JSR delay
 ; decompress banner again
 	LDX #>ban_pos
 	LDY #<ban_pos
