@@ -9,7 +9,7 @@ IO8attr	= $DF80
 IO8sync	= $DF88
 IOAen	= $DFA0
 screen3	= $6000
-ban_pos	= $6D80				; line 54 (centered 20px high)
+ban_pos	= $6D00				; line 52 looks nicer
 
 ; *** zeropage usage *** placeholder
 orig	= $F0
@@ -20,6 +20,8 @@ rle_ptr	= dest				; pointer to screen output
 ; *****************
 ; *** init code ***
 ; *****************
+	* = $8000				; use -a 0x8000 anyway
+
 intro:
 ; usual 6502 stuff
 	SEI
@@ -54,7 +56,7 @@ cl_l:
 	STX orig+1
 	JSR rle					; decompress!
 
-lock: JMP lock
+end: JMP end
 
 ; **********************
 ; *** included files ***
