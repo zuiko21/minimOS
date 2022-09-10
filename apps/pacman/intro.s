@@ -87,9 +87,10 @@ an_loop:
 		LDA pos				; current LSB
 		STA dest
 ; *** code to correct missing part of the A ***
-		CMP #$6E			; when pacman clears A
+		PHA
+		CMP #$D3			; when pacman clears A eeeeeeek
 		BNE an_cont
-; redraw 4x7 pix area, note horizontal flip, byte level! (pixels: 2301...)
+; redraw 4x7 pix area, note horizontal flip, byte level! (pixels=2301...)
 			LDX #0
 rd_vloop:
 				LDY #1
@@ -109,6 +110,7 @@ rd_ok:
 				CPX #14				; finished?
 				BNE rd_vloop
 an_cont:
+		PLA
 ; *********************************************
 		AND #7				; mod 8
 		TAX
