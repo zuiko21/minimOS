@@ -1,6 +1,6 @@
 ; PacMan intro
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220911-2302
+; last modified 20220911-2315
 
 #include "../../OS/macros.h"
 
@@ -8,6 +8,7 @@
 IO8attr	= $DF80
 IO8sync	= $DF88
 IOAen	= $DFA0
+IOBeep	= $DFB0
 screen3	= $6000
 ban_pos	= $6CC0				; line 51 looks nicer, and makes animation simpler!
 ctl_pos	= $7440				; bottom of the screen
@@ -17,6 +18,7 @@ sp_buf	= $1000				; sprite buffer
 orig	= $F0
 dest	= $F2
 pos		= $F4
+temp	= pos
 width	= $F5
 redraw	= $F6
 rle_src	= orig				; pointer to compressed source
@@ -163,11 +165,32 @@ lda #20: jsr delay
 	STX orig+1
 	JSR rle					; decompress!
 
+; ***********************
+; *** play the music! ***
+; ***********************
+music:
+	LDX #0					; *** don't know if X is still zero after positions AND drawing sprites
+	STX temp				; reset cursor (temporary use)
+m_loop:
+		LDY temp			; get index
+		LDX m_len, Y		; get length from duration array
+			BEQ m_end		; length=0 means END of score
+		LDA m_note, Y		; get note period (10A+20 t) from its array
+		BEQ mc_rest			; if zero, no sound!
+			JSR m_beep		; play this note (exits with Z)
+			BRA m_next		; go for next note
+mc_rest:
+		JSR m_rest
+m_next:
+		INC temp			; advance cursor to next note
+		BNE m_loop
+m_end:
+
 
 end: JMP end
-
+; ***********************
 ; *** useful routines ***
-
+; ***********************
 ; some delay (approx. A * 213 ms)
 delay:
 				INX
@@ -224,6 +247,42 @@ wait:
 		BNE sync
 	RTS
 
+; *** ** beeping routine ** ***
+; *** X = length, A = freq. ***
+; *** X = 2*cycles          ***
+; *** tcyc = 16 A + 20      ***
+; ***     @1.536 MHz        ***
+; modifies Y, returns X=0
+m_beep:
+	PHP
+	SEI						; eeeeeek
+beep_l:
+		TAY					; determines frequency (2)
+		STX IOBeep			; send X's LSB to beeper (4)
+rb_zi:
+			STY orig		; small delay for 1.536 MHz! (3)
+			DEY				; count pulse length (y*2)
+			BNE rb_zi		; stay this way for a while (y*3-1)
+		DEX					; toggles even/odd number (2)
+		BNE beep_l			; new half cycle (3)
+	STX IOBeep				; turn off the beeper!
+	PLP						; restore interrupts... if needed
+	RTS
+
+; *** ** rest routine ** ***
+; ***     X = length     ***
+; *** X 1.33 ms @ 1.536M ***
+; modifies Y, returns X=0
+m_rest:
+		LDY #0				; this resets the counter
+r_loop:
+			STY orig		; delay for 1.536 MHz
+			INY
+			BNE r_loop		; this will take ~ 1.33 ms
+		DEX					; continue
+		BNE m_rest
+	RTS
+
 ; ************************
 ; *** external library ***
 ; ************************
@@ -237,6 +296,24 @@ rle:
 ; **************************
 af_ind:
 	.byt	$13, $10, $11, $12, $11, $10, $13, $14
+
+; *******************
+; *** music score ***
+; *******************
+
+; array of lengths (rests are computed like G5?)
+m_len:
+	.byt	 70,  52, 140,  52, 104,  52,  88,  52, 140, 104, 104, 176, 104
+	.byt	 74,  52, 148,  52, 110,  52,  92,  52, 148, 110, 104, 184, 104
+	.byt	 70,  52, 140,  52, 104,  52,  88,  52, 140, 104, 104, 176, 104
+	.byt	 82,  88,  92,  52,  92,  98, 104,  52, 104, 110, 116,  52, 255, 130,   0	; *** end of score ***
+
+; array of notes (rests are 0)
+m_note:
+	.byt	190,   0,  94,   0, 126,   0, 150,   0,  94, 126,   0, 150,   0
+	.byt	179,   0,  88,   0, 118,   0, 141,   0,  88, 118,   0, 141,   0
+	.byt	190,   0,  94,   0, 126,   0, 150,   0,  94, 126,   0, 150,   0
+	.byt	159, 150, 141,   0, 141, 133, 126,   0, 126, 118, 112,   0,  94,   0		; no need for extra byte as will be discarded
 
 ; ************************
 ; *** missing 'A' part *** note byte-level flip! 2301...
