@@ -1,6 +1,6 @@
 ; PacMan intro
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220910-2355
+; last modified 20220911-2302
 
 #include "../../OS/macros.h"
 
@@ -37,6 +37,10 @@ intro:
 	STX IOAen
 	LDA #$38				; colour mode
 	STA IO8attr
+
+; *******************
+; *** intro start ***
+; *******************
 ; clear screen
 	LDX #>screen3
 	LDY #0					; actually <screen3
@@ -74,12 +78,12 @@ cl_l:
 	JSR rle					; decompress!
 	LDA #$D1				; byte LSB to initial pacman position
 	STA pos
-; **********
+; *** redraw extra code ***
 	LDX #$70				; position of area to be redrawn
 	LDY #$11
 	STY redraw
 	STX redraw+1
-; **********
+; *************************
 ; the fun begins!
 an_loop:
 		LDA #$6C			; position MSB
@@ -144,6 +148,22 @@ an_cont:
 	STX orig+1
 	JSR rle					; decompress!
 
+; game init TBD
+lda #20: jsr delay
+; ***************************
+; *** show initial screen ***
+; ***************************
+	LDX #>screen3
+	LDY #<screen3
+	STY dest				; set banner screen position
+	STX dest+1
+	LDX #>maze4
+	LDY #<maze4
+	STY orig				; set compressed data source
+	STX orig+1
+	JSR rle					; decompress!
+
+
 end: JMP end
 
 ; *** useful routines ***
@@ -204,6 +224,14 @@ wait:
 		BNE sync
 	RTS
 
+; ************************
+; *** external library ***
+; ************************
+rle:
+#include "../../OS/firmware/modules/rle.s"
+
+; *** *** DATA *** ***
+
 ; **************************
 ; *** animation sequence *** get MSB from here (index = byte offset % 8)
 ; **************************
@@ -222,13 +250,9 @@ repeat:
 	.byt	$80, $77
 	.byt	$88, $88
 
-
 ; **********************
 ; *** included files ***
 ; **********************
-rle:
-#include "../../OS/firmware/modules/rle.s"
-
 banner:
 	.bin	0, 0, "../../other/data/title_c.rle"
 
@@ -237,3 +261,6 @@ controls:
 
 anim:
 	.bin	0, 0, "../../other/data/ipac.rle"
+
+maze4:
+	.bin	0, 0, "../../other/data/maze4.rle"
