@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b8
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220910-1724
+; last modified 20220913-2137
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -72,9 +72,9 @@
 ; *** UP/DOWN    = +/- 32 to ASCII                ***
 ; *** LEFT/RIGHT = next/prev ASCII                ***
 ; *** A          = put char into buffer           ***
-; *** B          = press RETURN                   ***
-; *** START      = press ESCAPE                   ***
-; *** SELECT     = press BACKSPACE                ***
+; *** B          = press BACKSPACE                ***
+; *** START      = press RETURN                   ***
+; *** SELECT     = press ESCAPE                   ***
 ;#define	KBBYPAD
 
 ; *** experimental BOLD emphasis instead of inverse ***
