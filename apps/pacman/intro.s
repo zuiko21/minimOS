@@ -1,6 +1,6 @@
 ; PacMan intro
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220911-2315
+; last modified 20220914-1719
 
 #include "../../OS/macros.h"
 
@@ -27,7 +27,7 @@ rle_ptr	= dest				; pointer to screen output
 ; *****************
 ; *** init code ***
 ; *****************
-	* = $8000				; use -a 0x8000 anyway
+	* = $E000				; 8K OK for now
 
 intro:
 ; usual 6502 stuff
@@ -289,6 +289,9 @@ r_loop:
 rle:
 #include "../../OS/firmware/modules/rle.s"
 
+int:
+	RTI						; void interrupt
+
 ; *** *** DATA *** ***
 
 ; **************************
@@ -341,3 +344,13 @@ anim:
 
 maze4:
 	.bin	0, 0, "../../other/data/maze4.rle"
+
+; ************************
+; *** ROMmable version ***
+; ************************
+
+	.dsb	$FFFA-*, $FF	; padding
+
+	.word	int
+	.word	intro			; RESET vector
+	.word	int
