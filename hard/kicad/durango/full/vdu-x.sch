@@ -1522,7 +1522,7 @@ L 4xxx:4040 U15
 U 1 1 617B535F
 P 2000 1600
 F 0 "U15" H 2000 2581 50  0000 C CNN
-F 1 "74HCT4040" H 2000 2490 50  0000 C CNN
+F 1 "74HC4040" H 2000 2490 50  0000 C CNN
 F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 2000 1600 50  0001 C CNN
 F 3 "http://www.intersil.com/content/dam/Intersil/documents/cd40/cd4020bms-24bms-40bms.pdf" H 2000 1600 50  0001 C CNN
 	1    2000 1600
@@ -1923,17 +1923,6 @@ Wire Bus Line
 	600  5850 600  5900
 Text GLabel 750  5900 1    50   Input ~ 0
 R~W
-$Comp
-L Connector_Generic:Conn_01x01 J4
-U 1 1 6271F029
-P 11050 1750
-F 0 "J4" H 11050 1950 50  0000 L CNN
-F 1 "LED" H 11000 1850 50  0000 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x01_P2.54mm_Vertical" H 11050 1750 50  0001 C CNN
-F 3 "~" H 11050 1750 50  0001 C CNN
-	1    11050 1750
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	5650 7050 5650 6700
 $Comp
@@ -2330,6 +2319,10 @@ Text Notes 8150 5150 0    50   Italic 10
 *
 Text Notes 8600 5900 0    50   Italic 10
 *
+Text GLabel 10950 1750 2    50   Input ~ 0
+LED
+Wire Wire Line
+	10950 1750 10850 1750
 Wire Bus Line
 	8800 550  10750 550 
 Wire Bus Line

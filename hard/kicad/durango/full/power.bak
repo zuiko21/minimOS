@@ -1100,6 +1100,54 @@ F 3 "~" H 2900 6100 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 NoConn ~ 2700 6100
+$Comp
+L Graphic:Logo_Open_Hardware_Large #LOGO1
+U 1 1 63275510
+P 3950 6700
+F 0 "#LOGO1" H 3950 7200 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Large" H 3950 6300 50  0001 C CNN
+F 2 "Symbol:OSHW-Logo2_9.8x8mm_SilkScreen" H 3950 6700 50  0001 C CNN
+F 3 "~" H 3950 6700 50  0001 C CNN
+	1    3950 6700
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R32
+U 1 1 63239AAF
+P 4650 4350
+F 0 "R32" H 4720 4396 50  0000 L CNN
+F 1 "1K" V 4650 4300 50  0000 L CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 4580 4350 50  0001 C CNN
+F 3 "~" H 4650 4350 50  0001 C CNN
+	1    4650 4350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x02 J4
+U 1 1 6323A6FB
+P 4850 4600
+F 0 "J4" H 4930 4592 50  0000 L CNN
+F 1 "LED" H 4930 4501 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 4850 4600 50  0001 C CNN
+F 3 "~" H 4850 4600 50  0001 C CNN
+	1    4850 4600
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0167
+U 1 1 6323B425
+P 4650 4700
+F 0 "#PWR0167" H 4650 4450 50  0001 C CNN
+F 1 "GND" H 4655 4527 50  0000 C CNN
+F 2 "" H 4650 4700 50  0001 C CNN
+F 3 "" H 4650 4700 50  0001 C CNN
+	1    4650 4700
+	1    0    0    -1  
+$EndComp
+Text Label 4650 4600 2    50   ~ 0
+LED_R
+Wire Wire Line
+	4650 4500 4650 4600
 Wire Wire Line
 	850  5100 1350 5100
 Wire Bus Line
@@ -1118,4 +1166,6 @@ Wire Bus Line
 	900  2150 900  5700
 Wire Bus Line
 	750  2150 750  5750
+Text GLabel 4650 4200 1    50   Input ~ 0
+LED
 $EndSCHEMATC
