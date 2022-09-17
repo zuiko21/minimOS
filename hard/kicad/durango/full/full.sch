@@ -2094,7 +2094,7 @@ F 1 "NMI" H 1200 1750 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1100 1850 50  0001 C CNN
 F 3 "~" H 1100 1850 50  0001 C CNN
 	1    1100 1650
-	1    0    0    -1  
+	-1   0    0    -1  
 $EndComp
 Wire Wire Line
 	2700 1150 2700 1650
