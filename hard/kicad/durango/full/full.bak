@@ -1291,12 +1291,12 @@ $Comp
 L Device:R R5
 U 1 1 609CB229
 P 10300 5850
-F 0 "R5" H 10350 5950 50  0000 L CNN
-F 1 "120" V 10300 5800 50  0000 L CNN
+F 0 "R5" H 10150 5750 50  0000 L CNN
+F 1 "120" V 10300 5850 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10230 5850 50  0001 C CNN
 F 3 "~" H 10300 5850 50  0001 C CNN
 	1    10300 5850
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Device:C C2
@@ -2094,7 +2094,7 @@ F 1 "NMI" H 1200 1750 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1100 1850 50  0001 C CNN
 F 3 "~" H 1100 1850 50  0001 C CNN
 	1    1100 1650
-	1    0    0    -1  
+	-1   0    0    -1  
 $EndComp
 Wire Wire Line
 	2700 1150 2700 1650

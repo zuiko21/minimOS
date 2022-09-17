@@ -750,14 +750,13 @@ $Comp
 L Device:R R21
 U 1 1 60E10F90
 P 7100 5500
-F 0 "R21" V 7200 5450 50  0000 C CNN
+F 0 "R21" V 7000 5500 50  0000 C CNN
 F 1 "470" V 7100 5500 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7030 5500 50  0001 C CNN
 F 3 "~" H 7100 5500 50  0001 C CNN
 	1    7100 5500
-	0    1    1    0   
+	0    -1   -1   0   
 $EndComp
-Connection ~ 7250 5500
 Connection ~ 6950 5500
 Wire Wire Line
 	6750 4600 9250 4600
@@ -2323,6 +2322,7 @@ Text GLabel 10950 1750 2    50   Input ~ 0
 LED
 Wire Wire Line
 	10950 1750 10850 1750
+Connection ~ 7250 5500
 Wire Bus Line
 	8800 550  10750 550 
 Wire Bus Line

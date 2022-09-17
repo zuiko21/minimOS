@@ -1148,6 +1148,8 @@ Text Label 4650 4600 2    50   ~ 0
 LED_R
 Wire Wire Line
 	4650 4500 4650 4600
+Text GLabel 4650 4200 1    50   Input ~ 0
+LED
 Wire Wire Line
 	850  5100 1350 5100
 Wire Bus Line
@@ -1166,6 +1168,4 @@ Wire Bus Line
 	900  2150 900  5700
 Wire Bus Line
 	750  2150 750  5750
-Text GLabel 4650 4200 1    50   Input ~ 0
-LED
 $EndSCHEMATC
