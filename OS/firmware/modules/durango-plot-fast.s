@@ -1,6 +1,6 @@
 ; Durango-X pixel routines
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220804-2345
+; last modified 20220804-2345 /OBSOLETE ****
 
 ; *** input ***
 ; X = x coordinate (<128 in colour, <256 in HIRES)
