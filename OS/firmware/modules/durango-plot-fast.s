@@ -1,26 +1,17 @@
 ; Durango-X pixel routines
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220804-2345 /OBSOLETE ****
+; last modified 20220920-1422
 
 ; *** input ***
 ; X = x coordinate (<128 in colour, <256 in HIRES)
 ; Y = y coordinate (<128 in colour, <256 in HIRES)
-; fw_mask (for inverse/emphasis mode) is $FF to delete pixel, 0 otherwise
-; fw_ccol (array PP.PI.IP.II of two-pixel combos, will store ink & paper for COLOUR only)
+; px_col = colour in II format (17*index, HIRES reads d7 only)
 
 ; *** zeropage usage ***
 ; cio_pt (screen pointer)
 ; fw_cbyt (temporary storage, could be elsewhere)
 
 ; OLD version performance:
-; assuming all but cio_pt is outside ZP, performance is expected as follows (not including CONIO overhead)
-; code size = 125 bytes (including table)
-; HIRES PLOT = 23+2+48*+19 = 92t ~60 µs
-; HIRES UNPLOT = 23+2+48*+22 = 95t ~62 µs
-; COLOUR PLOT = 23+3+34*!+5+29** = 94t ~61 µs
-; COLOUR UNPLOT = 23+3+34*!+10+29** = 99t ~65 µs
-
-; NEW version performance:
 ; code size = 96 bytes, plus 256(C) + 520(HR) of tables
 ; HIRES PLOT = 12+2+38+2+17 = 71t ~46 µs (63t-41µs w/pixpos)
 ; HIRES UNPLOT = 12+2+38+3+19 = 74t ~48 µs (66t-43µs w/pixpos)
@@ -55,8 +46,8 @@ dxplot:
 		AND #7				; MOD 8 (2)
 		TAX					; use as index (2)
 		LDA pixtab, X		; get pixel within byte (4)
-		BIT fw_mask			; check if plot or unplot (4*)
-		BVS unplot_h		; * HIRES PLOT below (2/3 for PLOT/UNPLOT)
+		BIT px_col			; check if plot or unplot (4*)
+		BPL unplot_h		; * HIRES PLOT below (2/3 for PLOT/UNPLOT)
 			ORA (cio_pt), Y	; add to previous data (5/ + 6/ + 6/)
 			STA (cio_pt), Y
 			RTS
@@ -73,25 +64,19 @@ colplot:
 	TXA						; get X coordinate (2)
 	LSR						; in half (C is set for odd pixels) (2)
 	TAY						; this is actual indexing offset (2)
-	LDA #$F0				; mask for even pixel (2)
+	LDA #$0F				; _inverse_ mask for even pixel (2)
+	LDX #$F0				; and colour mask for it (2)
 	BCC evpix
-		LDA #$0F			; otherwise is odd (3/2+2 for even/odd)
+		LDA #$F0			; otherwise is odd (3/2+2+2 for even/odd)
+		LDX #$0F
 evpix:
-	TAX						; keep selected (2)
-	BIT fw_mask				; check whether plot or unplot (4*)
-	BVS unplot_c
-		AND fw_ccol+3		; ink bits in proper place (2+3/3 for PLOT/UNPLOT)
-bytecol:
-		STA fw_cbyt			; store temporarily (4*)
-		TXA					; retrieve mask... (2)
-		EOR #$FF			; ...inverted! (2)
-		AND (cio_pt), Y		; keep original data in byte... (5)
-		ORA fw_cbyt			; ...adding new pixel (4*)
-		STA (cio_pt), Y		; EEEEEEEEK (6+6)
-		RTS
-unplot_c:
-	AND fw_ccol				; if unplotting, get paper bits instead (/4* + /3)
-	BRA bytecol
+	AND (cio_pt), Y			; keep original data in byte... (5)
+	STA fw_cbyt				; store temporarily (4*)
+	TXA						; retrieve mask... (2)
+	AND px_col				; extract active colour bits (4*)
+	ORA fw_cbyt				; ...adding new pixel (4*)
+	STA (cio_pt), Y			; EEEEEEEEK (6+6)
+	RTS
 
 ; *** data ***
 pixtab:
