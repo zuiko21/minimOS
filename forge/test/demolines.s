@@ -1,6 +1,6 @@
 ; Durango-X lines demo!
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220925-1823
+; last modified 20220925-1833
 
 *	= $F000
 
@@ -23,7 +23,7 @@ reset:
 	LDX #$FF
 	TXS
 	STX $DFA0				; will turn off LED for peace of mind
-	STX pxcol				; original colour (white)
+	STX px_col				; original colour (white)
 #ifdef	HIRES
 	LDA #$B0
 #else
@@ -80,7 +80,7 @@ random:
 	ASL
 	ORA tmp
 #endif
-	STA pxcol
+	STA px_col
 	RTS
 
 ; generate random number (TBD)

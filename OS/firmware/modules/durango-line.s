@@ -1,17 +1,25 @@
 ; Durango-X line routines (Bresenham's Algorithm) *** unoptimised version
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220925-1812
+; last modified 20220925-1839
 
 ; *** input *** placeholder addresses
-x1		= $F4				; NW corner x coordinate (<128 in colour, <256 in HIRES)
+x1		= $F0				; NW corner x coordinate (<128 in colour, <256 in HIRES)
 y1		= x1+1				; NW corner y coordinate (<128 in colour, <256 in HIRES)
 x2		= y1+1				; _not included_ SE corner x coordinate (<128 in colour, <256 in HIRES)
 y2		= x2+1				; _not included_ SE corner y coordinate (<128 in colour, <256 in HIRES)
 px_col	= y2+1				; pixel colour, in II format (17*index), HIRES expects 0 (black) or $FF (white), actually zpar
 
-; *** zeropage usage and local variables *** for PLOT, actually
-cio_pt	= px_col+1			; screen pointer
+; *** zeropage usage and local variables *** 
+sx		= px_col+1
+sy		= sx+1
+dx		= sy+1
+dy		= dx+1
+error	= dy+1
+
+; these are for PLOT, actually
+cio_pt	= error+1			; screen pointer
 fw_cbyt	= cio_pt+2			; (temporary storage, could be elsewhere)
+tmp		= fw_cbyt			; hopefully works! (demo only)
 
 dxline:
 .(
@@ -74,6 +82,7 @@ if_x:
 		CMP dx
 		BEQ then_x
 		BCS l_loop			; if e2<=dx...
+then_x:
 			LDX y1
 			CPX y2
 			BEQ l_loop		; if y0==y1 break
