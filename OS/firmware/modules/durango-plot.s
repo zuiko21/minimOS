@@ -1,6 +1,6 @@
 ; Durango-X pixel routines
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220917-2304
+; last modified 20220925-1812
 
 ; *** input ***
 ; X = x coordinate (<128 in colour, <256 in HIRES)
@@ -21,6 +21,7 @@
 -IO8attr= $DF80				; compatible IO8lh for setting attributes (d7=HIRES, d6=INVERSE, now d5-d4 include screen block)
 
 dxplot:
+.(
 	STZ cio_pt				; common to all modes (3)
 	TYA						; get Y coordinate... (2)
 	LSR
@@ -83,3 +84,4 @@ evpix:
 ; *** data ***
 pixtab:
 	.byt	128, 64, 32, 16, 8, 4, 2, 1		; bit patterns from offset
+.)

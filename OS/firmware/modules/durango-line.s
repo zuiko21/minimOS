@@ -1,45 +1,39 @@
-; Durango-X line routines (Brresenham's Algorithm")
+; Durango-X line routines (Bresenham's Algorithm) *** unoptimised version
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220914-0002
+; last modified 20220925-1812
 
-; *** input ***
-	*	= $F4				; *** placeholder (zpar2) ***
+; *** input *** placeholder addresses
+x1		= $F4				; NW corner x coordinate (<128 in colour, <256 in HIRES)
+y1		= x1+1				; NW corner y coordinate (<128 in colour, <256 in HIRES)
+x2		= y1+1				; _not included_ SE corner x coordinate (<128 in colour, <256 in HIRES)
+y2		= x2+1				; _not included_ SE corner y coordinate (<128 in colour, <256 in HIRES)
+px_col	= y2+1				; pixel colour, in II format (17*index), HIRES expects 0 (black) or $FF (white), actually zpar
 
-x1:		.byt	0			; NW corner x coordinate (<128 in colour, <256 in HIRES)
-y1:		.byt	0			; NW corner y coordinate (<128 in colour, <256 in HIRES)
-x2:wid:	.byt	0			; _not included_ SE corner x coordinate (<128 in colour, <256 in HIRES)
-							; alternatively, width (will be converted into x1,x2 format
-y2:hei:	.byt	0			; _not included_ SE corner y coordinate (<128 in colour, <256 in HIRES)
-							; alternatively, height (will be converted into y1,y2 format
-col:	.byt	0			; pixel colour, in II format (17*index), HIRES expects 0 (black) or $FF (white), actually zpar
-
-; *** zeropage usage and local variables ***
-	*	= $E4				; *** placeholder (local1) ***
-
-cio_pt:	.word	0			; screen pointer
-
-; *** other variables (not necessarily in zero page) ***
-
-
-; *** zeropage usage *** whatever PLOT uses
+; *** zeropage usage and local variables *** for PLOT, actually
+cio_pt	= px_col+1			; screen pointer
+fw_cbyt	= cio_pt+2			; (temporary storage, could be elsewhere)
 
 dxline:
 .(
-	LDX #1
 	LDA x2
 	SEC
-	SBC x1					; *** this is NOT abs(x1-x0)
+	SBC x1					; this is NOT abs(x1-x0) yet...
+	LDX #1
 	BCS set_sx				; if x0>=x1...
 		LDX #$FF			; sx=-1, else sx=1
+		EOR #$FF			; ...and compute ABS(x1-x0) from x1-x0
+		INC					; CMOS only, could use ADC #1 as C known to be clear
 set_sx:
 	STX sx
 	STA dx
-	LDY #1
 	LDA y1
 	SEC
-	SBC y2					; *** this is NOT -abs(y1-y0)
+	SBC y2					; this is NOT -abs(y1-y0) yet...
+	LDY #1
 	BCC set_sy				; if y0>=y1...
 		LDY #$FF			; sy=-1, else sy=1
+		EOR #$FF			; ...and compute -ABS(y1-y0) from y0-y1, is this OK?
+		INC					; CMOS only, could use ADC #0 as C known to be set
 set_sy:
 	STY sy
 	STA dy
@@ -93,4 +87,5 @@ if_x:
 		STA y1				; y0 += sy
 		BRA l_loop
 l_end:
+	RTS						; eeeek
 .)
