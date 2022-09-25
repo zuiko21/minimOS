@@ -9,7 +9,7 @@
 
 seed	= $FE
 
-;#define	HIRES		_HIRES
+#define	HIRES		_HIRES
 
 #ifdef	HIRES
 #define	LIMIT	255
@@ -85,6 +85,17 @@ random:
 
 ; generate random number (TBD)
 rnd:
+	JSR get_rnd
+	LSR
+;	LSR
+;	LSR
+	TAX
+rnd_loop:
+		JSR get_rnd
+		DEX
+		BNE rnd_loop
+	RTS
+get_rnd:
 	LDA seed
 	AND #2
 	STA tmp				; hope this is OK

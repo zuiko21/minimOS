@@ -1,7 +1,8 @@
 ; Durango-X line routines (Bresenham's Algorithm) *** unoptimised version
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220925-1839
+; last modified 20220925-1848
 
+#define	LINES
 ; *** input *** placeholder addresses
 x1		= $F0				; NW corner x coordinate (<128 in colour, <256 in HIRES)
 y1		= x1+1				; NW corner y coordinate (<128 in colour, <256 in HIRES)
