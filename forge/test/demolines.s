@@ -1,0 +1,110 @@
+; Durango-X lines demo!
+; (c) 2022 Carlos J. Santisteban
+; last modified 20220925-1823
+
+*	= $F000
+
+#include "../../OS/firmware/modules/durango-line.s"
+#include "../../OS/firmware/modules/durango-plot.s"
+
+seed	= $FE
+
+;#define	HIRES		_HIRES
+
+#ifdef	HIRES
+#define	LIMIT	255
+#else
+#define	LIMIT	127
+#endif
+
+reset:
+	SEI
+	CLD
+	LDX #$FF
+	TXS
+	STX $DFA0				; will turn off LED for peace of mind
+	STX pxcol				; original colour (white)
+#ifdef	HIRES
+	LDA #$B0
+#else
+	LDA #$38
+#endif
+	STA IO8attr
+
+	JSR randomize
+
+loop:
+		JSR random			; get random coordinates and colour
+		JSR dxline			; draw line
+		JMP loop			; in aeternum
+
+; set random seed
+randomize:
+	LDX #$88
+	STX seed
+	INX
+	STX seed+1
+	RTS
+
+; fill coordinates randomly
+random:
+; if mondrian
+	JSR rnd
+	AND #LIMIT
+	STA x1
+	JSR rnd
+	AND #LIMIT
+	STA x2
+	JSR rnd
+	AND #LIMIT
+	STA y1
+	JSR rnd
+	AND #LIMIT
+	STA y2
+	JSR rnd
+#ifdef	HIRES
+;	if hires
+#ifndef	TEXTURE
+;		if /texture
+	LSR
+	LDA #0
+	SBC #0		; $FF if C was clear, 0 if set
+#endif
+#else
+;	if /hires
+	AND #15
+	STA tmp
+	ASL
+	ASL
+	ASL
+	ASL
+	ORA tmp
+#endif
+	STA pxcol
+	RTS
+
+; generate random number (TBD)
+rnd:
+	LDA seed
+	AND #2
+	STA tmp				; hope this is OK
+	LDA seed+1
+	AND #2
+	EOR tmp
+	CLC
+	BEQ rg_z
+		SEC
+rg_z:
+	ROR seed+1				; is this OK?
+	ROR seed
+	LDA seed				; returns MSB
+	RTS
+	RTS
+
+; *** fill and vectors ***
+	.dsb	$FFFA-*, $FF
+
+	.word reset
+	.word reset
+	.word reset
+	
