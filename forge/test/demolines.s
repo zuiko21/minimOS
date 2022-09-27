@@ -1,6 +1,6 @@
 ; Durango-X lines demo!
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220925-1833
+; last modified 20220927-1859
 
 *	= $F000
 
@@ -9,14 +9,13 @@
 
 seed	= $FE
 
-#define	HIRES		_HIRES
+;#define	HIRES
 
 #ifdef	HIRES
 #define	LIMIT	255
 #else
 #define	LIMIT	127
 #endif
-
 reset:
 	SEI
 	CLD
@@ -29,13 +28,36 @@ reset:
 #else
 	LDA #$38
 #endif
+ora #$40
 	STA IO8attr
 
 	JSR randomize
 
 loop:
 		JSR random			; get random coordinates and colour
+		LDX x1
+		LDY y2
+;		JSR dxplot
 		JSR dxline			; draw line
+/*
+kkk:
+ldx #$60
+ldy #0
+sty cio_pt
+lda px_col
+lll:
+	stx cio_pt+1
+jjj:
+		sta (cio_pt),y
+		iny
+		bne jjj
+	inx
+	bpl lll
+www:
+bit $df88
+bvc www
+inc px_col
+bra kkk*/
 		JMP loop			; in aeternum
 
 ; set random seed
@@ -58,19 +80,14 @@ random:
 	JSR rnd
 	AND #LIMIT
 	STA y1
-	JSR rnd
-	AND #LIMIT
+;	JSR rnd
+;	AND #LIMIT
 	STA y2
 	JSR rnd
-#ifdef	HIRES
-;	if hires
-#ifndef	TEXTURE
-;		if /texture
-	LSR
-	LDA #0
-	SBC #0		; $FF if C was clear, 0 if set
-#endif
-#else
+#ifndef	HIRES
+;	LSR
+;	LDA #0
+;	SBC #0		; $FF if C was clear, 0 if set
 ;	if /hires
 	AND #15
 	STA tmp
@@ -85,31 +102,27 @@ random:
 
 ; generate random number (TBD)
 rnd:
-	JSR get_rnd
-	LSR
-;	LSR
-;	LSR
-	TAX
-rnd_loop:
-		JSR get_rnd
-		DEX
-		BNE rnd_loop
-	RTS
-get_rnd:
 	LDA seed
-	AND #2
-	STA tmp				; hope this is OK
+		BEQ lo_z
+	ASL seed
 	LDA seed+1
-	AND #2
-	EOR tmp
-	CLC
-	BEQ rg_z
-		SEC
-rg_z:
-	ROR seed+1				; is this OK?
-	ROR seed
-	LDA seed				; returns MSB
+	ROL
+	BCC no_eor
+do_eor:
+		STA seed+1
+do_eor2:
+		LDA seed
+		EOR #$2D
+		STA seed
 	RTS
+lo_z:
+	LDA seed+1
+		BEQ do_eor2
+	ASL
+	BEQ no_eor
+	BCS do_eor
+no_eor:
+	STA seed+1
 	RTS
 
 ; *** fill and vectors ***

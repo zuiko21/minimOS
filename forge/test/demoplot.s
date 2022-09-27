@@ -1,6 +1,6 @@
 ; Durango-X lines demo!
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220925-1833
+; last modified 20220927-1803
 
 *	= $F000
 
@@ -8,8 +8,9 @@
 #include "../../OS/firmware/modules/durango-plot.s"
 
 seed	= $FE
+magic	= $002D
 
-;#define	HIRES		_HIRES
+#define	HIRES
 
 #ifdef	HIRES
 #define	LIMIT	255
@@ -52,15 +53,10 @@ randomize:
 random:
 ; if mondrian
 	JSR rnd
-	JSR rnd
 	AND #LIMIT
 	STA x1
 	JSR rnd
-;	BEQ ddd
-	JSR rnd
-	JSR rnd
 	AND #LIMIT
-ddd:
 	STA y1
 	JSR rnd
 #ifndef	HIRES
@@ -79,34 +75,31 @@ ddd:
 	STA px_col
 	RTS
 
-; generate random number (TBD)
+; generate random number
 rnd:
-	JSR get_rnd
-	LSR
-	LSR
-;	LSR
-	TAX
-rnd_loop:
-		JSR get_rnd
-		DEX
-		BNE rnd_loop
-	RTS
-get_rnd:
 	LDA seed
-	AND #2
-	STA tmp				; hope this is OK
+		BEQ lo_z
+	ASL seed
 	LDA seed+1
-	AND #2
-	EOR tmp
-	CLC
-	BEQ rg_z
-		SEC
-rg_z:
-	ROR seed+1				; is this OK?
-	ROR seed
-	LDA seed				; returns MSB
+	ROL
+	BCC no_eor
+do_eor:
+;		EOR #>magic
+		STA seed+1
+do_eor2:
+		LDA seed
+		EOR #<magic
+		STA seed
 	RTS
-
+lo_z:
+	LDA seed+1
+		BEQ do_eor2
+	ASL
+	BEQ no_eor
+	BCS do_eor
+no_eor:
+	STA seed+1
+	RTS
 
 ; *** fill and vectors ***
 	.dsb	$FFFA-*, $FF

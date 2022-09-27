@@ -1,6 +1,6 @@
 ; Durango-X line routines (Bresenham's Algorithm) *** unoptimised version
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220925-1848
+; last modified 20220927-1824
 
 #define	LINES
 ; *** input *** placeholder addresses
@@ -35,16 +35,18 @@ dxline:
 set_sx:
 	STX sx
 	STA dx
-	LDA y1
+	LDA y2
 	SEC
-	SBC y2					; this is NOT -abs(y1-y0) yet...
+	SBC y1					; this is NOT -abs(y1-y0) yet...
 	LDY #1
-	BCC set_sy				; if y0>=y1...
+	BCS set_sy				; if y0>=y1...
 		LDY #$FF			; sy=-1, else sy=1
-		EOR #$FF			; ...and compute -ABS(y1-y0) from y0-y1, is this OK?
-		INC					; CMOS only, could use ADC #0 as C known to be set
+		EOR #$FF			; ...and compute ABS(y1-y0) from y0-y1, is this OK?
+		INC					; CMOS only, could use ADC #1 as C known to be clear
 set_sy:
 	STY sy
+	EOR #$FF				; negate ABS
+	INC
 	STA dy
 	CLC
 	ADC dx
@@ -57,7 +59,7 @@ l_loop:
 		CMP x2				; if x0==x1...
 		BNE l_cont
 			LDA y1			; ...and y1==y0...
-			CMP y1
+			CMP y2
 			BEQ l_end		; break
 l_cont:
 		LDA error
@@ -78,7 +80,7 @@ if_y:
 				CLC
 				ADC sx
 				STA x1		; x0 += sx
-				TYA
+			TYA
 if_x:
 		CMP dx
 		BEQ then_x
@@ -95,6 +97,7 @@ then_x:
 		CLC
 		ADC sy
 		STA y1				; y0 += sy
+		.byt $db
 		BRA l_loop
 l_end:
 	RTS						; eeeek
