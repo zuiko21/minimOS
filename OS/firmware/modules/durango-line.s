@@ -1,6 +1,6 @@
 ; Durango-X line routines (Bresenham's Algorithm) *** unoptimised version
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220927-1824
+; last modified 20220928-0944
 
 #define	LINES
 ; *** input *** placeholder addresses
@@ -66,7 +66,7 @@ l_cont:
 		ASL					; e2=2*error
 		TAY
 			BCS if_y		; e2>255
-		CMP dy
+		CPY dy
 		BCC if_x			; if e2>=dy...
 if_y:
 			LDX x1
@@ -80,9 +80,8 @@ if_y:
 				CLC
 				ADC sx
 				STA x1		; x0 += sx
-			TYA
 if_x:
-		CMP dx
+		CPY dx
 		BEQ then_x
 		BCS l_loop			; if e2<=dx...
 then_x:
@@ -97,7 +96,6 @@ then_x:
 		CLC
 		ADC sy
 		STA y1				; y0 += sy
-		.byt $db
 		BRA l_loop
 l_end:
 	RTS						; eeeek
