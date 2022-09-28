@@ -589,7 +589,7 @@ F 3 "~" H 7350 5800 50  0001 C CNN
 	1    7350 5800
 	0    1    1    0   
 $EndComp
-Text GLabel 8350 5600 2    50   Input ~ 0
+Text GLabel 8700 5550 2    50   Input ~ 0
 AUDIO
 Wire Wire Line
 	7650 5800 7500 5800
@@ -1467,7 +1467,7 @@ Text Label 7050 4250 0    50   ~ 0
 FEND
 Text Notes 6900 6100 0    50   Italic 10
 *
-Text Notes 8100 6650 0    50   Italic 10
+Text Notes 8300 6650 0    50   Italic 10
 *) R30, 108, 110, 111, 113, 122; Q306; C5; J105\n   NOT FOR SYNC-ON-GREEN\n\n   CHANGE R109 TO 10K AND R107 TO 4K7
 Text Notes 6900 5700 0    50   Italic 10
 *
@@ -1956,9 +1956,7 @@ Wire Wire Line
 Wire Wire Line
 	9100 5850 9100 6100
 Wire Wire Line
-	8400 6050 8400 6100
-Wire Wire Line
-	8250 6100 8800 6100
+	8250 6100 8400 6100
 Wire Wire Line
 	8400 5200 8200 5200
 Wire Wire Line
@@ -1982,8 +1980,6 @@ Wire Wire Line
 Wire Wire Line
 	7500 6400 7600 6400
 Connection ~ 7600 6000
-NoConn ~ 7750 5400
-NoConn ~ 7750 5500
 Wire Wire Line
 	7700 5500 7700 5600
 Wire Wire Line
@@ -1998,19 +1994,12 @@ Wire Wire Line
 Wire Wire Line
 	7700 6000 7750 6000
 Connection ~ 7700 5800
-NoConn ~ 7750 6300
 Wire Wire Line
 	8250 6200 8300 6200
 Wire Wire Line
 	8300 6200 8300 6000
 Wire Wire Line
 	8300 6000 8250 6000
-Wire Wire Line
-	8250 5600 8350 5600
-Wire Wire Line
-	8350 5600 8350 5400
-Wire Wire Line
-	8350 5400 8250 5400
 Wire Wire Line
 	8300 6000 8300 5500
 Connection ~ 8300 6000
@@ -2051,8 +2040,6 @@ Wire Wire Line
 	8300 5050 8300 5500
 Wire Wire Line
 	6900 6500 10300 6500
-Wire Wire Line
-	8400 6100 8400 6300
 Connection ~ 8650 5200
 Wire Wire Line
 	8650 5200 9100 5200
@@ -2277,7 +2264,7 @@ Text Notes 8050 3250 0    50   ~ 0
 Text Notes 9950 2250 1    50   ~ 0
 EV~ODD
 Wire Wire Line
-	8400 6300 8250 6300
+	8400 6450 7650 6450
 Connection ~ 4950 3300
 Wire Wire Line
 	4500 4500 4600 4500
@@ -2323,10 +2310,28 @@ LED
 Wire Wire Line
 	10950 1750 10850 1750
 Connection ~ 7250 5500
+Wire Wire Line
+	8400 6100 8800 6100
+Wire Wire Line
+	7650 6300 7750 6300
+NoConn ~ 8250 6300
+Wire Wire Line
+	7650 6300 7650 6450
+NoConn ~ 8250 5400
+NoConn ~ 8250 5600
+Wire Wire Line
+	7750 5400 7750 5500
+Wire Wire Line
+	7750 5500 7750 5550
+Wire Wire Line
+	7750 5550 8700 5550
 Wire Bus Line
 	8800 550  10750 550 
 Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
+Connection ~ 7750 5500
+Wire Wire Line
+	8400 6050 8400 6450
 $EndSCHEMATC
