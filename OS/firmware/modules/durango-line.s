@@ -1,6 +1,6 @@
 ; Durango-X line routines (Bresenham's Algorithm) *** unoptimised version
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220928-0944
+; last modified 20220930-1236
 
 #define	LINES
 ; *** input *** placeholder addresses
@@ -15,10 +15,10 @@ sx		= px_col+1
 sy		= sx+1
 dx		= sy+1
 dy		= dx+1
-error	= dy+1
+error	= dy+1				: colour mode cannot be over 254, but extra bit is needed for 2*error EEEEEK
 
 ; these are for PLOT, actually
-cio_pt	= error+1			; screen pointer
+cio_pt	= error+2			; screen pointer
 fw_cbyt	= cio_pt+2			; (temporary storage, could be elsewhere)
 tmp		= fw_cbyt			; hopefully works! (demo only)
 
@@ -64,8 +64,10 @@ l_loop:
 l_cont:
 		LDA error
 		ASL					; e2=2*error
+		ROR error+1			; inject e2.d8 into err_h.d7 EEEEEK ******** CHECK
 		TAY
-			BCS if_y		; e2>255
+		BIT err_n			; check d8...
+			BMI if_y		; e2>255 (BCS no longer possible) ******* CHECK
 		CPY dy
 		BCC if_x			; if e2>=dy...
 if_y:
