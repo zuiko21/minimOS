@@ -26,24 +26,24 @@ F 3 "http://archive.6502.org/datasheets/rockwell_r650x_r651x.pdf" H 3500 2250 50
 	1    0    0    -1  
 $EndComp
 $Comp
-L 74xx:74LS257 U6
+L 74xx:74LS157 U6
 U 1 1 607C7F32
 P 6650 1650
 F 0 "U6" H 6450 2400 50  0000 C CNN
 F 1 "74HC157" H 6850 2400 50  0000 C CNN
 F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 6650 1650 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS257" H 6650 1650 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS157" H 6650 1650 50  0001 C CNN
 	1    6650 1650
 	1    0    0    -1  
 $EndComp
 $Comp
-L 74xx:74LS257 U7
+L 74xx:74LS157 U7
 U 1 1 607CA1A2
 P 6650 3800
 F 0 "U7" H 6450 4550 50  0000 C CNN
 F 1 "74HC157" H 6850 4550 50  0000 C CNN
 F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 6650 3800 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS257" H 6650 3800 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS157" H 6650 3800 50  0001 C CNN
 	1    6650 3800
 	1    0    0    -1  
 $EndComp
@@ -2589,17 +2589,6 @@ Entry Wire Line
 	2900 5250 3000 5350
 Text Label 4000 2750 0    50   ~ 0
 SYNC
-$Comp
-L Device:Jumper_NC_Small JP4
-U 1 1 6272E967
-P 3500 3650
-F 0 "JP4" H 3250 3650 50  0000 C CNN
-F 1 "~WDC" H 3450 3750 50  0000 C CNN
-F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 3500 3650 50  0001 C CNN
-F 3 "~" H 3500 3650 50  0001 C CNN
-	1    3500 3650
-	1    0    0    1   
-$EndComp
 Connection ~ 3600 3650
 Wire Wire Line
 	2400 1150 2400 1300
@@ -2764,4 +2753,15 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
+$Comp
+L Device:Jumper_NC_Small JP4
+U 1 1 6272E967
+P 3500 3650
+F 0 "JP4" H 3250 3650 50  0000 C CNN
+F 1 "~WDC" H 3450 3750 50  0000 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 3500 3650 50  0001 C CNN
+F 3 "~" H 3500 3650 50  0001 C CNN
+	1    3500 3650
+	1    0    0    1   
+$EndComp
 $EndSCHEMATC

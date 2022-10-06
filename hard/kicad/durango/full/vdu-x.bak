@@ -378,13 +378,9 @@ $EndComp
 NoConn ~ 10550 4400
 NoConn ~ 10350 4400
 NoConn ~ 10150 4400
-Text Label 10050 4400 0    50   ~ 0
-~VS
-Text Label 10250 4400 0    50   ~ 0
-~HS
-Text Label 10450 4850 3    50   ~ 0
+Text Label 10450 4950 3    50   ~ 0
 ~CDE
-Text Label 10750 4800 3    50   ~ 0
+Text Label 10750 4950 3    50   ~ 0
 HRDE
 Entry Wire Line
 	800  4350 900  4450
@@ -589,7 +585,7 @@ F 3 "~" H 7350 5800 50  0001 C CNN
 	1    7350 5800
 	0    1    1    0   
 $EndComp
-Text GLabel 8350 5600 2    50   Input ~ 0
+Text GLabel 8700 5550 2    50   Input ~ 0
 AUDIO
 Wire Wire Line
 	7650 5800 7500 5800
@@ -741,9 +737,9 @@ F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 4400 4800 50  0001 C CNN
 	0    -1   1    0   
 $EndComp
 Wire Wire Line
-	9850 5000 10150 5000
+	9850 5200 10150 5200
 Wire Wire Line
-	9250 4600 9250 4900
+	9250 4600 9250 5100
 Text Label 9000 4600 0    50   ~ 0
 ~CSYNC
 $Comp
@@ -851,20 +847,20 @@ Connection ~ 5650 6400
 Wire Wire Line
 	5100 4550 8950 4550
 Wire Wire Line
-	8950 4550 8950 5100
+	8950 4550 8950 5350
 Wire Wire Line
-	10750 5100 10750 4400
+	10750 5350 10750 4400
 Text Label 7050 4550 0    50   ~ 0
 DHRDE
 $Comp
 L 74xx:74HC86 U23
 U 2 1 613328FE
-P 9550 4900
-F 0 "U23" H 9550 4600 50  0000 C CNN
-F 1 "74HC86" H 9550 4700 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 9550 4900 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 9550 4900 50  0001 C CNN
-	2    9550 4900
+P 9550 5100
+F 0 "U23" H 9550 4800 50  0000 C CNN
+F 1 "74HC86" H 9550 4900 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 9550 5100 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 9550 5100 50  0001 C CNN
+	2    9550 5100
 	-1   0    0    1   
 $EndComp
 Text Label 2450 5550 2    50   ~ 0
@@ -924,8 +920,6 @@ F 3 "http://www.fairchildsemi.com/ds/BC/BC547.pdf" H 9200 5650 50  0001 L CNN
 $EndComp
 Wire Wire Line
 	10950 5650 9400 5650
-Wire Wire Line
-	9100 5200 9100 5450
 Wire Wire Line
 	4300 4500 4050 4500
 Wire Wire Line
@@ -1070,8 +1064,6 @@ Wire Wire Line
 	8650 1950 10300 1950
 Wire Wire Line
 	10550 2150 10550 2200
-Text Label 10950 5650 2    50   ~ 0
-RGB
 Wire Wire Line
 	6100 3000 6100 1850
 Wire Wire Line
@@ -1150,12 +1142,12 @@ Wire Wire Line
 $Comp
 L power:+5V #PWR0157
 U 1 1 612087BE
-P 9850 4800
-F 0 "#PWR0157" H 9850 4650 50  0001 C CNN
-F 1 "+5V" H 9865 4973 50  0000 C CNN
-F 2 "" H 9850 4800 50  0001 C CNN
-F 3 "" H 9850 4800 50  0001 C CNN
-	1    9850 4800
+P 9850 5000
+F 0 "#PWR0157" H 9850 4850 50  0001 C CNN
+F 1 "+5V" H 9865 5173 50  0000 C CNN
+F 2 "" H 9850 5000 50  0001 C CNN
+F 3 "" H 9850 5000 50  0001 C CNN
+	1    9850 5000
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
@@ -1301,12 +1293,12 @@ Connection ~ 2200 4550
 $Comp
 L 74xx:74HC86 U23
 U 1 1 612644D5
-P 10150 4700
-F 0 "U23" V 10050 4350 50  0000 L CNN
-F 1 "74HC86" V 10150 4250 50  0000 L CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 10150 4700 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 10150 4700 50  0001 C CNN
-	1    10150 4700
+P 10150 4900
+F 0 "U23" V 10050 4550 50  0000 L CNN
+F 1 "74HC86" V 10150 4450 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 10150 4900 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 10150 4900 50  0001 C CNN
+	1    10150 4900
 	0    -1   1    0   
 $EndComp
 NoConn ~ 10650 4400
@@ -1390,7 +1382,7 @@ Text Label 7000 5000 0    50   ~ 0
 ZMIX
 Text Label 5850 4900 3    50   ~ 0
 ~HVG
-Text Label 9850 5000 0    50   ~ 0
+Text Label 10150 5200 0    50   ~ 0
 CSYNC
 Wire Wire Line
 	2600 1200 2600 2800
@@ -1467,7 +1459,7 @@ Text Label 7050 4250 0    50   ~ 0
 FEND
 Text Notes 6900 6100 0    50   Italic 10
 *
-Text Notes 8100 6650 0    50   Italic 10
+Text Notes 8300 6650 0    50   Italic 10
 *) R30, 108, 110, 111, 113, 122; Q306; C5; J105\n   NOT FOR SYNC-ON-GREEN\n\n   CHANGE R109 TO 10K AND R107 TO 4K7
 Text Notes 6900 5700 0    50   Italic 10
 *
@@ -1666,13 +1658,13 @@ A[0..15]
 Connection ~ 10550 2200
 Connection ~ 9550 2200
 $Comp
-L 74xx:74LS257 U321
+L 74xx:74LS157 U321
 U 1 1 613D5371
 P 10250 2700
 F 0 "U321" V 10600 1900 50  0000 L CNN
 F 1 "74HC157" V 10700 1800 50  0000 L CNN
 F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 10250 2700 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS257" H 10250 2700 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS157" H 10250 2700 50  0001 C CNN
 	1    10250 2700
 	0    1    1    0   
 $EndComp
@@ -1722,7 +1714,7 @@ Wire Wire Line
 Text Label 10350 1750 2    50   ~ 0
 COLOUR
 Wire Wire Line
-	8950 5100 10750 5100
+	8950 5350 10750 5350
 Connection ~ 3050 3450
 Connection ~ 8300 4650
 Wire Wire Line
@@ -1805,16 +1797,11 @@ NoConn ~ 800  6800
 NoConn ~ 800  6900
 NoConn ~ 800  7000
 Wire Wire Line
-	10050 4400 9750 4400
-Wire Wire Line
-	9750 4400 9750 4500
-Wire Wire Line
-	9750 4500 7500 4500
+	10050 4400 10050 4500
 Wire Wire Line
 	7500 4500 7500 4400
 Wire Wire Line
 	7500 4400 6200 4400
-Connection ~ 10050 4400
 Text Label 7050 4400 0    50   ~ 0
 ~VS
 Wire Wire Line
@@ -1956,9 +1943,7 @@ Wire Wire Line
 Wire Wire Line
 	9100 5850 9100 6100
 Wire Wire Line
-	8400 6050 8400 6100
-Wire Wire Line
-	8250 6100 8800 6100
+	8250 6100 8400 6100
 Wire Wire Line
 	8400 5200 8200 5200
 Wire Wire Line
@@ -1982,8 +1967,6 @@ Wire Wire Line
 Wire Wire Line
 	7500 6400 7600 6400
 Connection ~ 7600 6000
-NoConn ~ 7750 5400
-NoConn ~ 7750 5500
 Wire Wire Line
 	7700 5500 7700 5600
 Wire Wire Line
@@ -1998,19 +1981,12 @@ Wire Wire Line
 Wire Wire Line
 	7700 6000 7750 6000
 Connection ~ 7700 5800
-NoConn ~ 7750 6300
 Wire Wire Line
 	8250 6200 8300 6200
 Wire Wire Line
 	8300 6200 8300 6000
 Wire Wire Line
 	8300 6000 8250 6000
-Wire Wire Line
-	8250 5600 8350 5600
-Wire Wire Line
-	8350 5600 8350 5400
-Wire Wire Line
-	8350 5400 8250 5400
 Wire Wire Line
 	8300 6000 8300 5500
 Connection ~ 8300 6000
@@ -2030,9 +2006,9 @@ Connection ~ 7700 6200
 Wire Wire Line
 	8250 5700 8650 5700
 Wire Wire Line
-	8650 5700 8650 5200
+	8650 5700 8650 5450
 Wire Wire Line
-	8650 4650 8650 5200
+	8650 4650 8650 5450
 NoConn ~ 8250 5800
 NoConn ~ 8250 5900
 $Comp
@@ -2051,11 +2027,9 @@ Wire Wire Line
 	8300 5050 8300 5500
 Wire Wire Line
 	6900 6500 10300 6500
+Connection ~ 8650 5450
 Wire Wire Line
-	8400 6100 8400 6300
-Connection ~ 8650 5200
-Wire Wire Line
-	8650 5200 9100 5200
+	8650 5450 9100 5450
 Wire Wire Line
 	4900 5800 5000 5800
 Wire Wire Line
@@ -2074,13 +2048,13 @@ Wire Wire Line
 	4100 5300 4350 5300
 Connection ~ 4350 5300
 $Comp
-L 74xx:74LS257 U125
+L 74xx:74LS157 U125
 U 1 1 609B6126
 P 4350 6200
 F 0 "U125" H 4550 7050 50  0000 C CNN
 F 1 "74HC157" H 4550 6950 50  0000 C CNN
 F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 4350 6200 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS257" H 4350 6200 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS157" H 4350 6200 50  0001 C CNN
 	1    4350 6200
 	1    0    0    -1  
 $EndComp
@@ -2277,7 +2251,7 @@ Text Notes 8050 3250 0    50   ~ 0
 Text Notes 9950 2250 1    50   ~ 0
 EV~ODD
 Wire Wire Line
-	8400 6300 8250 6300
+	8400 6450 7650 6450
 Connection ~ 4950 3300
 Wire Wire Line
 	4500 4500 4600 4500
@@ -2323,10 +2297,43 @@ LED
 Wire Wire Line
 	10950 1750 10850 1750
 Connection ~ 7250 5500
+Wire Wire Line
+	8400 6100 8800 6100
+Wire Wire Line
+	7650 6300 7750 6300
+NoConn ~ 8250 6300
+Wire Wire Line
+	7650 6300 7650 6450
+NoConn ~ 8250 5400
+NoConn ~ 8250 5600
+Wire Wire Line
+	7750 5400 7750 5500
+Wire Wire Line
+	7750 5500 7750 5550
+Wire Wire Line
+	7750 5550 8700 5550
+Connection ~ 7750 5500
+Wire Wire Line
+	8400 6050 8400 6450
+Text GLabel 8400 6250 2    50   Input ~ 0
+CHROMA
+Text GLabel 9900 4500 1    50   Input ~ 0
+~VS
+Text GLabel 10250 4600 2    50   Input ~ 0
+~HS
+Wire Wire Line
+	10250 4400 10250 4600
+Wire Wire Line
+	7500 4500 10050 4500
+Wire Wire Line
+	10050 4500 10050 4600
 Wire Bus Line
 	8800 550  10750 550 
 Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
+Connection ~ 10050 4500
+Text GLabel 10950 5650 2    50   Input ~ 0
+RGB
 $EndSCHEMATC
