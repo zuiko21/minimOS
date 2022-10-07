@@ -3,6 +3,27 @@
  * last modified 20220907-1944
  * */
 
+/* Gamepad buttons constants */
+#define BUTTON_A 0x80
+#define BUTTON_START 0x40
+#define BUTTON_B 0x20
+#define BUTTON_SELECT 0x10
+#define BUTTON_UP 0x08
+#define BUTTON_LEFT 0x04
+#define BUTTON_DOWN 0x02
+#define BUTTON_RIGHT 0x01
+/* PSV Constants */
+#define PSV_HEX 0x00
+#define PSV_ASCII 0x01
+#define PSV_BINARY 0x02
+#define PSV_DECIMAL 0x03
+#define PSV_STAT 0xFF
+#define PSV_STACK 0xFE
+#define PSV_DUMP 0xFD
+#define PSV_STOPWATCHSTOP 0xFC
+#define PSV_STOPWATCHSTART 0xFB
+
+/* Binary conversion */
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
 #define BYTE_TO_BINARY(byte)  \
   (byte & 0x80 ? '1' : '0'), \
@@ -28,17 +49,6 @@
 /* type definitions */
 	typedef uint8_t byte;
 	typedef uint16_t word;
-
-/* constants */
-#define BUTTON_A 0x80
-#define BUTTON_START 0x40
-#define BUTTON_B 0x20
-#define BUTTON_SELECT 0x10
-#define BUTTON_UP 0x08
-#define BUTTON_LEFT 0x04
-#define BUTTON_DOWN 0x02
-#define BUTTON_RIGHT 0x01
-
 
 /* global variables */
 	byte mem[65536];			// unified memory map
@@ -561,22 +571,22 @@ void poke(word dir, byte v) {
 			// Cache value
 			mem[dir]=v;
 			// If hex mode enabled
-			if(mem[0xDF94]==0x00) {
+			if(mem[0xDF94]==PSV_HEX) {
 				// Print hex value
 				printf("[%02X]", mem[dir]);	
 			}
 			// If ascii mode enabled
-			else if(mem[0xDF94]==0x01) {
+			else if(mem[0xDF94]==PSV_ASCII) {
 				// Print ascii
 				printf("%c", mem[dir]);
 			}
 			// If binary mode enabled
-			else if(mem[0xDF94]==0x02) {
+			else if(mem[0xDF94]==PSV_BINARY) {
 				// Print binary
 				printf(BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(mem[dir]));
 			}
 			// If decimal mode enabled
-			else if(mem[0xDF94]==0x03) {
+			else if(mem[0xDF94]==PSV_DECIMAL) {
 				// Print decimal
 				printf("[%u]", mem[dir]);
 			}
@@ -584,24 +594,24 @@ void poke(word dir, byte v) {
 			fflush(stdout);
 		} else if (dir==0xDF94) { // virtual serial port config at $df94
 			// If stat print mode
-			if(v==0xFF) {
+			if(v==PSV_STAT) {
 				// Print stat
 				stat();
 			}
 			// If stack print mode
-			else if(v==0xFE) {
+			else if(v==PSV_STACK) {
 				stack_stat();
 			}
 			// If memory dump mode
-			else if(v==0xFD) {
+			else if(v==PSV_DUMP) {
 				full_dump();
 			}
 			// If stop stopwatch
-			else if(v==0xFC) {
+			else if(v==PSV_STOPWATCH_STOP) {
 				printf("t=%ld cycles\n", cont-stopwatch);
 			}
 			// If start stopwatch
-			else if(v==0xFB) {
+			else if(v==PSV_STOPWATCH_START) {
 				stopwatch = cont;
 			}
 			else {
