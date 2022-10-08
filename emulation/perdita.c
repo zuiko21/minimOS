@@ -646,9 +646,14 @@ void poke(word dir, byte v) {
 			// PSV file open
 			if(v==PSV_FOPEN) {
 				psv_index = 0;
+				psv_filename[psv_index++]='p';
+				psv_filename[psv_index++]='s';
+				psv_filename[psv_index++]='v';
+				psv_filename[psv_index++]='_';
 			}
 			// PSV file write
 			if(v==PSV_FWRITE) {
+				psv_filename[psv_index] = '\0';
 				// actual file opening
 				psv_file=fopen(psv_filename,"rb+");	
 			}
