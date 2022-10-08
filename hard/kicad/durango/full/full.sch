@@ -2423,7 +2423,7 @@ $EndComp
 Wire Wire Line
 	10200 6100 10200 6300
 Connection ~ 10200 6100
-Text Notes 10300 6500 0    50   Italic 0
+Text Notes 10250 6500 0    50   Italic 0
 BUZZER ONLY\n
 $Comp
 L Connector_Generic:Conn_01x04 J1
@@ -2539,7 +2539,7 @@ L Device:Jumper_NO_Small JP2
 U 1 1 625ACA1E
 P 10600 6300
 F 0 "JP2" H 10600 6400 50  0000 C CIN
-F 1 "BUZZ" H 10600 6200 50  0000 C CIN
+F 1 "BUZZER" H 10650 6200 50  0000 C CIN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 10600 6300 50  0001 C CNN
 F 3 "~" H 10600 6300 50  0001 C CNN
 	1    10600 6300
