@@ -113,6 +113,7 @@
 	// PSV filename
 	char psv_filename[100];
 	int psv_index;
+	FILE* psv_file;
 
 /* ******************* */
 /* function prototypes */
@@ -609,8 +610,10 @@ void poke(word dir, byte v) {
 				// Save filename
 				psv_filename[psv_index++] = mem[dir];
 			}
+			// If file write mode enabled
 			else if(mem[0xDF94]==PSV_FWRITE) {
 				// write to file
+				fputc(mem[dir], psv_file);
 			}
 			// flush stdout
 			fflush(stdout);
@@ -644,11 +647,22 @@ void poke(word dir, byte v) {
 			if(v==PSV_FOPEN) {
 				psv_index = 0;
 			}
+			// PSV file write
 			if(v==PSV_FWRITE) {
-				// open file
+				// actual file opening
+				psv_file=fopen(psv_filename,"rb+");	
 			}
+			// PSV file write
+			if(v==PSV_FREAD) {
+				mem[0xDF94]=fgetc(psv_file);
+			}
+			// PSV file close
 			if(v==PSV_FCLOSE) {
 				// close file
+				if(fclose(psv_file)!=0) {
+					printf("WARNING! Error closing file %s\n", psv_filename);
+				}
+				psv_file = NULL;
 			}
 			// flush stdout
 			fflush(stdout);
