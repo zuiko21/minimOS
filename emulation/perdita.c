@@ -13,15 +13,20 @@
 #define BUTTON_DOWN 0x02
 #define BUTTON_RIGHT 0x01
 /* PSV Constants */
-#define PSV_HEX 0x00
-#define PSV_ASCII 0x01
-#define PSV_BINARY 0x02
-#define PSV_DECIMAL 0x03
-#define PSV_STAT 0xFF
-#define PSV_STACK 0xFE
+#define PSV_FOPEN 0x11
+#define PSV_FREAD 0x12
+#define PSV_FWRITE 0x13
+#define PSV_FCLOSE 0x1F
+#define PSV_HEX 0xF0
+#define PSV_ASCII 0xF1
+#define PSV_BINARY 0xF2
+#define PSV_DECIMAL 0xF3
+#define PSV_STOPWATCH_STOP 0xFC
+#define PSV_STOPWATCH_START 0xFB
 #define PSV_DUMP 0xFD
-#define PSV_STOPWATCHSTOP 0xFC
-#define PSV_STOPWATCHSTART 0xFB
+#define PSV_STACK 0xFE
+#define PSV_STAT 0xFF
+
 
 /* Binary conversion */
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
@@ -103,6 +108,11 @@
 	int		old_v = 0;		// last sample value
 
 	byte keys[8][256];		// keyboard map
+
+/* Global PSV Variables */
+	// PSV filename
+	char psv_filename[100];
+	int psv_index;
 
 /* ******************* */
 /* function prototypes */
@@ -590,6 +600,15 @@ void poke(word dir, byte v) {
 				// Print decimal
 				printf("[%u]", mem[dir]);
 			}
+			// If file open mode enabled
+			else if(mem[0xDF94]==PSV_FOPEN) {
+				// Filter filename
+				if((mem[dir] >= 65 && mem[dir] <= 90) ||
+					(mem[dir] >= 97 && mem[dir] <= 122) ||
+					mem[dir] == 45 || mem[dir] == 95)
+				// Save filename
+				psv_filename[psv_index++] = mem[dir];
+			}
 			// flush stdout
 			fflush(stdout);
 		} else if (dir==0xDF94) { // virtual serial port config at $df94
@@ -614,9 +633,13 @@ void poke(word dir, byte v) {
 			else if(v==PSV_STOPWATCH_START) {
 				stopwatch = cont;
 			}
+			// Cache value
 			else {
-				// Cache value
 				mem[dir]=v;
+			}
+			// PSV file open
+			if(v==PSV_FOPEN) {
+				psv_index = 0;
 			}
 			// flush stdout
 			fflush(stdout);
