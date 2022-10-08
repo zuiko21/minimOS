@@ -21,8 +21,8 @@
 #define PSV_ASCII 0xF1
 #define PSV_BINARY 0xF2
 #define PSV_DECIMAL 0xF3
-#define PSV_STOPWATCH_STOP 0xFC
 #define PSV_STOPWATCH_START 0xFB
+#define PSV_STOPWATCH_STOP 0xFC
 #define PSV_DUMP 0xFD
 #define PSV_STACK 0xFE
 #define PSV_STAT 0xFF
