@@ -609,6 +609,9 @@ void poke(word dir, byte v) {
 				// Save filename
 				psv_filename[psv_index++] = mem[dir];
 			}
+			else if(mem[0xDF94]==PSV_FWRITE) {
+				// write to file
+			}
 			// flush stdout
 			fflush(stdout);
 		} else if (dir==0xDF94) { // virtual serial port config at $df94
@@ -640,6 +643,12 @@ void poke(word dir, byte v) {
 			// PSV file open
 			if(v==PSV_FOPEN) {
 				psv_index = 0;
+			}
+			if(v==PSV_FWRITE) {
+				// open file
+			}
+			if(v==PSV_FCLOSE) {
+				// close file
 			}
 			// flush stdout
 			fflush(stdout);
