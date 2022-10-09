@@ -646,6 +646,7 @@ void poke(word dir, byte v) {
 			// PSV file open
 			if(v==PSV_FOPEN) {
 				psv_index = 0;
+                                psv_file = NULL;
 				psv_filename[psv_index++]='p';
 				psv_filename[psv_index++]='s';
 				psv_filename[psv_index++]='v';
@@ -655,11 +656,14 @@ void poke(word dir, byte v) {
 			if(v==PSV_FWRITE) {
 				psv_filename[psv_index] = '\0';
 				// actual file opening
-				psv_file=fopen(psv_filename,"ab+");
+				psv_file=fopen(psv_filename,"ab");                                
 			}
-			// PSV file write
+			// PSV file read
 			if(v==PSV_FREAD) {
-				mem[0xDF94]=fgetc(psv_file);
+				if(psv_file == NULL) {
+                                    psv_file=fopen(psv_filename,"rb");
+                                }
+                                mem[0xDF93]=fgetc(psv_file);
 			}
 			// PSV file close
 			if(v==PSV_FCLOSE) {
