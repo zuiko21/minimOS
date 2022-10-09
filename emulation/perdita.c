@@ -483,14 +483,12 @@ void full_dump() {
 		// Write memory
                 fwrite(mem, sizeof(byte), 65536, f); 
                 // Write status registers
-                //byte a, x, y, s, p;
                 fputc(a, f);
                 fputc(x, f);
                 fputc(y, f);
                 fputc(s, f);
                 fputc(p, f);
                 // Write PC
-                //word pc;
                 fwrite(&pc, sizeof(word), 1, f);
                 // Close file
 		fclose(f);
