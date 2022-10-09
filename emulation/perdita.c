@@ -3,6 +3,32 @@
  * last modified 20220907-1944
  * */
 
+/* Gamepad buttons constants */
+#define BUTTON_A 0x80
+#define BUTTON_START 0x40
+#define BUTTON_B 0x20
+#define BUTTON_SELECT 0x10
+#define BUTTON_UP 0x08
+#define BUTTON_LEFT 0x04
+#define BUTTON_DOWN 0x02
+#define BUTTON_RIGHT 0x01
+/* PSV Constants */
+#define PSV_FOPEN 0x11
+#define PSV_FREAD 0x12
+#define PSV_FWRITE 0x13
+#define PSV_FCLOSE 0x1F
+#define PSV_HEX 0xF0
+#define PSV_ASCII 0xF1
+#define PSV_BINARY 0xF2
+#define PSV_DECIMAL 0xF3
+#define PSV_STOPWATCH_START 0xFB
+#define PSV_STOPWATCH_STOP 0xFC
+#define PSV_DUMP 0xFD
+#define PSV_STACK 0xFE
+#define PSV_STAT 0xFF
+
+
+/* Binary conversion */
 #define BYTE_TO_BINARY_PATTERN "[%c%c%c%c%c%c%c%c]"
 #define BYTE_TO_BINARY(byte)  \
   (byte & 0x80 ? '1' : '0'), \
@@ -28,17 +54,6 @@
 /* type definitions */
 	typedef uint8_t byte;
 	typedef uint16_t word;
-
-/* constants */
-#define BUTTON_A 0x80
-#define BUTTON_START 0x40
-#define BUTTON_B 0x20
-#define BUTTON_SELECT 0x10
-#define BUTTON_UP 0x08
-#define BUTTON_LEFT 0x04
-#define BUTTON_DOWN 0x02
-#define BUTTON_RIGHT 0x01
-
 
 /* global variables */
 	byte mem[65536];			// unified memory map
@@ -93,6 +108,12 @@
 	int		old_v = 0;		// last sample value
 
 	byte keys[8][256];		// keyboard map
+
+/* Global PSV Variables */
+	// PSV filename
+	char psv_filename[100];
+	int psv_index;
+	FILE* psv_file;
 
 /* ******************* */
 /* function prototypes */
@@ -459,8 +480,17 @@ void full_dump() {
 	
 	f = fopen("dump.bin", "wb");
 	if (f != NULL) {
-		fwrite(mem, sizeof(byte), 65536, f); 
-
+		// Write memory
+                fwrite(mem, sizeof(byte), 65536, f); 
+                // Write status registers
+                fputc(a, f);
+                fputc(x, f);
+                fputc(y, f);
+                fputc(s, f);
+                fputc(p, f);
+                // Write PC
+                fwrite(&pc, sizeof(word), 1, f);
+                // Close file
 		fclose(f);
 		printf("dump.bin generated\n");
 	}
@@ -561,52 +591,96 @@ void poke(word dir, byte v) {
 			// Cache value
 			mem[dir]=v;
 			// If hex mode enabled
-			if(mem[0xDF94]==0x00) {
+			if(mem[0xDF94]==PSV_HEX) {
 				// Print hex value
 				printf("[%02X]", mem[dir]);	
 			}
 			// If ascii mode enabled
-			else if(mem[0xDF94]==0x01) {
+			else if(mem[0xDF94]==PSV_ASCII) {
 				// Print ascii
 				printf("%c", mem[dir]);
 			}
 			// If binary mode enabled
-			else if(mem[0xDF94]==0x02) {
+			else if(mem[0xDF94]==PSV_BINARY) {
 				// Print binary
 				printf(BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(mem[dir]));
 			}
 			// If decimal mode enabled
-			else if(mem[0xDF94]==0x03) {
+			else if(mem[0xDF94]==PSV_DECIMAL) {
 				// Print decimal
 				printf("[%u]", mem[dir]);
+			}
+			// If file open mode enabled
+			else if(mem[0xDF94]==PSV_FOPEN) {
+				// Filter filename
+				if((mem[dir] >= 65 && mem[dir] <= 90) ||
+					(mem[dir] >= 97 && mem[dir] <= 122) ||
+					mem[dir] == 45 || mem[dir] == 95)
+				// Save filename
+				psv_filename[psv_index++] = mem[dir];
+			}
+			// If file write mode enabled
+			else if(mem[0xDF94]==PSV_FWRITE) {
+				// write to file
+				fputc(mem[dir], psv_file);
 			}
 			// flush stdout
 			fflush(stdout);
 		} else if (dir==0xDF94) { // virtual serial port config at $df94
 			// If stat print mode
-			if(v==0xFF) {
+			if(v==PSV_STAT) {
 				// Print stat
 				stat();
 			}
 			// If stack print mode
-			else if(v==0xFE) {
+			else if(v==PSV_STACK) {
 				stack_stat();
 			}
 			// If memory dump mode
-			else if(v==0xFD) {
+			else if(v==PSV_DUMP) {
 				full_dump();
 			}
 			// If stop stopwatch
-			else if(v==0xFC) {
+			else if(v==PSV_STOPWATCH_STOP) {
 				printf("t=%ld cycles\n", cont-stopwatch);
 			}
 			// If start stopwatch
-			else if(v==0xFB) {
+			else if(v==PSV_STOPWATCH_START) {
 				stopwatch = cont;
 			}
+			// Cache value
 			else {
-				// Cache value
 				mem[dir]=v;
+			}
+			// PSV file open
+			if(v==PSV_FOPEN) {
+				psv_index = 0;
+                                psv_file = NULL;
+				psv_filename[psv_index++]='p';
+				psv_filename[psv_index++]='s';
+				psv_filename[psv_index++]='v';
+				psv_filename[psv_index++]='_';
+			}
+			// PSV file write
+			if(v==PSV_FWRITE) {
+				psv_filename[psv_index] = '\0';
+				// actual file opening
+				psv_file=fopen(psv_filename,"ab");                                
+			}
+			// PSV file read
+			if(v==PSV_FREAD) {
+				if(psv_file == NULL) {
+                                    psv_file=fopen(psv_filename,"rb");
+                                }
+                                mem[0xDF93]=fgetc(psv_file);
+			}
+			// PSV file close
+			if(v==PSV_FCLOSE) {
+				// close file
+				if(fclose(psv_file)!=0) {
+					printf("WARNING! Error closing file %s\n", psv_filename);
+				}
+				psv_file = NULL;
 			}
 			// flush stdout
 			fflush(stdout);
