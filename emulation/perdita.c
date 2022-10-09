@@ -3047,6 +3047,7 @@ void vdu_read_keyboard() {
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F9) {
 			load_dump();	// load saved status...
 			run = 3;		// ...and resume execution
+			scr_dirty = 1;	// but update screen! EEEEEK
 		}
 		// Press F10
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F10) {
