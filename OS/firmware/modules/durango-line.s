@@ -1,6 +1,6 @@
 ; Durango-X line routines (Bresenham's Algorithm) *** unoptimised version
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221011-2329
+; last modified 20221011-2345
 
 #define	LINES
 ; *** input *** placeholder addresses
@@ -37,7 +37,8 @@ set_sx:
 	STX sx
 	LDX #0					; prepare sign-extention
 	STA dx
-	BPL dx_plus
+	BIT #128				; eeeek
+	BEQ dx_plus
 		DEX
 dx_plus:
 	STX dx+1				; sign-extention on MSB
@@ -55,7 +56,8 @@ set_sy:
 	EOR #$FF				; negate ABS
 	INC
 	STA dy
-	BPL dy_plus
+	BIT #128
+	BEQ dy_plus
 		DEY
 dy_plus:
 	STY dy+1				; sign-extention on MSB
@@ -63,7 +65,7 @@ dy_plus:
 	ADC dx
 	STA error				; error=dx+dy
 	TYA						; was (dy+1)
-	ADC #0
+	ADC #0;dx+1
 	STA error+1				; MSB, just in case
 l_loop:
 		LDX x1
@@ -80,7 +82,8 @@ l_cont:
 		ASL 				; e2=2*error
 		TAY					; Y = e2.lsb
 		ROR err_n			; keep e2.d8 at err_n.d15 EEEEEK
-			BNE if_y		; e2>255, thus always greater than dy
+		BIT err_n			; EEEEEEK
+			BMI if_y		; e2>255, thus always greater than dy
 		CPY dy
 		BMI if_x			; if e2>=dy... signed EEEEEEK
 if_y:
