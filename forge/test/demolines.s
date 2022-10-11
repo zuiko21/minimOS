@@ -14,7 +14,7 @@ seed	= $FE
 #ifdef	HIRES
 #define	LIMIT	255
 #else
-#define	LIMIT	63
+#define	LIMIT	127
 #endif
 reset:
 	SEI
@@ -79,7 +79,7 @@ random:
 	JSR rnd
 	AND #LIMIT
 	STA y1
-	JSR rnd		; comment for horizontal only
+;	JSR rnd		; comment for horizontal only
 	AND #LIMIT
 	STA y2
 	JSR rnd

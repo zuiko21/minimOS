@@ -1,6 +1,6 @@
 ; Durango-X line routines (Bresenham's Algorithm) *** unoptimised version
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221011-2345
+; last modified 20221012-0041
 
 #define	LINES
 ; *** input *** placeholder addresses
@@ -16,10 +16,10 @@ sy		= sx+1
 dx		= sy+1				; I'm afraid these need 16-bit
 dy		= dx+2
 error	= dy+2				; colour mode cannot be over 254, but 16-bit arithmetic needed
-err_n	= error+2			; make room for this! only d7 used
+err_2	= error+2			; make room for this!
 
 ; these are for PLOT, actually
-cio_pt	= err_n+1			; screen pointer
+cio_pt	= err_2+2			; screen pointer
 fw_cbyt	= cio_pt+2			; (temporary storage, could be elsewhere)
 tmp		= fw_cbyt			; hopefully works! (demo only)
 
@@ -65,7 +65,7 @@ dy_plus:
 	ADC dx
 	STA error				; error=dx+dy
 	TYA						; was (dy+1)
-	ADC #0;dx+1
+	ADC dx+1
 	STA error+1				; MSB, just in case
 l_loop:
 		LDX x1
@@ -80,12 +80,25 @@ l_loop:
 l_cont:
 		LDA error
 		ASL 				; e2=2*error
-		TAY					; Y = e2.lsb
-		ROR err_n			; keep e2.d8 at err_n.d15 EEEEEK
-		BIT err_n			; EEEEEEK
-			BMI if_y		; e2>255, thus always greater than dy
-		CPY dy
-		BMI if_x			; if e2>=dy... signed EEEEEEK
+		STA err_2
+		LDA #0
+		ROL
+		STA err_2+1
+;		LDA err_2+1			; already there
+		CMP dy+1
+			BEQ chk_y		; e2=dy?
+		SEC
+		SBC dy+1
+		BVC y_vc
+			EOR #$80
+y_vc:
+		BPL if_y			; e2>dy!
+		BMI if_x			; eeeek 
+chk_y:
+		LDA err_2
+		CMP dy
+		BEQ if_y			; if e2=y
+		BCC if_x			; if e2>dy... signed EEEEEEK
 if_y:
 			LDX x1
 			CPX x2
@@ -102,11 +115,21 @@ if_y:
 				ADC sx
 				STA x1		; x0 += sx
 if_x:
-		BIT err_n			; check e2.d8
-			BMI l_loop		; cannot be less than dx!
-		CPY dx
-		BEQ then_x
-		BPL l_loop			; if e2<=dx...
+		LDA err_2+1
+		CMP dx+1
+			BEQ chk_x		; e2=dx?
+		SEC
+		SBC dx+1
+		BVC x_vc
+			EOR #$80
+x_vc:
+		BPL l_loop			; e2>dx!
+		BMI then_x			; eeeek 
+chk_x:
+		LDA err_2
+		CMP dx
+		BEQ then_x			; if e2=dx
+		BCS l_loop			; if e2<=dx...
 then_x:
 			LDX y1
 			CPX y2
@@ -122,7 +145,7 @@ then_x:
 		CLC
 		ADC sy
 		STA y1				; y0 += sy
-		BRA l_loop
+		JMP l_loop
 l_end:
 	RTS						; eeeek
 .)
