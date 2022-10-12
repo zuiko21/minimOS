@@ -1,6 +1,6 @@
 ; Durango-X line routines (Bresenham's Algorithm) *** unoptimised version
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221012-1735
+; last modified 20221012-1958
 
 #define	LINES
 ; *** input *** placeholder addresses
@@ -25,46 +25,54 @@ tmp		= fw_cbyt			; hopefully works! (demo only)
 
 dxline:
 .(
+; compute dx, sx
+	LDX #1					; temporary sx
+	LDY #0					; this will be dx sign extention (HIRES only)
 	LDA x2
 	SEC
 	SBC x1					; this is NOT abs(x1-x0) yet...
-	LDX #1
-	BCS set_sx				; if x0>=x1...
+	BCS set_sx				; if x0>x1...
 		LDX #$FF			; sx=-1, else sx=1
+		DEY
 		EOR #$FF			; ...and compute ABS(x1-x0) from x1-x0
 		INC					; CMOS only, could use ADC #1 as C known to be clear
 set_sx:
 	STX sx
-	LDX #0					; prepare sign-extention
 	STA dx
-	BIT #128				; eeeek
-	BEQ dx_plus
-		DEX
-dx_plus:
-	STX dx+1				; sign-extention on MSB
+	STY dx+1				; sign-extention on MSB
+; compute dy, sy
+	LDY #1					; temporary sy
+	LDX #0					; this will be dy sign extention (HIRES only)
 	LDA y2
 	SEC
 	SBC y1					; this is NOT -abs(y1-y0) yet...
-	LDY #1
-	BCS set_sy				; if y0>=y1...
+	BCS set_sy				; if y0>y1...
 		LDY #$FF			; sy=-1, else sy=1
-		EOR #$FF			; ...and compute ABS(y1-y0) from y0-y1, is this OK?
+		DEX
+		EOR #$FF			; ...and compute ABS(y1-y0) from y1-y0
 		INC					; CMOS only, could use ADC #1 as C known to be clear
+;		BNE set_sy
+;			LDX #0
 set_sy:
 	STY sy
-	LDY #0					; prepare sign extention
-	EOR #$FF				; negate ABS
-	INC
 	STA dy
-	BIT #128
-	BEQ dy_plus
-		DEY
-dy_plus:
-	STY dy+1				; sign-extention on MSB
+	STX dy+1				; sign-extention on MSB, but dy must be negated!
+; dy = -dy
+	SEC
+	LDA #0
+	SBC dy
+	STA dy
+	TAY						; convenient dy.l storage
+	LDA #0
+	SBC dy+1
+	STA dy+1
+	TAX						; convenient dy.h storage
+; compute error = dx + dy
+	TYA						; dy.l now in A
 	CLC
 	ADC dx
 	STA error				; error=dx+dy
-	TYA						; was (dy+1)
+	TXA						; was dy.h
 	ADC dx+1
 	STA error+1				; MSB, just in case
 l_loop:

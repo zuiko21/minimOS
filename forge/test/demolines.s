@@ -1,6 +1,6 @@
 ; Durango-X lines demo!
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221012-1827
+; last modified 20221012-1944
 
 *	= $F000
 
@@ -9,7 +9,7 @@
 
 seed	= $FE
 
-;#define	HIRES
+#define	HIRES
 
 #ifdef	HIRES
 #define	LIMIT	255
@@ -30,14 +30,19 @@ reset:
 #else
 	LDA #$38
 #endif
-
+;ora #$40
 	STA IO8attr				; set proper video mode
 	JSR randomize
-
+	STZ 0					; line counter
+lda#$f0
+sta$df94
 loop:
 		JSR random			; get random coordinates and colour
 		JSR dxline			; draw line
-		JMP loop			; in aeternum
+		INC 0
+		BNE loop			; in aeternum
+lock:
+	JMP lock
 
 ; *** set random seed ***
 randomize:
@@ -45,7 +50,7 @@ randomize:
 	STX seed
 	INX
 	STX seed+1
-;	JSR rnd					; further randomizing
+	JSR rnd					; further randomizing
 	RTS
 
 ; *** fill coordinates (and colour) randomly ***
@@ -53,15 +58,27 @@ random:
 	JSR rnd
 	AND #LIMIT
 	STA x1
+;sta$df93
 	JSR rnd
 	AND #LIMIT
+cmp x1
+bcs ook
+lda x1
+ook:
 	STA x2
+;sta$df93
 	JSR rnd
 	AND #LIMIT
 	STA y1
+;sta$df93
 	JSR rnd		; comment for horizontal only
 	AND #LIMIT
+cmp y1
+bcs oook
+lda y1
+oook:
 	STA y2
+;sta$df93
 	JSR rnd		; this will be colour
 #ifndef	HIRES
 	AND #15
