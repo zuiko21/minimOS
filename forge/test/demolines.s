@@ -9,7 +9,7 @@
 
 seed	= $FE
 
-;#define	HIRES
+#define	HIRES
 
 #ifdef	HIRES
 #define	LIMIT	255
@@ -65,6 +65,7 @@ randomize:
 	STX seed
 	INX
 	STX seed+1
+jsr rnd
 	RTS
 
 ; fill coordinates randomly
@@ -79,7 +80,7 @@ random:
 	JSR rnd
 	AND #LIMIT
 	STA y1
-;	JSR rnd		; comment for horizontal only
+	JSR rnd		; comment for horizontal only
 	AND #LIMIT
 	STA y2
 	JSR rnd
