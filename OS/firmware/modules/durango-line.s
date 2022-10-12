@@ -1,6 +1,6 @@
 ; Durango-X line routines (Bresenham's Algorithm) *** unoptimised version
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221012-0041
+; last modified 20221012-1735
 
 #define	LINES
 ; *** input *** placeholder addresses
@@ -81,25 +81,18 @@ l_cont:
 		LDA error
 		ASL 				; e2=2*error
 		STA err_2
-		LDA #0
+		LDA error+1
 		ROL
 		STA err_2+1
-;		LDA err_2+1			; already there
-		CMP dy+1
-			BEQ chk_y		; e2=dy?
+; compute 16-bit signed difference
 		SEC
-		SBC dy+1
-		BVC y_vc
-			EOR #$80
-y_vc:
-		BPL if_y			; e2>dy!
-		BMI if_x			; eeeek 
-chk_y:
 		LDA err_2
-		CMP dy
-		BEQ if_y			; if e2=y
-		BCC if_x			; if e2>dy... signed EEEEEEK
-if_y:
+		SBC dy				; don't care about result, just look for the sign on MSB
+		LDA err_2+1
+		SBC dy+1
+; if e2<dy, N is set
+		BMI if_x
+then_y:						; *** do this if e2 >= dy ***
 			LDX x1
 			CPX x2
 			BEQ if_x		; if x0==x1 break
@@ -115,22 +108,15 @@ if_y:
 				ADC sx
 				STA x1		; x0 += sx
 if_x:
-		LDA err_2+1
-		CMP dx+1
-			BEQ chk_x		; e2=dx?
+; compute 16-bit signed difference
 		SEC
-		SBC dx+1
-		BVC x_vc
-			EOR #$80
-x_vc:
-		BPL l_loop			; e2>dx!
-		BMI then_x			; eeeek 
-chk_x:
-		LDA err_2
-		CMP dx
-		BEQ then_x			; if e2=dx
-		BCS l_loop			; if e2<=dx...
-then_x:
+		LDA dx
+		SBC err_2			; don't care about result, just look for the sign on MSB
+		LDA dx+1
+		SBC err_2+1
+; if dx<e2, N is set -- that means if e2<=dx, N is clear
+		BMI l_loop
+then_x:						; *** do this if e2 <= dx ***
 			LDX y1
 			CPX y2
 			BEQ l_loop		; if y0==y1 break
@@ -145,7 +131,7 @@ then_x:
 		CLC
 		ADC sy
 		STA y1				; y0 += sy
-		JMP l_loop
+		BRA l_loop
 l_end:
 	RTS						; eeeek
 .)
