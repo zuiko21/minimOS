@@ -1,6 +1,6 @@
 ; Durango-X lines demo!
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221013-1705
+; last modified 20221013-1743
 
 *	= $F000
 
@@ -41,6 +41,7 @@ start:
 	LDY #0
 	LDX #$60				; screen address
 	STY ptr
+	TYA						; eeeek
 cl_p:
 		STX ptr+1
 cl_b:
@@ -54,6 +55,8 @@ cl_b:
 loop:
 		JSR random			; get random coordinates and colour
 		JSR dxline			; draw line
+.byt $cb
+
 		INC 0
 		BNE loop			; in aeternum
 lock:
@@ -75,12 +78,14 @@ random:
 	STA x1
 	JSR rnd
 	AND #LIMIT
+;ora x1
 	STA x2
 	JSR rnd
 	AND #LIMIT
 	STA y1
 	JSR rnd		; comment for horizontal only
 	AND #LIMIT
+;ora y1
 	STA y2
 	JSR rnd		; this will be colour
 #ifndef	HIRES

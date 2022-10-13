@@ -1,6 +1,6 @@
 ; Durango-X line routines (Bresenham's Algorithm) *** unoptimised version
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221012-1958
+; last modified 20221013-1744
 
 #define	USE_PLOT
 ; *** input *** placeholder addresses
