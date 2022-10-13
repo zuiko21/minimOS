@@ -1,6 +1,6 @@
 ; Durango-X lines demo!
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221012-1944
+; last modified 20221013-1705
 
 *	= $F000
 
@@ -8,8 +8,9 @@
 #include "../../OS/firmware/modules/durango-plot.s"
 
 seed	= $FE
+ptr		= $EA
 
-#define	HIRES
+;#define	HIRES
 
 #ifdef	HIRES
 #define	LIMIT	255
@@ -30,12 +31,26 @@ reset:
 #else
 	LDA #$38
 #endif
-;ora #$40
+
+; finish Durango & PRNG init
 	STA IO8attr				; set proper video mode
 	JSR randomize
-	STZ 0					; line counter
-lda#$f0
-sta$df94
+
+start:
+; clear screen
+	LDY #0
+	LDX #$60				; screen address
+	STY ptr
+cl_p:
+		STX ptr+1
+cl_b:
+			STA (ptr), Y
+			INY
+			BNE cl_b
+		INX
+		BPL cl_p
+; draw 256 lines and stop
+	STY 0					; line counter
 loop:
 		JSR random			; get random coordinates and colour
 		JSR dxline			; draw line
@@ -58,27 +73,15 @@ random:
 	JSR rnd
 	AND #LIMIT
 	STA x1
-;sta$df93
 	JSR rnd
 	AND #LIMIT
-cmp x1
-bcs ook
-lda x1
-ook:
 	STA x2
-;sta$df93
 	JSR rnd
 	AND #LIMIT
 	STA y1
-;sta$df93
 	JSR rnd		; comment for horizontal only
 	AND #LIMIT
-cmp y1
-bcs oook
-lda y1
-oook:
 	STA y2
-;sta$df93
 	JSR rnd		; this will be colour
 #ifndef	HIRES
 	AND #15
@@ -118,10 +121,14 @@ no_eor:
 	STA seed+1
 	RTS
 
+; disabled interrupt
+none:
+	RTI
+
 ; *** fill and vectors ***
 	.dsb	$FFFA-*, $FF
 
-	.word reset
-	.word reset
-	.word reset
-	
+	.word start				; NMI does cold start
+	.word reset				; RESET does full init
+	.word none
+
