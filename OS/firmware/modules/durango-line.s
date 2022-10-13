@@ -51,8 +51,6 @@ set_sx:
 		DEX
 		EOR #$FF			; ...and compute ABS(y1-y0) from y1-y0
 		INC					; CMOS only, could use ADC #1 as C known to be clear
-;		BNE set_sy
-;			LDX #0
 set_sy:
 	STY sy
 	STA dy
