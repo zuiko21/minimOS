@@ -2,7 +2,7 @@
 ; (c) 2022 Carlos J. Santisteban
 ; last modified 20221012-1958
 
-#define	LINES
+#define	USE_PLOT
 ; *** input *** placeholder addresses
 x1		= $EC				; NW corner x coordinate (<128 in colour, <256 in HIRES)
 y1		= x1+1				; NW corner y coordinate (<128 in colour, <256 in HIRES)
