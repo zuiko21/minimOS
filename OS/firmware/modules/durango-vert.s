@@ -1,6 +1,6 @@
 ; Durango-X vertical line routine
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220921-0958
+; last modified 20221020-1434
 
 ; *** INPUT ***
 ; px_col.b	= colour in II format (17*index, HIRES reads d7 only)
@@ -42,7 +42,13 @@ v_loop:
 		AND (cio_pt), Y			; extract relevant bits
 		ORA tmp_col				; and add constant new ones!
 		STA (cio_pt), Y
-		; add 64 to cio_pt
+		LDA cio_pt
+		CLC
+		ADC #64				; bytes per line
+		STA cio_pt
+		BCC no_page			; possible carry
+			INC cio_pt+1
+no_page:
 		DEC y_cnt			; one line less
 		BNE v_loop
 	RTS
