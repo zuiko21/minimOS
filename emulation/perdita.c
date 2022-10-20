@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
- * (c)2007-2022 Carlos J. Santisteban
- * last modified 20220907-1944
+ * (c)2007-2022 Carlos J. Santisteban, Emilio López Berenguer
+ * last modified 20221009-1040
  * */
 
 /* Gamepad buttons constants */
@@ -325,7 +325,7 @@ void run_emulation () {
 	long us_render = 0;		// total microseconds of rendering
 	long skip = 0;			// total skipped frames
 
-	printf("[F1=STOP, F2=NMI, F3=IRQ, F4=RESET, F5=PAUSE, F6=DUMP, F7=STEP, F8=CONT, F9=KEY]\n");
+	printf("[F1=STOP, F2=NMI, F3=IRQ, F4=RESET, F5=PAUSE, F6=DUMP, F7=STEP, F8=CONT, F9=LOAD]\n");
 	init_vdu();
 	reset();				// ready to start!
 
@@ -477,25 +477,50 @@ void dump(word dir) {
 
 void full_dump() {
 	FILE *f;
-	
+
 	f = fopen("dump.bin", "wb");
 	if (f != NULL) {
 		// Write memory
-                fwrite(mem, sizeof(byte), 65536, f); 
-                // Write status registers
-                fputc(a, f);
-                fputc(x, f);
-                fputc(y, f);
-                fputc(s, f);
-                fputc(p, f);
-                // Write PC
-                fwrite(&pc, sizeof(word), 1, f);
-                // Close file
+		fwrite(mem, sizeof(byte), 65536, f); 
+		// Write registers
+		fputc(a, f);
+		fputc(x, f);
+		fputc(y, f);
+		fputc(s, f);
+		fputc(p, f);
+		// Write PC
+		fwrite(&pc, sizeof(word), 1, f);
+		// Close file
 		fclose(f);
 		printf("dump.bin generated\n");
 	}
 	else {
 		printf("*** Could not write dump ***\n");
+		run = 0;
+	}
+}
+
+void load_dump() {
+	FILE *f;
+
+	f = fopen("dump.bin", "rb");
+	if (f != NULL) {
+		// Read memory
+		fread(mem, sizeof(byte), 65536, f); 
+		// Read registers
+		a = fgetc(f);
+		x = fgetc(f);
+		y = fgetc(f);
+		s = fgetc(f);
+		p = fgetc(f);
+		// Read PC
+		fread(&pc, sizeof(word), 1, f);
+		// Close file
+		fclose(f);
+		printf("dump.bin loaded\n");
+	}
+	else {
+		printf("*** No available dump ***\n");
 		run = 0;
 	}
 }
@@ -3018,9 +3043,11 @@ void vdu_read_keyboard() {
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F8) {
 			run = 3;		// resume normal execution
 		}
-		// Press F9 = INSERT ASCII
+		// Press F9 = LOAD DUMP
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F9) {
-							// *** TO DO ***
+			load_dump();	// load saved status...
+			run = 3;		// ...and resume execution
+			scr_dirty = 1;	// but update screen! EEEEEK
 		}
 		// Press F10
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F10) {
