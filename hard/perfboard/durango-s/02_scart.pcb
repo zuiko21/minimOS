@@ -1405,6 +1405,7 @@ Layer(1 "back" "copper")
 	Line[845.00mil 3011.00mil 645.00mil 3011.00mil 10.00mil 20.00mil "clearline"]
 	Line[845.00mil 3011.00mil 845.00mil 3111.00mil 10.00mil 20.00mil "clearline"]
 	Line[845.00mil 3111.00mil 1045.00mil 3211.00mil 10.00mil 20.00mil "clearline"]
+	Line[645.00mil 2911.00mil 645.00mil 3011.00mil 10.00mil 20.00mil "clearline"]
 	Text[45.00mil 3111.00mil 1 100 "VCC" "clearline"]
 	Text[3645.00mil 111.00mil 0 100 "Q306 -> BC548" "clearline"]
 	Text[3645.00mil 211.00mil 0 100 "R122 -> 220" "clearline"]
