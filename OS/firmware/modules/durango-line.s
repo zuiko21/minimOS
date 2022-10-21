@@ -1,6 +1,6 @@
 ; Durango-X line routines (Bresenham's Algorithm) *** unoptimised version
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221021-1648
+; last modified 20221021-1700
 
 #define	USE_PLOT
 ; *** input *** placeholder addresses
@@ -40,6 +40,11 @@ set_sx:
 ; compute dy, sy
 	LDY #1					; temporary sy
 	LDA y2
+	LDX #$FF				; usual final dy sign!
+	CMP y1					; if dy=0...
+	BNE ne_dy
+		INX					; ...MSB is 0 (positive)
+ne_dy:
 	SEC
 	SBC y1					; this is NOT -abs(y1-y0) yet...
 	BCS set_sy				; if y0>y1...
@@ -49,20 +54,13 @@ set_sx:
 set_sy:
 	STY sy
 	STA dy
-	STZ dy+1				; sign-extention on MSB, but dy must be negated! eeeeeeek
 ; dy = -dy
 	SEC
 	LDA #0
 	SBC dy
 	STA dy
-; need to check MSB for sign, in case it's zero
-	TAY						; convenient dy.l storage
-	LDA #0
-	SBC dy+1
-	STA dy+1
-	TAX						; convenient dy.h storage
+	STX dy+1				; definitive sign, previously computed EEEEEEEK
 ; compute error = dx + dy
-	TYA						; dy.l now in A
 	CLC
 	ADC dx
 	STA error				; error=dx+dy
