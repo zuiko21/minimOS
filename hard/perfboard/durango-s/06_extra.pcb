@@ -1200,8 +1200,7 @@ Layer(1 "back" "copper")
 	Line[4445.00mil 3211.00mil 4445.00mil 3011.00mil 10.00mil 20.00mil "clearline"]
 	Text[2670.00mil 3311.00mil 0 100 "U428" "clearline"]
 	Text[3145.00mil 3311.00mil 0 100 "74HC174" "clearline"]
-	Text[1245.00mil 4511.00mil 1 100 "VCC" "clearline"]
-	Text[1445.00mil 4411.00mil 1 100 "GCC" "clearline"]
+	Text[1270.00mil 4486.00mil 1 100 "VCC" "clearline"]
 	Text[1545.00mil 4736.00mil 0 100 "1" "clearline"]
 	Text[1945.00mil 4736.00mil 0 100 "5" "clearline"]
 	Text[2420.00mil 4736.00mil 0 100 "10" "clearline"]
@@ -1235,7 +1234,6 @@ Layer(1 "back" "copper")
 	Text[3045.00mil 3736.00mil 1 100 "SC0" "clearline"]
 	Text[3245.00mil 3561.00mil 1 100 "SC1" "clearline"]
 	Text[3870.00mil 3511.00mil 1 100 "!STAT" "clearline"]
-	Text[4495.00mil 4511.00mil 1 100 "GCC" "clearline"]
 	Text[4645.00mil 4611.00mil 1 100 "VCC" "clearline"]
 	Text[3920.00mil 4736.00mil 0 100 "25" "clearline"]
 	Text[4420.00mil 4736.00mil 0 100 "30" "clearline"]
@@ -1263,6 +1261,8 @@ Layer(1 "back" "copper")
 	Text[3120.00mil 3211.00mil 1 100 "D7" "clearline"]
 	Text[2995.00mil 3061.00mil 1 100 "INVERT" "clearline"]
 	Text[3295.00mil 3111.00mil 1 100 "!FLAGS" "clearline"]
+	Text[4470.00mil 4636.00mil 1 100 "GND" "clearline"]
+	Text[1445.00mil 4386.00mil 1 100 "GND" "clearline"]
 )
 Layer(2 "bridge" "copper")
 (

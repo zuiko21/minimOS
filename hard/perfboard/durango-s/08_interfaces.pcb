@@ -1097,7 +1097,6 @@ Layer(1 "back" "copper")
 	Text[1370.00mil 1836.00mil 0 100 "16" "clearline"]
 	Text[520.00mil 1686.00mil 0 100 "RN2" "clearline"]
 	Text[245.00mil 2461.00mil 1 100 "VCC" "clearline"]
-	Text[345.00mil 2461.00mil 1 100 "GCC" "clearline"]
 	Text[745.00mil 2236.00mil 1 100 "BA0" "clearline"]
 	Text[845.00mil 2236.00mil 1 100 "BA1" "clearline"]
 	Text[945.00mil 2261.00mil 1 100 "BA2" "clearline"]
@@ -1110,13 +1109,14 @@ Layer(1 "back" "copper")
 	Text[845.00mil 2786.00mil 0 100 "A2" "clearline"]
 	Text[945.00mil 2786.00mil 0 100 "A3" "clearline"]
 	Text[1045.00mil 2786.00mil 0 100 "A4" "clearline"]
-	Text[3245.00mil 2311.00mil 1 100 "GCC" "clearline"]
 	Text[3345.00mil 2311.00mil 1 100 "VCC" "clearline"]
 	Text[545.00mil 2611.00mil 0 100 "U32" "clearline"]
 	Text[1245.00mil 2611.00mil 0 100 "74HC245" "clearline"]
 	Text[2345.00mil 2511.00mil 0 100 "74HC08" "clearline"]
 	Text[2345.00mil 2011.00mil 0 100 "74HC125" "clearline"]
 	Text[2345.00mil 1211.00mil 0 100 "74HC139" "clearline"]
+	Text[345.00mil 2686.00mil 1 100 "GND" "clearline"]
+	Text[3170.00mil 2786.00mil 1 100 "GND" "clearline"]
 )
 Layer(2 "bridge" "copper")
 (
