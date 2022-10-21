@@ -1440,7 +1440,6 @@ Layer(1 "back" "copper")
 	Text[3645.00mil 1911.00mil 0 100 "R109 -> 22K" "clearline"]
 	Text[3645.00mil 2011.00mil 0 100 "R110 -> 39K" "clearline"]
 	Text[3645.00mil 2111.00mil 0 100 "R19 -> 6K8" "clearline"]
-	Text[3370.00mil 2436.00mil 1 100 "GCC" "clearline"]
 	Text[1970.00mil 2411.00mil 0 100 "U127" "clearline"]
 	Text[2645.00mil 2411.00mil 0 100 "74HC245" "clearline"]
 	Text[2470.00mil 2661.00mil 1 100 "IGH" "clearline"]
@@ -1469,7 +1468,6 @@ Layer(1 "back" "copper")
 	Text[1520.00mil 1311.00mil 1 100 "R17" "clearline"]
 	Text[1520.00mil 2436.00mil 1 100 "R19" "clearline"]
 	Text[3445.00mil 2811.00mil 1 100 "VCC" "clearline"]
-	Text[345.00mil 3511.00mil 1 100 "GCC" "clearline"]
 	Text[420.00mil 2636.00mil 1 100 "Variable 5K" "clearline"]
 	Text[2870.00mil 3611.00mil 1 100 "RGB" "clearline"]
 	Text[595.00mil 686.00mil 0 100 "Q306" "clearline"]
@@ -1498,7 +1496,6 @@ Layer(1 "back" "copper")
 	Text[770.00mil 1861.00mil 1 100 "MIX" "clearline"]
 	Text[970.00mil 1536.00mil 0 100 "ZMIX" "clearline"]
 	Text[920.00mil 1036.00mil 0 100 "VCC" "clearline"]
-	Text[1120.00mil 1236.00mil 0 100 "GCC" "clearline"]
 	Text[1595.00mil 1536.00mil 0 100 "BIAS" "clearline"]
 	Text[1445.00mil 1836.00mil 0 100 "VIN" "clearline"]
 	Text[420.00mil 536.00mil 0 100 "VCC" "clearline"]
@@ -1534,6 +1531,9 @@ Layer(1 "back" "copper")
 	Text[2870.00mil 86.00mil 0 100 "16" "clearline"]
 	Text[3170.00mil 86.00mil 0 100 "20" "clearline"]
 	Text[3145.00mil 211.00mil 0 100 "19" "clearline"]
+	Text[3345.00mil 3061.00mil 1 100 "GND" "clearline"]
+	Text[1120.00mil 1236.00mil 0 100 "GND" "clearline"]
+	Text[370.00mil 3336.00mil 0 100 "GND" "clearline"]
 )
 Layer(2 "bridge" "copper")
 (
