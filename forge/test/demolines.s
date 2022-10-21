@@ -1,6 +1,6 @@
 ; Durango-X lines demo!
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221013-1743
+; last modified 20221020-1940
 
 *	= $F000
 
@@ -55,8 +55,6 @@ cl_b:
 loop:
 		JSR random			; get random coordinates and colour
 		JSR dxline			; draw line
-.byt $cb
-
 		INC 0
 		BNE loop			; in aeternum
 lock:
