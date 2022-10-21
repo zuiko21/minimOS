@@ -1,16 +1,18 @@
 ; Durango-X lines demo!
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221020-1940
+; last modified 20221021-1731
 
 *	= $F000
 
 #include "../../OS/firmware/modules/durango-line.s"
 #include "../../OS/firmware/modules/durango-plot.s"
+#include "../../OS/firmware/modules/durango-vert.s"
 
 seed	= $FE
 ptr		= $EA
 
 ;#define	HIRES
+#define		USE_VLINE
 
 #ifdef	HIRES
 #define	LIMIT	255
@@ -54,7 +56,18 @@ cl_b:
 	STY 0					; line counter
 loop:
 		JSR random			; get random coordinates and colour
+#ifndef	USE_VLINE
 		JSR dxline			; draw line
+#else
+		LDX x1
+		LDY y1
+		TYA
+		SEC
+		SBC y2
+		AND #LIMIT
+		STA y_cnt
+		JSR v_line
+#endif
 		INC 0
 		BNE loop			; in aeternum
 lock:
@@ -74,16 +87,14 @@ random:
 	JSR rnd
 	AND #LIMIT
 	STA x1
-	JSR rnd
+;	JSR rnd		; comment for vertical only
 	AND #LIMIT
-;ora x1
 	STA x2
 	JSR rnd
 	AND #LIMIT
 	STA y1
 	JSR rnd		; comment for horizontal only
 	AND #LIMIT
-;ora y1
 	STA y2
 	JSR rnd		; this will be colour
 #ifndef	HIRES

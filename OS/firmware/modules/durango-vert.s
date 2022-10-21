@@ -1,6 +1,6 @@
 ; Durango-X vertical line routine
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221021-1230
+; last modified 20221021-1721
 
 ; *** INPUT ***
 ; px_col.b	= colour in II format (17*index, HIRES reads d7 only)
@@ -12,9 +12,21 @@
 ; tmp_col anywhere, best in ZP
 ; byt_l anywhere, best in ZP (new size optimisation)
 
+-IO8attr= $DF80				; compatible IO8lh for setting attributes (d7=HIRES, d6=INVERSE, now d5-d4 include screen block)
+
+#ifndef	USE_VLINE
+	y_cnt	= $F7
+	tmp_col	= y_cnt+1
+	byt_l	= tmp_col+1
+#ifndef	USE_PLOT
+	cio_pt	= byt_l+1		; usual pointer, now at $FA
+	px_col	= cio_pt+2
+#endif
+#endif
+
 v_line:
 .(
-	_STZA cio_pt			; clear LSB
+	STZ cio_pt				; clear LSB
 	TYA						; get Y coordinate... (2)
 	LSR
 	ROR cio_pt
@@ -68,7 +80,7 @@ col_vl:
 evpix:
 	AND px_col				; compute desired colour pattern
 	STA tmp_col				; store as mask
-	LDA #32					; bytes per line in colour
+	LDA #64					; bytes per line in colour
 set_wid:
 	STA byt_l
 v_loop:
@@ -89,3 +101,4 @@ no_page:
 ; *** DATA, kept bit-position table (HIRES only) ***
 hkeep:
 	.byt	127, 191, 223, 239, 247, 251, 253, 254
+.)
