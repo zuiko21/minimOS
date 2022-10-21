@@ -1,6 +1,6 @@
 ; Durango-X line routines (Bresenham's Algorithm) *** unoptimised version
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221021-1238
+; last modified 20221021-1648
 
 #define	USE_PLOT
 ; *** input *** placeholder addresses
@@ -13,9 +13,9 @@ px_col	= y2+1				; pixel colour, in II format (17*index), HIRES expects 0 (black
 ; *** zeropage usage and local variables *** 
 sx		= px_col+1
 sy		= sx+1
-dx		= sy+1				; I'm afraid these need 16-bit
-dy		= dx+1
-error	= dy+1				; colour mode cannot be over 254, but 16-bit arithmetic needed
+dx		= sy+1				; this is ALWAYS positive...
+dy		= dx+1				; ...but this one is negative OR zero
+error	= dy+2				; colour mode cannot be over 254, but 16-bit arithmetic needed
 err_2	= error+2			; make room for this!
 
 ; these are for PLOT, actually
@@ -37,7 +37,6 @@ dxline:
 set_sx:
 	STX sx
 	STA dx
-	STZ dx+1				; sign-extention on MSB eeeeeeek
 ; compute dy, sy
 	LDY #1					; temporary sy
 	LDA y2
@@ -50,16 +49,24 @@ set_sx:
 set_sy:
 	STY sy
 	STA dy
+	STZ dy+1				; sign-extention on MSB, but dy must be negated! eeeeeeek
 ; dy = -dy
 	SEC
 	LDA #0
 	SBC dy
 	STA dy
+; need to check MSB for sign, in case it's zero
+	TAY						; convenient dy.l storage
+	LDA #0
+	SBC dy+1
+	STA dy+1
+	TAX						; convenient dy.h storage
 ; compute error = dx + dy
-	CLC						; dy already in A
+	TYA						; dy.l now in A
+	CLC
 	ADC dx
 	STA error				; error=dx+dy
-	LDA #$FF				; dy ALWAYS negative, just propagating carry
+	TXA						; was dy.h
 	ADC #0					; dx ALWAYS positive
 	STA error+1				; MSB, just in case
 l_loop:
@@ -84,7 +91,7 @@ l_cont:
 		LDA err_2
 		SBC dy				; don't care about result, just look for the sign on MSB
 		LDA err_2+1
-		SBC #$FF			: dy ALWAYS negative
+		SBC dy+1
 ; if e2<dy, N is set
 		BMI if_x
 then_y:						; *** do this if e2 >= dy ***
@@ -96,7 +103,7 @@ then_y:						; *** do this if e2 >= dy ***
 				ADC dy
 				STA error	; error += dy
 				LDA error+1
-				ADC #$FF	; dy ALWAYS negative, just propagate carry
+				ADC dy+1
 				STA error+1	; MSB too EEEEEK
 				LDA x1
 				CLC
@@ -120,7 +127,7 @@ then_x:						; *** do this if e2 <= dx ***
 		ADC dx
 		STA error			; error += dx
 		LDA error+1
-		ADC #0				; dx ALWAYS positive, just propagate carry
+		ADC #0				; dx ALWAYS positive
 		STA error+1			; MSB too EEEEEK
 		LDA y1
 		CLC
