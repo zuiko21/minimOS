@@ -949,6 +949,19 @@ Element["" "R 0.25W" "R1" "100" 445.00mil 3211.00mil -25.00mil 0.0000 1 150 ""]
 	ElementLine [0.0000 -300.00mil 0.0000 -360.00mil 10.00mil]
 
 	)
+
+Element["" "R 0.25W" "R1" "100" 845.00mil 3111.00mil 0.0000 25.00mil 2 150 ""]
+(
+	Pin[0.0000 0.0000 60.00mil 30.00mil 90.00mil 28.00mil "1" "1" "square,edge2"]
+	Pin[-400.00mil 0.0000 60.00mil 30.00mil 90.00mil 28.00mil "2" "2" "edge2"]
+	ElementLine [-300.00mil 50.00mil -100.00mil 50.00mil 10.00mil]
+	ElementLine [-300.00mil -50.00mil -300.00mil 50.00mil 10.00mil]
+	ElementLine [-300.00mil -50.00mil -100.00mil -50.00mil 10.00mil]
+	ElementLine [-100.00mil -50.00mil -100.00mil 50.00mil 10.00mil]
+	ElementLine [-100.00mil 0.0000 -40.00mil 0.0000 10.00mil]
+	ElementLine [-360.00mil 0.0000 -300.00mil 0.0000 10.00mil]
+
+	)
 Layer(1 "back" "copper")
 (
 	Line[3245.00mil 3711.00mil 3245.00mil 3411.00mil 10.00mil 20.00mil "clearline"]
@@ -1001,7 +1014,6 @@ Layer(1 "back" "copper")
 	Line[1245.00mil 1611.00mil 1645.00mil 1611.00mil 10.00mil 20.00mil "clearline"]
 	Line[1045.00mil 1311.00mil 2145.00mil 1311.00mil 10.00mil 20.00mil "clearline"]
 	Line[845.00mil 2811.00mil 1445.00mil 2811.00mil 10.00mil 20.00mil "clearline"]
-	Line[745.00mil 3011.00mil 445.00mil 3011.00mil 10.00mil 20.00mil "clearline"]
 	Line[345.00mil 3711.00mil 3245.00mil 3711.00mil 10.00mil 20.00mil "clearline"]
 	Line[2745.00mil 3611.00mil 3245.00mil 3611.00mil 10.00mil 20.00mil "clearline"]
 	Line[2745.00mil 3611.00mil 2745.00mil 3711.00mil 10.00mil 20.00mil "clearline"]
@@ -1023,8 +1035,8 @@ Layer(1 "back" "copper")
 	Line[1445.00mil 2111.00mil 1445.00mil 2211.00mil 10.00mil 20.00mil "clearline"]
 	Line[345.00mil 3711.00mil 345.00mil 2011.00mil 10.00mil 20.00mil "clearline"]
 	Line[345.00mil 2011.00mil 845.00mil 2011.00mil 10.00mil 20.00mil "clearline"]
-	Text[3245.00mil 3511.00mil 1 100 "GCC" "clearline"]
-	Text[145.00mil 3511.00mil 1 100 "VCC" "clearline"]
+	Line[745.00mil 3011.00mil 845.00mil 3111.00mil 10.00mil 20.00mil "clearline"]
+	Text[170.00mil 3511.00mil 1 100 "VCC" "clearline"]
 	Text[395.00mil 3511.00mil 1 100 "VCLK" "clearline"]
 	Text[2070.00mil 3486.00mil 1 100 "D7" "clearline"]
 	Text[1970.00mil 3486.00mil 1 100 "D6" "clearline"]
@@ -1040,7 +1052,6 @@ Layer(1 "back" "copper")
 	Text[2370.00mil 1736.00mil 0 100 "XGL" "clearline"]
 	Text[2420.00mil 1461.00mil 0 100 "XB" "clearline"]
 	Text[3345.00mil 3611.00mil 1 100 "VCC" "clearline"]
-	Text[270.00mil 3486.00mil 1 100 "GCC" "clearline"]
 	Text[1145.00mil 2011.00mil 0 100 "74HC157" "clearline"]
 	Text[745.00mil 2011.00mil 0 100 "U125" "clearline"]
 	Text[1870.00mil 3486.00mil 1 100 "D5" "clearline"]
@@ -1059,6 +1070,8 @@ Layer(1 "back" "copper")
 	Text[2370.00mil 3611.00mil 1 100 "XR" "clearline"]
 	Text[2470.00mil 3611.00mil 1 100 "XGL" "clearline"]
 	Text[2570.00mil 3586.00mil 1 100 "XB" "clearline"]
+	Text[270.00mil 3436.00mil 1 100 "GND" "clearline"]
+	Text[3170.00mil 3511.00mil 1 100 "GND" "clearline"]
 )
 Layer(2 "bridge" "copper")
 (
