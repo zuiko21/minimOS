@@ -1,7 +1,7 @@
 ; Durango-X 5x8 keyboard driver
 ; v0.1a1
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221028-1945
+; last modified 20221028-1957
 
 ; usual definitions
 #ifndef	KEYBDRV
@@ -78,6 +78,7 @@ no_key:
 	STZ kb_asc				; no key pressed
 	RTS
 ; otherwise, a key was detected
+key_pr:
 	TYA						; get column index
 	ASL
 	ASL
@@ -86,6 +87,7 @@ no_key:
 	ORA kb_asc				; ··YYYXXX
 	BIT kb_ctl				; is control-mode enabled?
 		BMI ctl_key			; check different table
+	ORA kb_mod				; scancode is complete
 ; otherwise look for new or repeated key
 	CMP kb_scan				; same as before?
 	BNE diff_k				; nope, just generate new keystroke
