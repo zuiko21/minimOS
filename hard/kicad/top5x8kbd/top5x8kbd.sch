@@ -674,4 +674,59 @@ F 3 "http://www.ti.com/lit/ds/symlink/sn74hc595.pdf" H 9500 1450 50  0001 C CNN
 	1    9500 1450
 	1    0    0    -1  
 $EndComp
+$Comp
+L 74xx:74HC86 U9
+U 1 1 635F152C
+P 5300 2150
+F 0 "U9" H 5300 2475 50  0000 C CNN
+F 1 "74HC86" H 5300 2384 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 5300 2150 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 5300 2150 50  0001 C CNN
+	1    5300 2150
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74HC86 U9
+U 2 1 635F5FB4
+P 5300 2500
+F 0 "U9" H 5300 2825 50  0000 C CNN
+F 1 "74HC86" H 5300 2734 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 5300 2500 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 5300 2500 50  0001 C CNN
+	2    5300 2500
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74HC86 U9
+U 3 1 635F86E3
+P 5300 2850
+F 0 "U9" H 5300 3175 50  0000 C CNN
+F 1 "74HC86" H 5300 3084 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 5300 2850 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 5300 2850 50  0001 C CNN
+	3    5300 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74HC86 U9
+U 4 1 635FA626
+P 5300 3200
+F 0 "U9" H 5300 3525 50  0000 C CNN
+F 1 "74HC86" H 5300 3434 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 5300 3200 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 5300 3200 50  0001 C CNN
+	4    5300 3200
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74HC86 U9
+U 5 1 635FC8A5
+P 8650 5300
+F 0 "U9" H 8880 5346 50  0000 L CNN
+F 1 "74HC86" H 8880 5255 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm" H 8650 5300 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 8650 5300 50  0001 C CNN
+	5    8650 5300
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
