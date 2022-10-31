@@ -1,11 +1,12 @@
 ; 16K bootloader for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221031-2359
+; last modified 20221101-0015
 
-; some constants (blue background, yellow ink, green progress)
+; some constants (blue background, yellow ink, green progress, red border)
 #define	BGCOL	$88
 #define	FGCOL	$77
 #define	PRCOL	$55
+#define	EXCOL	$22
 
 ; reasonable start address
 		*	= $FF80
@@ -30,7 +31,7 @@ boot:
 	LDX #>switch			; start of switching routine
 	LDY #<switch
 	STY fw_nmi				; set vectored NMI
-	STX fw_nmi
+	STX fw_nmi+1
 ; clear screen
 	LDX #$60				; screen start
 	LDY #0					; LSB and index reset
@@ -46,7 +47,7 @@ clear:
 		BPL page
 ; draw two lines
 	LDY #1					; max offset (4 pixels wide)
-	LDA #FGCOL				; yellow colour!
+	LDA #EXCOL				; green colour?
 line:
 		STA $6802, Y		; draw two lines, total height 5 pixels
 		STA $6902, Y

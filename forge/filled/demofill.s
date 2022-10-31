@@ -6,7 +6,7 @@
 seed	= $FE
 
 ;#define	HIRES		_HIRES
-;#define	MONDRIAN	_MONDRIAN
+#define	MONDRIAN	_MONDRIAN
 
 #ifdef	HIRES
 #define	LIMIT	255

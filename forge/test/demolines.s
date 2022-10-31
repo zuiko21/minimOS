@@ -12,7 +12,7 @@ seed	= $FE
 ptr		= $EA
 
 ;#define	HIRES
-#define		USE_VLINE
+;#define		USE_VLINE
 
 #ifdef	HIRES
 #define	LIMIT	255
@@ -87,7 +87,7 @@ random:
 	JSR rnd
 	AND #LIMIT
 	STA x1
-;	JSR rnd		; comment for vertical only
+	JSR rnd		; comment for vertical only
 	AND #LIMIT
 	STA x2
 	JSR rnd
