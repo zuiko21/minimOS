@@ -2437,7 +2437,6 @@ F 3 "~" H 1000 1950 50  0001 C CNN
 	-1   0    0    -1  
 $EndComp
 NoConn ~ 1200 2150
-NoConn ~ 0    1650
 Text GLabel 7400 5400 2    50   Input ~ 0
 ~RESET
 Text GLabel 10400 3750 2    50   Input ~ 0
