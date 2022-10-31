@@ -1,6 +1,11 @@
 ; 16K bootloader for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221031-0136
+; last modified 20221031-2359
+
+; some constants (blue background, yellow ink, green progress)
+#define	BGCOL	$88
+#define	FGCOL	$77
+#define	PRCOL	$55
 
 ; reasonable start address
 		*	= $FF80
@@ -19,7 +24,7 @@ count		= ptr
 boot:
 ; usual init, but do not enable hardware interrupts
 	SEI
-	CLD
+;	CLD						; not needed as no ADC/SBC here
 	LDA #$38				; try colour mode, screen 3
 	STA IO8attr
 	LDX #>switch			; start of switching routine
@@ -29,7 +34,7 @@ boot:
 ; clear screen
 	LDX #$60				; screen start
 	LDY #0					; LSB and index reset
-	LDA #$88				; blue background
+	LDA #BGCOL				; blue background
 	STY ptr
 page:
 		STX ptr+1			; update MSB
@@ -41,7 +46,7 @@ clear:
 		BPL page
 ; draw two lines
 	LDY #1					; max offset (4 pixels wide)
-	LDA #$77				; yellow colour!
+	LDA #FGCOL				; yellow colour!
 line:
 		STA $6802, Y		; draw two lines, total height 5 pixels
 		STA $6902, Y
@@ -49,7 +54,6 @@ line:
 		BPL line
 ; init data
 	STX ptr+1				; actually $80, start of first ROM block!
-;	JSR drawsel				; put square indicating selected ROM block
 ; *** main loop ***
 sync:
 			BIT IO8blk
@@ -62,23 +66,21 @@ wait:
 		LSR						; counter divided by 4
 		LSR
 		TAX						; use as index
-		LDA #$55				; green progress bar
+		LDA #PRCOL				; green progress bar
 		STA $7000, X			; place pixels
 ; draw square (2x1) on selected position @ ptr+1
 		LDA rom_pg				; $80 or $C0
-		LSR						; make it 2 or 3
-		LSR
-		LSR
-		LSR
-		LSR
-		LSR
+		CLC
+		ROL						; make it 2 or 3
+		ROL
+		ROL
 		TAX
-		LDA #$77				; yellow is selected
+		LDA #FGCOL				; yellow is selected
 		STA $6880, X			; 2 lines below upper line
 		TXA
 		EOR #1					; swap 2-3
 		TAX
-		LDA #$88				; blue is unselected
+		LDA #BGCOL				; blue is unselected
 		STA $6880, X
 ; go for next until timeout
 		INC count
@@ -102,16 +104,19 @@ delay:						; avoid button bounce
 	PLY
 	PLX
 	PLA
-exit:
 	RTI
+
+; *** standard IRQ handler ***
+irq_handler:
+	JMP (fw_irq)
+
 ; *** standard NMI handler ***
 nmi_handler:
 	JMP (fw_nmi)
 
 ; *** fill and vectors ***
-
 	.dsb	$FFFA - *, $FF
 
 	.word	nmi_handler
 	.word	boot
-	.word	exit
+	.word	irq_handler
