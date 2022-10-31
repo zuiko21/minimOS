@@ -1457,7 +1457,7 @@ Text Label 7050 4250 0    50   ~ 0
 FEND
 Text Notes 6900 6100 0    50   Italic 10
 *
-Text Notes 8400 6500 0    50   Italic 10
+Text Notes 8500 6500 0    50   Italic 10
 *) FOR SYNC-ON-GREEN MODE:\n   REMOVE R30, 108, 110, 111, 113, 122\n   REMOVE Q306, C5, J105\n   CHANGE R109 TO 10K AND R107 TO 4K7
 Text Notes 6900 5700 0    50   Italic 10
 *
@@ -2332,4 +2332,6 @@ Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
+Text GLabel 8400 6450 2    50   Input ~ 0
+SOG
 $EndSCHEMATC

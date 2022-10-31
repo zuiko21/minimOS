@@ -714,8 +714,8 @@ U 1 1 627D9D31
 P 3250 4800
 AR Path="/60C42E7C/627D9D31" Ref="U?"  Part="1" 
 AR Path="/6310B9C7/627D9D31" Ref="U32"  Part="1" 
-F 0 "U32" H 3050 5550 50  0000 R CNN
-F 1 "74HC245" H 3150 5450 50  0000 R CNN
+F 0 "U32" H 3600 5550 50  0000 R CNN
+F 1 "74HC245" H 3700 5450 50  0000 R CNN
 F 2 "Package_DIP:DIP-20_W7.62mm_Socket" H 3250 4800 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC245" H 3250 4800 50  0001 C CNN
 	1    3250 4800
@@ -796,9 +796,9 @@ A2
 Text Label 2600 4600 0    50   ~ 0
 A3
 Wire Wire Line
-	3850 3750 2750 3750
+	3800 3750 2750 3750
 Connection ~ 2750 3750
-Text Notes 3750 3850 0    50   Italic 10
+Text Notes 4150 3600 0    50   Italic 10
 ALSO SYNC-ON-GREEN
 Wire Wire Line
 	3250 2700 3350 2700
@@ -1261,21 +1261,6 @@ F 3 "~" H 5950 7250 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	6100 7250 6100 6950
-Text Label 3950 3150 1    50   ~ 0
-CMIX2
-$Comp
-L Connector:Conn_Coaxial J?
-U 1 1 631CCF99
-P 3850 3550
-AR Path="/60C42E7C/631CCF99" Ref="J?"  Part="1" 
-AR Path="/6310B9C7/631CCF99" Ref="J006"  Part="1" 
-F 0 "J006" H 3950 3550 50  0000 L CNN
-F 1 "VIDEO/Y" H 3900 3450 50  0000 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 3850 3550 50  0001 C CNN
-F 3 " ~" H 3850 3550 50  0001 C CNN
-	1    3850 3550
-	1    0    0    -1  
-$EndComp
 $Comp
 L Device:CP C9
 U 1 1 632E74BB
@@ -1400,6 +1385,61 @@ F 3 "" H 5100 4800 50  0001 C CNN
 	1    5100 4800
 	-1   0    0    1   
 $EndComp
+$Comp
+L Device:Jumper_NC_Small JP606
+U 1 1 6348D56C
+P 6500 5150
+F 0 "JP606" H 6550 4950 50  0000 C CNN
+F 1 "Chroma" H 6550 5050 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 6500 5150 50  0001 C CNN
+F 3 "~" H 6500 5150 50  0001 C CNN
+	1    6500 5150
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector:Conn_Coaxial_x3 J6
+U 1 1 6375B503
+P 4050 3350
+F 0 "J6" H 4150 3353 50  0000 L CNN
+F 1 "COMPOSITE" H 4150 3262 50  0000 L CNN
+F 2 "durango:3xRCA" H 4050 3350 50  0001 C CNN
+F 3 " ~" H 4050 3350 50  0001 C CNN
+	1    4050 3350
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3850 3150 3750 3150
+Wire Wire Line
+	3750 3150 3750 3350
+Wire Wire Line
+	3750 4050 3850 4050
+Text GLabel 3750 3150 0    50   Input ~ 0
+AUDIO
+Wire Wire Line
+	3800 3750 3800 3650
+Wire Wire Line
+	3650 3550 3850 3550
+Wire Wire Line
+	3750 3350 3850 3350
+Wire Wire Line
+	3800 3250 3800 3450
+Connection ~ 3800 3650
+Connection ~ 3800 3450
+Wire Wire Line
+	3800 3450 3800 3650
+$Comp
+L Connector:Conn_Coaxial_x3 J005
+U 1 1 637D6FA2
+P 4050 6650
+F 0 "J005" H 4150 6653 50  0000 L CNN
+F 1 "SYNC-ON-GREEN" H 4150 6562 50  0000 L CNN
+F 2 "durango:3xRCA" H 4050 6650 50  0001 C CNN
+F 3 " ~" H 4050 6650 50  0001 C CNN
+	1    4050 6650
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3800 6550 3800 6750
 Wire Wire Line
 	850  5100 1350 5100
 Wire Bus Line
@@ -1418,15 +1458,19 @@ Wire Bus Line
 	900  2150 900  5700
 Wire Bus Line
 	750  2150 750  5750
+Connection ~ 3800 6750
+Wire Wire Line
+	3800 6750 3800 6950
 $Comp
-L Device:Jumper_NC_Small JP606
-U 1 1 6348D56C
-P 6500 5150
-F 0 "JP606" H 6550 4950 50  0000 C CNN
-F 1 "Chroma" H 6550 5050 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical" H 6500 5150 50  0001 C CNN
-F 3 "~" H 6500 5150 50  0001 C CNN
-	1    6500 5150
+L power:GND #PWR0176
+U 1 1 637E28CA
+P 3800 6950
+F 0 "#PWR0176" H 3800 6700 50  0001 C CNN
+F 1 "GND" H 3805 6777 50  0000 C CNN
+F 2 "" H 3800 6950 50  0001 C CNN
+F 3 "" H 3800 6950 50  0001 C CNN
+	1    3800 6950
 	1    0    0    -1  
 $EndComp
+Connection ~ 3800 6950
 $EndSCHEMATC
