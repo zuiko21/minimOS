@@ -1,6 +1,6 @@
 ; FULL test of Durango-X/S/R (ROMmable version)
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220812-2250
+; last modified 20221102-1724
 
 ;#define	NMOS	_NMOS
 
@@ -19,7 +19,9 @@
 	IOBeep	= $DFB0
 ; ****************************
 
+#ifndef	MULTIBOOT
 * = $F000					; 4 KiB start address
+#endif
 
 ; ******************
 ; *** test suite ***
@@ -836,6 +838,7 @@ pic_end:
 ; *** padding, ID and hardware vectors ***
 ; ****************************************
 
+#ifndef	MULTIBOOT
 	.dsb	$FFD6-*, $FF	; padding
 
 	.asc	"DmOS"			; Durango-X cartridge signature
@@ -848,3 +851,4 @@ pic_end:
 	.word	nmi
 	.word	reset
 	.word	irq
+#endif

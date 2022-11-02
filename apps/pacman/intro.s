@@ -1,6 +1,6 @@
 ; PacMan intro
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220914-1719
+; last modified 20221102-1720
 
 #include "../../OS/macros.h"
 
@@ -27,7 +27,9 @@ rle_ptr	= dest				; pointer to screen output
 ; *****************
 ; *** init code ***
 ; *****************
+#ifndef	MULTIBOOT
 	* = $E000				; 8K OK for now
+#endif
 
 intro:
 ; usual 6502 stuff
@@ -348,9 +350,10 @@ maze4:
 ; ************************
 ; *** ROMmable version ***
 ; ************************
-
+#ifndef	MULTIBOOT
 	.dsb	$FFFA-*, $FF	; padding
 
 	.word	int
 	.word	intro			; RESET vector
 	.word	int
+#endif
