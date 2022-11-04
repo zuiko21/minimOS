@@ -1,6 +1,6 @@
 ; Durango-X filled rectangle routine
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220822-1105
+; last modified 20221104-1508
 
 .bss
 ; *** input ***
@@ -34,6 +34,8 @@ r_ex:	.byt	0			; extra E pixels (id, HIRES only)
 	*	= $F000				; *** placeholder ***
 
 ; *** interface for (x,y,w,h) format ***
+filled:
+#ifdef	HEIWID
 fill_xywh:
 	LDA wid
 	BEQ exit				; don't draw anything if zero width!
@@ -45,27 +47,28 @@ fill_xywh:
 	CLC
 	ADC y1
 	STA y2					; swap height for South coordinate
+#else
 ; *** original (x1,y1,x2,y2) format interface ***
 fill_xyxy:
-filled:						; old labe for compatibility
 ; first of all, check whether coordinates are inverted in any way, to get them sorted as NW-SE
 ; * no longer checked as usually interfaced as (x,y,w,h) but check for non-existent rectangle *
-;	LDA x2					; should be W (or width)
-;	CMP x1					; thus less than E
-;	BEQ exit				; don't draw anything if zero width!
-;	BCS x_ok
-;		LDX x1				; otherwise, swap x1-x2
-;		STX x2
-;		STA x1
-;x_ok:
-;	LDA y2					; should be S
-;	CMP y1					; thus less than N
-;	BEQ exit				; don't draw anything if zero height!
-;	BCS y_ok
-;		LDX y1				; otherwise swap y1-y2
-;		STX y2
-;		STA y1
-;y_ok:
+	LDA x2					; should be W (or width)
+	CMP x1					; thus less than E
+	BEQ exit				; don't draw anything if zero width!
+	BCS x_ok
+		LDX x1				; otherwise, swap x1-x2
+		STX x2
+		STA x1
+x_ok:
+	LDA y2					; should be S
+	CMP y1					; thus less than N
+	BEQ exit				; don't draw anything if zero height!
+	BCS y_ok
+		LDX y1				; otherwise swap y1-y2
+		STX y2
+		STA y1
+y_ok:
+#endif
 ; may now compute number of lines and bytes ***(bytes could be done later, as differs from HIRES)
 	LDA x1					; lower limit
 	LSR						; check odd bit into C
