@@ -1,6 +1,6 @@
 ; Durango-X circle routine (Midpoint Algorithm) *** unoptimised version
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221101-1244
+; last modified 20221105-1200
 
 #define	USE_PLOT
 ; *** input *** placeholder addresses
@@ -81,7 +81,9 @@ loop:
 	LDA y					; entered with this value in A, but no real gain
 	SEC
 	SBC x
-	BCS c_end				; if x >= y, exit
+	BCC c_cont
+	JMP c_end				; if x >= y, exit
+c_cont:
 ; if f >= 0... means MSB is positive
 		BIT f+1
 		BMI f_neg
@@ -193,7 +195,7 @@ f_neg:
 	SBC x
 	TAY
 	JSR dxplot				; plot(x0-y, y0-x)
-	BRA loop
+	JMP loop
 c_end:
 	RTS
 .)
