@@ -1,6 +1,6 @@
 ; Durango-X circles demo!
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221105-1148
+; last modified 20221105-1417
 
 *	= $F000
 
@@ -73,26 +73,22 @@ randomize:
 random:
 	JSR rnd
 	AND #LIMIT
+;lda #63
 	STA x0
 	JSR rnd
 	AND #LIMIT
 	STA y0
 	JSR rnd
 	AND #LIMIT
+;and #63
 	STA radius
 ; check bounds!
-check:
+check:bra xy_ok
 	LDA x0
 	CMP y0					; is y>x?
 	BCS min
 		LDA y0				; this is min(x,y)
 min:
-pha
-ldx x0
-ldy y0
-lda radius
-.byt $cb
-pla
 	CMP radius				; over bounds?
 	BCS xy_ok
 		LSR radius			; if so, try half the radius
@@ -109,10 +105,6 @@ xy_ok:						; all OK otherwise
 	ORA tmp		; II format, for HIRES will just look for d7
 #endif
 	STA px_col
-ldx x0
-ldy y0
-lda radius
-.byt $cb
 	RTS
 
 ; *** generate random number ***

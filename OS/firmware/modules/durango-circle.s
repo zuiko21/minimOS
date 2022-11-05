@@ -1,6 +1,6 @@
 ; Durango-X circle routine (Midpoint Algorithm) *** unoptimised version
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221105-1200
+; last modified 20221105-1338
 
 #define	USE_PLOT
 ; *** input *** placeholder addresses
@@ -78,9 +78,8 @@ dxcircle:
 	JSR dxplot				; plot(x0-radius, y0)
 ; main loop while x < y
 loop:
-	LDA y					; entered with this value in A, but no real gain
-	SEC
-	SBC x
+	LDA x
+	CMP y
 	BCC c_cont
 	JMP c_end				; if x >= y, exit
 c_cont:
