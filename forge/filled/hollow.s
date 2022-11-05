@@ -1,6 +1,6 @@
 ; Durango-X hollow rectangle routine
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221027-1101
+; last modified 20221105-1636
 
 .bss
 ; *** input ***
@@ -20,12 +20,12 @@ col:	.byt	0			; pixel colour, in II format (17*index), HIRES expects 0 (black) o
 cio_pt:	.word	0			; screen pointer
 
 ; *** other variables (not necessarily in zero page) ***
-exc:	.byt	0			; flag for incomplete bytes at each side (could be elshewhere)
-tmp:	.byt	0			; temporary use (could be elsewhere)
-lines:	.byt	0			; raster total (could be elsewhere)
-bytes:	.byt	0			; drawn line width (could be elsewhere)
-l_ex:	.byt	0			; extra W pixels (id, HIRES only)
-r_ex:	.byt	0			; extra E pixels (id, HIRES only)
+exc		= cio_pt+2			; flag for incomplete bytes at each side (could be elshewhere)
+tmp		= exc+1				; temporary use (could be elsewhere)
+lines	= tmp+1				; raster total (could be elsewhere)
+bytes	= lines+1			; drawn line width (could be elsewhere)
+l_ex	= bytes+1			; extra W pixels (id, HIRES only)
+r_ex	= l_ex+1			; extra E pixels (id, HIRES only)
 
 ; *** Durango definitions ***
 -IO8attr= $DF80				; compatible IO8lh for setting attributes (d7=HIRES, d6=INVERSE, now d5-d4 include screen block)
@@ -33,8 +33,9 @@ r_ex:	.byt	0			; extra E pixels (id, HIRES only)
 .text
 	*	= $F000				; *** placeholder ***
 
-; *** interface for (x,y,w,h) format ***
 rect:
+#ifdef	HEIWID
+; *** interface for (x,y,w,h) format ***
 rect_xywh:
 	LDA wid
 	BEQ exit				; don't draw anything if zero width!
@@ -46,26 +47,28 @@ rect_xywh:
 	CLC
 	ADC y1
 	STA y2					; swap height for South coordinate
+#else
 ; *** original (x1,y1,x2,y2) format interface ***
 rect_xyxy:
 ; first of all, check whether coordinates are inverted in any way, to get them sorted as NW-SE
 ; * no longer checked as usually interfaced as (x,y,w,h) but check for non-existent rectangle *
-;	LDA x2					; should be W (or width)
-;	CMP x1					; thus less than E
-;	BEQ exit				; don't draw anything if zero width!
-;	BCS x_ok
-;		LDX x1				; otherwise, swap x1-x2
-;		STX x2
-;		STA x1
-;x_ok:
-;	LDA y2					; should be S
-;	CMP y1					; thus less than N
-;	BEQ exit				; don't draw anything if zero height!
-;	BCS y_ok
-;		LDX y1				; otherwise swap y1-y2
-;		STX y2
-;		STA y1
-;y_ok:
+	LDA x2					; should be W (or width)
+	CMP x1					; thus less than E
+	BEQ exit				; don't draw anything if zero width!
+	BCS x_ok
+		LDX x1				; otherwise, swap x1-x2
+		STX x2
+		STA x1
+x_ok:
+	LDA y2					; should be S
+	CMP y1					; thus less than N
+	BEQ exit				; don't draw anything if zero height!
+	BCS y_ok
+		LDX y1				; otherwise swap y1-y2
+		STX y2
+		STA y1
+y_ok:
+#endif
 ; may now compute number of lines and bytes ***(bytes could be done later, as differs from HIRES)
 	LDA x1					; lower limit
 	LSR						; check odd bit into C
@@ -263,6 +266,9 @@ hl_nowrap:
 	RTS
 
 ; *** data tables ***
+p_mask:
+	.byt	%10000000, %01000000, %00100000, %00010000, %00001000, %00000100, %00000010, %00000001
+; are these used?
 e_mask:
 	.byt	0, %10000000, %11000000, %11100000, %11110000, %11111000, %11111100, %11111110	; [0] never used
 w_mask:
