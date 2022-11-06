@@ -2,7 +2,8 @@
 ; (c) 2022 Carlos J. Santisteban
 ; last modified 20221105-1652
 
-#include "hollow.s"
+;#include "hollow.s"
+#include "fill.s"
 seed	= $FE
 
 ;#define	HIRES		_HIRES
@@ -32,7 +33,7 @@ reset:
 
 loop:
 		JSR random			; get random coordinates and colour
-		JSR rect			; draw rectangle
+		JSR filled;rect			; draw rectangle
 		JMP loop			; in aeternum
 
 ; set random seed
@@ -89,12 +90,6 @@ random:
 #else
 	INC x1
 	INC y1
-	INC x1
-	INC y1
-	INC x2
-	INC x2
-	INC y2
-	INC y2
 	INC x2
 	INC x2
 	INC y2

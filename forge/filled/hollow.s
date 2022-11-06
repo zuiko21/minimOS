@@ -163,7 +163,7 @@ c_eok:
 			INC cio_pt+1
 cl_nowrap:
 		DEX
-		BNE c_line			; repeat for remaining lines
+;;;;		BNE c_line			; repeat for remaining lines
 	RTS
 ; *** HIRES version ***
 hrrect:
@@ -261,7 +261,7 @@ h_eok:
 		BCC hl_nowrap
 			INC cio_pt+1
 hl_nowrap:
-		DEX
+;;;;		DEX
 		BNE h_line			; repeat for remaining lines
 	RTS
 
