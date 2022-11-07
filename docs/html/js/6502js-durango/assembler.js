@@ -1992,6 +1992,7 @@ function SimulatorWidget(node) {
       for (var i = 0; i < 0x8000; i++) { // clear ZP, stack and screen
         memory.set(i, 0x00);
       }
+      memory.set(0xdf80, 0x38);
       regA = regX = regY = 0;
       regPC = 0x8000;
       regSP = 0xff;
