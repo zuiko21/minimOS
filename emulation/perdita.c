@@ -120,12 +120,12 @@
 /* ******************* */
 /* emulator control */
 	void load(const char name[], word adr);		// load firmware
-	void ROMload(const char name[]);			// load ROM at the end, calling load()
+	int ROMload(const char name[]);			// load ROM at the end, calling load()
 	void usage(char name[]);// help with command line options
 	void stat(void);		// display processor status
 	void stack_stat(void);	// display stack status
 	void dump(word dir);	// display 16 bytes of memory
-	void run_emulation();	// Run emulator
+	void run_emulation(int ready);	// Run emulator
 	int  exec(void);		// execute one opcode, returning number of cycles
 	void illegal(byte s, byte op);				// if in safe mode, abort on illegal opcodes
 	void process_keyboard(SDL_Event*);
@@ -271,7 +271,7 @@ int main(int argc, char *argv[])
 	if (do_rand)		randomize();		// randomize memory contents
 
 	if(rom_addr == NULL) {
-		ROMload(filename);
+		run_emulation(ROMload(filename)==1);
 	}
 	else {
 		rom_addr_int = (int)strtol(rom_addr, NULL, 0);
@@ -289,9 +289,8 @@ int main(int argc, char *argv[])
 		mem[0xFFFD] = rom_addr_int >> 8;
 		mem[0xFFFE] = 0xF4;					// standard IRQ vector points to recommended indirect jump
 		mem[0xFFFF] = 0xFF;
+                run_emulation(0);
 	}
-
-	run_emulation();
 
 	return 0;
 }
@@ -310,7 +309,7 @@ void usage(char name[]) {
 	printf("-g emulate controllers");
 }
 
-void run_emulation () {
+void run_emulation (int ready) {
 	int cyc=0, it=0;		// instruction and interrupt cycle counter
 	int ht=0;				// horizontal counter
 	int line=0;				// line count for vertical retrace flag
@@ -327,7 +326,9 @@ void run_emulation () {
 
 	printf("[F1=STOP, F2=NMI, F3=IRQ, F4=RESET, F5=PAUSE, F6=DUMP, F7=STEP, F8=CONT, F9=LOAD]\n");
 	init_vdu();
-	reset();				// ready to start!
+	if(!ready) {
+                reset();				// ready to start!
+        }
 
 	next=clock()+19906;		// set delay counter, assumes CLOCKS_PER_SEC is 1000000!
 	min_sleep = 19906;		// EEEEEEK
@@ -500,10 +501,10 @@ void full_dump() {
 	}
 }
 
-void load_dump() {
+void load_dump(const char name[]) {
 	FILE *f;
 
-	f = fopen("dump.bin", "rb");
+	f = fopen(name, "rb");
 	if (f != NULL) {
 		// Read memory
 		fread(mem, sizeof(byte), 65536, f); 
@@ -517,7 +518,8 @@ void load_dump() {
 		fread(&pc, sizeof(word), 1, f);
 		// Close file
 		fclose(f);
-		printf("dump.bin loaded\n");
+                printf(name);
+		printf(" loaded\n");
 	}
 	else {
 		printf("*** No available dump ***\n");
@@ -547,7 +549,7 @@ void load(const char name[], word adr) {
 }
 
 /* load ROM at the end of memory map */
-void ROMload(const char name[]) {
+int ROMload(const char name[]) {
 	FILE *f;
 	word pos = 0;
 	long siz;
@@ -557,18 +559,28 @@ void ROMload(const char name[]) {
 		fseek(f, 0, SEEK_END);	// go to end of file
 		siz = ftell(f);			// get size
 		fclose(f);				// done for now, load() will reopen
-		if (siz > 32768) {
+		// If dump file
+                if(siz == 65543) {
+                        printf("Loading memory dump file\n");
+                        load_dump(name);	// Load dump
+			return 1;
+                }
+                // If rom bigger than 32K
+                else if (siz > 32768) {
 			printf("*** ROM too large! ***\n");
 			run = 0;
+                        return -1;
 		} else {
 			pos -= siz;
 			printf("Loading %s... (%ld K ROM image)\n", name, siz>>10);
 			load(name, pos);	// get actual ROM image
+                        return 0;
 		}
 	}
 	else {
 		printf("*** Could not load ROM ***\n");
 		run = 0;
+                return -1;
 	}
 }
 
@@ -3045,7 +3057,7 @@ void vdu_read_keyboard() {
 		}
 		// Press F9 = LOAD DUMP
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F9) {
-			load_dump();	// load saved status...
+			load_dump("dump.bin");	// load saved status...
 			run = 3;		// ...and resume execution
 			scr_dirty = 1;	// but update screen! EEEEEK
 		}
