@@ -1,4 +1,4 @@
-16720489649594041
+16723824092514041
 Battery
 BatteryHolder_Bulgin_BX0036_1xC
 Bulgin Battery Holder, BX0036, Battery Type C (https://www.bulgin.com/products/pub/media/bulgin/data/Battery_holders.pdf)
@@ -47341,12 +47341,26 @@ single digit 7 segemnt red/green LED
 10
 10
 durango
+3xRCA
+SCART socket, Tyco P/N 1483465-1
+
+0
+6
+6
+durango
 durango-x
 
 
 0
 0
 0
+durango
+SCART
+SCART socket, Tyco P/N 1483465-1
+
+0
+21
+21
 edge_conn
 Durango_ROM
 

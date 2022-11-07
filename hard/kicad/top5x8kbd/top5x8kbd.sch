@@ -729,4 +729,15 @@ F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 8650 5300 50  0001 C CNN
 	5    8650 5300
 	1    0    0    -1  
 $EndComp
+$Comp
+L Connector_Generic:Conn_02x08_Counter_Clockwise J5
+U 1 1 636A417E
+P 7400 1100
+F 0 "J5" H 7450 1617 50  0000 C CNN
+F 1 "Conn_02x08_Counter_Clockwise" H 7450 1526 50  0000 C CNN
+F 2 "Connector_PinSocket_2.54mm:PinSocket_2x08_P2.54mm_Vertical" H 7400 1100 50  0001 C CNN
+F 3 "~" H 7400 1100 50  0001 C CNN
+	1    7400 1100
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
