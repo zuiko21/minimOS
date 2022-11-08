@@ -501,89 +501,89 @@ $EndComp
 $Comp
 L Mechanical:MountingHole H1
 U 1 1 6360B38D
-P 10150 5200
-F 0 "H1" H 10250 5246 50  0000 L CNN
-F 1 "RST" H 10250 5155 50  0000 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10150 5200 50  0001 C CNN
-F 3 "~" H 10150 5200 50  0001 C CNN
-	1    10150 5200
+P 10650 5800
+F 0 "H1" H 10750 5846 50  0000 L CNN
+F 1 "RST" H 10750 5755 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10650 5800 50  0001 C CNN
+F 3 "~" H 10650 5800 50  0001 C CNN
+	1    10650 5800
 	1    0    0    -1  
 $EndComp
 $Comp
 L Mechanical:MountingHole H2
 U 1 1 6360B985
-P 10150 5550
-F 0 "H2" H 10250 5596 50  0000 L CNN
-F 1 "NMI" H 10250 5505 50  0000 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10150 5550 50  0001 C CNN
-F 3 "~" H 10150 5550 50  0001 C CNN
-	1    10150 5550
+P 10650 6000
+F 0 "H2" H 10750 6046 50  0000 L CNN
+F 1 "NMI" H 10750 5955 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10650 6000 50  0001 C CNN
+F 3 "~" H 10650 6000 50  0001 C CNN
+	1    10650 6000
 	1    0    0    -1  
 $EndComp
 $Comp
 L Mechanical:MountingHole H3
 U 1 1 6360BF06
-P 10150 5950
-F 0 "H3" H 10250 5996 50  0000 L CNN
-F 1 "MountingHole" H 10250 5905 50  0000 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10150 5950 50  0001 C CNN
-F 3 "~" H 10150 5950 50  0001 C CNN
-	1    10150 5950
+P 10650 6200
+F 0 "H3" H 10750 6246 50  0000 L CNN
+F 1 " " H 10750 6155 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10650 6200 50  0001 C CNN
+F 3 "~" H 10650 6200 50  0001 C CNN
+	1    10650 6200
 	1    0    0    -1  
 $EndComp
 $Comp
 L Mechanical:MountingHole H4
 U 1 1 6360C654
-P 10150 6350
-F 0 "H4" H 10250 6396 50  0000 L CNN
-F 1 "MountingHole" H 10250 6305 50  0000 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10150 6350 50  0001 C CNN
-F 3 "~" H 10150 6350 50  0001 C CNN
-	1    10150 6350
+P 10650 6400
+F 0 "H4" H 10750 6446 50  0000 L CNN
+F 1 " " H 10750 6355 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10650 6400 50  0001 C CNN
+F 3 "~" H 10650 6400 50  0001 C CNN
+	1    10650 6400
 	1    0    0    -1  
 $EndComp
 $Comp
 L Mechanical:MountingHole H5
 U 1 1 6361663A
-P 10950 5250
-F 0 "H5" H 11050 5296 50  0000 L CNN
-F 1 "MountingHole" H 11050 5205 50  0000 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965" H 10950 5250 50  0001 C CNN
-F 3 "~" H 10950 5250 50  0001 C CNN
-	1    10950 5250
+P 11000 5800
+F 0 "H5" H 11100 5846 50  0000 L CNN
+F 1 " " H 11100 5755 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965" H 11000 5800 50  0001 C CNN
+F 3 "~" H 11000 5800 50  0001 C CNN
+	1    11000 5800
 	1    0    0    -1  
 $EndComp
 $Comp
 L Mechanical:MountingHole H6
 U 1 1 63616D2E
-P 10950 5600
-F 0 "H6" H 11050 5646 50  0000 L CNN
-F 1 "MountingHole" H 11050 5555 50  0000 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965" H 10950 5600 50  0001 C CNN
-F 3 "~" H 10950 5600 50  0001 C CNN
-	1    10950 5600
+P 11000 6000
+F 0 "H6" H 11100 6046 50  0000 L CNN
+F 1 " " H 11100 5955 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965" H 11000 6000 50  0001 C CNN
+F 3 "~" H 11000 6000 50  0001 C CNN
+	1    11000 6000
 	1    0    0    -1  
 $EndComp
 $Comp
 L Mechanical:MountingHole H7
 U 1 1 636172DF
-P 10950 6000
-F 0 "H7" H 11050 6046 50  0000 L CNN
-F 1 "MountingHole" H 11050 5955 50  0000 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965" H 10950 6000 50  0001 C CNN
-F 3 "~" H 10950 6000 50  0001 C CNN
-	1    10950 6000
+P 11000 6200
+F 0 "H7" H 11100 6246 50  0000 L CNN
+F 1 " " H 11100 6155 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965" H 11000 6200 50  0001 C CNN
+F 3 "~" H 11000 6200 50  0001 C CNN
+	1    11000 6200
 	1    0    0    -1  
 $EndComp
 $Comp
 L Mechanical:MountingHole H8
 U 1 1 63617897
-P 10950 6400
-F 0 "H8" H 11050 6446 50  0000 L CNN
-F 1 "MountingHole" H 11050 6355 50  0000 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965" H 10950 6400 50  0001 C CNN
-F 3 "~" H 10950 6400 50  0001 C CNN
-	1    10950 6400
+P 11000 6400
+F 0 "H8" H 11100 6446 50  0000 L CNN
+F 1 " " H 11100 6355 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965" H 11000 6400 50  0001 C CNN
+F 3 "~" H 11000 6400 50  0001 C CNN
+	1    11000 6400
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -2149,7 +2149,7 @@ L Graphic:Logo_Open_Hardware_Large LOGO1
 U 1 1 6372C465
 P 1000 4500
 F 0 "LOGO1" H 1000 5000 50  0001 C CNN
-F 1 "Logo_Open_Hardware_Large" H 1000 4100 50  0001 C CNN
+F 1 " " H 1000 4100 50  0001 C CNN
 F 2 "Symbol:OSHW-Logo2_24.3x20mm_SilkScreen" H 1000 4500 50  0001 C CNN
 F 3 "~" H 1000 4500 50  0001 C CNN
 	1    1000 4500
@@ -2160,7 +2160,7 @@ L Graphic:Logo_Open_Hardware_Small LOGO2
 U 1 1 637AC40C
 P 1750 4650
 F 0 "LOGO2" H 1750 5150 50  0001 C CNN
-F 1 "Logo_Open_Hardware_Large" H 1750 4250 50  0001 C CNN
+F 1 " " H 1750 4250 50  0001 C CNN
 F 2 "durango:durango-x18" H 1750 4650 50  0001 C CNN
 F 3 "~" H 1750 4650 50  0001 C CNN
 	1    1750 4650
@@ -2171,7 +2171,7 @@ L Graphic:Logo_Open_Hardware_Small LOGO3
 U 1 1 636B6F16
 P 2250 4650
 F 0 "LOGO3" H 2250 5150 50  0001 C CNN
-F 1 "Logo_Open_Hardware_Large" H 2250 4250 50  0001 C CNN
+F 1 " " H 2250 4250 50  0001 C CNN
 F 2 "durango:jaqueria" H 2250 4650 50  0001 C CNN
 F 3 "~" H 2250 4650 50  0001 C CNN
 	1    2250 4650
@@ -2421,6 +2421,110 @@ Entry Wire Line
 	3750 2200 3850 2300
 Text GLabel 3850 2300 2    50   Input ~ 0
 ROW[1...8]
+$Comp
+L Connector_Generic:Conn_01x05 J16
+U 1 1 636C4EC0
+P 3200 3800
+F 0 "J16" V 3072 3512 50  0000 R CNN
+F 1 "COLUMN" V 3163 3512 50  0000 R CNN
+F 2 "Connector_PinSocket_2.54mm:PinSocket_1x05_P2.54mm_Vertical" H 3200 3800 50  0001 C CNN
+F 3 "~" H 3200 3800 50  0001 C CNN
+	1    3200 3800
+	0    -1   1    0   
+$EndComp
+$Comp
+L Connector_Generic:Conn_01x08 J17
+U 1 1 636C6360
+P 3300 4500
+F 0 "J17" V 3172 4012 50  0000 R CNN
+F 1 "ROW" V 3263 4012 50  0000 R CNN
+F 2 "Connector_PinSocket_2.54mm:PinSocket_1x08_P2.54mm_Vertical" H 3300 4500 50  0001 C CNN
+F 3 "~" H 3300 4500 50  0001 C CNN
+	1    3300 4500
+	0    -1   1    0   
+$EndComp
+Entry Wire Line
+	3000 4150 3100 4050
+Entry Wire Line
+	3100 4150 3200 4050
+Entry Wire Line
+	3200 4150 3300 4050
+Entry Wire Line
+	3300 4150 3400 4050
+Entry Wire Line
+	3400 4150 3500 4050
+Entry Wire Line
+	3500 4150 3600 4050
+Entry Wire Line
+	3600 4150 3700 4050
+Entry Wire Line
+	3700 4150 3800 4050
+Text Label 3000 4300 1    50   ~ 0
+ROW1
+Text Label 3100 4300 1    50   ~ 0
+ROW2
+Text Label 3300 4300 1    50   ~ 0
+ROW3
+Text Label 3200 4300 1    50   ~ 0
+ROW4
+Text Label 3600 4300 1    50   ~ 0
+ROW7
+Text Label 3700 4300 1    50   ~ 0
+ROW8
+Text Label 3500 4300 1    50   ~ 0
+ROW6
+Text Label 3400 4300 1    50   ~ 0
+ROW5
+Wire Wire Line
+	3300 4150 3300 4300
+Wire Wire Line
+	3200 4150 3200 4300
+Wire Wire Line
+	3400 4150 3400 4300
+Wire Wire Line
+	3500 4150 3500 4300
+Wire Wire Line
+	3600 4150 3600 4300
+Wire Wire Line
+	3700 4150 3700 4300
+Wire Wire Line
+	3000 4150 3000 4300
+Wire Wire Line
+	3100 4150 3100 4300
+Text GLabel 3800 4050 2    50   Input ~ 0
+ROW[1..8]
+Wire Wire Line
+	3000 3600 3000 3500
+Wire Wire Line
+	3100 3600 3100 3500
+Wire Wire Line
+	3200 3600 3200 3500
+Wire Wire Line
+	3300 3600 3300 3500
+Wire Wire Line
+	3400 3600 3400 3500
+Text Label 3000 3600 1    50   ~ 0
+COL1
+Text Label 3100 3600 1    50   ~ 0
+COL2
+Text Label 3200 3600 1    50   ~ 0
+COL3
+Text Label 3300 3600 1    50   ~ 0
+COL4
+Text Label 3400 3600 1    50   ~ 0
+COL5
+Entry Wire Line
+	3000 3500 3100 3400
+Entry Wire Line
+	3100 3500 3200 3400
+Entry Wire Line
+	3200 3500 3300 3400
+Entry Wire Line
+	3300 3500 3400 3400
+Entry Wire Line
+	3400 3500 3500 3400
+Text GLabel 3500 3400 2    50   Input ~ 0
+COL[1..5]
 Wire Bus Line
 	650  1300 650  1700
 Wire Bus Line
@@ -2438,6 +2542,8 @@ Wire Bus Line
 Wire Bus Line
 	700  7600 2300 7600
 Wire Bus Line
+	3100 3400 3500 3400
+Wire Bus Line
 	2500 7500 5000 7500
 Wire Bus Line
 	5750 1150 5750 1850
@@ -2447,6 +2553,8 @@ Wire Bus Line
 	6200 4500 6200 5200
 Wire Bus Line
 	6250 6400 6250 7100
+Wire Bus Line
+	3100 4050 3800 4050
 Wire Bus Line
 	9400 1150 9400 4250
 $EndSCHEMATC
