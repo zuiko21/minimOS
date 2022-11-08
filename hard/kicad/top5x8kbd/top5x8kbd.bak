@@ -26,10 +26,10 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS138" H 1400 1400 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 74xx:74LS174 U102
+L 74xx:74LS174 U12
 U 1 1 635E8D64
 P 2950 1450
-F 0 "U102" H 2750 2000 50  0000 C CNN
+F 0 "U12" H 2750 2000 50  0000 C CNN
 F 1 "74HC174" H 3150 2000 50  0000 C CNN
 F 2 "Package_DIP:DIP-16_W7.62mm" H 2950 1450 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS174" H 2950 1450 50  0001 C CNN
@@ -37,10 +37,10 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS174" H 2950 1450 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 74xx:74HC245 U103
+L 74xx:74HC245 U13
 U 1 1 635E9040
 P 5000 1550
-F 0 "U103" H 4800 2200 50  0000 C CNN
+F 0 "U13" H 4800 2200 50  0000 C CNN
 F 1 "74HC245" H 5200 2200 50  0000 C CNN
 F 2 "Package_DIP:DIP-20_W7.62mm" H 5000 1550 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC245" H 5000 1550 50  0001 C CNN
@@ -598,32 +598,32 @@ F 3 "~" H 8850 2550 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Connector:DB9_Male J203
+L Connector:DB9_Male J23
 U 1 1 635E03CA
-P 7950 4500
-F 0 "J203" H 8130 4546 50  0000 L CNN
-F 1 "DB9_Male" H 8130 4455 50  0000 L CNN
-F 2 "Connector_Dsub:DSUB-9_Male_Horizontal_P2.77x2.84mm_EdgePinOffset4.94mm_Housed_MountingHolesOffset7.48mm" H 7950 4500 50  0001 C CNN
-F 3 " ~" H 7950 4500 50  0001 C CNN
-	1    7950 4500
+P 7800 1350
+F 0 "J23" H 7980 1396 50  0000 L CNN
+F 1 "DB9_Male" H 7980 1305 50  0000 L CNN
+F 2 "Connector_Dsub:DSUB-9_Male_Horizontal_P2.77x2.84mm_EdgePinOffset4.94mm_Housed_MountingHolesOffset7.48mm" H 7800 1350 50  0001 C CNN
+F 3 " ~" H 7800 1350 50  0001 C CNN
+	1    7800 1350
 	1    0    0    -1  
 $EndComp
 $Comp
-L Connector:DB9_Male J404
+L Connector:DB9_Male J44
 U 1 1 635E15E7
-P 8050 5850
-F 0 "J404" H 8230 5896 50  0000 L CNN
-F 1 "DB9_Male" H 8230 5805 50  0000 L CNN
-F 2 "Connector_Dsub:DSUB-9_Male_Horizontal_P2.77x2.84mm_EdgePinOffset4.94mm_Housed_MountingHolesOffset7.48mm" H 8050 5850 50  0001 C CNN
-F 3 " ~" H 8050 5850 50  0001 C CNN
-	1    8050 5850
+P 7800 2450
+F 0 "J44" H 7980 2496 50  0000 L CNN
+F 1 "DB9_Male" H 7980 2405 50  0000 L CNN
+F 2 "Connector_Dsub:DSUB-9_Male_Horizontal_P2.77x2.84mm_EdgePinOffset4.94mm_Housed_MountingHolesOffset7.48mm" H 7800 2450 50  0001 C CNN
+F 3 " ~" H 7800 2450 50  0001 C CNN
+	1    7800 2450
 	1    0    0    -1  
 $EndComp
 $Comp
-L 74xx:74LS174 U206
+L 74xx:74LS174 U26
 U 1 1 63605BC7
 P 6300 3300
-F 0 "U206" H 6100 3850 50  0000 C CNN
+F 0 "U26" H 6100 3850 50  0000 C CNN
 F 1 "74HC174" H 6500 3850 50  0000 C CNN
 F 2 "Package_DIP:DIP-16_W7.62mm" H 6300 3300 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS174" H 6300 3300 50  0001 C CNN
@@ -631,10 +631,10 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS174" H 6300 3300 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 74xx:74HC245 U204
+L 74xx:74HC245 U24
 U 1 1 63607578
 P 10150 1550
-F 0 "U204" H 9950 2200 50  0000 C CNN
+F 0 "U24" H 9950 2200 50  0000 C CNN
 F 1 "74HC245" H 10350 2200 50  0000 C CNN
 F 2 "Package_DIP:DIP-20_W7.62mm" H 10150 1550 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC245" H 10150 1550 50  0001 C CNN
@@ -642,10 +642,10 @@ F 3 "http://www.ti.com/lit/gpn/sn74HC245" H 10150 1550 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 74xx:74HC245 U405
+L 74xx:74HC245 U45
 U 1 1 6360888E
 P 10150 3450
-F 0 "U405" H 9950 4100 50  0000 C CNN
+F 0 "U45" H 9950 4100 50  0000 C CNN
 F 1 "74HC245" H 10350 4100 50  0000 C CNN
 F 2 "Package_DIP:DIP-20_W7.62mm" H 10150 3450 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC245" H 10150 3450 50  0001 C CNN
@@ -653,25 +653,14 @@ F 3 "http://www.ti.com/lit/gpn/sn74HC245" H 10150 3450 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L 74xx:74HC595 U505
+L 74xx:74HC595 U55
 U 1 1 6360B196
 P 5600 6700
-F 0 "U505" H 5400 7250 50  0000 C CNN
+F 0 "U55" H 5400 7250 50  0000 C CNN
 F 1 "74HC595" H 5800 7250 50  0000 C CNN
 F 2 "Package_DIP:DIP-16_W7.62mm" H 5600 6700 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/sn74hc595.pdf" H 5600 6700 50  0001 C CNN
 	1    5600 6700
-	1    0    0    -1  
-$EndComp
-$Comp
-L 74xx:74HC595 U304
-U 1 1 6360FF9B
-P 5550 4800
-F 0 "U304" H 5350 5350 50  0000 C CNN
-F 1 "74HC595" H 5750 5350 50  0000 C CNN
-F 2 "Package_DIP:DIP-16_W7.62mm" H 5550 4800 50  0001 C CNN
-F 3 "http://www.ti.com/lit/ds/symlink/sn74hc595.pdf" H 5550 4800 50  0001 C CNN
-	1    5550 4800
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1368,23 +1357,23 @@ Entry Wire Line
 Entry Wire Line
 	5650 1750 5750 1850
 Text GLabel 5750 1850 3    50   Input ~ 0
-ROW[0..7]
+ROW[1..8]
 Text Label 5500 1050 0    50   ~ 0
-ROW0
-Text Label 5500 1150 0    50   ~ 0
 ROW1
-Text Label 5500 1250 0    50   ~ 0
+Text Label 5500 1150 0    50   ~ 0
 ROW2
-Text Label 5500 1350 0    50   ~ 0
+Text Label 5500 1250 0    50   ~ 0
 ROW3
-Text Label 5500 1650 0    50   ~ 0
-ROW6
-Text Label 5500 1750 0    50   ~ 0
-ROW7
-Text Label 5500 1550 0    50   ~ 0
-ROW5
-Text Label 5500 1450 0    50   ~ 0
+Text Label 5500 1350 0    50   ~ 0
 ROW4
+Text Label 5500 1650 0    50   ~ 0
+ROW7
+Text Label 5500 1750 0    50   ~ 0
+ROW8
+Text Label 5500 1550 0    50   ~ 0
+ROW6
+Text Label 5500 1450 0    50   ~ 0
+ROW5
 Wire Wire Line
 	4500 1050 4350 1050
 Wire Wire Line
@@ -1591,7 +1580,7 @@ Text Label 1900 1700 0    50   ~ 0
 ~CLOCK
 NoConn ~ 1900 1100
 Text Label 1900 1300 0    50   ~ 0
-~COLSEL
+~CSEL
 Text Label 1900 1400 0    50   ~ 0
 K~OE
 Text Label 1900 1200 0    50   ~ 0
@@ -1630,8 +1619,8 @@ F 3 "" H 1350 2700 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 Text Label 2450 1750 2    50   ~ 0
-~LATCH
-Text Label 3450 1550 0    50   ~ 0
+~CSEL
+Text Label 3500 1550 0    50   ~ 0
 ID
 Wire Wire Line
 	8650 3550 8500 3550
@@ -1806,9 +1795,9 @@ F 3 "~" H 6550 7150 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 Connection ~ 6550 7150
-Text Label 5150 5000 3    50   ~ 0
+Text Label 5150 5000 2    50   ~ 0
 N1~OE
-Text Label 5200 6900 3    50   ~ 0
+Text Label 5200 6900 2    50   ~ 0
 N2~OE
 $Comp
 L power:+5V #PWR0115
@@ -2027,26 +2016,26 @@ Entry Wire Line
 Entry Wire Line
 	5850 1750 5750 1850
 Text Label 6000 1050 2    50   ~ 0
-ROW0
-Text Label 6000 1150 2    50   ~ 0
 ROW1
-Text Label 6000 1250 2    50   ~ 0
+Text Label 6000 1150 2    50   ~ 0
 ROW2
-Text Label 6000 1350 2    50   ~ 0
+Text Label 6000 1250 2    50   ~ 0
 ROW3
-Text Label 6000 1650 2    50   ~ 0
-ROW6
-Text Label 6000 1750 2    50   ~ 0
-ROW7
-Text Label 6000 1550 2    50   ~ 0
-ROW5
-Text Label 6000 1450 2    50   ~ 0
+Text Label 6000 1350 2    50   ~ 0
 ROW4
+Text Label 6000 1650 2    50   ~ 0
+ROW7
+Text Label 6000 1750 2    50   ~ 0
+ROW8
+Text Label 6000 1550 2    50   ~ 0
+ROW6
+Text Label 6000 1450 2    50   ~ 0
+ROW5
 $Comp
-L Device:R_Network08 RN1
+L Device:R_Network08 RN11
 U 1 1 63AE9535
 P 6200 1450
-F 0 "RN1" V 5583 1450 50  0000 C CNN
+F 0 "RN11" V 5583 1450 50  0000 C CNN
 F 1 "22K" V 5674 1450 50  0000 C CNN
 F 2 "Resistor_THT:R_Array_SIP9" V 6675 1450 50  0001 C CNN
 F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 6200 1450 50  0001 C CNN
@@ -2054,10 +2043,10 @@ F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 6200 1450 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:D D1
+L Device:D D11
 U 1 1 63B0EA31
 P 3700 1050
-F 0 "D1" H 3800 1000 50  0000 C CNN
+F 0 "D11" H 3800 1000 50  0000 C CNN
 F 1 "4148" H 3550 1000 50  0000 C CNN
 F 2 "Diode_THT:D_DO-34_SOD68_P7.62mm_Horizontal" H 3700 1050 50  0001 C CNN
 F 3 "~" H 3700 1050 50  0001 C CNN
@@ -2065,10 +2054,10 @@ F 3 "~" H 3700 1050 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L Device:D D2
+L Device:D D12
 U 1 1 63B0F3CD
 P 3700 1150
-F 0 "D2" H 3800 1100 50  0000 C CNN
+F 0 "D12" H 3800 1100 50  0000 C CNN
 F 1 "4148" H 3550 1100 50  0000 C CNN
 F 2 "Diode_THT:D_DO-34_SOD68_P7.62mm_Horizontal" H 3700 1150 50  0001 C CNN
 F 3 "~" H 3700 1150 50  0001 C CNN
@@ -2076,10 +2065,10 @@ F 3 "~" H 3700 1150 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L Device:D D3
+L Device:D D13
 U 1 1 63B10339
 P 3700 1250
-F 0 "D3" H 3800 1200 50  0000 C CNN
+F 0 "D13" H 3800 1200 50  0000 C CNN
 F 1 "4148" H 3550 1200 50  0000 C CNN
 F 2 "Diode_THT:D_DO-34_SOD68_P7.62mm_Horizontal" H 3700 1250 50  0001 C CNN
 F 3 "~" H 3700 1250 50  0001 C CNN
@@ -2087,10 +2076,10 @@ F 3 "~" H 3700 1250 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L Device:D D4
+L Device:D D14
 U 1 1 63B110F8
 P 3700 1350
-F 0 "D4" H 3800 1300 50  0000 C CNN
+F 0 "D14" H 3800 1300 50  0000 C CNN
 F 1 "4148" H 3550 1300 50  0000 C CNN
 F 2 "Diode_THT:D_DO-34_SOD68_P7.62mm_Horizontal" H 3700 1350 50  0001 C CNN
 F 3 "~" H 3700 1350 50  0001 C CNN
@@ -2098,10 +2087,10 @@ F 3 "~" H 3700 1350 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L Device:D D5
+L Device:D D15
 U 1 1 63B11F49
 P 3700 1450
-F 0 "D5" H 3800 1400 50  0000 C CNN
+F 0 "D15" H 3800 1400 50  0000 C CNN
 F 1 "4148" H 3550 1400 50  0000 C CNN
 F 2 "Diode_THT:D_DO-34_SOD68_P7.62mm_Horizontal" H 3700 1450 50  0001 C CNN
 F 3 "~" H 3700 1450 50  0001 C CNN
@@ -2126,7 +2115,7 @@ Text Label 3450 1250 0    50   ~ 0
 C3
 Text Label 3450 1350 0    50   ~ 0
 C4
-Text Label 3450 1450 0    50   ~ 0
+Text Label 3500 1450 2    50   ~ 0
 C5
 $Comp
 L power:GND #PWR0123
@@ -2166,18 +2155,286 @@ F 3 "~" H 1000 4500 50  0001 C CNN
 	1    1000 4500
 	1    0    0    -1  
 $EndComp
+$Comp
+L Graphic:Logo_Open_Hardware_Large LOGO2
+U 1 1 637AC40C
+P 2100 4500
+F 0 "LOGO2" H 2100 5000 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Large" H 2100 4100 50  0001 C CNN
+F 2 "durango:durango-x18" H 2100 4500 50  0001 C CNN
+F 3 "~" H 2100 4500 50  0001 C CNN
+	1    2100 4500
+	1    0    0    -1  
+$EndComp
+$Comp
+L Graphic:Logo_Open_Hardware_Large LOGO3
+U 1 1 636B6F16
+P 3250 4500
+F 0 "LOGO3" H 3250 5000 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Large" H 3250 4100 50  0001 C CNN
+F 2 "durango:jaqueria" H 3250 4500 50  0001 C CNN
+F 3 "~" H 3250 4500 50  0001 C CNN
+	1    3250 4500
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	900  1200 750  1200
+Wire Wire Line
+	900  1300 750  1300
+Wire Wire Line
+	900  1600 750  1600
+Entry Wire Line
+	650  1300 750  1200
+Entry Wire Line
+	650  1400 750  1300
+Entry Wire Line
+	650  1700 750  1600
+Text GLabel 650  1700 3    50   Input ~ 0
+BA[0..3]
+$Comp
+L Jumper:SolderJumper_3_Open JP1
+U 1 1 63701EAF
+P 950 3350
+F 0 "JP1" H 950 3463 50  0000 C CNN
+F 1 "NES/MD 1" H 950 3554 50  0000 C CNN
+F 2 "Jumper:SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm" H 950 3350 50  0001 C CNN
+F 3 "~" H 950 3350 50  0001 C CNN
+	1    950  3350
+	1    0    0    1   
+$EndComp
+$Comp
+L Jumper:SolderJumper_3_Open JP2
+U 1 1 63702CE4
+P 1600 3350
+F 0 "JP2" H 1600 3463 50  0000 C CNN
+F 1 "NES/MD 2" H 1600 3554 50  0000 C CNN
+F 2 "Jumper:SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm" H 1600 3350 50  0001 C CNN
+F 3 "~" H 1600 3350 50  0001 C CNN
+	1    1600 3350
+	1    0    0    1   
+$EndComp
+Text Label 950  3200 1    50   ~ 0
+P1~OE
+Text Label 1600 3200 1    50   ~ 0
+P2~OE
+Text Label 750  3350 1    50   ~ 0
+N1~OE
+Text Label 1150 3350 1    50   ~ 0
+M1~OE
+Text Label 1400 3350 1    50   ~ 0
+N2~OE
+Text Label 1800 3350 1    50   ~ 0
+M2~OE
+$Comp
+L power:GND #PWR0124
+U 1 1 6371CB00
+P 1400 2100
+F 0 "#PWR0124" H 1400 1850 50  0001 C CNN
+F 1 "GND" H 1405 1927 50  0000 C CNN
+F 2 "" H 1400 2100 50  0001 C CNN
+F 3 "" H 1400 2100 50  0001 C CNN
+	1    1400 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0125
+U 1 1 6371D7C8
+P 2950 2250
+F 0 "#PWR0125" H 2950 2000 50  0001 C CNN
+F 1 "GND" H 2955 2077 50  0000 C CNN
+F 2 "" H 2950 2250 50  0001 C CNN
+F 3 "" H 2950 2250 50  0001 C CNN
+	1    2950 2250
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0126
+U 1 1 6371E49C
+P 5000 2350
+F 0 "#PWR0126" H 5000 2100 50  0001 C CNN
+F 1 "GND" H 5005 2177 50  0000 C CNN
+F 2 "" H 5000 2350 50  0001 C CNN
+F 3 "" H 5000 2350 50  0001 C CNN
+	1    5000 2350
+	1    0    0    -1  
+$EndComp
+Connection ~ 5000 2350
+$Comp
+L Jumper:SolderJumper_3_Open JP23
+U 1 1 6372222A
+P 2200 3350
+F 0 "JP23" H 2200 3463 50  0000 C CNN
+F 1 "MD/VCS" H 2200 3554 50  0000 C CNN
+F 2 "Jumper:SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm" H 2200 3350 50  0001 C CNN
+F 3 "~" H 2200 3350 50  0001 C CNN
+	1    2200 3350
+	1    0    0    1   
+$EndComp
+Text Label 2200 3200 1    50   ~ 0
+VCS
+Text Label 5800 3800 2    50   ~ 0
+VCS
+$Comp
+L power:GND #PWR0127
+U 1 1 63725A63
+P 6300 4100
+F 0 "#PWR0127" H 6300 3850 50  0001 C CNN
+F 1 "GND" H 6305 3927 50  0000 C CNN
+F 2 "" H 6300 4100 50  0001 C CNN
+F 3 "" H 6300 4100 50  0001 C CNN
+	1    6300 4100
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0128
+U 1 1 637272EE
+P 2400 3350
+F 0 "#PWR0128" H 2400 3100 50  0001 C CNN
+F 1 "GND" V 2405 3222 50  0000 R CNN
+F 2 "" H 2400 3350 50  0001 C CNN
+F 3 "" H 2400 3350 50  0001 C CNN
+	1    2400 3350
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:+5V #PWR0129
+U 1 1 63728110
+P 2000 3350
+F 0 "#PWR0129" H 2000 3200 50  0001 C CNN
+F 1 "+5V" H 2015 3523 50  0000 C CNN
+F 2 "" H 2000 3350 50  0001 C CNN
+F 3 "" H 2000 3350 50  0001 C CNN
+	1    2000 3350
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+5V #PWR0130
+U 1 1 63728E4C
+P 1400 800
+F 0 "#PWR0130" H 1400 650 50  0001 C CNN
+F 1 "+5V" H 1415 973 50  0000 C CNN
+F 2 "" H 1400 800 50  0001 C CNN
+F 3 "" H 1400 800 50  0001 C CNN
+	1    1400 800 
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+5V #PWR0131
+U 1 1 63729BAA
+P 2950 750
+F 0 "#PWR0131" H 2950 600 50  0001 C CNN
+F 1 "+5V" H 2965 923 50  0000 C CNN
+F 2 "" H 2950 750 50  0001 C CNN
+F 3 "" H 2950 750 50  0001 C CNN
+	1    2950 750 
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+5V #PWR0132
+U 1 1 6372A8FE
+P 5000 750
+F 0 "#PWR0132" H 5000 600 50  0001 C CNN
+F 1 "+5V" H 5015 923 50  0000 C CNN
+F 2 "" H 5000 750 50  0001 C CNN
+F 3 "" H 5000 750 50  0001 C CNN
+	1    5000 750 
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+5V #PWR0133
+U 1 1 6372B670
+P 6300 2600
+F 0 "#PWR0133" H 6300 2450 50  0001 C CNN
+F 1 "+5V" H 6315 2773 50  0000 C CNN
+F 2 "" H 6300 2600 50  0001 C CNN
+F 3 "" H 6300 2600 50  0001 C CNN
+	1    6300 2600
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74HC595 U34
+U 1 1 6360FF9B
+P 5550 4800
+F 0 "U34" H 5350 5350 50  0000 C CNN
+F 1 "74HC595" H 5750 5350 50  0000 C CNN
+F 2 "Package_DIP:DIP-16_W7.62mm" H 5550 4800 50  0001 C CNN
+F 3 "http://www.ti.com/lit/ds/symlink/sn74hc595.pdf" H 5550 4800 50  0001 C CNN
+	1    5550 4800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:D D16
+U 1 1 6373E0CD
+P 3450 1700
+F 0 "D16" V 3550 1750 50  0000 R CNN
+F 1 "4148" H 3400 1750 50  0000 R CNN
+F 2 "Diode_THT:D_DO-34_SOD68_P7.62mm_Horizontal" H 3450 1700 50  0001 C CNN
+F 3 "~" H 3450 1700 50  0001 C CNN
+	1    3450 1700
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D D17
+U 1 1 6374117F
+P 3600 1700
+F 0 "D17" V 3700 1750 50  0000 R CNN
+F 1 "4148" H 3550 1750 50  0000 R CNN
+F 2 "Diode_THT:D_DO-34_SOD68_P7.62mm_Horizontal" H 3600 1700 50  0001 C CNN
+F 3 "~" H 3600 1700 50  0001 C CNN
+	1    3600 1700
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D D18
+U 1 1 63742445
+P 3750 1700
+F 0 "D18" V 3850 1750 50  0000 R CNN
+F 1 "4148" H 3700 1750 50  0000 R CNN
+F 2 "Diode_THT:D_DO-34_SOD68_P7.62mm_Horizontal" H 3750 1700 50  0001 C CNN
+F 3 "~" H 3750 1700 50  0001 C CNN
+	1    3750 1700
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	3450 1550 3600 1550
+Connection ~ 3450 1550
+Connection ~ 3600 1550
+Wire Wire Line
+	3600 1550 3750 1550
+Wire Wire Line
+	3450 1850 3450 2200
+Text Label 3450 2200 1    50   ~ 0
+ROW3
+Wire Wire Line
+	3600 1850 3600 2200
+Wire Wire Line
+	3750 2200 3750 1850
+Text Label 3600 2200 1    50   ~ 0
+ROW4
+Text Label 3750 2200 1    50   ~ 0
+ROW6
+Entry Wire Line
+	3450 2200 3550 2300
+Entry Wire Line
+	3600 2200 3700 2300
+Entry Wire Line
+	3750 2200 3850 2300
 Wire Bus Line
-	700  7600 2300 7600
+	650  1300 650  1700
 Wire Bus Line
-	4150 1150 4150 1550
+	3550 2300 3850 2300
 Wire Bus Line
-	2200 1150 2200 1650
-Wire Bus Line
-	8400 1250 8400 1750
+	8400 2450 8400 2950
 Wire Bus Line
 	8400 3650 8400 4150
 Wire Bus Line
-	8400 2450 8400 2950
+	8400 1250 8400 1750
+Wire Bus Line
+	2200 1150 2200 1650
+Wire Bus Line
+	4150 1150 4150 1550
+Wire Bus Line
+	700  7600 2300 7600
 Wire Bus Line
 	2500 7500 5000 7500
 Wire Bus Line
@@ -2190,15 +2447,6 @@ Wire Bus Line
 	6250 6400 6250 7100
 Wire Bus Line
 	9400 1150 9400 4250
-$Comp
-L Graphic:Logo_Open_Hardware_Large LOGO2
-U 1 1 637AC40C
-P 2100 4500
-F 0 "LOGO2" H 2100 5000 50  0001 C CNN
-F 1 "Logo_Open_Hardware_Large" H 2100 4100 50  0001 C CNN
-F 2 "durango:durango-x18" H 2100 4500 50  0001 C CNN
-F 3 "~" H 2100 4500 50  0001 C CNN
-	1    2100 4500
-	1    0    0    -1  
-$EndComp
+Text GLabel 3850 2300 2    50   Input ~ 0
+ROW[1...8]
 $EndSCHEMATC
