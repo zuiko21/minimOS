@@ -2326,12 +2326,12 @@ Text Label 10050 4600 0    50   ~ 0
 ~VS
 Text Label 8150 6450 0    50   ~ 0
 Y_CMP
+Text GLabel 8400 6450 2    50   Input ~ 0
+SOG
 Wire Bus Line
 	8800 550  10750 550 
 Wire Bus Line
 	4100 550  8050 550 
 Wire Bus Line
 	800  4350 3700 4350
-Text GLabel 8400 6450 2    50   Input ~ 0
-SOG
 $EndSCHEMATC
