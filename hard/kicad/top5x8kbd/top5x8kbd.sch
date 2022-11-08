@@ -2139,6 +2139,44 @@ F 3 "" H 6400 1050 50  0001 C CNN
 	1    6400 1050
 	1    0    0    -1  
 $EndComp
+Wire Wire Line
+	5850 1350 6000 1350
+Wire Wire Line
+	5850 1250 6000 1250
+Wire Wire Line
+	5850 1450 6000 1450
+Wire Wire Line
+	5850 1550 6000 1550
+Wire Wire Line
+	5850 1650 6000 1650
+Wire Wire Line
+	5850 1750 6000 1750
+Wire Wire Line
+	5850 1050 6000 1050
+Wire Wire Line
+	5850 1150 6000 1150
+$Comp
+L Graphic:Logo_Open_Hardware_Large LOGO1
+U 1 1 6372C465
+P 1000 4500
+F 0 "LOGO1" H 1000 5000 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Large" H 1000 4100 50  0001 C CNN
+F 2 "Symbol:OSHW-Logo2_24.3x20mm_SilkScreen" H 1000 4500 50  0001 C CNN
+F 3 "~" H 1000 4500 50  0001 C CNN
+	1    1000 4500
+	1    0    0    -1  
+$EndComp
+$Comp
+L Graphic:Logo_Open_Hardware_Large LOGO2
+U 1 1 637AC40C
+P 2100 4500
+F 0 "LOGO2" H 2100 5000 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Large" H 2100 4100 50  0001 C CNN
+F 2 "durango:durango-x18" H 2100 4500 50  0001 C CNN
+F 3 "~" H 2100 4500 50  0001 C CNN
+	1    2100 4500
+	1    0    0    -1  
+$EndComp
 Wire Bus Line
 	700  7600 2300 7600
 Wire Bus Line
@@ -2163,20 +2201,15 @@ Wire Bus Line
 	6250 6400 6250 7100
 Wire Bus Line
 	9400 1150 9400 4250
-Wire Wire Line
-	5850 1350 6000 1350
-Wire Wire Line
-	5850 1250 6000 1250
-Wire Wire Line
-	5850 1450 6000 1450
-Wire Wire Line
-	5850 1550 6000 1550
-Wire Wire Line
-	5850 1650 6000 1650
-Wire Wire Line
-	5850 1750 6000 1750
-Wire Wire Line
-	5850 1050 6000 1050
-Wire Wire Line
-	5850 1150 6000 1150
+$Comp
+L Graphic:Logo_Open_Hardware_Large LOGO3
+U 1 1 636B6F16
+P 3250 4500
+F 0 "LOGO3" H 3250 5000 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Large" H 3250 4100 50  0001 C CNN
+F 2 "durango:jaqueria" H 3250 4500 50  0001 C CNN
+F 3 "~" H 3250 4500 50  0001 C CNN
+	1    3250 4500
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
