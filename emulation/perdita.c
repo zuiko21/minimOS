@@ -60,6 +60,7 @@
 	byte gamepads[2];		 	// 2 gamepad hardware status
 	byte gamepads_latch[2];	 	// 2 gamepad register latch
 	int emulate_gamepads = 0;	// Allow gamepad emulation
+	int emulate_minstrel = 0;	// Emulate minstrel keyboard
 	int gp1_emulated = 0; 		// Use keyboard as gamepad 1
 	int gp2_emulated = 0; 		// Use keyboard as gamepad 2
 	int gp_shift_counter = 0;	// gamepad shift counter
@@ -131,6 +132,7 @@
 	void process_keyboard(SDL_Event*);
 	void emulate_gamepad1(SDL_Event *e);
 	void emulate_gamepad2(SDL_Event *e);
+	void emulation_minstrel(SDL_Event *e);
 
 /* memory management */
 	byte peek(word dir);			// read memory or I/O
@@ -212,7 +214,7 @@ int main(int argc, char *argv[])
 
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "a:fvlksphrg")) != -1)
+	while ((c = getopt (argc, argv, "a:fvlksphrgm")) != -1)
 	switch (c) {
 		case 'a':
 			rom_addr = optarg;
@@ -243,6 +245,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'g':
 			emulate_gamepads = 1;
+			break;
+		case 'm':
+			emulate_minstrel = 1;
 			break;
 		case '?':
 			fprintf (stderr, "Unknown option\n");
@@ -2849,13 +2854,6 @@ void process_keyboard(SDL_Event *e) {
 		if (ver > 2) printf("gamepads[0] = $%x\n", gamepads[0]);
 		if (ver > 2) printf("gamepads[1] = $%x\n", gamepads[1]);
 	}
-	// Emulate gamepads
-	if(gp1_emulated) {
-		emulate_gamepad1(e);
-	}
-	if(gp2_emulated) {
-		emulate_gamepad2(e);
-	}
 }
 
 /* Emulate first gamepad. */
@@ -3010,6 +3008,9 @@ void emulate_gamepad2(SDL_Event *e) {
 	}
 }
 
+void emulation_minstrel(SDL_Event *e) {
+}
+
 /* Process GUI events in VDU window */
 void vdu_read_keyboard() {
 	//Event handler
@@ -3073,7 +3074,23 @@ void vdu_read_keyboard() {
 		}
 		// Event forwarded to Durango
 		else {
-			process_keyboard(&e);
+			// Emulate gamepads
+			if(emulate_gamepads) {				
+				if(gp1_emulated) {
+					emulate_gamepad1(&e);
+				}
+				if(gp2_emulated) {
+					emulate_gamepad2(&e);
+				}
+			}
+			// Emulate minstrel keyboard
+			else if(emulate_minstrel) {
+				emulation_minstrel(&e);
+			}
+			// Full keyboard
+			else {
+				process_keyboard(&e);
+			}
 		}
 	}
 }
