@@ -97,6 +97,8 @@
 	SDL_DisplayMode sdl_display_mode;
 	// Game gamepads
 	SDL_Joystick *sdl_gamepads[2];
+	// Minstrel keyboard
+	byte minstrel_keyboard[5];
 	// Do not close GUI after program end
 	int keep_open = 0;
 /* global sound variables */
@@ -599,6 +601,24 @@ byte peek(word dir) {
 			d = mem[0xDF80] | 0x0F;		// assume RGB mode and $FF floating value
 		} else if (dir<=0xDF8F) {	// sync flags
 			d = mem[0xDF88];
+		//if(emulate_minstrel)
+		
+		
+		} else if (dir<=0xDF9B) {	// sync flags
+			if(emulate_minstrel) {
+				switch(mem[0xDF9B]) {
+					case 1: return minstrel_keyboard[0];
+					case 2: return minstrel_keyboard[1];
+					case 4: return minstrel_keyboard[2];
+					case 8: return minstrel_keyboard[3];
+					case 16: return minstrel_keyboard[4];
+					case 32: return 0x58;
+				}
+			}
+			else {
+				d=0;
+			}
+		
 		} else if (dir<=0xDF9F) {	// expansion port
 			d = mem[dir];		// *** is this OK?
 		} else if (dir<=0xDFBF) {		// interrupt control and beeper are NOT readable and WILL be corrupted otherwise
@@ -3009,6 +3029,56 @@ void emulate_gamepad2(SDL_Event *e) {
 }
 
 void emulation_minstrel(SDL_Event *e) {
+	// ROW 1 DOWN
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == ' ') {
+		minstrel_keyboard[0] |= 1;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 13) {
+		minstrel_keyboard[0] |= 2;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 1073742049) {
+		minstrel_keyboard[0] |= 4;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'p') {
+		minstrel_keyboard[0] |= 8;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'a') {
+		minstrel_keyboard[0] |= 16;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '0') {
+		minstrel_keyboard[0] |= 32;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'q') {
+		minstrel_keyboard[0] |= 64;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '1') {
+		minstrel_keyboard[0] |= 128;
+	}
+	// ROW 1 UP
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == ' ') {
+		minstrel_keyboard[0] &= ~1;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 13) {
+		minstrel_keyboard[0] &= ~2;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 1073742049) {
+		minstrel_keyboard[0] &= ~4;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'p') {
+		minstrel_keyboard[0] &= ~8;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'a') {
+		minstrel_keyboard[0] &= ~16;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == '0') {
+		minstrel_keyboard[0] &= ~32;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'q') {
+		minstrel_keyboard[0] &= ~64;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == '1') {
+		minstrel_keyboard[0] &= ~128;
+	}
 }
 
 /* Process GUI events in VDU window */
