@@ -1296,9 +1296,9 @@ Layer(1 "back" "copper")
 	Text[4145.00mil 2086.00mil 0 100 "A15" "clearline"]
 	Text[5745.00mil 3411.00mil 1 100 "VCC" "clearline"]
 	Text[245.00mil 3411.00mil 1 100 "VCC" "clearline"]
-	Text[5545.00mil 3311.00mil 1 100 "GCC" "clearline"]
-	Text[345.00mil 3311.00mil 1 100 "GCC" "clearline"]
 	Text[3545.00mil 3111.00mil 0 100 "!WE" "clearline"]
+	Text[345.00mil 3286.00mil 1 100 "GND" "clearline"]
+	Text[5570.00mil 3286.00mil 1 100 "GND" "clearline"]
 )
 Layer(2 "bridge" "copper")
 (

@@ -60,6 +60,7 @@
 	byte gamepads[2];		 	// 2 gamepad hardware status
 	byte gamepads_latch[2];	 	// 2 gamepad register latch
 	int emulate_gamepads = 0;	// Allow gamepad emulation
+	int emulate_minstrel = 0;	// Emulate minstrel keyboard
 	int gp1_emulated = 0; 		// Use keyboard as gamepad 1
 	int gp2_emulated = 0; 		// Use keyboard as gamepad 2
 	int gp_shift_counter = 0;	// gamepad shift counter
@@ -96,6 +97,8 @@
 	SDL_DisplayMode sdl_display_mode;
 	// Game gamepads
 	SDL_Joystick *sdl_gamepads[2];
+	// Minstrel keyboard
+	byte minstrel_keyboard[5];
 	// Do not close GUI after program end
 	int keep_open = 0;
 /* global sound variables */
@@ -131,6 +134,7 @@
 	void process_keyboard(SDL_Event*);
 	void emulate_gamepad1(SDL_Event *e);
 	void emulate_gamepad2(SDL_Event *e);
+	void emulation_minstrel(SDL_Event *e);
 
 /* memory management */
 	byte peek(word dir);			// read memory or I/O
@@ -212,7 +216,7 @@ int main(int argc, char *argv[])
 
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "a:fvlksphrg")) != -1)
+	while ((c = getopt (argc, argv, "a:fvlksphrgm")) != -1)
 	switch (c) {
 		case 'a':
 			rom_addr = optarg;
@@ -243,6 +247,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'g':
 			emulate_gamepads = 1;
+			break;
+		case 'm':
+			emulate_minstrel = 1;
 			break;
 		case '?':
 			fprintf (stderr, "Unknown option\n");
@@ -594,6 +601,24 @@ byte peek(word dir) {
 			d = mem[0xDF80] | 0x0F;		// assume RGB mode and $FF floating value
 		} else if (dir<=0xDF8F) {	// sync flags
 			d = mem[0xDF88];
+		//if(emulate_minstrel)
+		
+		
+		} else if (dir<=0xDF9B) {	// sync flags
+			if(emulate_minstrel) {
+				switch(mem[0xDF9B]) {
+					case 1: return minstrel_keyboard[0];
+					case 2: return minstrel_keyboard[1];
+					case 4: return minstrel_keyboard[2];
+					case 8: return minstrel_keyboard[3];
+					case 16: return minstrel_keyboard[4];
+					case 32: return 0x58;
+				}
+			}
+			else {
+				d=0;
+			}
+		
 		} else if (dir<=0xDF9F) {	// expansion port
 			d = mem[dir];		// *** is this OK?
 		} else if (dir<=0xDFBF) {		// interrupt control and beeper are NOT readable and WILL be corrupted otherwise
@@ -2849,13 +2874,6 @@ void process_keyboard(SDL_Event *e) {
 		if (ver > 2) printf("gamepads[0] = $%x\n", gamepads[0]);
 		if (ver > 2) printf("gamepads[1] = $%x\n", gamepads[1]);
 	}
-	// Emulate gamepads
-	if(gp1_emulated) {
-		emulate_gamepad1(e);
-	}
-	if(gp2_emulated) {
-		emulate_gamepad2(e);
-	}
 }
 
 /* Emulate first gamepad. */
@@ -3010,6 +3028,259 @@ void emulate_gamepad2(SDL_Event *e) {
 	}
 }
 
+void emulation_minstrel(SDL_Event *e) {
+	// COL 1 DOWN
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == ' ') {
+		minstrel_keyboard[0] |= 1;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 13) {
+		minstrel_keyboard[0] |= 2;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 1073742049) {
+		minstrel_keyboard[0] |= 4;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'p') {
+		minstrel_keyboard[0] |= 8;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'a') {
+		minstrel_keyboard[0] |= 16;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '0') {
+		minstrel_keyboard[0] |= 32;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'q') {
+		minstrel_keyboard[0] |= 64;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '1') {
+		minstrel_keyboard[0] |= 128;
+	}
+	// COL 1 UP
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == ' ') {
+		minstrel_keyboard[0] &= ~1;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 13) {
+		minstrel_keyboard[0] &= ~2;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 1073742049) {
+		minstrel_keyboard[0] &= ~4;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'p') {
+		minstrel_keyboard[0] &= ~8;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'a') {
+		minstrel_keyboard[0] &= ~16;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == '0') {
+		minstrel_keyboard[0] &= ~32;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'q') {
+		minstrel_keyboard[0] &= ~64;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == '1') {
+		minstrel_keyboard[0] &= ~128;
+	}
+	// COL 2 DOWN
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 1073742050) {
+		minstrel_keyboard[1] |= 1;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'l') {
+		minstrel_keyboard[1] |= 2;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'z') {
+		minstrel_keyboard[1] |= 4;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'o') {
+		minstrel_keyboard[1] |= 8;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 's') {
+		minstrel_keyboard[1] |= 16;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '9') {
+		minstrel_keyboard[1] |= 32;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'w') {
+		minstrel_keyboard[1] |= 64;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '2') {
+		minstrel_keyboard[1] |= 128;
+	}
+	// COL 2 UP
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 1073742050) {
+		minstrel_keyboard[1] &= ~1;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'l') {
+		minstrel_keyboard[1] &= ~2;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'z') {
+		minstrel_keyboard[1] &= ~4;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'o') {
+		minstrel_keyboard[1] &= ~8;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 's') {
+		minstrel_keyboard[1] &= ~16;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == '9') {
+		minstrel_keyboard[1] &= ~32;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'w') {
+		minstrel_keyboard[1] &= ~64;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == '2') {
+		minstrel_keyboard[1] &= ~128;
+	}
+	// COL 3 DOWN
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'm') {
+		minstrel_keyboard[2] |= 1;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'k') {
+		minstrel_keyboard[2] |= 2;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'x') {
+		minstrel_keyboard[2] |= 4;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'i') {
+		minstrel_keyboard[2] |= 8;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'd') {
+		minstrel_keyboard[2] |= 16;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '8') {
+		minstrel_keyboard[2] |= 32;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'e') {
+		minstrel_keyboard[2] |= 64;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '3') {
+		minstrel_keyboard[2] |= 128;
+	}
+	// COL 3 UP
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'm') {
+		minstrel_keyboard[2] &= ~1;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'k') {
+		minstrel_keyboard[2] &= ~2;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'x') {
+		minstrel_keyboard[2] &= ~4;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'i') {
+		minstrel_keyboard[2] &= ~8;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'd') {
+		minstrel_keyboard[2] &= ~16;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == '8') {
+		minstrel_keyboard[2] &= ~32;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'e') {
+		minstrel_keyboard[2] &= ~64;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == '3') {
+		minstrel_keyboard[2] &= ~128;
+	}
+	// COL 4 DOWN
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'n') {
+		minstrel_keyboard[3] |= 1;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'j') {
+		minstrel_keyboard[3] |= 2;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'c') {
+		minstrel_keyboard[3] |= 4;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'u') {
+		minstrel_keyboard[3] |= 8;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'f') {
+		minstrel_keyboard[3] |= 16;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '7') {
+		minstrel_keyboard[3] |= 32;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'r') {
+		minstrel_keyboard[3] |= 64;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '4') {
+		minstrel_keyboard[3] |= 128;
+	}
+	// COL 4 UP
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'n') {
+		minstrel_keyboard[3] &= ~1;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'j') {
+		minstrel_keyboard[3] &= ~2;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'c') {
+		minstrel_keyboard[3] &= ~4;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'u') {
+		minstrel_keyboard[3] &= ~8;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'f') {
+		minstrel_keyboard[3] &= ~16;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == '7') {
+		minstrel_keyboard[3] &= ~32;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'r') {
+		minstrel_keyboard[3] &= ~64;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == '4') {
+		minstrel_keyboard[0] &= ~128;
+	}
+	// COL 5 DOWN
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'b') {
+		minstrel_keyboard[4] |= 1;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'h') {
+		minstrel_keyboard[4] |= 2;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'v') {
+		minstrel_keyboard[4] |= 4;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'y') {
+		minstrel_keyboard[4] |= 8;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'g') {
+		minstrel_keyboard[4] |= 16;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '6') {
+		minstrel_keyboard[4] |= 32;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 't') {
+		minstrel_keyboard[4] |= 64;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '5') {
+		minstrel_keyboard[4] |= 128;
+	}
+	// COL 5 UP
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'b') {
+		minstrel_keyboard[4] &= ~1;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'h') {
+		minstrel_keyboard[4] &= ~2;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'v') {
+		minstrel_keyboard[4] &= ~4;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'y') {
+		minstrel_keyboard[4] &= ~8;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'g') {
+		minstrel_keyboard[4] &= ~16;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == '6') {
+		minstrel_keyboard[4] &= ~32;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 't') {
+		minstrel_keyboard[4] &= ~64;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == '5') {
+		minstrel_keyboard[4] &= ~128;
+	}
+}
+
 /* Process GUI events in VDU window */
 void vdu_read_keyboard() {
 	//Event handler
@@ -3073,7 +3344,23 @@ void vdu_read_keyboard() {
 		}
 		// Event forwarded to Durango
 		else {
-			process_keyboard(&e);
+			// Emulate gamepads
+			if(emulate_gamepads) {				
+				if(gp1_emulated) {
+					emulate_gamepad1(&e);
+				}
+				if(gp2_emulated) {
+					emulate_gamepad2(&e);
+				}
+			}
+			// Emulate minstrel keyboard
+			else if(emulate_minstrel) {
+				emulation_minstrel(&e);
+			}
+			// Full keyboard
+			else {
+				process_keyboard(&e);
+			}
 		}
 	}
 }
