@@ -2,7 +2,7 @@
 
   (general
     (thickness 1.6)
-    (drawings 29)
+    (drawings 33)
     (tracks 0)
     (zones 0)
     (modules 79)
@@ -3022,7 +3022,7 @@
     (fp_text reference SW30 (at 3.25 -2) (layer B.SilkS)
       (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
     )
-    (fp_text value "ENTER ñ" (at 3.175 6.985) (layer F.SilkS)
+    (fp_text value "ENTER  ñ" (at 3.175 6.985) (layer F.SilkS)
       (effects (font (size 1.5 1.27) (thickness 0.2)))
     )
     (fp_circle (center 3.25 2.25) (end 1.25 2.5) (layer F.Fab) (width 0.1))
@@ -4544,6 +4544,14 @@
     )
   )
 
+  (gr_text ERROR (at 16.51 141.605) (layer F.SilkS)
+    (effects (font (size 1.27 1.27) (thickness 0.254)))
+  )
+  (gr_text ON (at 16.51 20.955) (layer F.SilkS)
+    (effects (font (size 1.27 1.27) (thickness 0.254)))
+  )
+  (gr_circle (center 16.51 138.43) (end 18.415 138.43) (layer Edge.Cuts) (width 0.12) (tstamp 636CAEDC))
+  (gr_circle (center 16.51 17.78) (end 18.415 17.78) (layer Edge.Cuts) (width 0.12))
   (gr_arc (start 102.235 20.32) (end 102.235 20.955) (angle -90) (layer Edge.Cuts) (width 0.05))
   (gr_arc (start 90.805 20.32) (end 90.17 20.32) (angle -90) (layer Edge.Cuts) (width 0.05))
   (gr_text @zuiko21 (at 148.59 139.7) (layer F.SilkS)
