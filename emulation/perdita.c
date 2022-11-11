@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban, Emilio López Berenguer
- * last modified 20221009-1040
+ * last modified 20221111-1736
  * */
 
 /* Gamepad buttons constants */
@@ -313,7 +313,8 @@ void usage(char name[]) {
 	printf("-h headless -- no graphics!\n");
 	printf("-v verbose (warnings/interrupts/jumps/events/all)\n");
 	printf("-r do NOT randomize memory at startup\n");
-	printf("-g emulate controllers");
+	printf("-g emulate controllers\n");
+	printf("-m emulate Minstrel-type keyboard\n");
 }
 
 void run_emulation (int ready) {
@@ -601,24 +602,17 @@ byte peek(word dir) {
 			d = mem[0xDF80] | 0x0F;		// assume RGB mode and $FF floating value
 		} else if (dir<=0xDF8F) {	// sync flags
 			d = mem[0xDF88];
-		//if(emulate_minstrel)
-		
-		
-		} else if (dir<=0xDF9B) {	// sync flags
-			if(emulate_minstrel) {
-				switch(mem[0xDF9B]) {
-					case 1: return minstrel_keyboard[0];
-					case 2: return minstrel_keyboard[1];
-					case 4: return minstrel_keyboard[2];
-					case 8: return minstrel_keyboard[3];
-					case 16: return minstrel_keyboard[4];
-					case 32: return 0x58;
-				}
+		} else if (dir==0xDF9B && emulate_minstrel) {	// Minstrel keyboard port EEEEEK
+			switch(mem[0xDF9B]) {
+				case 1: return minstrel_keyboard[0];
+				case 2: return minstrel_keyboard[1];
+				case 4: return minstrel_keyboard[2];
+				case 8: return minstrel_keyboard[3];
+				case 16: return minstrel_keyboard[4];
+				case 32: return 0x58;
 			}
-			else {
-				d=0;
-			}
-		
+								// no separate if-else is needed because of the default d value
+								// ...and $DF9B could be used by another device
 		} else if (dir<=0xDF9F) {	// expansion port
 			d = mem[dir];		// *** is this OK?
 		} else if (dir<=0xDFBF) {		// interrupt control and beeper are NOT readable and WILL be corrupted otherwise
@@ -3036,7 +3030,7 @@ void emulation_minstrel(SDL_Event *e) {
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 13) {
 		minstrel_keyboard[0] |= 2;
 	}
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 1073742049) {
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 1073742049) {	// LEFT SHIFT
 		minstrel_keyboard[0] |= 4;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'p') {
@@ -3061,7 +3055,7 @@ void emulation_minstrel(SDL_Event *e) {
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 13) {
 		minstrel_keyboard[0] &= ~2;
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 1073742049) {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 1073742049) {	// LEFT SHIFT
 		minstrel_keyboard[0] &= ~4;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'p') {
@@ -3080,7 +3074,7 @@ void emulation_minstrel(SDL_Event *e) {
 		minstrel_keyboard[0] &= ~128;
 	}
 	// COL 2 DOWN
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 1073742050) {
+	if(e->type == SDL_KEYDOWN && e->key.keysym.scancode == 0xe6) {	// ALT (GR)
 		minstrel_keyboard[1] |= 1;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'l') {
@@ -3105,7 +3099,7 @@ void emulation_minstrel(SDL_Event *e) {
 		minstrel_keyboard[1] |= 128;
 	}
 	// COL 2 UP
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 1073742050) {
+	if(e->type == SDL_KEYUP && e->key.keysym.scancode == 0xe6) {	// ALT (GR)
 		minstrel_keyboard[1] &= ~1;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'l') {
@@ -3345,7 +3339,7 @@ void vdu_read_keyboard() {
 		// Event forwarded to Durango
 		else {
 			// Emulate gamepads
-			if(emulate_gamepads) {				
+			if(emulate_gamepads) {
 				if(gp1_emulated) {
 					emulate_gamepad1(&e);
 				}
@@ -3354,13 +3348,11 @@ void vdu_read_keyboard() {
 				}
 			}
 			// Emulate minstrel keyboard
-			else if(emulate_minstrel) {
+			if(emulate_minstrel) {
 				emulation_minstrel(&e);
 			}
-			// Full keyboard
-			else {
-				process_keyboard(&e);
-			}
+			// Full PASK keyboard is always emulated!
+			process_keyboard(&e);
 		}
 	}
 }
