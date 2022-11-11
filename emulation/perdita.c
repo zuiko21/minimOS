@@ -3227,7 +3227,7 @@ void emulation_minstrel(SDL_Event *e) {
 		minstrel_keyboard[3] &= ~64;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == '4') {
-		minstrel_keyboard[0] &= ~128;
+		minstrel_keyboard[3] &= ~128;
 	}
 	// COL 5 DOWN
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'b') {
