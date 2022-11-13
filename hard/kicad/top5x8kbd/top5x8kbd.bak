@@ -1564,7 +1564,7 @@ P2~OE
 Text Label 1800 1500 0    50   ~ 0
 ~LATCH
 Text Label 1800 1700 0    50   ~ 0
-~CLOCK
+~NCLK
 NoConn ~ 1800 1100
 Text Label 1800 1300 0    50   ~ 0
 ~CSEL
@@ -1977,7 +1977,7 @@ F 3 "" H 800 3250 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 Text Label 800  3050 2    50   ~ 0
-~CLOCK
+~NCLK
 Text Label 1400 3150 0    50   ~ 0
 NCLK
 Text Label 8650 5750 2    50   ~ 0
@@ -2748,6 +2748,108 @@ Text Label 8650 5450 2    50   ~ 0
 ~SC2
 Text Label 9650 5450 0    50   ~ 0
 ~C2
+Text Label 6250 3350 2    50   ~ 0
+NCLK
+Text Label 6250 3650 2    50   ~ 0
+~NCLK
+Text Label 6250 5250 2    50   ~ 0
+NCLK
+Text Label 6250 5550 2    50   ~ 0
+~NCLK
+$Comp
+L Connector_Generic:Conn_2Rows-07Pins J33
+U 1 1 63729BC7
+P 5600 3050
+F 0 "J33" H 5650 2625 50  0000 C CNN
+F 1 "NES 1" H 5650 2716 50  0000 C CNN
+F 2 "" H 5600 3050 50  0001 C CNN
+F 3 "~" H 5600 3050 50  0001 C CNN
+	1    5600 3050
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	5800 3150 6250 3150
+Wire Wire Line
+	5800 2950 5850 2950
+Wire Wire Line
+	5850 2950 5850 3350
+Wire Wire Line
+	5850 3350 6250 3350
+Wire Wire Line
+	5800 3050 5900 3050
+Text Label 5900 3050 0    50   ~ 0
+LATCH
+$Comp
+L power:GND #PWR?
+U 1 1 637AE05E
+P 5800 2850
+F 0 "#PWR?" H 5800 2600 50  0001 C CNN
+F 1 "GND" V 5805 2722 50  0000 R CNN
+F 2 "" H 5800 2850 50  0001 C CNN
+F 3 "" H 5800 2850 50  0001 C CNN
+	1    5800 2850
+	0    -1   -1   0   
+$EndComp
+NoConn ~ 5300 3050
+NoConn ~ 5300 3150
+$Comp
+L power:+5V #PWR?
+U 1 1 63820300
+P 5300 2950
+F 0 "#PWR?" H 5300 2800 50  0001 C CNN
+F 1 "+5V" H 5315 3123 50  0000 C CNN
+F 2 "" H 5300 2950 50  0001 C CNN
+F 3 "" H 5300 2950 50  0001 C CNN
+	1    5300 2950
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_2Rows-07Pins J54
+U 1 1 63820413
+P 5600 4950
+F 0 "J54" H 5650 4525 50  0000 C CNN
+F 1 "NES 2" H 5650 4616 50  0000 C CNN
+F 2 "" H 5600 4950 50  0001 C CNN
+F 3 "~" H 5600 4950 50  0001 C CNN
+	1    5600 4950
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	5800 5050 6250 5050
+Wire Wire Line
+	5800 4850 5850 4850
+Wire Wire Line
+	5850 4850 5850 5250
+Wire Wire Line
+	5850 5250 6250 5250
+Wire Wire Line
+	5800 4950 5900 4950
+Text Label 5900 4950 0    50   ~ 0
+LATCH
+$Comp
+L power:GND #PWR?
+U 1 1 63820423
+P 5800 4750
+F 0 "#PWR?" H 5800 4500 50  0001 C CNN
+F 1 "GND" V 5805 4622 50  0000 R CNN
+F 2 "" H 5800 4750 50  0001 C CNN
+F 3 "" H 5800 4750 50  0001 C CNN
+	1    5800 4750
+	0    -1   -1   0   
+$EndComp
+NoConn ~ 5300 4950
+NoConn ~ 5300 5050
+$Comp
+L power:+5V #PWR?
+U 1 1 6382042F
+P 5300 4850
+F 0 "#PWR?" H 5300 4700 50  0001 C CNN
+F 1 "+5V" H 5315 5023 50  0000 C CNN
+F 2 "" H 5300 4850 50  0001 C CNN
+F 3 "" H 5300 4850 50  0001 C CNN
+	1    5300 4850
+	1    0    0    -1  
+$EndComp
 Wire Bus Line
 	3550 2300 3850 2300
 Wire Bus Line
@@ -2774,12 +2876,4 @@ Wire Bus Line
 	7300 3250 7300 5850
 Wire Bus Line
 	8400 1150 8400 4250
-Text Label 6250 3350 2    50   ~ 0
-NCLK
-Text Label 6250 3650 2    50   ~ 0
-~NCLK
-Text Label 6250 5250 2    50   ~ 0
-NCLK
-Text Label 6250 5550 2    50   ~ 0
-~NCLK
 $EndSCHEMATC
