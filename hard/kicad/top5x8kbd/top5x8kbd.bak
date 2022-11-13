@@ -2774,4 +2774,12 @@ Wire Bus Line
 	7300 3250 7300 5850
 Wire Bus Line
 	8400 1150 8400 4250
+Text Label 6250 3350 2    50   ~ 0
+NCLK
+Text Label 6250 3650 2    50   ~ 0
+~NCLK
+Text Label 6250 5250 2    50   ~ 0
+NCLK
+Text Label 6250 5550 2    50   ~ 0
+~NCLK
 $EndSCHEMATC

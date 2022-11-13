@@ -1564,7 +1564,7 @@ P2~OE
 Text Label 1800 1500 0    50   ~ 0
 ~LATCH
 Text Label 1800 1700 0    50   ~ 0
-~CLOCK
+~NCLK
 NoConn ~ 1800 1100
 Text Label 1800 1300 0    50   ~ 0
 ~CSEL
@@ -1977,7 +1977,7 @@ F 3 "" H 800 3250 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 Text Label 800  3050 2    50   ~ 0
-~CLOCK
+~NCLK
 Text Label 1400 3150 0    50   ~ 0
 NCLK
 Text Label 8650 5750 2    50   ~ 0
@@ -2748,6 +2748,14 @@ Text Label 8650 5450 2    50   ~ 0
 ~SC2
 Text Label 9650 5450 0    50   ~ 0
 ~C2
+Text Label 6250 3350 2    50   ~ 0
+NCLK
+Text Label 6250 3650 2    50   ~ 0
+~NCLK
+Text Label 6250 5250 2    50   ~ 0
+NCLK
+Text Label 6250 5550 2    50   ~ 0
+~NCLK
 Wire Bus Line
 	3550 2300 3850 2300
 Wire Bus Line
@@ -2774,12 +2782,4 @@ Wire Bus Line
 	7300 3250 7300 5850
 Wire Bus Line
 	8400 1150 8400 4250
-Text Label 6250 3350 2    50   ~ 0
-NCLK
-Text Label 6250 3650 2    50   ~ 0
-~NCLK
-Text Label 6250 5250 2    50   ~ 0
-NCLK
-Text Label 6250 5550 2    50   ~ 0
-~NCLK
 $EndSCHEMATC
