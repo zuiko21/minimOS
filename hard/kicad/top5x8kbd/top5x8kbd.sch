@@ -2655,10 +2655,10 @@ F 3 " ~" H 10850 3150 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:R_Network08 RN43
+L Device:R_Network08 RN3
 U 1 1 63FD1BA2
 P 10000 3250
-F 0 "RN43" V 9350 3250 50  0000 C CNN
+F 0 "RN3" V 9350 3250 50  0000 C CNN
 F 1 "220K" V 9450 3250 50  0000 C CNN
 F 2 "Resistor_THT:R_Array_SIP9" V 10475 3250 50  0001 C CNN
 F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 10000 3250 50  0001 C CNN
@@ -2762,7 +2762,7 @@ U 1 1 63729BC7
 P 5600 3050
 F 0 "J33" H 5650 2625 50  0000 C CNN
 F 1 "NES 1" H 5650 2716 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_2x04_P2.54mm_Horizontal" H 5600 3050 50  0001 C CNN
+F 2 "durango:NES gamepad" H 5600 3050 50  0001 C CNN
 F 3 "~" H 5600 3050 50  0001 C CNN
 	1    5600 3050
 	-1   0    0    1   
@@ -2809,7 +2809,7 @@ U 1 1 63820413
 P 5600 4950
 F 0 "J54" H 5650 4525 50  0000 C CNN
 F 1 "NES 2" H 5650 4616 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_2x04_P2.54mm_Horizontal" H 5600 4950 50  0001 C CNN
+F 2 "durango:NES gamepad" H 5600 4950 50  0001 C CNN
 F 3 "~" H 5600 4950 50  0001 C CNN
 	1    5600 4950
 	-1   0    0    1   
