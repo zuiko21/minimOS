@@ -1,6 +1,6 @@
 ; development cartridge boot firmware for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221116-0952
+; last modified 20221116-1335
 
 .(
 	*	= $C000				; 16 KiB seems enough
@@ -31,7 +31,22 @@ copy_l:
 
 ; *********************************************
 ; *********************************************
-	.dsb	$FFE2-*, $FF	; ROM padding
+	.dsb	$FFD1-*, $FF	; ROM padding until last 47 bytes
+; 13-byte PANIC routine, just make the LED flash
+panic_l:
+				SEI
+				INX
+				BNE panic_l
+			INY
+			BNE panic_l
+		INC
+		STA IOAien			; make LED toggle every ~0.3s
+		BRA panic_l
+; 4 extra bytes for further compatibility
+checksum:
+	.word	$FFFF			; standard checksum address reserved
+panic:
+	BRA panic_l				; standard PANIC call @ $FFE0
 ; *** standard ROM contents (last 30 bytes) ***
 irq_hndl:
 	JMP ($0200)
