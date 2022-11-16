@@ -60,7 +60,7 @@
 	byte gamepads[2];		 	// 2 gamepad hardware status
 	byte gamepads_latch[2];	 	// 2 gamepad register latch
 	int emulate_gamepads = 0;	// Allow gamepad emulation
-	int emulate_minstrel = 0;	// Emulate minstrel keyboard
+	int emulate_minstrel = 1;	// Emulate minstrel keyboard
 	int gp1_emulated = 0; 		// Use keyboard as gamepad 1
 	int gp2_emulated = 0; 		// Use keyboard as gamepad 2
 	int gp_shift_counter = 0;	// gamepad shift counter
@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
 			emulate_gamepads = 1;
 			break;
 		case 'm':
-			emulate_minstrel = 1;
+			emulate_minstrel = 0;
 			break;
 		case '?':
 			fprintf (stderr, "Unknown option\n");
@@ -314,7 +314,7 @@ void usage(char name[]) {
 	printf("-v verbose (warnings/interrupts/jumps/events/all)\n");
 	printf("-r do NOT randomize memory at startup\n");
 	printf("-g emulate controllers\n");
-	printf("-m emulate Minstrel-type keyboard\n");
+	printf("-m do NOT emulate Minstrel-type keyboard\n");
 }
 
 void run_emulation (int ready) {
@@ -3030,7 +3030,7 @@ void emulation_minstrel(SDL_Event *e) {
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 13) {
 		minstrel_keyboard[0] |= 2;
 	}
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 1073742049) {	// LEFT SHIFT
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == SDLK_LSHIFT) {	// LEFT SHIFT
 		minstrel_keyboard[0] |= 4;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'p') {
@@ -3055,7 +3055,7 @@ void emulation_minstrel(SDL_Event *e) {
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 13) {
 		minstrel_keyboard[0] &= ~2;
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 1073742049) {	// LEFT SHIFT
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == SDLK_LSHIFT) {	// LEFT SHIFT
 		minstrel_keyboard[0] &= ~4;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'p') {
@@ -3074,7 +3074,7 @@ void emulation_minstrel(SDL_Event *e) {
 		minstrel_keyboard[0] &= ~128;
 	}
 	// COL 2 DOWN
-	if(e->type == SDL_KEYDOWN && e->key.keysym.scancode == 0xe6) {	// ALT (GR)
+	if(e->type == SDL_KEYDOWN && e->key.keysym.scancode == SDL_SCANCODE_RALT) {	// ALT (GR) SDLK_RALT
 		minstrel_keyboard[1] |= 1;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'l') {
@@ -3099,7 +3099,7 @@ void emulation_minstrel(SDL_Event *e) {
 		minstrel_keyboard[1] |= 128;
 	}
 	// COL 2 UP
-	if(e->type == SDL_KEYUP && e->key.keysym.scancode == 0xe6) {	// ALT (GR)
+	if(e->type == SDL_KEYUP && e->key.keysym.scancode == SDL_SCANCODE_RALT) {	// ALT (GR)
 		minstrel_keyboard[1] &= ~1;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'l') {
