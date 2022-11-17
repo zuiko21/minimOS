@@ -1,6 +1,6 @@
 ; Durango-X lines demo!
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221021-1731
+; last modified 20221117-1434
 
 *	= $F000
 
@@ -60,12 +60,19 @@ loop:
 		JSR dxline			; draw line
 #else
 		LDX x1
-		LDY y1
-		TYA
-		SEC
-		SBC y2
-		AND #LIMIT
-		STA y_cnt
+try:
+			LDY y1
+			TYA
+			SEC
+			SBC y2
+			STA y_cnt
+			CLC
+			ADC y1
+#ifndef	HIRES
+			BMI try			; way too much
+#else
+			BCS try
+#endif
 		JSR v_line
 #endif
 		INC 0
