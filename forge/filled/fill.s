@@ -1,6 +1,6 @@
 ; Durango-X filled rectangle routine
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221104-1508
+; last modified 20221117-1408
 
 .bss
 ; *** input ***
@@ -69,16 +69,6 @@ x_ok:
 		STA y1
 y_ok:
 #endif
-; may now compute number of lines and bytes ***(bytes could be done later, as differs from HIRES)
-	LDA x1					; lower limit
-	LSR						; check odd bit into C
-	LDA x2					; higher limit...
-	ADC #0					; ...needs one more if lower was odd
-	SEC
-	SBC x1					; roughly number of pixels
-	LSR						; half of that, is bytes
-	ROR exc					; E pixel is active, will end at D6 (after second rotation)
-	STA bytes
 ; number of lines is straightforward
 	LDA y2
 	SEC
@@ -101,10 +91,20 @@ colfill:
 	STA cio_pt				; temporary storage
 	LDA x1					; get W coordinate
 	LSR						; halved
-	ROR exc					; this will store W extra pixel at D7
+	ROR exc					; this will store W extra pixel, now at D6!
 	CLC						; as we don't know previous exc contents
 	ADC cio_pt
 	STA cio_pt				; LSB ready, the ADD won't cross page
+; may now compute number of lines
+	LDA x2					; higher limit...
+	SEC
+	SBC x1					; roughly number of pixels
+	LSR						; half of that, is bytes
+	STA bytes				; but might be incremented if any of the W or E pixels apply!
+; check if any extra pixel is in use
+	LDA x2
+	EOR x1					; only bit *****************************************************
+; check selected framebuffer
 	LDA IO8attr				; get flags... (4)
 	AND #$30				; ...for the selected screen... (2)
 	ASL						; ...and shift them to final position (2)
@@ -124,8 +124,8 @@ cbytloop:
 c_exc:
 ; check for extra pixels
 		BIT exc				; check uneven bits
-		BVS c_setw			; extra at W (or BMI?)
-		BMI c_sete			; extra at E (or BVS?)
+		BMI c_setw			; extra at W
+		BVS c_sete			; extra at E
 			STA (cio_pt), Y	; otherwise last byte is full
 			BRA c_eok
 c_setw:
@@ -135,8 +135,8 @@ c_setw:
 		AND #$F0			; filter out right pixel...
 		ORA tmp				; ...as we fill it now
 		STA (cio_pt), Y
-		BIT exc				; unfortunately we must do this, or manage W pixel first
-		BPL c_eok			; no extra bit at E (or BVC?)
+;		BIT exc				; unfortunately we must do this, or manage W pixel first
+		BVC c_eok			; no extra bit at E (or BVC?)
 			LDA col			; in case next filter gets triggered
 c_sete:
 			LDY bytes		; this is now the proper index!
@@ -179,12 +179,12 @@ hrfill:
 	AND #7					; modulo 8
 	STA r_ex				; 0...7 extra E pixels
 	CMP #1					; Carry if >0
-	ROR exc					; E pixels present, flag will end at D6 (after second rotation)
+	ROR exc					; E pixels present, flag will end at D6 (after second rotation)*******************
 	LDA x1
 	AND #7					; modulo 8
 	STA l_ex				; 0...7 extra W pixels
 	CMP #1					; Carry if >0
-	ROR exc					; W pixels present, flag at D7
+	ROR exc					; W pixels present, flag at D7****************************************************
 ; compute bytes
 	LDA exc					; get flags...
 	ASL						; ...and put W flag into carry
@@ -217,7 +217,7 @@ hbytloop:
 h_exc:
 ; check for extra pixels
 		BIT exc				; check uneven bits
-		BVS h_setw			; extra at W (or BMI?)
+		BVS h_setw			; extra at W (or BMI?)*********************** check these
 		BMI h_sete			; extra at E (or BVS?)
 			STA (cio_pt), Y	; otherwise last byte is full
 			BRA h_eok
@@ -230,8 +230,8 @@ h_setw:
 		AND (cio_pt), Y		; extract original screen intact pixels... (Y=0)
 		ORA tmp				; ...as we add the remaining ones now
 		STA (cio_pt), Y
-		BIT exc				; unfortunately we must do this, or manage W pixel first
-		BPL h_eok			; no extra bit at E (or BVC?)
+		BIT exc				; unfortunately we must do this, or manage W pixel first*****************************
+		BPL h_eok			; no extra bit at E (or BVC?)**********************************************************
 			LDA col			; in case next filter gets triggered
 h_sete:
 			LDY bytes		; this is now the proper index!
