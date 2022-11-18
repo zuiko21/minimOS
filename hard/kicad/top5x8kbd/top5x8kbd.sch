@@ -1570,8 +1570,6 @@ Text Label 1800 1300 0    50   ~ 0
 ~CSEL
 Text Label 1800 1400 0    50   ~ 0
 K~OE
-Text Label 1800 1200 0    50   ~ 0
-~ERR
 Text Label 800  1100 2    50   ~ 0
 BR~W
 Text Label 800  1200 2    50   ~ 0
@@ -2479,33 +2477,6 @@ Connection ~ 9150 6250
 Wire Wire Line
 	8650 5950 8650 6100
 $Comp
-L Device:LED_Small D19
-U 1 1 63960D12
-P 2050 900
-F 0 "D19" V 2050 1150 50  0000 R CNN
-F 1 "PASK" V 2050 850 50  0000 R CNN
-F 2 "LED_THT:LED_D3.0mm" V 2050 900 50  0001 C CNN
-F 3 "~" V 2050 900 50  0001 C CNN
-	1    2050 900 
-	0    -1   -1   0   
-$EndComp
-$Comp
-L Device:R_Small R11
-U 1 1 639636E2
-P 2050 1100
-F 0 "R11" H 1850 1150 50  0000 L CNN
-F 1 "560" V 2050 1050 39  0000 L CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" H 2050 1100 50  0001 C CNN
-F 3 "~" H 2050 1100 50  0001 C CNN
-	1    2050 1100
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	1800 1200 2050 1200
-Wire Wire Line
-	2050 800  1300 800 
-Connection ~ 1300 800 
-$Comp
 L Device:R_Network08 RN22
 U 1 1 63A885E0
 P 10000 1350
@@ -2850,6 +2821,7 @@ F 3 "" H 5300 4850 50  0001 C CNN
 	1    5300 4850
 	1    0    0    -1  
 $EndComp
+NoConn ~ 1800 1200
 Wire Bus Line
 	3550 2300 3850 2300
 Wire Bus Line

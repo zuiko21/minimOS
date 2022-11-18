@@ -2762,7 +2762,7 @@ U 1 1 63729BC7
 P 5600 3050
 F 0 "J33" H 5650 2625 50  0000 C CNN
 F 1 "NES 1" H 5650 2716 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_2x04_P2.54mm_Horizontal" H 5600 3050 50  0001 C CNN
+F 2 "durango:NES gamepad" H 5600 3050 50  0001 C CNN
 F 3 "~" H 5600 3050 50  0001 C CNN
 	1    5600 3050
 	-1   0    0    1   
@@ -2809,7 +2809,7 @@ U 1 1 63820413
 P 5600 4950
 F 0 "J54" H 5650 4525 50  0000 C CNN
 F 1 "NES 2" H 5650 4616 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_2x04_P2.54mm_Horizontal" H 5600 4950 50  0001 C CNN
+F 2 "durango:NES gamepad" H 5600 4950 50  0001 C CNN
 F 3 "~" H 5600 4950 50  0001 C CNN
 	1    5600 4950
 	-1   0    0    1   
