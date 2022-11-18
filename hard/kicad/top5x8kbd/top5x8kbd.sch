@@ -62,441 +62,441 @@ $Comp
 L Switch:SW_Push_45deg SW1
 U 1 1 635E9C76
 P 700 5550
-F 0 "SW1" H 700 5831 50  0000 C CNN
-F 1 "1   !" H 700 5740 50  0000 C CNN
+F 0 "SW1" H 650 5350 50  0000 C CNN
+F 1 "1   !" H 650 5450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 700 5550 50  0001 C CNN
 F 3 "~" H 700 5550 50  0001 C CNN
 	1    700  5550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW2
 U 1 1 635EA354
 P 1100 5550
-F 0 "SW2" H 1100 5831 50  0000 C CNN
-F 1 "2   @" H 1100 5740 50  0000 C CNN
+F 0 "SW2" H 1050 5350 50  0000 C CNN
+F 1 "2   @" H 1050 5450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1100 5550 50  0001 C CNN
 F 3 "~" H 1100 5550 50  0001 C CNN
 	1    1100 5550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW3
 U 1 1 635EA726
 P 1500 5550
-F 0 "SW3" H 1500 5831 50  0000 C CNN
-F 1 "3   #" H 1500 5740 50  0000 C CNN
+F 0 "SW3" H 1450 5350 50  0000 C CNN
+F 1 "3   #" H 1450 5450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1500 5550 50  0001 C CNN
 F 3 "~" H 1500 5550 50  0001 C CNN
 	1    1500 5550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW4
 U 1 1 635EA903
 P 1900 5550
-F 0 "SW4" H 1900 5831 50  0000 C CNN
-F 1 "4   $" H 1900 5740 50  0000 C CNN
+F 0 "SW4" H 1850 5350 50  0000 C CNN
+F 1 "4   $" H 1850 5450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1900 5550 50  0001 C CNN
 F 3 "~" H 1900 5550 50  0001 C CNN
 	1    1900 5550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW5
 U 1 1 635EAD66
 P 2300 5550
-F 0 "SW5" H 2300 5831 50  0000 C CNN
-F 1 "5   %" H 2300 5740 50  0000 C CNN
+F 0 "SW5" H 2250 5350 50  0000 C CNN
+F 1 "5   %" H 2250 5450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 2300 5550 50  0001 C CNN
 F 3 "~" H 2300 5550 50  0001 C CNN
 	1    2300 5550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW6
 U 1 1 635EAF77
 P 2900 5550
-F 0 "SW6" H 2900 5831 50  0000 C CNN
-F 1 "6   &" H 2900 5740 50  0000 C CNN
+F 0 "SW6" H 2850 5350 50  0000 C CNN
+F 1 "6   &" H 2850 5450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 2900 5550 50  0001 C CNN
 F 3 "~" H 2900 5550 50  0001 C CNN
 	1    2900 5550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW7
 U 1 1 635EB188
 P 3300 5550
-F 0 "SW7" H 3300 5831 50  0000 C CNN
-F 1 "7   '" H 3300 5740 50  0000 C CNN
+F 0 "SW7" H 3250 5350 50  0000 C CNN
+F 1 "7   '" H 3250 5450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 3300 5550 50  0001 C CNN
 F 3 "~" H 3300 5550 50  0001 C CNN
 	1    3300 5550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW8
 U 1 1 635EBC23
 P 3700 5550
-F 0 "SW8" H 3700 5831 50  0000 C CNN
-F 1 "8   (" H 3700 5740 50  0000 C CNN
+F 0 "SW8" H 3650 5350 50  0000 C CNN
+F 1 "8   (" H 3650 5450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 3700 5550 50  0001 C CNN
 F 3 "~" H 3700 5550 50  0001 C CNN
 	1    3700 5550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW9
 U 1 1 635EBE63
 P 4100 5550
-F 0 "SW9" H 4100 5831 50  0000 C CNN
-F 1 "9   (" H 4100 5740 50  0000 C CNN
+F 0 "SW9" H 4050 5350 50  0000 C CNN
+F 1 "9   (" H 4050 5450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4100 5550 50  0001 C CNN
 F 3 "~" H 4100 5550 50  0001 C CNN
 	1    4100 5550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW10
 U 1 1 635EC0BD
 P 4500 5550
-F 0 "SW10" H 4500 5831 50  0000 C CNN
-F 1 "0   _" H 4500 5740 50  0000 C CNN
+F 0 "SW10" H 4450 5350 50  0000 C CNN
+F 1 "0   _" H 4450 5450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4500 5550 50  0001 C CNN
 F 3 "~" H 4500 5550 50  0001 C CNN
 	1    4500 5550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW20
 U 1 1 635EC331
 P 4500 6050
-F 0 "SW20" H 4500 6331 50  0000 C CNN
-F 1 "P   \"" H 4500 6240 50  0000 C CNN
+F 0 "SW20" H 4450 5850 50  0000 C CNN
+F 1 "P   \"" H 4450 5950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4500 6050 50  0001 C CNN
 F 3 "~" H 4500 6050 50  0001 C CNN
 	1    4500 6050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW19
 U 1 1 635EC5BF
 P 4100 6050
-F 0 "SW19" H 4100 6331 50  0000 C CNN
-F 1 "O   ó" H 4100 6240 50  0000 C CNN
+F 0 "SW19" H 4050 5850 50  0000 C CNN
+F 1 "O   ó" H 4050 5950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4100 6050 50  0001 C CNN
 F 3 "~" H 4100 6050 50  0001 C CNN
 	1    4100 6050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW18
 U 1 1 635EC867
 P 3700 6050
-F 0 "SW18" H 3700 6331 50  0000 C CNN
-F 1 "I   í" H 3700 6240 50  0000 C CNN
+F 0 "SW18" H 3650 5850 50  0000 C CNN
+F 1 "I   í" H 3650 5950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 3700 6050 50  0001 C CNN
 F 3 "~" H 3700 6050 50  0001 C CNN
 	1    3700 6050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW17
 U 1 1 635ECB29
 P 3300 6050
-F 0 "SW17" H 3300 6331 50  0000 C CNN
-F 1 "U   ú" H 3300 6240 50  0000 C CNN
+F 0 "SW17" H 3250 5850 50  0000 C CNN
+F 1 "U   ú" H 3250 5950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 3300 6050 50  0001 C CNN
 F 3 "~" H 3300 6050 50  0001 C CNN
 	1    3300 6050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW16
 U 1 1 635ECE05
 P 2900 6050
-F 0 "SW16" H 2900 6331 50  0000 C CNN
-F 1 "Y   ü" H 2900 6240 50  0000 C CNN
+F 0 "SW16" H 2850 5850 50  0000 C CNN
+F 1 "Y   ü" H 2850 5950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 2900 6050 50  0001 C CNN
 F 3 "~" H 2900 6050 50  0001 C CNN
 	1    2900 6050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW15
 U 1 1 635ED0FB
 P 2300 6050
-F 0 "SW15" H 2300 6331 50  0000 C CNN
-F 1 "T   >" H 2300 6240 50  0000 C CNN
+F 0 "SW15" H 2250 5850 50  0000 C CNN
+F 1 "T   >" H 2250 5950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 2300 6050 50  0001 C CNN
 F 3 "~" H 2300 6050 50  0001 C CNN
 	1    2300 6050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW14
 U 1 1 635ED40B
 P 1900 6050
-F 0 "SW14" H 1900 6331 50  0000 C CNN
-F 1 "R   <" H 1900 6240 50  0000 C CNN
+F 0 "SW14" H 1850 5850 50  0000 C CNN
+F 1 "R   <" H 1850 5950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1900 6050 50  0001 C CNN
 F 3 "~" H 1900 6050 50  0001 C CNN
 	1    1900 6050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW13
 U 1 1 635ED735
 P 1500 6050
-F 0 "SW13" H 1500 6331 50  0000 C CNN
-F 1 "E   é" H 1500 6240 50  0000 C CNN
+F 0 "SW13" H 1450 5850 50  0000 C CNN
+F 1 "E   é" H 1450 5950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1500 6050 50  0001 C CNN
 F 3 "~" H 1500 6050 50  0001 C CNN
 	1    1500 6050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW12
 U 1 1 635EDA79
 P 1100 6050
-F 0 "SW12" H 1100 6331 50  0000 C CNN
-F 1 "W   ~~" H 1100 6240 50  0000 C CNN
+F 0 "SW12" H 1050 5850 50  0000 C CNN
+F 1 "W   ~~" H 1050 5950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1100 6050 50  0001 C CNN
 F 3 "~" H 1100 6050 50  0001 C CNN
 	1    1100 6050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW11
 U 1 1 635EDDD7
 P 700 6050
-F 0 "SW11" H 700 6331 50  0000 C CNN
-F 1 "Q   ¡" H 700 6240 50  0000 C CNN
+F 0 "SW11" H 650 5850 50  0000 C CNN
+F 1 "Q   ¡" H 650 5950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 700 6050 50  0001 C CNN
 F 3 "~" H 700 6050 50  0001 C CNN
 	1    700  6050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW21
 U 1 1 635EE14F
 P 700 6550
-F 0 "SW21" H 700 6831 50  0000 C CNN
-F 1 "A   á" H 700 6740 50  0000 C CNN
+F 0 "SW21" H 650 6350 50  0000 C CNN
+F 1 "A   á" H 650 6450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 700 6550 50  0001 C CNN
 F 3 "~" H 700 6550 50  0001 C CNN
 	1    700  6550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW22
 U 1 1 635EE4E1
 P 1100 6550
-F 0 "SW22" H 1100 6831 50  0000 C CNN
-F 1 "S   ;" H 1100 6740 50  0000 C CNN
+F 0 "SW22" H 1050 6350 50  0000 C CNN
+F 1 "S   ;" H 1050 6450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1100 6550 50  0001 C CNN
 F 3 "~" H 1100 6550 50  0001 C CNN
 	1    1100 6550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW23
 U 1 1 635EE88D
 P 1500 6550
-F 0 "SW23" H 1500 6831 50  0000 C CNN
-F 1 "D   |" H 1500 6740 50  0000 C CNN
+F 0 "SW23" H 1450 6350 50  0000 C CNN
+F 1 "D   |" H 1450 6450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1500 6550 50  0001 C CNN
 F 3 "~" H 1500 6550 50  0001 C CNN
 	1    1500 6550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW24
 U 1 1 635EEC53
 P 1900 6550
-F 0 "SW24" H 1900 6831 50  0000 C CNN
-F 1 "F   [" H 1900 6740 50  0000 C CNN
+F 0 "SW24" H 1850 6350 50  0000 C CNN
+F 1 "F   [" H 1850 6450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1900 6550 50  0001 C CNN
 F 3 "~" H 1900 6550 50  0001 C CNN
 	1    1900 6550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW25
 U 1 1 635EF033
 P 2300 6550
-F 0 "SW25" H 2300 6831 50  0000 C CNN
-F 1 "G   ]" H 2300 6740 50  0000 C CNN
+F 0 "SW25" H 2250 6350 50  0000 C CNN
+F 1 "G   ]" H 2250 6450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 2300 6550 50  0001 C CNN
 F 3 "~" H 2300 6550 50  0001 C CNN
 	1    2300 6550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW26
 U 1 1 635EF1AE
 P 2900 6550
-F 0 "SW26" H 2900 6831 50  0000 C CNN
-F 1 "H   ^" H 2900 6740 50  0000 C CNN
+F 0 "SW26" H 2850 6350 50  0000 C CNN
+F 1 "H   ^" H 2850 6450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 2900 6550 50  0001 C CNN
 F 3 "~" H 2900 6550 50  0001 C CNN
 	1    2900 6550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW27
 U 1 1 635EF1B8
 P 3300 6550
-F 0 "SW27" H 3300 6831 50  0000 C CNN
-F 1 "J   -" H 3300 6740 50  0000 C CNN
+F 0 "SW27" H 3250 6350 50  0000 C CNN
+F 1 "J   -" H 3250 6450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 3300 6550 50  0001 C CNN
 F 3 "~" H 3300 6550 50  0001 C CNN
 	1    3300 6550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW28
 U 1 1 635EF1C2
 P 3700 6550
-F 0 "SW28" H 3700 6831 50  0000 C CNN
-F 1 "K   +" H 3700 6740 50  0000 C CNN
+F 0 "SW28" H 3650 6350 50  0000 C CNN
+F 1 "K   +" H 3650 6450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 3700 6550 50  0001 C CNN
 F 3 "~" H 3700 6550 50  0001 C CNN
 	1    3700 6550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW29
 U 1 1 635EF1CC
 P 4100 6550
-F 0 "SW29" H 4100 6831 50  0000 C CNN
-F 1 "L   =" H 4100 6740 50  0000 C CNN
+F 0 "SW29" H 4050 6350 50  0000 C CNN
+F 1 "L   =" H 4050 6450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4100 6550 50  0001 C CNN
 F 3 "~" H 4100 6550 50  0001 C CNN
 	1    4100 6550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW30
 U 1 1 635EF1D6
 P 4500 6550
-F 0 "SW30" H 4500 6831 50  0000 C CNN
-F 1 "ENTER  ñ" H 4500 6740 50  0000 C CNN
+F 0 "SW30" H 4450 6350 50  0000 C CNN
+F 1 "ENTER  ñ" H 4400 6450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4500 6550 50  0001 C CNN
 F 3 "~" H 4500 6550 50  0001 C CNN
 	1    4500 6550
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW31
 U 1 1 635F1442
 P 700 7050
-F 0 "SW31" H 700 7331 50  0000 C CNN
-F 1 "SHIFT" H 700 7240 50  0000 C CNN
+F 0 "SW31" H 650 6850 50  0000 C CNN
+F 1 "SHIFT" H 650 6950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 700 7050 50  0001 C CNN
 F 3 "~" H 700 7050 50  0001 C CNN
 	1    700  7050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW32
 U 1 1 635F144C
 P 1100 7050
-F 0 "SW32" H 1100 7331 50  0000 C CNN
-F 1 "Z   :" H 1100 7240 50  0000 C CNN
+F 0 "SW32" H 1050 6850 50  0000 C CNN
+F 1 "Z   :" H 1050 6950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1100 7050 50  0001 C CNN
 F 3 "~" H 1100 7050 50  0001 C CNN
 	1    1100 7050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW33
 U 1 1 635F1456
 P 1500 7050
-F 0 "SW33" H 1500 7331 50  0000 C CNN
-F 1 "X   ¿" H 1500 7240 50  0000 C CNN
+F 0 "SW33" H 1450 6850 50  0000 C CNN
+F 1 "X   ¿" H 1450 6950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1500 7050 50  0001 C CNN
 F 3 "~" H 1500 7050 50  0001 C CNN
 	1    1500 7050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW34
 U 1 1 635F1460
 P 1900 7050
-F 0 "SW34" H 1900 7331 50  0000 C CNN
-F 1 "C   ?" H 1900 7240 50  0000 C CNN
+F 0 "SW34" H 1850 6850 50  0000 C CNN
+F 1 "C   ?" H 1850 6950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 1900 7050 50  0001 C CNN
 F 3 "~" H 1900 7050 50  0001 C CNN
 	1    1900 7050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW35
 U 1 1 635F146A
 P 2300 7050
-F 0 "SW35" H 2300 7331 50  0000 C CNN
-F 1 "V   /" H 2300 7240 50  0000 C CNN
+F 0 "SW35" H 2250 6850 50  0000 C CNN
+F 1 "V   /" H 2250 6950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 2300 7050 50  0001 C CNN
 F 3 "~" H 2300 7050 50  0001 C CNN
 	1    2300 7050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW36
 U 1 1 635F1474
 P 2900 7050
-F 0 "SW36" H 2900 7331 50  0000 C CNN
-F 1 "B   *" H 2900 7240 50  0000 C CNN
+F 0 "SW36" H 2850 6850 50  0000 C CNN
+F 1 "B   *" H 2850 6950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 2900 7050 50  0001 C CNN
 F 3 "~" H 2900 7050 50  0001 C CNN
 	1    2900 7050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW37
 U 1 1 635F147E
 P 3300 7050
-F 0 "SW37" H 3300 7331 50  0000 C CNN
-F 1 "N   ," H 3300 7240 50  0000 C CNN
+F 0 "SW37" H 3250 6850 50  0000 C CNN
+F 1 "N   ," H 3250 6950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 3300 7050 50  0001 C CNN
 F 3 "~" H 3300 7050 50  0001 C CNN
 	1    3300 7050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW38
 U 1 1 635F1488
 P 3700 7050
-F 0 "SW38" H 3700 7331 50  0000 C CNN
-F 1 "M   ." H 3700 7240 50  0000 C CNN
+F 0 "SW38" H 3650 6850 50  0000 C CNN
+F 1 "M   ." H 3650 6950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 3700 7050 50  0001 C CNN
 F 3 "~" H 3700 7050 50  0001 C CNN
 	1    3700 7050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW39
 U 1 1 635F1492
 P 4100 7050
-F 0 "SW39" H 4100 7331 50  0000 C CNN
-F 1 "ALT" H 4100 7240 50  0000 C CNN
+F 0 "SW39" H 4050 6850 50  0000 C CNN
+F 1 "ALT" H 4050 6950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4100 7050 50  0001 C CNN
 F 3 "~" H 4100 7050 50  0001 C CNN
 	1    4100 7050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Switch:SW_Push_45deg SW40
 U 1 1 635F149C
 P 4500 7050
-F 0 "SW40" H 4500 7331 50  0000 C CNN
-F 1 "SPACE" H 4500 7240 50  0000 C CNN
+F 0 "SW40" H 4450 6850 50  0000 C CNN
+F 1 "SPACE" H 4450 6950 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4500 7050 50  0001 C CNN
 F 3 "~" H 4500 7050 50  0001 C CNN
 	1    4500 7050
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Mechanical:MountingHole H1
@@ -719,23 +719,11 @@ F 3 "~" H 7850 1350 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	600  6950 600  6450
-Connection ~ 600  5950
-Wire Wire Line
-	600  5950 600  5450
-Connection ~ 600  6450
-Wire Wire Line
-	600  6450 600  5950
-Wire Wire Line
 	1000 5450 1000 5950
 Connection ~ 1000 5950
 Wire Wire Line
 	1000 5950 1000 6450
 Connection ~ 1000 6450
-Wire Wire Line
-	1000 6450 1000 6950
-Wire Wire Line
-	1400 6950 1400 6450
 Connection ~ 1400 5950
 Wire Wire Line
 	1400 5950 1400 5450
@@ -749,15 +737,11 @@ Wire Wire Line
 	1800 5950 1800 6450
 Connection ~ 1800 6450
 Wire Wire Line
-	1800 6450 1800 6950
-Wire Wire Line
 	2200 5450 2200 5950
 Connection ~ 2200 5950
 Wire Wire Line
 	2200 5950 2200 6450
 Connection ~ 2200 6450
-Wire Wire Line
-	2200 6450 2200 6950
 Wire Wire Line
 	2800 6950 2800 6450
 Connection ~ 2800 5950
@@ -843,17 +827,6 @@ Connection ~ 4200 7150
 Wire Wire Line
 	4200 7150 4600 7150
 Wire Wire Line
-	2400 7150 2000 7150
-Connection ~ 1200 7150
-Wire Wire Line
-	1200 7150 800  7150
-Connection ~ 1600 7150
-Wire Wire Line
-	1600 7150 1200 7150
-Connection ~ 2000 7150
-Wire Wire Line
-	2000 7150 1600 7150
-Wire Wire Line
 	800  6650 1200 6650
 Connection ~ 1200 6650
 Wire Wire Line
@@ -875,8 +848,6 @@ Wire Wire Line
 Connection ~ 2000 6150
 Wire Wire Line
 	2000 6150 2400 6150
-Wire Wire Line
-	800  5650 1200 5650
 Connection ~ 1200 5650
 Wire Wire Line
 	1200 5650 1600 5650
@@ -888,10 +859,7 @@ Wire Wire Line
 	2000 5650 2400 5650
 Wire Wire Line
 	4400 5450 4400 5000
-Wire Wire Line
-	600  5000 600  5450
 Connection ~ 4400 5450
-Connection ~ 600  5450
 Wire Wire Line
 	2200 5450 2200 5200
 Wire Wire Line
@@ -979,7 +947,6 @@ Wire Wire Line
 	2400 7150 2400 7400
 Text Label 2400 7400 1    50   ~ 0
 ROW6
-Connection ~ 2400 7150
 Text Label 2500 7400 1    50   ~ 0
 ROW3
 Text Label 2600 7400 1    50   ~ 0
@@ -994,21 +961,6 @@ Text Label 4800 7400 1    50   ~ 0
 ROW5
 Text Label 4900 7400 1    50   ~ 0
 ROW4
-Wire Wire Line
-	600  6950 600  7500
-Connection ~ 600  6950
-Wire Wire Line
-	1000 6950 1000 7500
-Connection ~ 1000 6950
-Wire Wire Line
-	1400 6950 1400 7500
-Connection ~ 1400 6950
-Wire Wire Line
-	1800 6950 1800 7500
-Connection ~ 1800 6950
-Wire Wire Line
-	2200 6950 2200 7500
-Connection ~ 2200 6950
 Entry Wire Line
 	600  7500 700  7600
 Entry Wire Line
@@ -2822,6 +2774,62 @@ F 3 "" H 5300 4850 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 NoConn ~ 1800 1200
+Wire Wire Line
+	1000 7150 1000 7500
+Connection ~ 1200 7150
+Wire Wire Line
+	1400 7150 1400 7500
+Connection ~ 1600 7150
+Wire Wire Line
+	1800 7150 1800 7500
+Connection ~ 2000 7150
+Connection ~ 1800 6950
+Wire Wire Line
+	1800 6950 1800 7150
+Wire Wire Line
+	2200 7150 2200 7500
+Connection ~ 2400 7150
+Connection ~ 2200 6950
+Wire Wire Line
+	2200 6950 2200 7150
+Wire Wire Line
+	2000 7150 2400 7150
+Wire Wire Line
+	1600 7150 2000 7150
+Wire Wire Line
+	1200 7150 1600 7150
+Wire Wire Line
+	800  7150 1200 7150
+Connection ~ 1000 6950
+Wire Wire Line
+	1000 6950 1000 7150
+Connection ~ 600  6950
+Wire Wire Line
+	600  6950 600  7500
+Wire Wire Line
+	1000 6450 1000 6950
+Connection ~ 1400 6950
+Wire Wire Line
+	1400 6950 1400 7150
+Wire Wire Line
+	1400 6450 1400 6950
+Wire Wire Line
+	1800 6450 1800 6950
+Wire Wire Line
+	2200 6450 2200 6950
+Connection ~ 600  6450
+Wire Wire Line
+	600  6450 600  6950
+Connection ~ 600  5950
+Wire Wire Line
+	600  5950 600  6450
+Wire Wire Line
+	800  5650 1200 5650
+Wire Wire Line
+	600  5000 600  5450
+Connection ~ 600  5450
+Wire Wire Line
+	600  5450 600  5950
 Wire Bus Line
 	3550 2300 3850 2300
 Wire Bus Line
