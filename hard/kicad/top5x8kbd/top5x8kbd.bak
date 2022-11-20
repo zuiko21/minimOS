@@ -2159,12 +2159,12 @@ F 3 "" H 5000 2350 50  0001 C CNN
 $EndComp
 Connection ~ 5000 2350
 $Comp
-L Jumper:SolderJumper_3_Open JP21
+L Jumper:SolderJumper_3_Bridged12 JP21
 U 1 1 6372222A
 P 8650 6250
 F 0 "JP21" H 8650 6363 50  0000 C CNN
 F 1 "MD/VCS" H 8650 6454 50  0000 C CNN
-F 2 "Jumper:SolderJumper-3_P1.3mm_Open_RoundedPad1.0x1.5mm" H 8650 6250 50  0001 C CNN
+F 2 "Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm" H 8650 6250 50  0001 C CNN
 F 3 "~" H 8650 6250 50  0001 C CNN
 	1    8650 6250
 	1    0    0    1   

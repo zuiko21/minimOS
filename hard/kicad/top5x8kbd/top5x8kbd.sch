@@ -2349,9 +2349,9 @@ Text Label 2650 2700 1    39   ~ 0
 ROW1
 Text Label 2750 2700 1    39   ~ 0
 ROW2
-Text Label 2950 2700 1    39   ~ 0
-ROW3
 Text Label 2850 2700 1    39   ~ 0
+ROW3
+Text Label 2950 2700 1    39   ~ 0
 ROW4
 Text Label 3250 2700 1    39   ~ 0
 ROW7
