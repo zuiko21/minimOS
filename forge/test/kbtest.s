@@ -1,6 +1,6 @@
 ; Durango-X Minstrel-style keyboard test
 ; (c) 2022 Carlos J. Santisteban, based on work from Emilio López Berenguer
-; last modified 20221125-1608
+; last modified 20221125-1642
 
 #ifndef	MULTIBOOT
 	*	= $F000
@@ -38,7 +38,7 @@ cl_b:
 		BPL cl_p
 ; loop redrawing 2x2 squares in red (not pressed) or cyan (pressed)
 main:
-	LDY #4					; max. row offset
+	LDY #3					; max. row offset EEEEEEK
 	STY row
 r_loop:
 		LDX #9				; max. col offset
@@ -52,6 +52,7 @@ loop:
 	BMI main				; forever
 
 keydraw:
+; draw 2x2 square at (row,col) in red (not pressed) or cyan (pressed)
 	LDA row
 	CLC
 	ADC #$70				; page of first raster used for keys
@@ -60,18 +61,51 @@ keydraw:
 	ASL						; times two (0...18), C is clear
 	ADC #$D					; rightmost key is at offset $1F = $12 + $D
 	STA ptr					; pointer to top byte, bottom one is +$40
-; *****TEST
-	LDA #2					; red
+	JSR readkey				; check whether selected key is pressed (C) or not
+	LDA #$22				; red (free)
+	BCC no_key
+		LDA #$DD			; cyan (pressed)
+no_key:
 	STA (ptr)
 	LDY #$40
 	STA (ptr), Y
 	RTS
 
-#ifndef	MULTIBOOT
-#endif
+readkey:
+;	LDA #2
+;	CMP row
+;	BNE free
+;	LDA #6
+;	CMP col
+;	BNE free
+	LDX col					; check keyboard column
+	LDA km_col, X			; convert to matrix column
+	AND #$7F				; remove last bit!
+	STA $DF9B				; select column
+	LDA $DF9B				; and get row pattern
+	LDY row					; check keyboard row
+	BIT km_col, X			; check whether left (plus) or right (minus) half of the row
+	BMI right
+		AND l_row, Y		; and filter from (left) matrix index
+		JMP k_chk
+right:
+	AND r_row, Y			; and filter from (right) matrix index
+k_chk:
+	BEQ free				; mostly not pressed, or...
+		SEC					; that key was pressed
+		BCS c_set
+free:
+	CLC						; otherwise is free
+c_set:
+	RTS
 
-#ifndef	MULTIBOOT
-#endif
+; keyboard-to-matrix conversion
+km_col:
+	.byt	%00000001, %00000010, %00000100, %00001000, %00010000, %10010000, %10001000, %10000100, %10000010, %10000001
+l_row:
+	.byt	128,	64,		16,		4
+r_row:
+	.byt	32,		8,		2,		1
 
 #ifndef	MULTIBOOT
 nmi:
