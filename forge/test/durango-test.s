@@ -628,9 +628,12 @@ ok_l:
 #ifndef	MUTIBOOT
 	LDX #>testcard
 	LDY #<testcard
+#else
+	LDX #>switcher			; full-suite task switcher!
+	LDY #<switcher
+#endif
 	STX fw_nmi+1			; set NMI vector to test card
 	STY fw_nmi
-#endif
 
 all_ok:
 	JMP all_ok				; final lock (X=$FF)
@@ -663,6 +666,7 @@ fl_set:
 	TYA
 	BNE ploop				; A is NEVER zero
 
+#ifndef	MULTIBOOT
 testcard:
 ; *** display test patter for video delay adjustment ***
 ; minimal hardware init
@@ -761,8 +765,8 @@ rhalf:
 		SBC #$10			; eeeeeeek, it's MSN
 		STA systmp
 		BNE loop			; continue (black is not used)
-
 	JMP all_ok 
+#endif
 
 test_end: 
 
