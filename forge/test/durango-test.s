@@ -1,6 +1,6 @@
 ; FULL test of Durango-X/S/R (ROMmable version)
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20221125-1358
+; last modified 20221125-1537
 
 ;#define	NMOS	_NMOS
 
@@ -625,10 +625,12 @@ ok_l:
 	STA IO8mode
 
 ; *** all checked OK, wait for NMI press to show delay adjust screen ***
+#ifndef	MUTIBOOT
 	LDX #>testcard
 	LDY #<testcard
 	STX fw_nmi+1			; set NMI vector to test card
 	STY fw_nmi
+#endif
 
 all_ok:
 	JMP all_ok				; final lock (X=$FF)
