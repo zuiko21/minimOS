@@ -1,6 +1,6 @@
 ; FULL test of Durango-X/S/R (ROMmable version)
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20221102-1724
+; last modified 20221125-1358
 
 ;#define	NMOS	_NMOS
 
@@ -769,10 +769,12 @@ test_end:
 ; ********************************************
 
 ; *** interrupt handlers *** could be elsewhere, ROM only
+#ifndef	MULTIBOOT
 irq:
 	JMP (fw_irq)
 nmi:
 	JMP (fw_nmi)
+#endif
 
 ; *** interrupt routine (for both IRQ and NMI test) *** could be elsewhere
 isr:
