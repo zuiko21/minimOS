@@ -18,7 +18,10 @@ RED = $22
 DARK_GREEN = $44
 
 ; Tiles position (0xc000 - 0xdfff)
+#ifndef	MULTIBOOT
 *=ROM_START
+#endif
+
 ; ----- TILES ------
 tiles:
 .byt $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00, ; Tile $00
@@ -958,7 +961,7 @@ RTS
 ;--------------------------------------------------------
 
 
-
+#ifndef	MULTIBOOT
 ; Fill unused ROM
 .dsb $fffa-*, $FF
 
@@ -967,3 +970,4 @@ RTS
     .word begin
     .word begin
     .word begin
+#endif
