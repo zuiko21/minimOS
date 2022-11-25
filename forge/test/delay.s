@@ -1,6 +1,6 @@
 ; Delay test for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220709-1244
+; last modified 20221125-1404
 
 ;#include "../../macros.h"
 ;#include "../../zeropage.h"
@@ -17,7 +17,9 @@ colour		.byt	0		; ink colour
 
 ; *** test code ***
 .text
+#ifndef	MULTIBOOT
 *	= $400					; safe download address
+#endif
 
 ; minimal hardware init
 	LDA #$38				; colour mode, true video, screen 3, RGB enabled
