@@ -7,6 +7,8 @@
 
 	*	= $C000				; will have enouh with 16K?
 
+task	= $FA
+
 ; *** standard hardware test ***
 hwtest:
 .(
@@ -33,6 +35,9 @@ delay_c:
 
 ; *** delay test screen, HIRES mode ***
 delay_hr:
+lda#$b0
+sta $df80
+jmp delay_hr
 
 ; *** NMI task switcher ***
 switcher:
@@ -48,7 +53,7 @@ next:
 
 ; addresses list
 ex_ptr:
-	.word	reset
+	.word	hwtest
 	.word	joypad
 	.word	keyboard
 	.word	delay_c

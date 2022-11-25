@@ -625,7 +625,7 @@ ok_l:
 	STA IO8mode
 
 ; *** all checked OK, wait for NMI press to show delay adjust screen ***
-#ifndef	MUTIBOOT
+#ifndef	MULTIBOOT
 	LDX #>testcard
 	LDY #<testcard
 #else
