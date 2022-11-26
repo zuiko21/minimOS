@@ -43,6 +43,9 @@ clear:
 ; draw vertical limits
 	LDX #31					; 32 bytes per line
 	LDA #$FF				; all white
+	STA $6200				; some fixed bytes
+	STA $6400
+;	STA $651F
 hloop:
 		STA $6000, X		; top raster
 		STA $7FE0, X		; bottom raster
@@ -50,21 +53,25 @@ hloop:
 		BPL hloop
 ; add serrations in between
 ; left side
-	LDX #7					; 7 bytes per corner
+	LDX #6					; 7 bytes per corner
 ls_loop:
 		ASL					; remove rightmost bit
 		LDY tl_off, X		; get offset to top left
 		STA $6000, Y		; all within a page
+		STA $6200, Y		; same pattern, somewhat lower
+		STA $651F, Y
 		LDY bl_off, X		; bottom left offset
 		STA $7F00, Y
 		DEX
 		BPL ls_loop
 ; right side
-	LDX #7					; 7 bytes per corner
+	TXA						; actually $FF eeeeeeeek
+	LDX #6					; 7 bytes per corner
 rs_loop:
 		LSR					; remove leftmost bit
 		LDY tl_off, X		; get offset to top left
 		STA $601F, Y		; all within a page, note offset
+		STA $6400, Y
 		LDY bl_off, X		; bottom left offset
 		STA $7F1F, Y
 		DEX
