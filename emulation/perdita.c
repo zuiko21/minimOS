@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban, Emilio López Berenguer
- * last modified 20221111-1736
+ * last modified 20221126-1823
  * */
 
 /* Gamepad buttons constants */
@@ -2438,7 +2438,7 @@ void vdu_draw_color_pixel(word addr) {
 
 	// Draw Left Pixel
 	vdu_set_color_pixel((mem[addr] & 0xf0) >> 4);
-	fill_rect.x = x << 2;				// * pixel_size;
+	fill_rect.x = x << 2 -1;			// * pixel_size;
 	fill_rect.y = y << 2;				// * pixel_size;
 	fill_rect.w = pixel_size;
 	fill_rect.h = pixel_size;
