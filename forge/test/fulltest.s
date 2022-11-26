@@ -1,6 +1,6 @@
 ; Durango-X and peripherals FULL test suite
 ; (c) 2022 Carlos J. Santisteban, parts from Emilio López Berenguer
-; last modified 20221126-1916
+; last modified 20221126-2052
 
 ; assemble from forge/test
 #define	MULTIBOOT
@@ -49,7 +49,13 @@ switcher:
 		LDX #0				; start over
 next:
 	STX task
-	JMP (ex_ptr, X)			; otherwise, execute new task
+;	JMP (ex_ptr, X)			; otherwise, execute new task, CMOS only!
+	LDA ex_ptr+1, X
+	PHA
+	LDA ex_ptr, X
+	PHA
+	PHP
+	RTI						; indexed jump emulation!
 
 ; addresses list
 ex_ptr:

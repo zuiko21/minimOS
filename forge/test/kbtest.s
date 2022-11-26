@@ -1,6 +1,6 @@
 ; Durango-X Minstrel-style keyboard test
 ; (c) 2022 Carlos J. Santisteban, based on work from Emilio López Berenguer
-; last modified 20221125-1642
+; last modified 20221126-2101
 
 #ifndef	MULTIBOOT
 	*	= $F000
@@ -66,7 +66,8 @@ keydraw:
 	BCC no_key
 		LDA #$DD			; cyan (pressed)
 no_key:
-	STA (ptr)
+	LDY #0
+	STA (ptr), Y			; CMOS savvy!
 	LDY #$40
 	STA (ptr), Y
 	RTS
@@ -84,11 +85,14 @@ readkey:
 	STA $DF9B				; select column
 	LDA $DF9B				; and get row pattern
 	LDY row					; check keyboard row
-	BIT km_col, X			; check whether left (plus) or right (minus) half of the row
+;	BIT km_col, X			; check whether left (plus) or right (minus) half of the row, CMOS only!
+	LDA km_col, X			; check whether left (plus) or right (minus) half of the row, NMOS-savvy
 	BMI right
+		LDA $DF9B			; retrieve pattern for NMOS!
 		AND l_row, Y		; and filter from (left) matrix index
 		JMP k_chk
 right:
+	LDA $DF9B				; retrieve pattern for NMOS!
 	AND r_row, Y			; and filter from (right) matrix index
 k_chk:
 	BEQ free				; mostly not pressed, or...
