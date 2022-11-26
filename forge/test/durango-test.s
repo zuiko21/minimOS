@@ -1,6 +1,6 @@
 ; FULL test of Durango-X/S/R (ROMmable version, NMOS-savvy)
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20221126-1939
+; last modified 20221126-2048
 
 ; ****************************
 ; *** standard definitions ***
@@ -620,7 +620,54 @@ rb_zi:
 		STA test
 		CMP #16				; upper limit
 		BCS sweep
-; sound done, print GREEN banner
+; sound done, may check CPU type too (from David Empson work)
+	LDY #$00				; by default, NMOS 6502 (0)
+	SED						; decimal mode
+	LDA #$99				; load highest BCD number
+	CLC						; prepare to add
+	ADC #$01				; will wrap around in Decimal mode
+	CLD						; back to binary
+		BMI cck_set			; NMOS, N flag not affected by decimal add
+	LDY #$03				; assume now '816 (3)
+	LDX #$00				; sets Z temporarily
+	.byt	$BB				; TYX, 65816 instruction will clear Z, NOP on all 65C02s will not
+		BNE cck_set			; branch only on 65802/816
+	DEY						; try now with Rockwell (2)
+	STY $EA					; store '2' there, irrelevant contents
+	.byt	$17, $EA		; RMB1 $EA, Rockwell R65C02 instruction will reset stored value, otherwise NOPs
+	CPY $EA					; location $EA unaffected on other 65C02s
+		BNE cck_set			; branch only on Rockwell R65C02 (test CPY)
+	DEY						; revert to generic 65C02 (1)
+		BNE cck_set			; cannot be zero, thus no need for BRA
+cck_set:
+	TYA						; A = 0...3 (NMOS/CMOS/Rockwell/816)
+; display minibanner with CPU type, 5x16 pixels each
+	LDX #7					; max. offset
+	ASL
+	ASL
+	ASL			; times 8
+	STA test
+	ASL
+	ASL			; times 32
+	ADC test	; plus 8x (C was clear), it's times 40
+	ADC #7		; base offset (C should be clear too)
+	TAY			; reading index
+cpu_loop:
+		LDA cpu_n, Y
+		STA $7400, X
+		LDA cpu_n+8, Y
+		STA $7440, X
+		LDA cpu_n+16, Y
+		STA $7480, X
+		LDA cpu_n+24, Y
+		STA $74C0, X
+		LDA cpu_n+32, Y
+		STA $7500, X
+		DEY
+		DEX
+		BPL cpu_loop
+
+; all ended, print GREEN banner
 	LDX #3					; max. offset
 ok_l:
 		LDA ok_b, X			; put banner data...
@@ -683,7 +730,7 @@ fl_set:
 
 #ifndef	MULTIBOOT
 testcard:
-; *** display test patter for video delay adjustment ***
+; *** display test pattern for video delay adjustment ***
 ; minimal hardware init
 	LDA #$38				; systmp mode, true video, screen 3, RGB enabled, extra LED off!
 	STA IO8mode				; set hardware mode register
@@ -837,6 +884,34 @@ rom_b:
 	.byt	$DD, $D0, $DD, $D0, $DD, $0D, $D0	; red 'ROM' (actually cyan as most of the time will show in inverse)
 	.byt	$DD, $00, $D0, $D0, $D0, $D0, $D0
 	.byt	$D0, $D0, $DD, $D0, $D0, $00, $D0
+
+cpu_n:
+	.byt	$FF, $F0, $FF, $F0, $FF, $F0, $FF, $F0	; white 6502
+	.byt	$F0, $00, $F0, $00, $F0, $F0, $00, $F0
+	.byt	$FF, $F0, $FF, $F0, $F0, $F0, $FF, $F0
+	.byt	$F0, $F0, $00, $F0, $F0, $F0, $F0, $00
+	.byt	$FF, $F0, $FF, $F0, $FF, $F0, $FF, $F0
+
+cpu_c:
+	.byt	$FF, $F0, $FF, $0F, $F0, $FF, $F0, $FF	; white 65C02 @ +40
+	.byt	$F0, $00, $F0, $0F, $00, $F0, $F0, $0F
+	.byt	$FF, $F0, $FF, $0F, $00, $F0, $F0, $FF
+	.byt	$F0, $F0, $0F, $0F, $00, $F0, $F0, $F0
+	.byt	$FF, $F0, $FF, $0F, $F0, $FF, $F0, $FF
+
+cpu_r:
+	.byt	$FF, $00, $F0, $FF, $0F, $FF, $0F, $F0; white R'C02 @ +80
+	.byt	$FF, $F0, $F0, $F0, $0F, $0F, $00, $F0
+	.byt	$FF, $00, $00, $F0, $0F, $0F, $0F, $F0
+	.byt	$F0, $F0, $00, $F0, $0F, $0F, $0F, $00
+	.byt	$F0, $F0, $00, $FF, $0F, $FF, $0F, $F0
+
+cpu_16:
+	.byt	$FF, $F0, $FF, $0F, $FF, $0F, $0F, $FF	; white 65816 @ +120
+	.byt	$F0, $00, $F0, $0F, $0F, $0F, $0F, $00
+	.byt	$FF, $F0, $FF, $0F, $FF, $0F, $0F, $FF
+	.byt	$F0, $F0, $0F, $0F, $0F, $0F, $0F, $0F
+	.byt	$FF, $F0, $FF, $0F, $FF, $0F, $0F, $FF
 
 ; *** bit position table ***
 ; INDEX =    0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
