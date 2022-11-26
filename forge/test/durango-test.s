@@ -1,6 +1,6 @@
 ; FULL test of Durango-X/S/R (ROMmable version, NMOS-savvy)
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20221126-1925
+; last modified 20221126-1939
 
 ; ****************************
 ; *** standard definitions ***
@@ -284,11 +284,11 @@ rom_bad:
 		LDX #6				; max. horizontal offset
 ck_b:
 			LDA rom_b, X	; copy banner data into screen
-			STA $6F1C, X
+			STA $6F19, X
 			LDA rom_b+7, X
-			STA $6F5C, X
+			STA $6F59, X
 			LDA rom_b+14, X
-			STA $6F9C, X
+			STA $6F99, X
 			DEX
 			BPL ck_b		; no offset!
 		LDA #%10100000		; *** bad ROM, LED code = %1 01011111 ***
@@ -321,7 +321,11 @@ mt_loop:
 		STA posi			; ...storing differences
 		INX
 		BNE mt_loop
+#ifdef	HIRES
+	LDY #$B0				; for testing
+#else
 	LDY #$38				; * restore usual video mode, extra LED off *
+#endif
 	STY IO8mode				; back to original mode
 	LDX #7					; maximum bit offset
 mt_disp:
@@ -560,7 +564,11 @@ it_1:
 ; check timeout results for slow or fast
 	SEI						; no more interrupts, but hardware still generates them (LED off)
 ; back to true video
+#ifdef	HIRES
+	LDX #$B0				; for testing
+#else
 	LDX #$38				; can no longer be zero
+#endif
 	STX IO8mode
 ; display dots indicating how many times IRQ happened
 	LDX test				; using amount as index
