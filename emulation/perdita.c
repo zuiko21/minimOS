@@ -2438,7 +2438,7 @@ void vdu_draw_color_pixel(word addr) {
 
 	// Draw Left Pixel
 	vdu_set_color_pixel((mem[addr] & 0xf0) >> 4);
-	fill_rect.x = x << 2 -1;			// * pixel_size;
+	fill_rect.x = x << 2;				// * pixel_size;
 	fill_rect.y = y << 2;				// * pixel_size;
 	fill_rect.w = pixel_size;
 	fill_rect.h = pixel_size;
@@ -2460,7 +2460,7 @@ void vdu_draw_hires_pixel(word addr) {
 	int x = ((addr - screen_address) << 3) & 255;
 	byte b = mem[addr];
 
-	fill_rect.x = x << 1;				// * hpixel_size;
+	fill_rect.x = (x << 1) -2;			// * hpixel_size;
 	fill_rect.y = y << 1;				// * hpixel_size;
 	fill_rect.w = hpixel_size;
 	fill_rect.h = hpixel_size;
