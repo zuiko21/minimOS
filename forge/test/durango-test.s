@@ -1,8 +1,6 @@
-; FULL test of Durango-X/S/R (ROMmable version)
+; FULL test of Durango-X/S/R (ROMmable version, NMOS-savvy)
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20221125-1537
-
-;#define	NMOS	_NMOS
+; last modified 20221126-1925
 
 ; ****************************
 ; *** standard definitions ***
@@ -32,7 +30,11 @@ reset:
 	LDX #$FF
 	TXS
 ; Durango-X specific stuff
+#ifdef	HIRES
+	LDA #$B0				; for testing
+#else
 	LDA #$38				; flag init and interrupt disable
+#endif
 	STA IO8mode				; set colour mode
 	STA IOAen				; disable hardware interrupt (LED turns on)
 
@@ -97,9 +99,7 @@ mt_5:
 	STA himem				; store in a safe place (needed afterwards)
 ; the address test needs himem in a bit-position format (An+1)
 	LDY #8					; limit in case of a 256-byte RAM!
-#ifdef	NMOS
-	INC						; CMOS only
-#else
+;	INC						; CMOS only, instead of addition below
 	CLC
 	ADC #1
 #endif
@@ -113,12 +113,10 @@ mt_6:
 ; X=bubble bit, Y=base bit (An+1)
 ; written value =$XY
 ; first write all values
-#ifndef	NMOS
-	STZ 0					; zero is a special case, as no bits are used
-#else
+;	STZ 0					; zero is a special case, as no bits are used
 	LDA #0
 	STA 0
-#endif
+
 	LDY #1					; first base bit, representing A0
 at_0:
 		LDX #0				; init bubble bit as disabled, will jump to Y+1
@@ -136,13 +134,11 @@ at_1:
 			ASL
 			ASL				; ...times 16
 			ORA systmp		; byte complete in A
-#ifndef	NMOS
-			STA (sysptr)	; CMOS only
-#else
+;			STA (sysptr)	; CMOS only instead of 3 lines below
 			LDY #0
 			STA (sysptr), Y
 			LDY systmp		; easily recovered writing $XY instead of $YX
-#endif
+
 			TXA				; check if bubble bit is present
 			BNE at_2		; it is, just advance it
 				TYA			; if not, will be base+1
@@ -177,15 +173,13 @@ at_4:
 			ASL
 			ASL				; ...times 16
 			ORA systmp		; byte complete in A
-#ifndef	NMOS
-			CMP (sysptr)	; CMOS only
-				BNE at_bad
-#else
+;			CMP (sysptr)	; CMOS only
+;				BNE at_bad
 			LDY #0
 			CMP (sysptr), Y
 				BNE at_bad
 			LDY systmp		; easily recovered writing $XY instead of $YX
-#endif
+
 			TXA				; check if bubble bit is present
 			BNE at_5		; it is, just advance it
 				TYA			; if not, will be base+1
@@ -339,8 +333,12 @@ mt_disp:
 			ORA #8			; add blue to non-essential
 mt_ess:
 		STA $66E8, X		; display dots to the right
-		BIT #2				; recheck non-responding
+;		BIT #2				; recheck non-responding... CMOS!!!
+		TAY					; need to save A
+		AND #2
+
 		BEQ mt_bitok
+			TYA				; retrieve A, NMOS only
 			STA $6768, X	; mark them down again for clarity
 mt_bitok:
 		DEX
@@ -537,7 +535,11 @@ it_b:
 		DEX
 		BPL it_b			; no offset!
 ; inverse video during test (brief flash)
+#ifdef	HIRES
+	LDA #$F0				; HIRES inverse, for testing
+#else
 	LDA #$78				; colour, inverse, RGB
+#endif
 	STA IO8mode				; eeeeek
 ; interrupt setup
 	LDY #<isr				; ISR address
@@ -621,7 +623,11 @@ ok_l:
 		STA $785C, X
 		DEX
 		BPL ok_l			; note offset-avoiding BPL
+#ifdef	HIRES
+	LDA #$B4				; extre LED on HIRES, for testing
+#else
 	LDA #$3C				; turn on extra LED
+#endif
 	STA IO8mode
 
 ; *** all checked OK, wait for NMI press to show delay adjust screen ***
@@ -662,6 +668,7 @@ fl_off:
 	LDA IO8mode				; otherwise clear inverse mode
 	AND #%10111111
 fl_set:
+	ORA #%00001000			; enable RGB, just in case
 	STA IO8mode				; set inverse flag according to bit
 	TYA
 	BNE ploop				; A is NEVER zero

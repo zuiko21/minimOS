@@ -1,6 +1,6 @@
 ; Durango-X and peripherals FULL test suite
 ; (c) 2022 Carlos J. Santisteban, parts from Emilio López Berenguer
-; last modified 20221125-1724
+; last modified 20221126-1916
 
 ; assemble from forge/test
 #define	MULTIBOOT
@@ -35,9 +35,9 @@ delay_c:
 
 ; *** delay test screen, HIRES mode ***
 delay_hr:
-lda#$b0
-sta $df80
-jmp delay_hr
+.(
+#include "hrdelay.s"
+.)
 
 ; *** NMI task switcher ***
 switcher:
