@@ -1,6 +1,6 @@
 ; Delay test for Durango-X (HIRES mode)
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221126-1444
+; last modified 20221126-1911
 
 ; *** some global definitions ***
 IO8flags	= $DF80
@@ -15,15 +15,17 @@ tmp			.byt	0		; temporary usage
 ; *** test code ***
 .text
 #ifndef	MULTIBOOT
-*	= $400					; safe download address
+*	= $FF00					; ROMmable
 #endif
 
+start:
 ; standard 6502 stuff
 	SEI
 	CLD
 	LDX #$FF
 	TXS
 ; minimal hardware init
+	STX $DFA0				; turn LED off
 	LDA #$B0				; HIRES mode, true video, screen 3
 	STA IO8flags			; set hardware mode register
 ; init variables
@@ -43,9 +45,12 @@ clear:
 ; draw vertical limits
 	LDX #31					; 32 bytes per line
 	LDA #$FF				; all white
-	STA $6200				; some fixed bytes
-	STA $6400
-;	STA $651F
+; some fix bytes
+	STA $6200				; left border test
+	STA $641F				; right border test
+	STA $6800				; enable test
+	STA $7B00				; left border test, down
+	STA $7D1F				; right border test, down
 hloop:
 		STA $6000, X		; top raster
 		STA $7FE0, X		; bottom raster
@@ -58,8 +63,9 @@ ls_loop:
 		ASL					; remove rightmost bit
 		LDY tl_off, X		; get offset to top left
 		STA $6000, Y		; all within a page
-		STA $6200, Y		; same pattern, somewhat lower
-		STA $651F, Y
+		STA $641F, Y		; same pattern for right border test
+		STA $7D1F, Y
+		STA $6800, Y		; enable test
 		LDY bl_off, X		; bottom left offset
 		STA $7F00, Y
 		DEX
@@ -71,100 +77,67 @@ rs_loop:
 		LSR					; remove leftmost bit
 		LDY tl_off, X		; get offset to top left
 		STA $601F, Y		; all within a page, note offset
-		STA $6400, Y
+		STA $6200, Y		; left border test
+		STA $7B00, Y
 		LDY bl_off, X		; bottom left offset
 		STA $7F1F, Y
 		DEX
 		BPL rs_loop
-/*
-	LDX #$60				; restore pointer
-	STX pt+1
-; finish init
-	LDA #%11110000			; white at MSB
-	STA colour				; preset first ink colour
-; pattern loop
-loop:
-		LDA colour			; left pixel colour
-		LDX #6				; six wide patterns... (2+4)
-lwide:
-			STA (pt), Y		; set this pattern
-			INY				; leave one or three blank bytes
-			INY
-			CPX #5			; within first half?
-			BCC lskip
-				INY			; skip three then
-				INY
-lskip:
-			DEX
-			BNE lwide
-tight:
-			STA (pt), Y		; set all bytes this way
-			INY
-			INX				; this counter was reset, now goes up
-			CPX #16			; middle of the pattern?
-			BNE top_t
-				LSR			; if so, shift to right pixel
-				LSR
-				LSR
-				LSR
-top_t:
-			CPX #32			; end of tight pattern?
-			BNE tight
-		LDX #6				; six wide patterns again
-rwide:
-			STA (pt), Y		; set this pattern
-			INY				; leave one or three blank bytes
-			INY
-			CPX #3			; within last half?
-			BCS rskip
-				INY			; skip three then
-				INY
-rskip:
-			DEX
-			BNE rwide
-		TYA					; check offset
-		BNE loop
-		INC pt+1			; next page is big chunks
-; enable delay test
-		LDA colour			; get MSN
-		LSR					; turn into LSN
-		LSR
-		LSR
-		LSR
-		ORA colour			; both pixels
-		LDY #31				; half line
-lhalf:
-			STA (pt), Y
-			DEY
-			BPL lhalf
-		LDY #64				; next raster to the left
-		STA (pt), Y
-		LDY #160			; right half, third raster
-rhalf:
-			STA (pt), Y
-			INY
-			CPY #192		; until end of raster
-			BNE rhalf
-		LDY #224			; middle of last raster
-		STA (pt), Y
-		INY
-		STA (pt), Y			; two bytes
-; change colour and advance page
-		INC pt+1
-		LDY #0				; eeeeek
-		LDA colour
+; disable test
+	LDX #7					; max offset from table
+	STX tmp
+ramp:
+		LDX tmp
+		LDA bl_off, X		; get offset
+		CLC
+		ADC tmp				; every line advances one byte
+		TAY					; set start
+		LDA #16
 		SEC
-		SBC #$10			; eeeeeeek, it's MSN
-		STA colour
-		BNE loop			; continue (black is not used)
-*/
-
+		SBC tmp
+		TAX
+		LDA #$FF
+toend:
+			STA $7810, Y	; store this byte...
+			INY
+			DEX				; until some fixed column
+			BNE toend
+		DEC tmp				; next raster
+		BPL ramp
+; some lateral marks
+	LDX #7
+side:
+		LDA #128			; left pixel
+		LDY bl_off, X
+		STA $6D00, Y
+		LDA #1				; right pixel
+		STA $721F, Y
+		DEX
+		BPL side
+; pixel rendering test
+	LDX #0
+pixels:
+		LDA #$55
+		STA $6F00, X
+		LDA #$AA
+		STA $7000, X
+		INX
+		BNE pixels
 lock:
-	BEQ lock
+	BEQ lock				; NMOS savvy
 
 ; *** tables ***
 tl_off:						; offset to top left, add 31 for right
 	.byt	224, 192, 160, 128, 96, 64, 32
 
 bl_off:						; bottom left offset, add 31 for right
-	.byt	0, 32, 64, 96, 128, 160, 192
+	.byt	0, 32, 64, 96, 128, 160, 192, 224
+
+end_tables:
+
+#ifndef	MULTIBOOT
+	.dsb	$FFFA-*, $FF	; ROM padding
+	.word	start
+	.word	start
+	.word	start
+#endif
