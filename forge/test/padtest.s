@@ -1,6 +1,6 @@
 ; Durango-X gamepad test
 ; (c) 2022 Carlos J. Santisteban, based on work from Emilio López Berenguer
-; last modified 20221127-1224
+; last modified 20221127-2147
 
 #ifndef	MULTIBOOT
 	*	= $F000
@@ -69,6 +69,7 @@ cl_b:
 
 ; scan buttons and fill with appropriate colour
 main:
+		JSR readpad			; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK!
 		LDA $DF9C			; pad 1
 		EOR gm1				; adapt it!
 		STA tmp
