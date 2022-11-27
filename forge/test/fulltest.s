@@ -1,11 +1,11 @@
 ; Durango-X and peripherals FULL test suite
 ; (c) 2022 Carlos J. Santisteban, parts from Emilio López Berenguer
-; last modified 20221126-2052
+; last modified 20221127-1228
 
 ; assemble from forge/test
 #define	MULTIBOOT
 
-	*	= $C000				; will have enouh with 16K?
+	*	= $F000				; 4K is enough!
 
 task	= $FA
 
@@ -15,10 +15,10 @@ hwtest:
 #include "durango-test.s"
 .)
 
-; *** Emilio's joypad test ***
+; *** joypad test (based on Emilio's work)***
 joypad:
 .(
-
+#include "padtest.s"
 .)
 
 ; *** Assembly version of Emilio's 5x8 keyboard test ***
