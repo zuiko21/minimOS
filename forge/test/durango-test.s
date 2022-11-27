@@ -1,6 +1,6 @@
 ; FULL test of Durango-X/S/R (ROMmable version, NMOS-savvy)
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20221126-2048
+; last modified 20221127-0939
 
 ; ****************************
 ; *** standard definitions ***
@@ -886,11 +886,11 @@ rom_b:
 	.byt	$D0, $D0, $DD, $D0, $D0, $00, $D0
 
 cpu_n:
-	.byt	$FF, $F0, $FF, $F0, $FF, $F0, $FF, $F0	; white 6502
-	.byt	$F0, $00, $F0, $00, $F0, $F0, $00, $F0
-	.byt	$FF, $F0, $FF, $F0, $F0, $F0, $FF, $F0
-	.byt	$F0, $F0, $00, $F0, $F0, $F0, $F0, $00
-	.byt	$FF, $F0, $FF, $F0, $FF, $F0, $FF, $F0
+	.byt	$22, $20, $22, $20, $22, $20, $22, $20	; red (as in "not supported") 6502
+	.byt	$20, $00, $20, $00, $20, $20, $00, $20
+	.byt	$22, $20, $22, $20, $20, $20, $22, $20
+	.byt	$20, $20, $00, $20, $20, $20, $20, $00
+	.byt	$22, $20, $22, $20, $22, $20, $22, $20
 
 cpu_c:
 	.byt	$FF, $F0, $FF, $0F, $F0, $FF, $F0, $FF	; white 65C02 @ +40
@@ -900,18 +900,18 @@ cpu_c:
 	.byt	$FF, $F0, $FF, $0F, $F0, $FF, $F0, $FF
 
 cpu_r:
-	.byt	$FF, $00, $F0, $FF, $0F, $FF, $0F, $F0; white R'C02 @ +80
+	.byt	$FF, $00, $F0, $FF, $0F, $FF, $0F, $F0	; white R'C02 @ +80
 	.byt	$FF, $F0, $F0, $F0, $0F, $0F, $00, $F0
 	.byt	$FF, $00, $00, $F0, $0F, $0F, $0F, $F0
 	.byt	$F0, $F0, $00, $F0, $0F, $0F, $0F, $00
 	.byt	$F0, $F0, $00, $FF, $0F, $FF, $0F, $F0
 
 cpu_16:
-	.byt	$FF, $F0, $FF, $0F, $FF, $0F, $0F, $FF	; white 65816 @ +120
-	.byt	$F0, $00, $F0, $0F, $0F, $0F, $0F, $00
-	.byt	$FF, $F0, $FF, $0F, $FF, $0F, $0F, $FF
-	.byt	$F0, $F0, $0F, $0F, $0F, $0F, $0F, $0F
-	.byt	$FF, $F0, $FF, $0F, $FF, $0F, $0F, $FF
+	.byt	$AA, $A0, $AA, $0A, $AA, $0A, $0A, $AA	; pink 65816 @ +120
+	.byt	$A0, $00, $A0, $0A, $0A, $0A, $0A, $00
+	.byt	$AA, $A0, $AA, $0A, $AA, $0A, $0A, $AA
+	.byt	$A0, $A0, $0A, $0A, $0A, $0A, $0A, $0A
+	.byt	$AA, $A0, $AA, $0A, $AA, $0A, $0A, $AA
 
 ; *** bit position table ***
 ; INDEX =    0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
