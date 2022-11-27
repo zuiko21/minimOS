@@ -1,9 +1,9 @@
 ; Durango-X gamepad test
 ; (c) 2022 Carlos J. Santisteban, based on work from Emilio López Berenguer
-; last modified 20221127-1035
+; last modified 20221127-1047
 
 #ifndef	MULTIBOOT
-	*	= $F000
+	*	= $FF00
 #endif
 
 ; *** zeropage definitions ***
@@ -119,6 +119,7 @@ butl:
 	.byt	$24, $A3, $22, $A3, $A7, $AD, $A9, $B1
 buth:
 	.byt	$64, $64, $64, $63, $64, $64, $64, $64
+end:
 
 ; *********************************
 ; *** stuff for standalone test ***
