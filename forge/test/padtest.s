@@ -1,9 +1,9 @@
 ; Durango-X gamepad test
 ; (c) 2022 Carlos J. Santisteban, based on work from Emilio López Berenguer
-; last modified 20221127-1047
+; last modified 20221127-1224
 
 #ifndef	MULTIBOOT
-	*	= $FF00
+	*	= $F000
 #endif
 
 ; *** zeropage definitions ***
@@ -12,6 +12,7 @@
 	gm2		= $83
 	tmp		= $84			; temporary pad value
 	n_pad	= $85			; selected pad (0=pad 2, 8=pad 1) 
+	src		= tmp			; temporary source pointer
 
 ; *** test code ***
 reset:
@@ -46,7 +47,25 @@ cl_b:
 			BNE cl_b
 		INX					; next page within first half
 		BPL cl_p
-; load pads image *** TBD
+; load pad images
+	LDX #>image_p			; pink controller goes top
+	LDY #<image_p
+	STY src
+	STX src+1
+	LDX #$62				; top pad position
+	LDY #$20
+	STY ptr
+	STX ptr+1				; update pointer
+	JSR drawpad
+	LDX #>image_b			; blue controller goes bottom
+	LDY #<image_b
+	STY src
+	STX src+1
+	LDX #$6A				; bottom pad position
+	LDY #$20
+	STY ptr
+	STX ptr+1				; update pointer
+	JSR drawpad
 
 ; scan buttons and fill with appropriate colour
 main:
@@ -103,6 +122,34 @@ pad_l:
 		BNE pad_l
 	RTS						; $DF9C and $DF9D hold the raw pad values
 
+; *** copy 42x17 image ***
+drawpad:
+	LDX #17					; actually number of rasters
+dr_p:
+		LDY #20				; last byte offset (for 42 pixel)
+dr_b:
+			LDA (src), Y
+			STA (ptr), Y
+			DEY
+			BPL dr_b
+		LDA src
+		CLC
+		ADC #21				; add byte count to source pointer
+		STA src
+		BCC dr_now
+			INC src+1
+dr_now:
+		LDA ptr
+		CLC
+		ADC #$40			; next raster
+		STA ptr
+		BCC dr_rst
+			INC ptr+1		; next page
+dr_rst:
+		DEX
+		BNE dr_p
+	RTS
+
 ; ******************************
 ; *** button addresses table *** based on pad 2 (upper)
 ; ---- keys ----
@@ -119,6 +166,11 @@ butl:
 	.byt	$24, $A3, $22, $A3, $A7, $AD, $A9, $B1
 buth:
 	.byt	$64, $64, $64, $63, $64, $64, $64, $64
+
+image_b:
+	.bin	0, 0, "../../other/data/nesblue.42x17"
+image_p:
+	.bin	0, 0, "../../other/data/nespink.42x17"
 end:
 
 ; *********************************
