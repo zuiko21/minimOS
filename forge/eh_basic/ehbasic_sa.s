@@ -33,26 +33,27 @@
 ; *****************************************************
 ; *** firmware & hardware definitions for Durango-X ***
 ; *****************************************************
-fw_irq		= $0200		; ### usual minimOS interrupt vectors ###
+fw_irq		= $0200			; ### usual minimOS interrupt vectors ###
 fw_nmi		= $0202
-ticks		= $0206		; jiffy counter EEEEK
+ticks		= $0206			; jiffy counter EEEEK
+; make room for keyboard driver ($020A-$020F)
 ; CONIO specific variables
-fw_cbin		= ticks+4				; integrated picoVDU/Durango-X specifics
-fw_fnt		= fw_cbin+1				; (new, pointer to relocatable 2KB font file)
-fw_mask		= fw_fnt+2				; (for inverse/emphasis mode)
-fw_chalf	= fw_mask+1				; (remaining pages to write)
+fw_cbin		= $0210			; integrated picoVDU/Durango-X specifics
+fw_fnt		= fw_cbin+1		; (new, pointer to relocatable 2KB font file)
+fw_mask		= fw_fnt+2		; (for inverse/emphasis mode)
+fw_chalf	= fw_mask+1		; (remaining pages to write)
 fw_sind		= fw_chalf+1
-fw_ccol		= fw_sind+3				; (no longer SPARSE array of two-pixel combos, will store ink & paper)
+fw_ccol		= fw_sind+3		; (no longer SPARSE array of two-pixel combos, will store ink & paper)
 fw_ctmp		= fw_ccol+4
-fw_cbyt		= fw_ctmp				; (temporary glyph storage) other tmp
-fw_ccnt		= fw_cbyt+1				; (bytes per raster counter, no longer X) other tmp
-fw_ciop		= fw_ccnt+1				; cursor position
-fw_vbot		= fw_ciop+2				; page start of screen at current hardware setting (updated upon FF)
-fw_vtop		= fw_vbot+1				; first non-VRAM page (new)
-fw_io9		= fw_vtop+1				; received keypress
-fw_scur		= fw_io9+1				; NEW, cursor control
-fw_knes		= fw_scur+1				; NEW, NES-pad alternative keyboard
-; CONIO zeropage usage
+fw_cbyt		= fw_ctmp		; (temporary glyph storage) other tmp
+fw_ccnt		= fw_cbyt+1		; (bytes per raster counter, no longer X) other tmp
+fw_ciop		= fw_ccnt+1		; cursor position
+fw_vbot		= fw_ciop+2		; page start of screen at current hardware setting (updated upon FF)
+fw_vtop		= fw_vbot+1		; first non-VRAM page (new)
+fw_io9		= fw_vtop+1		; received keypress
+fw_scur		= fw_io9+1		; NEW, cursor control
+fw_knes		= fw_scur+1		; NEW, NES-pad alternative keyboard
+; CONIO zeropage usage ($E4-$E7)
 cio_pt		= $E6
 cio_src		= $E4
 
@@ -67,7 +68,7 @@ cio_src		= $E4
 
 .(
 	.asc	"Derived from EhBASIC v2.22 by Lee Davison", 0		; comment with IMPORTANT attribution
-	.asc	"QEPD", 0
+	.asc	"RIP", 0
 
 ; ***********************
 ; *** zero page usage ***
