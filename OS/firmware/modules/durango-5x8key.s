@@ -1,27 +1,28 @@
 ; Durango-X 5x8 keyboard driver
 ; v0.1a2
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221128-1726
+; last modified 20221128-1757
 
 ; usual definitions
 #ifndef	KEYBDRV
 #define	KEYBDRV
-IO9pask	= $DF9A				; PASK port
 IO9m5x8	= $DF9B				; matrix keyboard port
 kb_asc	= $020A				; read key
-kb_type	= $020B				; type of keyboard (0=PASK, 2=5x8 matrix...)
-kb_mod	= $020C				; modifier keys combo (d7=SYMBOL, d6=CAPS)
-kb_ctl	= $020D				; control key mode (d7 only)
-kb_scan	= $020E				; last scancode read (for repeat)
-kb_rcnt	= $020F				; repeat counter
+kb_mod	= $020B				; modifier keys combo (d7=ALT, d6=SHIFT)
+kb_ctl	= $020C				; control key flag (d7)
+kb_scan	= $020D				; last scancode read
+kb_rcnt	= $020E				; repeat counter
 #endif
 
 ; *** some other constants for repeat rate (in 4 ms units) ***
 #define	DELAY	175
 #define	RATE	25
 
-#ifdef	KBDISR
+; ***********************************************
 ; *** *** plug-and-play interrupt support *** ***
+#ifdef	KBDISR
+IO9pask	= $DF9A				; PASK port
+kb_type	= $020F				; type of keyboard (0=PASK, 2=5x8 matrix...)
 ; *** ISR to be called via JSR (will return)
 kbd_isr:
 	LDX kb_type
@@ -37,35 +38,35 @@ drv_pask:
 	LDA IO9pask				; PASK peripheral address
 	STA kb_asc				; store for software
 	RTS
-; *** *** ******************************* *** ***
 #endif
+; *** *** ******************************* *** ***
+; ***********************************************
 
 ; *** 5x8 matrix driver ***
 drv_5x8:
-	LDY #0					; first column contains CAPS SHIFT
+	LDY #0
 	STY kb_mod				; reset modifiers (no need for STZ)
-	INY						; get bit pattern for this column (d0 is actually 1)
+	INY						; column 1 has CAPS SHIFT
 	STY IO9m5x8				; select column
-	LDA IO9m5x8				; get column
-	AND #32					; select CAPS SHIFT row
-	BEQ no_cs				; if CAPS SHIFT is pressed...
-		SEC					; ...will set bit
-no_cs:
-	ROR kb_mod				; insert CAPS bit (will end at d6)
+	LDA IO9m5x8				; get rows
+	ASL						; extract ROW8 (SPACE)...
+	ASL						; ...then ROW7 (ENTER)...
+	ASL						; ...and finally ROW6 (SHIFT) into C (3b, 6t; was 6b, 7/8t)
+	ROR kb_mod				; insert CAPS bit at left (will end at d6)
 	INY						; second column
 	STY IO9m5x8				; select it
-	LDA IO9m5x8				; and read it
-	ASL						; only d7 is interesting (SYMBOL SHIFT)
-	ROR kb_mod				; insert SYMBOL bit at d7
+	LDA IO9m5x8				; and read its rows
+	ASL						; only d7 is interesting (ALT, aka SYMBOL SHIFT)
+	ROR kb_mod				; insert ALT bit at d7
 	LDY #5					; prepare to scan backwards (note indices are 1...5)
 col_loop:
 		LDA col_bit-1, Y	; get bit position for column, note offset
 		STA IO9m5x8			; select column
 		LDA IO9m5x8			; and read it
-;			STZ IO9m5x8		; deselect all, not necessary but lower power
+;		STZ IO9m5x8			; deselect all, not necessary but lower power (CMOS only)
 		AND k_mask-1, Y		; discard modifier bits, note offset
 		BEQ kb_skip			; no keys from this column
-		LDX #7				; row loop
+			LDX #7			; row loop (row indices are 0...7)
 row_loop:
 			ASL				; d7 goes first
 			BCS key_pr		; detected keypress!
@@ -79,7 +80,9 @@ kb_skip:
 	LDA #DELAY				; reset key repeat
 	STA kb_rcnt
 no_key:
-	STZ kb_asc				; no key pressed, CMOS only
+	LDA #0					; 0 means no (new) key was pressed
+set_key:					; common ASCII code output, with or without actual key
+	STA kb_asc				; return ASCII code (0 = no key)
 	RTS
 ; otherwise, a key was detected
 key_pr:
@@ -87,39 +90,33 @@ key_pr:
 	ASL
 	ASL
 	ASL						; times 8 (8...40)
-	STX kb_asc				; TEMPORARY STORAGE
-	ORA kb_asc				; ··YYYXXX
+	STX kb_asc				; TEMPORARY STORAGE of ·····XXX
+	ORA kb_asc				; A = ··YYYXXX
 	BIT kb_ctl				; is control-mode enabled?
-		BMI ctl_key			; check different table
-	ORA kb_mod				; scancode is complete
-; otherwise look for new or repeated key
-	CMP kb_scan				; same as before?
-	BNE diff_k				; nope, just generate new keystroke
-		DEC kb_rcnt			; otherwise update repeat counter
-			BNE no_key		; if not expired, just simulate released key for a while
-		LDX #RATE			; I believe this goes here...
-		STX kb_rcnt
+	BMI ctl_key				; check different table (without checking any modifiers nor repeat)
+		ORA kb_mod			; scancode is complete in A
+; look for new or repeated key
+		CMP kb_scan			; same as before?
+		BNE diff_k			; nope, just generate new keystroke
+			DEC kb_rcnt		; otherwise update repeat counter
+				BNE no_key	; if not expired, just simulate released key for a while
+			LDX #RATE		; I believe this goes here...
+			STX kb_rcnt		; the counter is reset, repeat current keystroke
 diff_k:
-	STA kb_scan				; in any case, update last scancode as new keystroke
-	TAX						; use scancode as index
-	LDA kb_map-8, X			; get ASCII from layout, note offset
-	CMP #$FF				; invalid ASCII, this will change into CONTROL mode *** check
-	BNE set_key
-		STA kb_ctl			; set d7 *** beware of above
-		LDA #0				; no ASCII for now
-set_key:
-	STA kb_asc				; store detected ASCII
-	RTS
-; if arrived here, a key was pressed while in CONTROL mode (will not repeat) *** BAD; check
+		STA kb_scan			; in any case, update last scancode as new keystroke
+		TAX					; use scancode as index
+		LDA kb_map-8, X		; get ASCII from layout, note offset
+		CMP #$FF			; invalid ASCII, this will change into CTRL mode
+		BNE set_key			; not the CONTROL combo, all done
+			STA kb_ctl		; otherwise, $FF sets d7 for CTRL mode
+			JMP no_key		; no ASCII for now
+; if arrived here, a key was pressed while in CONTROL mode (will not repeat)
 ctl_key:
-	TAX						; use scancode as index
+	TAX						; use scancode (without modifiers) as index
 	LDA ctl_map-8, X		; get ASCII from CONTROL-mode layout, note offset
-	BEQ keep_ctl			; invalid ASCII, this will stay into CONTROL mode *** check
-		STA kb_ctl			; clear d7, no longer in control mode
-		BNE set_key			; and send that control code (hopefully no need for bra)
-keep_ctl:
-	LDA #0					; still holding SHIFT
-	BEQ set_key				; send it and exit (no need for BRA)
+		BEQ no_key			; invalid ASCII, this will stay into CTRL mode
+	STA kb_ctl				; otherwise clear d7, no longer in CTRL mode (works as none of control codes is over 127)
+	BNE set_key				; and send that control code (hopefully no need for BRA)
 
 ; *******************
 ; *** data tables ***
@@ -145,7 +142,7 @@ k_mask:
 kb_s_map:
 ; SHIFTed keys (d6=1)
 	.asc	$1B, "QA", 8, 'P', 3, $D, ' '	; column 1, note SHIFT disabled (scan = $48...$4F)
-	.asc	9, "WS", $FF, "OZL", 0			; column 2, note ALT disabled (scan = $50...$57)
+	.asc	9, "WS", $FF, "OZL", 0			; column 2, note ALT disabled and CTRL code switch (scan = $50...$57)
 	.asc	$F, "ED", 6, "IXKM"				; column 3 (scan = $58...$5F)
 	.asc	$E, "RF", $B, "UCJN"			; column 4 (scan = $60...$67)
 	.asc	2, "TG", $A, "YVHB"				; column 5 (scan = $68...$6F)
@@ -170,7 +167,7 @@ kb_as_map:
 
 ; *** control mode keymap, first 8 bytes removed *** may split in 16-byte chunks between gaps
 ctl_map:
-	.asc	$1B, $11, 1, 0, $10, 0, 0, 0		; column 1, note SHIFT just holds CTRL mode (scan = 8...$F)
+	.asc	$1B, $11, 1, 0, $10, 0, 0, 0		; column 1, note SHIFT disabled (scan = 8...$F)
 	.asc	$1C, $17, $13, 0, $F, $1A, $C, 0	; column 2, note ALT disabled (scan = $10...$17)
 	.asc	$1D, 5, 4, 0, 9, $18, $B, $D		; column 3 (scan = $18...$1F)
 	.asc	$1E, $12, 6, 0, $15, 3, $A, $E		; column 4 (scan = $20...$27)
