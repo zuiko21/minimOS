@@ -141,7 +141,7 @@ k_mask:
 	.dsb	14, 0
 kb_s_map:
 ; SHIFTed keys (d6=1)
-	.asc	$1B, "QA", 8, 'P', 3, $D, ' '	; column 1, note SHIFT disabled (scan = $48...$4F)
+	.asc	$1B, "QA", 8, 'P', 0, $D, 3		; column 1, note SHIFT disabled (scan = $48...$4F)
 	.asc	9, "WS", $FF, "OZL", 0			; column 2, note ALT disabled and CTRL code switch (scan = $50...$57)
 	.asc	$F, "ED", 6, "IXKM"				; column 3 (scan = $58...$5F)
 	.asc	$E, "RF", $B, "UCJN"			; column 4 (scan = $60...$67)
@@ -150,7 +150,7 @@ kb_s_map:
 	.dsb	24, 0
 kb_a_map:
 ; ALTed keys (d7=1)
-	.asc	'!', $A1, $E1, '_', $22, 0, $F1, 0	; column 1, note SHIFT disabled (scan = $88...$8F)
+	.asc	'!', $A1,$E1, '_', $22,0,$F1, 0	; column 1, note SHIFT disabled (scan = $88...$8F)
 	.asc	"@~;)", $F3, ":=", 0			; column 2, note ALT disabled (scan = $90...$97)
 	.asc	'#', $E9, "|(", $ED, $BF, "+."	; column 3 (scan = $98...$9F)
 	.asc	"$<['", $FA, "?-,"				; column 4 (scan = $A0...$A7)
