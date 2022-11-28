@@ -1,6 +1,6 @@
 ; Durango-X Minstrel-style keyboard test
 ; (c) 2022 Carlos J. Santisteban, based on work from Emilio López Berenguer
-; last modified 20221126-2101
+; last modified 20221128-2330
 
 #ifndef	MULTIBOOT
 	*	= $F000
@@ -41,7 +41,7 @@ main:
 	LDY #3					; max. row offset EEEEEEK
 	STY row
 r_loop:
-		LDX #9				; max. col offset
+		LDX #9				; max. col offset (0...9)
 		STX col
 loop:
 			JSR keydraw
@@ -107,9 +107,10 @@ c_set:
 km_col:
 	.byt	%00000001, %00000010, %00000100, %00001000, %00010000, %10010000, %10001000, %10000100, %10000010, %10000001
 l_row:
-	.byt	128,	64,		16,		4
+	.byt	1,	2,	4,	32
+	
 r_row:
-	.byt	32,		8,		2,		1
+	.byt	8,	16,	64,	128
 
 #ifndef	MULTIBOOT
 nmi:
