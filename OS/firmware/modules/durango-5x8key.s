@@ -1,7 +1,7 @@
 ; Durango-X 5x8 keyboard driver
-; v0.1a2
+; v0.1b1
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221128-1911
+; last modified 20221128-2342
 
 ; usual definitions
 #ifndef	KEYBDRV
@@ -49,14 +49,14 @@ drv_5x8:
 	INY						; column 1 has CAPS SHIFT
 	STY IO9m5x8				; select column
 	LDA IO9m5x8				; get rows
-	LSR;ASL						; extract ROW8 (SPACE)...
-	LSR;ASL						; ...then ROW7 (ENTER)...
-	LSR;ASL						; ...and finally ROW6 (SHIFT) into C (3b, 6t; was 6b, 7/8t)
+	ASL						; extract ROW8 (SPACE)...
+	ASL						; ...then ROW7 (ENTER)...
+	ASL						; ...and finally ROW6 (SHIFT) into C (3b, 6t; was 6b, 7/8t)
 	ROR kb_mod				; insert CAPS bit at left (will end at d6)
 	INY						; second column
 	STY IO9m5x8				; select it
 	LDA IO9m5x8				; and read its rows
-	LSR;ASL						; only d7 is interesting (ALT, aka SYMBOL SHIFT)
+	ASL						; only d7 is interesting (ALT, aka SYMBOL SHIFT)
 	ROR kb_mod				; insert ALT bit at d7
 	LDY #5					; prepare to scan backwards (note indices are 1...5)
 col_loop:
@@ -68,7 +68,7 @@ col_loop:
 		BEQ kb_skip			; no keys from this column
 			LDX #7			; row loop (row indices are 0...7)
 row_loop:
-			LSR				; d0 goes first? EEEEEEK
+			ASL				; d7 goes first
 			BCS key_pr		; detected keypress!
 			DEX
 			BPL row_loop	; all 8 rows
@@ -136,7 +136,7 @@ col_bit:
 	.byt	1, 2, 4, 8, 16
 ; valid row bits minus shift keys
 k_mask:
-	.byt	%11111011, %11111110, %11111111, %11111111, %11111111	; reversed?
+	.byt	%11011111, %01111111, %11111111, %11111111, %11111111
 ; * filling after tables inside gap *
 	.dsb	14, 0
 kb_s_map:

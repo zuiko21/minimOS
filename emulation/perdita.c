@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban, Emilio López Berenguer
- * last modified 20221126-1823
+ * last modified 20221128-2340
  * */
 
 /* Gamepad buttons constants */
@@ -3025,253 +3025,253 @@ void emulate_gamepad2(SDL_Event *e) {
 void emulation_minstrel(SDL_Event *e) {
 	// COL 1 DOWN
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == ' ') {
-		minstrel_keyboard[0] |= 1;
+		minstrel_keyboard[0] |= 128;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 13) {
-		minstrel_keyboard[0] |= 2;
+		minstrel_keyboard[0] |= 64;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == SDLK_LSHIFT) {	// LEFT SHIFT
-		minstrel_keyboard[0] |= 4;
+		minstrel_keyboard[0] |= 32;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'p') {
-		minstrel_keyboard[0] |= 8;
-	}
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'a') {
 		minstrel_keyboard[0] |= 16;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '0') {
-		minstrel_keyboard[0] |= 32;
+		minstrel_keyboard[0] |= 8;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'a') {
+		minstrel_keyboard[0] |= 4;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'q') {
-		minstrel_keyboard[0] |= 64;
+		minstrel_keyboard[0] |= 2;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '1') {
-		minstrel_keyboard[0] |= 128;
+		minstrel_keyboard[0] |= 1;
 	}
 	// COL 1 UP
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == ' ') {
-		minstrel_keyboard[0] &= ~1;
+		minstrel_keyboard[0] &= ~128;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 13) {
-		minstrel_keyboard[0] &= ~2;
+		minstrel_keyboard[0] &= ~64;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == SDLK_LSHIFT) {	// LEFT SHIFT
-		minstrel_keyboard[0] &= ~4;
+		minstrel_keyboard[0] &= ~32;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'p') {
-		minstrel_keyboard[0] &= ~8;
-	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'a') {
 		minstrel_keyboard[0] &= ~16;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == '0') {
-		minstrel_keyboard[0] &= ~32;
+		minstrel_keyboard[0] &= ~8;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'a') {
+		minstrel_keyboard[0] &= ~4;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'q') {
-		minstrel_keyboard[0] &= ~64;
+		minstrel_keyboard[0] &= ~2;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == '1') {
-		minstrel_keyboard[0] &= ~128;
+		minstrel_keyboard[0] &= ~1;
 	}
 	// COL 2 DOWN
 	if(e->type == SDL_KEYDOWN && e->key.keysym.scancode == SDL_SCANCODE_RALT) {	// ALT (GR) SDLK_RALT
-		minstrel_keyboard[1] |= 1;
+		minstrel_keyboard[1] |= 128;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'l') {
-		minstrel_keyboard[1] |= 2;
+		minstrel_keyboard[1] |= 64;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'z') {
-		minstrel_keyboard[1] |= 4;
+		minstrel_keyboard[1] |= 32;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'o') {
-		minstrel_keyboard[1] |= 8;
-	}
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 's') {
 		minstrel_keyboard[1] |= 16;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '9') {
-		minstrel_keyboard[1] |= 32;
+		minstrel_keyboard[1] |= 8;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 's') {
+		minstrel_keyboard[1] |= 4;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'w') {
-		minstrel_keyboard[1] |= 64;
+		minstrel_keyboard[1] |= 2;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '2') {
-		minstrel_keyboard[1] |= 128;
+		minstrel_keyboard[1] |= 1;
 	}
 	// COL 2 UP
 	if(e->type == SDL_KEYUP && e->key.keysym.scancode == SDL_SCANCODE_RALT) {	// ALT (GR)
-		minstrel_keyboard[1] &= ~1;
+		minstrel_keyboard[1] &= ~128;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'l') {
-		minstrel_keyboard[1] &= ~2;
+		minstrel_keyboard[1] &= ~64;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'z') {
-		minstrel_keyboard[1] &= ~4;
+		minstrel_keyboard[1] &= ~32;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'o') {
-		minstrel_keyboard[1] &= ~8;
-	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 's') {
 		minstrel_keyboard[1] &= ~16;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == '9') {
-		minstrel_keyboard[1] &= ~32;
+		minstrel_keyboard[1] &= ~8;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 's') {
+		minstrel_keyboard[1] &= ~4;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'w') {
-		minstrel_keyboard[1] &= ~64;
+		minstrel_keyboard[1] &= 24;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == '2') {
-		minstrel_keyboard[1] &= ~128;
+		minstrel_keyboard[1] &= ~1;
 	}
 	// COL 3 DOWN
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'm') {
-		minstrel_keyboard[2] |= 1;
+		minstrel_keyboard[2] |= 128;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'k') {
-		minstrel_keyboard[2] |= 2;
+		minstrel_keyboard[2] |= 64;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'x') {
-		minstrel_keyboard[2] |= 4;
+		minstrel_keyboard[2] |= 32;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'i') {
-		minstrel_keyboard[2] |= 8;
-	}
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'd') {
 		minstrel_keyboard[2] |= 16;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '8') {
-		minstrel_keyboard[2] |= 32;
+		minstrel_keyboard[2] |= 8;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'd') {
+		minstrel_keyboard[2] |= 4;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'e') {
-		minstrel_keyboard[2] |= 64;
+		minstrel_keyboard[2] |= 2;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '3') {
-		minstrel_keyboard[2] |= 128;
+		minstrel_keyboard[2] |= 1;
 	}
 	// COL 3 UP
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'm') {
-		minstrel_keyboard[2] &= ~1;
+		minstrel_keyboard[2] &= ~128;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'k') {
-		minstrel_keyboard[2] &= ~2;
+		minstrel_keyboard[2] &= ~64;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'x') {
-		minstrel_keyboard[2] &= ~4;
+		minstrel_keyboard[2] &= ~32;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'i') {
-		minstrel_keyboard[2] &= ~8;
-	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'd') {
 		minstrel_keyboard[2] &= ~16;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == '8') {
-		minstrel_keyboard[2] &= ~32;
+		minstrel_keyboard[2] &= ~8;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'd') {
+		minstrel_keyboard[2] &= ~4;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'e') {
-		minstrel_keyboard[2] &= ~64;
+		minstrel_keyboard[2] &= ~2;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == '3') {
-		minstrel_keyboard[2] &= ~128;
+		minstrel_keyboard[2] &= ~1;
 	}
 	// COL 4 DOWN
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'n') {
-		minstrel_keyboard[3] |= 1;
+		minstrel_keyboard[3] |= 128;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'j') {
-		minstrel_keyboard[3] |= 2;
+		minstrel_keyboard[3] |= 64;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'c') {
-		minstrel_keyboard[3] |= 4;
+		minstrel_keyboard[3] |= 32;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'u') {
-		minstrel_keyboard[3] |= 8;
-	}
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'f') {
 		minstrel_keyboard[3] |= 16;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '7') {
-		minstrel_keyboard[3] |= 32;
+		minstrel_keyboard[3] |= 8;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'f') {
+		minstrel_keyboard[3] |= 4;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'r') {
-		minstrel_keyboard[3] |= 64;
+		minstrel_keyboard[3] |= 2;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '4') {
-		minstrel_keyboard[3] |= 128;
+		minstrel_keyboard[3] |= 1;
 	}
 	// COL 4 UP
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'n') {
-		minstrel_keyboard[3] &= ~1;
+		minstrel_keyboard[3] &= ~128;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'j') {
-		minstrel_keyboard[3] &= ~2;
+		minstrel_keyboard[3] &= ~64;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'c') {
-		minstrel_keyboard[3] &= ~4;
+		minstrel_keyboard[3] &= ~32;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'u') {
-		minstrel_keyboard[3] &= ~8;
-	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'f') {
 		minstrel_keyboard[3] &= ~16;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == '7') {
-		minstrel_keyboard[3] &= ~32;
+		minstrel_keyboard[3] &= ~8;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'f') {
+		minstrel_keyboard[3] &= ~4;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'r') {
-		minstrel_keyboard[3] &= ~64;
+		minstrel_keyboard[3] &= ~2;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == '4') {
-		minstrel_keyboard[3] &= ~128;
+		minstrel_keyboard[3] &= ~1;
 	}
 	// COL 5 DOWN
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'b') {
-		minstrel_keyboard[4] |= 1;
+		minstrel_keyboard[4] |= 128;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'h') {
-		minstrel_keyboard[4] |= 2;
+		minstrel_keyboard[4] |= 64;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'v') {
-		minstrel_keyboard[4] |= 4;
+		minstrel_keyboard[4] |= 32;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'y') {
-		minstrel_keyboard[4] |= 8;
-	}
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'g') {
 		minstrel_keyboard[4] |= 16;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '6') {
-		minstrel_keyboard[4] |= 32;
+		minstrel_keyboard[4] |= 8;
+	}
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'g') {
+		minstrel_keyboard[4] |= 4;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 't') {
-		minstrel_keyboard[4] |= 64;
+		minstrel_keyboard[4] |= 2;
 	}
 	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '5') {
-		minstrel_keyboard[4] |= 128;
+		minstrel_keyboard[4] |= 1;
 	}
 	// COL 5 UP
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'b') {
-		minstrel_keyboard[4] &= ~1;
+		minstrel_keyboard[4] &= ~128;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'h') {
-		minstrel_keyboard[4] &= ~2;
+		minstrel_keyboard[4] &= ~64;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'v') {
-		minstrel_keyboard[4] &= ~4;
+		minstrel_keyboard[4] &= ~32;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'y') {
-		minstrel_keyboard[4] &= ~8;
-	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'g') {
 		minstrel_keyboard[4] &= ~16;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == '6') {
-		minstrel_keyboard[4] &= ~32;
+		minstrel_keyboard[4] &= ~8;
+	}
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'g') {
+		minstrel_keyboard[4] &= ~4;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == 't') {
-		minstrel_keyboard[4] &= ~64;
+		minstrel_keyboard[4] &= ~2;
 	}
 	if(e->type == SDL_KEYUP && e->key.keysym.sym == '5') {
-		minstrel_keyboard[4] &= ~128;
+		minstrel_keyboard[4] &= ~1;
 	}
 }
 
