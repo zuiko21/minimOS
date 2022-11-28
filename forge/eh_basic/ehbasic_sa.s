@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20221128-1839
+; last modified 20221129-0003
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -8871,13 +8871,20 @@ jf_res:
 	LDA #'@'				; initial character for key-by-pad
 	STA fw_knes
 #endif
+; * init keyboard driver *
+#ifdef	KBDMAT
+	STZ kb_asc
+	STZ kb_mod
+	STZ kb_ctl
+	STZ kb_scan
+#endif
 ; * init CONIO *
 	STZ fw_cbin				; EEEEEEK
 	STZ fw_mask
-	STZ fw_scur
 	STZ fw_io9
 	LDA #$87				; yellow on blue intial colours (not for HIRES)
 	STA fw_ccol+1			; will reconstruct colours from this upon FF
+	STA fw_scur				; if bit 7 is on, activates cursor
 	LDY #12					; FF = clear screen
 	JSR conio
 
