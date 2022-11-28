@@ -1,7 +1,7 @@
 ; Durango-X 5x8 keyboard driver
 ; v0.1a2
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221127-1606
+; last modified 20221128-0801
 
 ; usual definitions
 #ifndef	KEYBDRV
@@ -119,8 +119,6 @@ ctl_key:
 ; *** data tables ***
 ; *******************
 
-
-
 ; *** standard keymap, first 8 bytes removed ***
 kb_map:
 ; unshifted keys (d7d6=00)
@@ -139,7 +137,7 @@ k_mask:
 ; * filling after gap *
 	.dsb	14, 0
 ; SHIFTed keys (d6=1)
-	.asc	$1B, "qa", 8, 'p', 0, $D, ' '	; column 1, note SHIFT disabled (scan = $48...$4F)
+	.asc	$1B, "QA", 8, 'P', 3, $D, ' '	; column 1, note SHIFT disabled (scan = $48...$4F)
 	.asc	9, "WS", $FF, "OZL", 0			; column 2, note ALT disabled (scan = $50...$57)
 	.asc	$F, "ED", 6, "IXKM"				; column 3 (scan = $58...$5F)
 	.asc	$E, "RF", $B, "UCJN"			; column 4 (scan = $60...$67)
@@ -147,19 +145,19 @@ k_mask:
 ; note 24-byte gap
 	.dsb	24, 0
 ; ALTed keys (d7=1)********** TBD
-	.asc	"1qa0p", 0, $0D, ' '	; column 1, note SHIFT disabled (scan = $88...$8F)
-	.asc	"2ws9ozl", 0			; column 2, note ALT disabled (scan = $90...$97)
-	.asc	"3ed8ixkm"				; column 3 (scan = $98...$9F)
-	.asc	"4rf7ucjn"				; column 4 (scan = $A0...$A7)
-	.asc	"5tg6yvhb"				; column 5 (scan = $A8...$AF)
+	.asc	"!qá_", $22, 0, 'ñ', 0	; column 1, note SHIFT disabled (scan = $88...$8F)
+	.asc	"@w;)ó:=", 0			; column 2, note ALT disabled (scan = $90...$97)
+	.asc	"#é|(í¿+."				; column 3 (scan = $98...$9F)
+	.asc	"$r['ú?-,"				; column 4 (scan = $A0...$A7)
+	.asc	"%t]&ü/^*"				; column 5 (scan = $A8...$AF)
 ; note 24-byte gap
 	.dsb	24, 0
 ; SHIFT+ALT (d7d6=11)
-	.asc	"1qa0p", 0, $0D, ' '	; column 1, note SHIFT disabled (scan = $C8...$CF)
-	.asc	"2ws9ozl", 0			; column 2, note ALT disabled (scan = $D0...$D7)
-	.asc	"3ed8ixkm"				; column 3 (scan = $D8...$DF)
-	.asc	"4rf7ucjn"				; column 4 (scan = $E0...$E7)
-	.asc	"5tg6yvhb"				; column 5 (scan = $E8...$EF)
+	.asc	0, "ºÁ", 0, 0, 0, 'Ñ', 0	; column 1, note SHIFT disabled (scan = $C8...$CF)
+	.asc	$18, 0, 0, 0, 'Ó', 0, 'l', 0; column 2, note ALT disabled (scan = $D0...$D7)
+	.asc	0, "É\", 5, "Í€", 0, 0		; column 3 (scan = $D8...$DF)
+	.asc	0, "≤{", $19, 'Ú', 0, 0, 0	; column 4 (scan = $E0...$E7)
+	.asc	1, "≥}", $16, 'Ü', 0, 0, 0	; column 5 (scan = $E8...$EF)
 
 ; *** control mode keymap, first 8 bytes removed *** TBD
 ctl_map:
