@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20220901-2340
+; last modified 20221128-1821
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -27,8 +27,10 @@
 ; try to assemble from here with
 ; xa ehbasic_sa.s -I ../../OS/firmware -l labels 
 ; may add -DDEF=KBBYPAD for optional keyboad-by-pad
+; add -DDEF KBDMAT for generic matrix keyboard support (instead of PASK)
 
-#define	KBBYPAD
+;#define	KBBYPAD
+#define		KBDMAT
 
 ; *****************************************************
 ; *** firmware & hardware definitions for Durango-X ***
@@ -8896,6 +8898,10 @@ std_irq:					; IRQ support for EhBASIC, from min_mon.asm
 	BNE irq_sup
 		INC ticks+3
 irq_sup:
+; *** interrupt support for matrix keyboard ***
+#ifdef	KBDMAT
+#include "../../OS/firmware/modules/durango-5x8key.s"
+#endif
 ; min_mon code follows
 	PHA
 	LDA IrqBase
