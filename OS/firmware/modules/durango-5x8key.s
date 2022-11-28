@@ -1,7 +1,7 @@
 ; Durango-X 5x8 keyboard driver
 ; v0.1a2
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221128-1007
+; last modified 20221128-1726
 
 ; usual definitions
 #ifndef	KEYBDRV
@@ -20,6 +20,8 @@ kb_rcnt	= $020F				; repeat counter
 #define	DELAY	175
 #define	RATE	25
 
+#ifdef	KBDISR
+; *** *** plug-and-play interrupt support *** ***
 ; *** ISR to be called via JSR (will return)
 kbd_isr:
 	LDX kb_type
@@ -35,6 +37,8 @@ drv_pask:
 	LDA IO9pask				; PASK peripheral address
 	STA kb_asc				; store for software
 	RTS
+; *** *** ******************************* *** ***
+#endif
 
 ; *** 5x8 matrix driver ***
 drv_5x8:
@@ -100,7 +104,7 @@ diff_k:
 	TAX						; use scancode as index
 	LDA kb_map-8, X			; get ASCII from layout, note offset
 	CMP #$FF				; invalid ASCII, this will change into CONTROL mode *** check
-	BNE no_ctl
+	BNE set_key
 		STA kb_ctl			; set d7 *** beware of above
 		LDA #0				; no ASCII for now
 set_key:
@@ -115,7 +119,7 @@ ctl_key:
 		BNE set_key			; and send that control code (hopefully no need for bra)
 keep_ctl:
 	LDA #0					; still holding SHIFT
-	BEQ no_ctl				; send it and exit (no need for BRA)
+	BEQ set_key				; send it and exit (no need for BRA)
 
 ; *******************
 ; *** data tables ***
@@ -136,8 +140,9 @@ col_bit:
 ; valid row bits minus shift keys
 k_mask:
 	.byt	%11011111, %01111111, %11111111, %11111111, %11111111
-; * filling after gap *
+; * filling after tables inside gap *
 	.dsb	14, 0
+kb_s_map:
 ; SHIFTed keys (d6=1)
 	.asc	$1B, "QA", 8, 'P', 3, $D, ' '	; column 1, note SHIFT disabled (scan = $48...$4F)
 	.asc	9, "WS", $FF, "OZL", 0			; column 2, note ALT disabled (scan = $50...$57)
@@ -146,20 +151,22 @@ k_mask:
 	.asc	2, "TG", $A, "YVHB"				; column 5 (scan = $68...$6F)
 ; note 24-byte gap
 	.dsb	24, 0
+kb_a_map:
 ; ALTed keys (d7=1)
-	.asc	"!qá_", $22, 0, 'ñ', 0	; column 1, note SHIFT disabled (scan = $88...$8F)
-	.asc	"@w;)ó:=", 0			; column 2, note ALT disabled (scan = $90...$97)
-	.asc	"#é|(í¿+."				; column 3 (scan = $98...$9F)
-	.asc	"$r['ú?-,"				; column 4 (scan = $A0...$A7)
-	.asc	"%t]&ü/^*"				; column 5 (scan = $A8...$AF)
+	.asc	"!q", $E1, '_', $22, 0, $F1, 0	; column 1, note SHIFT disabled (scan = $88...$8F)
+	.asc	"@w;)", $F3, ":=", 0			; column 2, note ALT disabled (scan = $90...$97)
+	.asc	'#', $E9, "|(", $ED, $BF, "+."	; column 3 (scan = $98...$9F)
+	.asc	"$r['", $FA, "?-,"				; column 4 (scan = $A0...$A7)
+	.asc	"%t]&", $FC, '/', $5E, '*'		; column 5 (scan = $A8...$AF)
 ; note 24-byte gap
 	.dsb	24, 0
+kb_as_map:
 ; SHIFT+ALT (d7d6=11)
-	.asc	0, "ºÁ", 0, 0, 0, 'Ñ', 0	; column 1, note SHIFT disabled (scan = $C8...$CF)
-	.asc	$18, 0, 0, 0, 'Ó', 0, 'l', 0; column 2, note ALT disabled (scan = $D0...$D7)
-	.asc	0, "É\", 5, "Í€", 0, 0		; column 3 (scan = $D8...$DF)
-	.asc	0, "≤{", $19, 'Ú', 0, 0, 0	; column 4 (scan = $E0...$E7)
-	.asc	1, "≥}", $16, 'Ü', 0, 0, 0	; column 5 (scan = $E8...$EF)
+	.asc	0, $B0, $C1, 0, 0, 0, $D1, 0	; column 1, note SHIFT disabled (scan = $C8...$CF)
+	.asc	$18, 0, 0, 0, $D3, 0, 0, 0		; column 2, note ALT disabled (scan = $D0...$D7)
+	.asc	0, $C9, $5C, 5, $CD, $A4, 0, 0	; column 3 (scan = $D8...$DF)
+	.asc	0, $96, '{', $19, $DA, 0, 0, 0	; column 4 (scan = $E0...$E7)
+	.asc	1, $98, '}', $16, $DC, 0, 0, 0	; column 5 (scan = $E8...$EF)
 
 ; *** control mode keymap, first 8 bytes removed *** may split in 16-byte chunks between gaps
 ctl_map:
