@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20221128-1821
+; last modified 20221128-1839
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -8898,20 +8898,23 @@ std_irq:					; IRQ support for EhBASIC, from min_mon.asm
 	BNE irq_sup
 		INC ticks+3
 irq_sup:
+	PHA
+	PHX
+	PHY						; needed for 5x8 matrix support
 ; *** interrupt support for matrix keyboard ***
 #ifdef	KBDMAT
-#include "../../OS/firmware/modules/durango-5x8key.s"
+	JSR drv_5x8
 #endif
 ; min_mon code follows
-	PHA
+;	PHA						; already saved
 	LDA IrqBase
 	LSR
 	ORA IrqBase
 	STA IrqBase
 ; in extremis check for (catastrophic) BRK
-	PHX
+;	PHX						; already saved
 	TSX
-	LDA $103, X				; get pushed PSR
+	LDA $104, X				; get pushed PSR (note stack frame)
 	AND #$10				; check BRK bit
 	BEQ not_brk
 ; *** BRK happened *** will keep the LED flashing, as no debugger is installed
@@ -8924,6 +8927,7 @@ brk_panic:
 		STA IOAie
 		BRA brk_panic
 not_brk:
+	PLY						; for 5x8 matrix support
 	PLX
 	PLA
 	RTI
@@ -8945,6 +8949,11 @@ std_nmi:					; NMI support for EhBASIC, from min_mon.asm
 #define	SAFE
 -conio:
 #include "../../OS/firmware/modules/conio-durango-fast.s"
+
+; keyboard driver
+#ifdef	KBDMAT
+#include "../../OS/firmware/modules/durango-5x8key.s"
+#endif
 
 ; *** padding, signatures and hardware vectors ***
 
