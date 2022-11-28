@@ -1,7 +1,7 @@
 ; Durango-X 5x8 keyboard driver
-; v0.1b1
+; v0.1b2
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221128-2342
+; last modified 20221128-2354
 
 ; usual definitions
 #ifndef	KEYBDRV
@@ -150,11 +150,11 @@ kb_s_map:
 	.dsb	24, 0
 kb_a_map:
 ; ALTed keys (d7=1)
-	.asc	"!q", $E1, '_', $22, 0, $F1, 0	; column 1, note SHIFT disabled (scan = $88...$8F)
-	.asc	"@w;)", $F3, ":=", 0			; column 2, note ALT disabled (scan = $90...$97)
+	.asc	'!', $A1, $E1, '_', $22, 0, $F1, 0	; column 1, note SHIFT disabled (scan = $88...$8F)
+	.asc	"@~;)", $F3, ":=", 0			; column 2, note ALT disabled (scan = $90...$97)
 	.asc	'#', $E9, "|(", $ED, $BF, "+."	; column 3 (scan = $98...$9F)
-	.asc	"$r['", $FA, "?-,"				; column 4 (scan = $A0...$A7)
-	.asc	"%t]&", $FC, '/', $5E, '*'		; column 5 (scan = $A8...$AF)
+	.asc	"$<['", $FA, "?-,"				; column 4 (scan = $A0...$A7)
+	.asc	"%>]&", $FC, '/', $5E, '*'		; column 5 (scan = $A8...$AF)
 ; note 24-byte gap
 	.dsb	24, 0
 kb_as_map:
