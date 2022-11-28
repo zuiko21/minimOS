@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; Durango-X firmware console 0.9.6b8
+; Durango-X firmware console 0.9.6b9
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20220913-2137
+; last modified 20221128-1804
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -98,7 +98,8 @@
 -IOBeep	= $DFBF				; canonical buzzer address (d0)
 -IO9nes0= $DF9C				; NES controller for alternative keyboard emulation & latch
 -IO9nes1= $DF9D				; NES controller clock port
--fw_knes= $020A				; is this a safe address?
+-kb_asc	= $020A				; standard keyboard driver address
+-fw_knes= $0224				; safe address after CONIO needed variables, incl. matrix keyboard driver
 #endif
 
 	TYA						; is going to be needed here anyway
@@ -811,7 +812,11 @@ do_atyx:
 ; any non-zero value is stored and returned the first time, otherwise returns empty (C set)
 ; any repeated characters must have a zero inbetween, 10 ms would suffice (perhaps as low as 5 ms)
 cn_in:
+#ifndef	KBDMAT
 	LDY IO9di				; get current data at port *** must set lower address nibble
+#else
+	LDY $020A				; standard address for generated ASCII code
+#endif
 ; *** should this properly address a matrix keyboard?
 	BEQ cn_empty			; no transfer is in the making
 cn_chk:
