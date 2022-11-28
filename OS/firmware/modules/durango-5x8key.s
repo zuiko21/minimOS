@@ -1,7 +1,7 @@
 ; Durango-X 5x8 keyboard driver
 ; v0.1a2
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221128-0811
+; last modified 20221128-1007
 
 ; usual definitions
 #ifndef	KEYBDRV
@@ -103,17 +103,18 @@ diff_k:
 	BNE no_ctl
 		STA kb_ctl			; set d7 *** beware of above
 		LDA #0				; no ASCII for now
-no_ctl:
+set_key:
 	STA kb_asc				; store detected ASCII
 	RTS
-; if arrived here, a key was pressed while in CONTROL mode (will not repeat)
+; if arrived here, a key was pressed while in CONTROL mode (will not repeat) *** BAD; check
 ctl_key:
 	TAX						; use scancode as index
 	LDA ctl_map-8, X		; get ASCII from CONTROL-mode layout, note offset
-	CMP #$FF				; invalid ASCII, this will stay into CONTROL mode *** check
-	BNE no_ctl
-		STA kb_ctl			; keep d7 set
-		LDA #0				; no ASCII for now
+	BEQ keep_ctl			; invalid ASCII, this will stay into CONTROL mode *** check
+		STA kb_ctl			; clear d7, no longer in control mode
+		BNE set_key			; and send that control code (hopefully no need for bra)
+keep_ctl:
+	LDA #0					; still holding SHIFT
 	BEQ no_ctl				; send it and exit (no need for BRA)
 
 ; *******************
@@ -145,7 +146,7 @@ k_mask:
 	.asc	2, "TG", $A, "YVHB"				; column 5 (scan = $68...$6F)
 ; note 24-byte gap
 	.dsb	24, 0
-; ALTed keys (d7=1)********** TBD
+; ALTed keys (d7=1)
 	.asc	"!qá_", $22, 0, 'ñ', 0	; column 1, note SHIFT disabled (scan = $88...$8F)
 	.asc	"@w;)ó:=", 0			; column 2, note ALT disabled (scan = $90...$97)
 	.asc	"#é|(í¿+."				; column 3 (scan = $98...$9F)
@@ -160,5 +161,10 @@ k_mask:
 	.asc	0, "≤{", $19, 'Ú', 0, 0, 0	; column 4 (scan = $E0...$E7)
 	.asc	1, "≥}", $16, 'Ü', 0, 0, 0	; column 5 (scan = $E8...$EF)
 
-; *** control mode keymap, first 8 bytes removed *** TBD
+; *** control mode keymap, first 8 bytes removed *** may split in 16-byte chunks between gaps
 ctl_map:
+	.asc	$1B, $11, 1, 0, $10, 0, 0, 0		; column 1, note SHIFT just holds CTRL mode (scan = 8...$F)
+	.asc	$1C, $17, $13, 0, $F, $1A, $C, 0	; column 2, note ALT disabled (scan = $10...$17)
+	.asc	$1D, 5, 4, 0, 9, $18, $B, $D		; column 3 (scan = $18...$1F)
+	.asc	$1E, $12, 6, 0, $15, 3, $A, $E		; column 4 (scan = $20...$27)
+	.asc	$1F, $14, 7, 0, $19, $16, 8, 2		; column 5 (scan = $28...$2F)
