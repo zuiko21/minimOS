@@ -1,7 +1,7 @@
 ; Durango-X 5x8 keyboard driver
 ; v0.1a2
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221128-0801
+; last modified 20221128-0811
 
 ; usual definitions
 #ifndef	KEYBDRV
@@ -26,7 +26,7 @@ kbd_isr:
 	JMP (kbd_drv, X)		; CMOS only
 
 ; *** drivers pointer list ***
-kdb_drv:
+kbd_drv:
 	.word	drv_pask
 	.word	drv_5x8
 
@@ -67,6 +67,7 @@ row_loop:
 			BCS key_pr		; detected keypress!
 			DEX
 			BPL row_loop	; all 8 rows
+kb_skip:
 		DEY					; next column
 		BNE col_loop
 ; if arrived here, no keys (beside modifiers) were pressed
@@ -92,7 +93,7 @@ key_pr:
 	BNE diff_k				; nope, just generate new keystroke
 		DEC kb_rcnt			; otherwise update repeat counter
 			BNE no_key		; if not expired, just simulate released key for a while
-		LDX #rpt			; I believe this goes here...
+		LDX #RATE			; I believe this goes here...
 		STX kb_rcnt
 diff_k:
 	STA kb_scan				; in any case, update last scancode as new keystroke
