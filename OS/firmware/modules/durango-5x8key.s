@@ -1,17 +1,19 @@
 ; Durango-X 5x8 keyboard driver
-; v0.1b2
+; v0.1b3
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221128-2354
+; last modified 20221130-1644
 
 ; usual definitions
 #ifndef	KEYBDRV
 #define	KEYBDRV
+IO9pask	= $DF9A				; PASK port
 IO9m5x8	= $DF9B				; matrix keyboard port
 kb_asc	= $020A				; read key
 kb_mod	= $020B				; modifier keys combo (d7=ALT, d6=SHIFT)
 kb_ctl	= $020C				; control key flag (d7)
 kb_scan	= $020D				; last scancode read
 kb_rcnt	= $020E				; repeat counter
+kb_type	= $020F				; type of keyboard (0=PASK, 2=5x8 matrix...)
 #endif
 
 ; *** some other constants for repeat rate (in 4 ms units) ***
@@ -21,8 +23,6 @@ kb_rcnt	= $020E				; repeat counter
 ; ***********************************************
 ; *** *** plug-and-play interrupt support *** ***
 #ifdef	KBDISR
-IO9pask	= $DF9A				; PASK port
-kb_type	= $020F				; type of keyboard (0=PASK, 2=5x8 matrix...)
 ; *** ISR to be called via JSR (will return)
 kbd_isr:
 	LDX kb_type

@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20221129-0003
+; last modified 20221130-1641
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -8852,11 +8852,13 @@ reset:
 	LDX #$FF
 	TXS
 	STX IOAie				; ### enable Durango-X hardware interrupt ###
+	STX fw_scur				; as bit 7 is on, activates cursor
 	LDA #$B8				; start in HIRES mode, if possible (note RGB bit set, just in case)
 	STA IO8attr
 	LDX #3					; max jiffy counter index
 jf_res:
 		STZ ticks, X		; reset all jiffy counter bytes
+		STZ kb_asc, X		; init all keyboard variables too, up to kb_scan (4 bytes)
 		DEX
 		BPL jf_res
 	LDX #>std_irq
@@ -8871,20 +8873,22 @@ jf_res:
 	LDA #'@'				; initial character for key-by-pad
 	STA fw_knes
 #endif
-; * init keyboard driver *
-#ifdef	KBDMAT
-	STZ kb_asc
-	STZ kb_mod
-	STZ kb_ctl
-	STZ kb_scan
-#endif
+; * check keyboard *
+	LDX #0					; default is PASK
+	LDA #32					; column 6
+	STA IO9m5x8				; select it
+	LDA IO9m5x8				; and read rows
+	CMP #$58				; is it a 5x8 matrix?
+	BNE not_5x8
+		LDX #2				; set as default keyboard
+not_5x8:
+	STX kb_type				; set selected type
 ; * init CONIO *
 	STZ fw_cbin				; EEEEEEK
 	STZ fw_mask
 	STZ fw_io9
 	LDA #$87				; yellow on blue intial colours (not for HIRES)
 	STA fw_ccol+1			; will reconstruct colours from this upon FF
-	STA fw_scur				; if bit 7 is on, activates cursor
 	LDY #12					; FF = clear screen
 	JSR conio
 
@@ -8909,9 +8913,7 @@ irq_sup:
 	PHX
 	PHY						; needed for 5x8 matrix support
 ; *** interrupt support for matrix keyboard ***
-#ifdef	KBDMAT
-	JSR drv_5x8
-#endif
+	JSR kbd_isr
 ; min_mon code follows
 ;	PHA						; already saved
 	LDA IrqBase
@@ -8948,6 +8950,19 @@ std_nmi:					; NMI support for EhBASIC, from min_mon.asm
 	STA NmiBase
 	PLA
 	RTI
+; *** multi-keyboard support ***
+kbd_isr:
+	LDX kb_type
+	JMP (kbd_drv, X)		; CMOS only
+; drivers pointer list
+kbd_drv:
+	.word	drv_pask
+	.word	drv_5x8
+; generic PASK driver
+drv_pask:
+	LDA IO9pask				; PASK peripheral address
+	STA kb_asc				; store for software
+	RTS
 
 ; BIOS
 #include "../../OS/macros.h"
