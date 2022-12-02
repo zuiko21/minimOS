@@ -677,7 +677,6 @@ Text Notes 5900 3950 0    100  Italic 0
 Future component-video output\ngoes here…
 Text Label 1250 700  0    50   ~ 0
 +5V_IN
-NoConn ~ 3750 4800
 Text Label 3750 4300 0    50   ~ 0
 BA0
 Text Label 3750 4400 0    50   ~ 0
@@ -751,9 +750,6 @@ Wire Wire Line
 Wire Wire Line
 	2750 5600 2750 5000
 Connection ~ 3250 5600
-Connection ~ 2750 4900
-Wire Wire Line
-	2750 4900 2750 4800
 Connection ~ 2750 5000
 Wire Wire Line
 	2750 5000 2750 4900
@@ -1441,9 +1437,32 @@ U 1 1 636EC7BA
 P 10700 5400
 F 0 "LOGO2" H 10700 5675 50  0001 C CNN
 F 1 " " H 10700 5175 50  0001 C CNN
-F 2 "durango:durango-x" H 10700 5400 50  0001 C CNN
+F 2 "durango:durango-x90" H 10700 5400 50  0001 C CNN
 F 3 "~" H 10700 5400 50  0001 C CNN
 	1    10700 5400
+	1    0    0    -1  
+$EndComp
+Text GLabel 3900 4900 3    50   Input ~ 0
+~IO9B
+Wire Wire Line
+	3900 4900 3900 4800
+Wire Wire Line
+	3900 4800 3750 4800
+Text GLabel 2650 5050 3    50   Input ~ 0
+~IO9Q
+Wire Wire Line
+	2650 5050 2650 4800
+Wire Wire Line
+	2650 4800 2750 4800
+$Comp
+L Graphic:Logo_Open_Hardware_Small LOGO3
+U 1 1 63C8FA92
+P 10700 4950
+F 0 "LOGO3" H 10700 5225 50  0001 C CNN
+F 1 " " H 10700 4725 50  0001 C CNN
+F 2 "durango:jaqueria" H 10700 4950 50  0001 C CNN
+F 3 "~" H 10700 4950 50  0001 C CNN
+	1    10700 4950
 	1    0    0    -1  
 $EndComp
 Wire Wire Line

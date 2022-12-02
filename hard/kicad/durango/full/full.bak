@@ -2196,9 +2196,6 @@ Wire Wire Line
 Wire Wire Line
 	4100 5550 3950 5550
 Wire Wire Line
-	3600 7500 3200 7500
-Connection ~ 3600 7500
-Wire Wire Line
 	2700 7600 2700 7450
 Wire Wire Line
 	2800 7600 2800 7450
@@ -2208,8 +2205,6 @@ Wire Wire Line
 	3000 7600 3000 7450
 Wire Wire Line
 	3100 7600 3100 7450
-Wire Wire Line
-	3200 7500 3200 7450
 Wire Wire Line
 	6800 7500 6800 6350
 $Comp
@@ -2670,7 +2665,7 @@ Wire Wire Line
 Connection ~ 6750 6900
 Wire Wire Line
 	6750 6450 7700 6450
-Text Notes 3250 7600 0    50   ~ 0
+Text Notes 3200 7650 0    50   ~ 0
 =~BWR
 Text Label 3650 4500 0    50   ~ 0
 ~ROM_OE
@@ -2682,39 +2677,39 @@ Wire Wire Line
 	3500 750  6650 750 
 Wire Bus Line
 	2800 650  10800 650 
-Text Label 4500 1050 2    50   ~ 0
+Text Label 4500 1050 0    50   ~ 0
 PD0
-Text Label 4500 1150 2    50   ~ 0
+Text Label 4500 1150 0    50   ~ 0
 PD1
-Text Label 4500 1250 2    50   ~ 0
+Text Label 4500 1250 0    50   ~ 0
 PD2
-Text Label 4500 1350 2    50   ~ 0
+Text Label 4500 1350 0    50   ~ 0
 PD3
-Text Label 4500 1450 2    50   ~ 0
+Text Label 4500 1450 0    50   ~ 0
 PD4
-Text Label 4500 1550 2    50   ~ 0
+Text Label 4500 1550 0    50   ~ 0
 PD5
-Text Label 4500 1650 2    50   ~ 0
+Text Label 4500 1650 0    50   ~ 0
 PD6
-Text Label 4500 1750 2    50   ~ 0
+Text Label 4500 1750 0    50   ~ 0
 PD7
 Entry Wire Line
-	4500 1050 4600 1150
+	4700 1050 4800 1150
 Entry Wire Line
-	4500 1150 4600 1250
+	4700 1150 4800 1250
 Entry Wire Line
-	4500 1250 4600 1350
+	4700 1250 4800 1350
 Entry Wire Line
-	4500 1350 4600 1450
+	4700 1350 4800 1450
 Entry Wire Line
-	4500 1450 4600 1550
+	4700 1450 4800 1550
 Entry Wire Line
-	4500 1550 4600 1650
+	4700 1550 4800 1650
 Entry Wire Line
-	4500 1650 4600 1750
+	4700 1650 4800 1750
 Entry Wire Line
-	4500 1750 4600 1850
-Text GLabel 4600 1850 3    50   Input ~ 0
+	4700 1750 4800 1850
+Text GLabel 4800 1850 3    50   Input ~ 0
 PD[0..7]
 Text GLabel 4250 7500 1    50   Input ~ 0
 ~IO9Q
@@ -2729,6 +2724,30 @@ F 3 "~" H 3500 3650 50  0001 C CNN
 	1    3500 3650
 	1    0    0    1   
 $EndComp
+Wire Wire Line
+	3200 7500 3550 7500
+Wire Wire Line
+	3200 7450 3200 7500
+Text GLabel 3550 7600 2    50   Input ~ 0
+~IO9B
+Wire Wire Line
+	3550 7600 3550 7500
+Wire Wire Line
+	4500 1050 4700 1050
+Wire Wire Line
+	4700 1150 4500 1150
+Wire Wire Line
+	4500 1250 4700 1250
+Wire Wire Line
+	4500 1350 4700 1350
+Wire Wire Line
+	4500 1450 4700 1450
+Wire Wire Line
+	4500 1550 4700 1550
+Wire Wire Line
+	4500 1650 4700 1650
+Wire Wire Line
+	4500 1750 4700 1750
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Bus Line
@@ -2744,7 +2763,7 @@ Wire Bus Line
 Wire Bus Line
 	5900 700  5900 5900
 Wire Bus Line
-	4600 1150 4600 1850
+	4800 1150 4800 1850
 Wire Bus Line
 	7450 950  7450 5050
 Wire Bus Line
