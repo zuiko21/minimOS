@@ -1437,7 +1437,7 @@ U 1 1 636EC7BA
 P 10700 5400
 F 0 "LOGO2" H 10700 5675 50  0001 C CNN
 F 1 " " H 10700 5175 50  0001 C CNN
-F 2 "durango:durango-x" H 10700 5400 50  0001 C CNN
+F 2 "durango:durango-x90" H 10700 5400 50  0001 C CNN
 F 3 "~" H 10700 5400 50  0001 C CNN
 	1    10700 5400
 	1    0    0    -1  
@@ -1454,6 +1454,17 @@ Wire Wire Line
 	2650 5050 2650 4800
 Wire Wire Line
 	2650 4800 2750 4800
+$Comp
+L Graphic:Logo_Open_Hardware_Small LOGO3
+U 1 1 63C8FA92
+P 10700 4950
+F 0 "LOGO3" H 10700 5225 50  0001 C CNN
+F 1 " " H 10700 4725 50  0001 C CNN
+F 2 "durango:jaqueria" H 10700 4950 50  0001 C CNN
+F 3 "~" H 10700 4950 50  0001 C CNN
+	1    10700 4950
+	1    0    0    -1  
+$EndComp
 Wire Wire Line
 	850  5100 1350 5100
 Wire Bus Line
@@ -1472,15 +1483,4 @@ Wire Bus Line
 	900  2150 900  5700
 Wire Bus Line
 	750  2150 750  5750
-$Comp
-L Graphic:Logo_Open_Hardware_Small LOGO3
-U 1 1 63C8FA92
-P 10700 4950
-F 0 "LOGO3" H 10700 5225 50  0001 C CNN
-F 1 " " H 10700 4725 50  0001 C CNN
-F 2 "durango:jaqueria" H 10700 4950 50  0001 C CNN
-F 3 "~" H 10700 4950 50  0001 C CNN
-	1    10700 4950
-	1    0    0    -1  
-$EndComp
 $EndSCHEMATC
