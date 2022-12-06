@@ -256,9 +256,9 @@ Text Label 9200 1050 0    50   ~ 0
 MA10
 Text Label 9200 2150 0    50   ~ 0
 MA11
-Text Label 9200 1950 0    50   ~ 0
-MA12
 Text Label 9200 1850 0    50   ~ 0
+MA12
+Text Label 9200 1950 0    50   ~ 0
 MA13
 Wire Wire Line
 	10600 1150 10700 1150
