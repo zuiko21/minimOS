@@ -1,6 +1,6 @@
 ; *** echo server test for CONIO ***
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221212-0004
+; last modified 20221212-0048
 ; **********************************
 
 	* = $F000
@@ -61,7 +61,7 @@ reset:
 	TXS
 	STX IOAie				; ### enable Durango-X hardware interrupt ###
 	STX fw_scur				; as bit 7 is on, activates cursor
-	LDA #$B8				; start in HIRES mode, if possible (note RGB bit set, just in case)
+	LDA #$38				; start in colour mode
 	STA IO8attr
 	LDX #3					; max jiffy counter index
 jf_res:
@@ -99,17 +99,22 @@ not_5x8:
 	LDA #$87				; yellow on blue intial colours (matrix)
 	LDX kb_type				; check type
 	BNE not_pask			; matrix detected, keep beautiful colours...
-		LDA #$45			; ...or go pink-on-dark-green for PASK
+		LSR					; ...or go orange-on-dark-green for PASK
 not_pask:
 	STA fw_ccol+1			; will reconstruct colours from this upon FF
 	LDY #12					; FF = clear screen
 	JSR conio
+	CLI						; EEEEEEEEEEEEEEEEEEEEEEEEK
+
 ; echo server follows
 echo:
 		LDY #0				; input mode
 		JSR conio
 			BCS echo		; wait for a key
 		JSR conio			; print it!
+		LDA IO8attr
+		EOR #64				; toggle inverse every key
+		STA IO8attr
 		BRA echo			; forever
 
 ; **************************
