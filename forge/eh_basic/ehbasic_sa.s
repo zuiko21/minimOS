@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20221130-1641
+; last modified 20221211-1849
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -48,7 +48,7 @@ fw_sind		= fw_chalf+1
 fw_ccol		= fw_sind+3		; (no longer SPARSE array of two-pixel combos, will store ink & paper)
 fw_ctmp		= fw_ccol+4
 fw_cbyt		= fw_ctmp		; (temporary glyph storage) other tmp
-fw_ccnt		= fw_cbyt+1		; (bytes per raster counter, no longer X) other tmp
+fw_ccnt		= fw_cbyt		; (bytes per raster counter, no longer X) actually the same tmp
 fw_ciop		= fw_ccnt+1		; cursor position
 fw_vbot		= fw_ciop+2		; page start of screen at current hardware setting (updated upon FF)
 fw_vtop		= fw_vbot+1		; first non-VRAM page (new)
