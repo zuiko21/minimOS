@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2022 Carlos J. Santisteban, Emilio López Berenguer
- * last modified 20221128-2340
+ * last modified 20221212-1854
  * */
 
 /* Gamepad buttons constants */
@@ -609,7 +609,7 @@ byte peek(word dir) {
 				case 4: return minstrel_keyboard[2];
 				case 8: return minstrel_keyboard[3];
 				case 16: return minstrel_keyboard[4];
-				case 32: return 0x58;
+				case 32: return 0x2C;
 			}
 								// no separate if-else is needed because of the default d value
 								// ...and $DF9B could be used by another device

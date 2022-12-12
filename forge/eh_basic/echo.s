@@ -1,6 +1,6 @@
 ; *** echo server test for CONIO ***
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221212-1649
+; last modified 20221212-1851
 ; **********************************
 
 	* = $F000
@@ -86,7 +86,7 @@ jf_res:
 	LDA #32					; column 6
 	STA IO9m5x8				; select it
 	LDA IO9m5x8				; and read rows
-	CMP #$58				; is it a 5x8 matrix?
+	CMP #$2C				; is it a 5x8 matrix? EEEEEK
 	BNE not_5x8
 		LDX #2				; set as default keyboard
 not_5x8:

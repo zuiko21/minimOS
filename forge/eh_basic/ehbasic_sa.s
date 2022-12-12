@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20221212-1654
+; last modified 20221212-1852
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -8875,7 +8875,7 @@ jf_res:
 	LDA #32					; column 6
 	STA IO9m5x8				; select it
 	LDA IO9m5x8				; and read rows
-	CMP #$58				; is it a 5x8 matrix?
+	CMP #$2C				; is it a 5x8 matrix? EEEEEEEEK
 	BNE not_5x8
 		LDX #2				; set as default keyboard
 not_5x8:
