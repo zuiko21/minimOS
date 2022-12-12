@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20221211-1849
+; last modified 20221212-1654
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -65,8 +65,8 @@ cio_src		= $E4
 -IO9di		= $DF9A		; data input (PASK standard)
 -IO9nes0	= $DF9C		; NES controller for alternative keyboard emulation & latch
 -IO9nes1	= $DF9D		; NES controller clock port
--IOAie		= $DFAF		; canonical interrupt enable address (d0)
--IOBeep		= $DFBF		; canonical buzzer address (d0)
+-IOAie		= $DFA0		; canonical interrupt enable address (d0)
+-IOBeep		= $DFB0		; canonical buzzer address (d0)
 
 .(
 	.asc	"Derived from EhBASIC v2.22 by Lee Davison", 0		; comment with IMPORTANT attribution
@@ -522,7 +522,7 @@ TabLoop
 
 	STZ	NmiBase			; clear NMI handler enabled flag
 	STZ	IrqBase			; clear IRQ handler enabled flag
-	CLI					; *** enable interrupts for timer ***
+	CLI					; *** enable interrupts for timer AND keyboard ***
 	STZ	FAC1_o			; clear FAC1 overflow byte
 	STZ	last_sh			; clear descriptor stack top item pointer high byte EEEEEEEEK
 
@@ -629,9 +629,6 @@ LAB_2E05
 	TAX					; copy to X
 	LDA	Ememh			; get end of mem high byte
 	SBC	Smemh			; subtract start of mem high byte
-stz$df94
-sta$df93
-stx$df93
 
 	JSR	LAB_295E		; print XA as unsigned integer (bytes free)
 	LDA	#<LAB_SMSG		; point to sign-on message (low addr)
@@ -8940,6 +8937,7 @@ not_brk:
 	PLX
 	PLA
 	RTI
+
 nmi:
 	JMP (fw_nmi)			; standard minimOS vector
 std_nmi:					; NMI support for EhBASIC, from min_mon.asm
@@ -8950,6 +8948,7 @@ std_nmi:					; NMI support for EhBASIC, from min_mon.asm
 	STA NmiBase
 	PLA
 	RTI
+
 ; *** multi-keyboard support ***
 kbd_isr:
 	LDX kb_type

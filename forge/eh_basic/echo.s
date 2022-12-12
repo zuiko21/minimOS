@@ -1,6 +1,6 @@
 ; *** echo server test for CONIO ***
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221212-0048
+; last modified 20221212-1649
 ; **********************************
 
 	* = $F000
@@ -46,8 +46,8 @@ cio_src		= $E4
 -IO9di		= $DF9A		; data input (PASK standard)
 -IO9nes0	= $DF9C		; NES controller for alternative keyboard emulation & latch
 -IO9nes1	= $DF9D		; NES controller clock port
--IOAie		= $DFAF		; canonical interrupt enable address (d0)
--IOBeep		= $DFBF		; canonical buzzer address (d0)
+-IOAie		= $DFA0		; canonical interrupt enable address (d0)
+-IOBeep		= $DFB0		; canonical buzzer address (d0)
 
 
 ; *****************************
