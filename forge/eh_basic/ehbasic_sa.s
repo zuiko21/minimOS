@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20221212-1852
+; last modified 20221213-1749
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -55,6 +55,8 @@ fw_vtop		= fw_vbot+1		; first non-VRAM page (new)
 fw_io9		= fw_vtop+1		; received keypress
 fw_scur		= fw_io9+1		; NEW, cursor control
 fw_knes		= fw_scur+1		; NEW, NES-pad alternative keyboard
+GAMEPAD_MASK1	= fw_knes+1	; EEEEEEEEK
+
 ; CONIO zeropage usage ($E4-$E7)
 cio_pt		= $E6
 cio_src		= $E4
@@ -8869,6 +8871,15 @@ jf_res:
 #ifdef	KBBYPAD
 	LDA #'@'				; initial character for key-by-pad
 	STA fw_knes
+; init gamepad
+	STA IO9nes0				; latch pad status
+	LDX #8					; number of bits to read
+nes_loop:
+		STA IO9nes1			; send clock pulse
+		DEX
+		BNE nes_loop		; all bits read @ IO9nes0
+	LDA IO9nes0				; get bits
+	STA GAMEPAD_MASK1		; * MUST have a standard address, and MUST be initialised! *
 #endif
 ; * check keyboard *
 	LDX #0					; default is PASK

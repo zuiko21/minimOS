@@ -1,6 +1,6 @@
 ; *** echo server test for CONIO ***
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221212-1851
+; last modified 20221213-1750
 ; **********************************
 
 	* = $F000
@@ -18,7 +18,7 @@
 ; *****************************************************
 fw_irq		= $0200			; ### usual minimOS interrupt vectors ###
 fw_nmi		= $0202
-ticks		= $0206			; jiffy counter EEEEK
+;ticks		= $0206			; jiffy counter EEEEK
 ; make room for keyboard driver ($020A-$020F)
 ; CONIO specific variables
 fw_cbin		= $0210			; integrated picoVDU/Durango-X specifics
@@ -36,6 +36,7 @@ fw_vtop		= fw_vbot+1		; first non-VRAM page (new)
 fw_io9		= fw_vtop+1		; received keypress
 fw_scur		= fw_io9+1		; NEW, cursor control
 fw_knes		= fw_scur+1		; NEW, NES-pad alternative keyboard
+GAMEPAD_MASK1	= fw_knes+1	; EEEEEEEEK
 ; CONIO zeropage usage ($E4-$E7)
 cio_pt		= $E6
 cio_src		= $E4
@@ -65,7 +66,7 @@ reset:
 	STA IO8attr
 	LDX #3					; max jiffy counter index
 jf_res:
-		STZ ticks, X		; reset all jiffy counter bytes
+;		STZ ticks, X		; reset all jiffy counter bytes
 		STZ kb_asc, X		; init all keyboard variables too, up to kb_scan (4 bytes)
 		DEX
 		BPL jf_res
@@ -80,6 +81,15 @@ jf_res:
 #ifdef	KBBYPAD
 	LDA #'@'				; initial character for key-by-pad
 	STA fw_knes
+; init gamepad
+	STA IO9nes0				; latch pad status
+	LDX #8					; number of bits to read
+nes_loop:
+		STA IO9nes1			; send clock pulse
+		DEX
+		BNE nes_loop		; all bits read @ IO9nes0
+	LDA IO9nes0				; get bits
+	STA GAMEPAD_MASK1		; * MUST have a standard address, and MUST be initialised! *
 #endif
 ; * check keyboard *
 	LDX #0					; default is PASK

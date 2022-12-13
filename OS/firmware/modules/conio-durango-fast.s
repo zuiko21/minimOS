@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; Durango-X firmware console 0.9.6b9
+; Durango-X firmware console 0.9.6b10
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20221128-1804
+; last modified 20221213-1747
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -894,7 +894,7 @@ nes_loop:
 		DEX
 		BNE nes_loop		; all bits read @ IO9nes0
 	LDA IO9nes0				; get bits
-	EOR #$FF				; temporary fix for new negative logic
+	EOR GAMEPAD_MASK1		; * MUST have a standard address, and MUST be initialised! *
 	RTS
 
 nes_upd:					; *** show current character ***
