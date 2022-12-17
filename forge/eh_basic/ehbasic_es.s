@@ -1,7 +1,7 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; *** Spanish language translation ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20221217-2145
+; last modified 20221217-2205
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -8563,88 +8563,88 @@ TAB_POWR
 ; note if length is 1 then the pointer is ignored
 
 LAB_KEYT
-	.byte	3,"E"
-	.word	LBB_END		; END
 	.byte	3,"F"
-	.word	LBB_FOR		; FOR
-	.byte	4,"N"
-	.word	LBB_NEXT	; NEXT
-	.byte	4,"D"
-	.word	LBB_DATA	; DATA
-	.byte	5,"I"
-	.word	LBB_INPUT	; INPUT
-	.byte	3,"D"
-	.word	LBB_DIM		; DIM
-	.byte	4,"R"
-	.word	LBB_READ	; READ
-	.byte	3,"L"
-	.word	LBB_LET		; LET
-	.byte	3,"D"
-	.word	LBB_DEC		; DEC
-	.byte	4,"G"
-	.word	LBB_GOTO	; GOTO
-	.byte	3,"R"
-	.word	LBB_RUN		; RUN
-	.byte	2,"I"
-	.word	LBB_IF		; IF
-	.byte	7,"R"
-	.word	LBB_RESTORE	; RESTORE
-	.byte	5,"G"
-	.word	LBB_GOSUB	; GOSUB
+	.word	LBB_END		; END		; FIN
+	.byte	4,"P"
+	.word	LBB_FOR		; FOR		; PARA
+	.byte	4,"O"
+	.word	LBB_NEXT	; NEXT		; OTRO
+	.byte	5,"D"
+	.word	LBB_DATA	; DATA		; DATOS
+	.byte	4,"P"
+	.word	LBB_INPUT	; INPUT		; PIDE
+	.byte	8,"C"
+	.word	LBB_DIM		; DIM		; CONJUNTO
+	.byte	4,"T"
+	.word	LBB_READ	; READ		; TOMA
+	.byte	3,"S"
+	.word	LBB_LET		; LET		; SEA
+	.byte	4,"B"
+	.word	LBB_DEC		; DEC		; BAJA
+	.byte	4,"V"
+	.word	LBB_GOTO	; GOTO		; VETE
+	.byte	5,"V"
+	.word	LBB_RUN		; RUN		; VAMOS
+	.byte	2,"S"
+	.word	LBB_IF		; IF		; SI
+	.byte	8,"R"
+	.word	LBB_RESTORE	; RESTORE	; RECUPERA
+	.byte	6,"V"
+	.word	LBB_GOSUB	; GOSUB		; VISITA
 	.byte	6,"R"
 	.word	LBB_RETIRQ	; RETIRQ
 	.byte	6,"R"
 	.word	LBB_RETNMI	; RETNMI
-	.byte	6,"R"
-	.word	LBB_RETURN	; RETURN
-	.byte	3,"R"
-	.word	LBB_REM		; REM
-	.byte	4,"S"
-	.word	LBB_STOP	; STOP
-	.byte	2,"O"
-	.word	LBB_ON		; ON
+	.byte	6,"V"
+	.word	LBB_RETURN	; RETURN	; VUELVE
+	.byte	2,"E"
+	.word	LBB_REM		; REM		; ES
+	.byte	7,"T"
+	.word	LBB_STOP	; STOP		; TERMINA
+	.byte	5,"S"
+	.word	LBB_ON		; ON		; SEGUN
 	.byte	4,"N"
-	.word	LBB_NULL	; NULL
-	.byte	3,"I"
-	.word	LBB_INC		; INC
-	.byte	4,"W"
-	.word	LBB_WAIT	; WAIT
-	.byte	4,"L"
-	.word	LBB_LOAD	; LOAD
+	.word	LBB_NULL	; NULL		; NULO
 	.byte	4,"S"
-	.word	LBB_SAVE	; SAVE
+	.word	LBB_INC		; INC		; SUBE
+	.byte	6,"E"
+	.word	LBB_WAIT	; WAIT		; ESPERA
+	.byte	5,"C"
+	.word	LBB_LOAD	; LOAD		; CARGA
+	.byte	6,"G"
+	.word	LBB_SAVE	; SAVE		; GUARDA
 	.byte	3,"D"
 	.word	LBB_DEF		; DEF
-	.byte	4,"P"
-	.word	LBB_POKE	; POKE
-	.byte	4,"D"
-	.word	LBB_DOKE	; DOKE
-	.byte	4,"C"
-	.word	LBB_CALL	; CALL
-	.byte	2,"D"
-	.word	LBB_DO		; DO
-	.byte	4,"L"
-	.word	LBB_LOOP	; LOOP
-	.byte	5,"P"
-	.word	LBB_PRINT	; PRINT
-	.byte	4,"C"
-	.word	LBB_CONT	; CONT
-	.byte	4,"L"
-	.word	LBB_LIST	; LIST
-	.byte	5,"C"
-	.word	LBB_CLEAR	; CLEAR
-	.byte	3,"N"
-	.word	LBB_NEW		; NEW
-	.byte	5,"W"
-	.word	LBB_WIDTH	; WIDTH
-	.byte	3,"G"
-	.word	LBB_GET		; GET
-	.byte	4,"S"
-	.word	LBB_SWAP	; SWAP
-	.byte	6,"B"
-	.word	LBB_BITSET	; BITSET
-	.byte	6,"B"
-	.word	LBB_BITCLR	; BITCLR
+	.byte	4,"M"
+	.word	LBB_POKE	; POKE		; METE
+	.byte	7,"M"
+	.word	LBB_DOKE	; DOKE		; METEDOS
+	.byte	5,"L"
+	.word	LBB_CALL	; CALL		; LLAMA
+	.byte	3,"H"
+	.word	LBB_DO		; DO		; HAZ
+	.byte	6,"R"
+	.word	LBB_LOOP	; LOOP		; REPITE
+	.byte	7,"E"
+	.word	LBB_PRINT	; PRINT		; ESCRIBE
+	.byte	5,"S"
+	.word	LBB_CONT	; CONT		; SIGUE
+	.byte	5,"L"
+	.word	LBB_LIST	; LIST		; LISTA
+	.byte	5,"B"
+	.word	LBB_CLEAR	; CLEAR		; BORRA
+	.byte	5,"N"
+	.word	LBB_NEW		; NEW		; NUEVO
+	.byte	5,"A"
+	.word	LBB_WIDTH	; WIDTH		; ANCHO
+	.byte	5,"T"
+	.word	LBB_GET		; GET		; TECLA
+	.byte	6,"C"
+	.word	LBB_SWAP	; SWAP		; CAMBIA
+	.byte	6,"P"
+	.word	LBB_BITSET	; BITSET	; PONBIT
+	.byte	8,"Q"
+	.word	LBB_BITCLR	; BITCLR	; QUITABIT
 	.byte	3,"I"
 	.word	LBB_IRQ		; IRQ
 	.byte	3,"N"
@@ -8655,28 +8655,28 @@ LAB_KEYT
 
 ; secondary commands (cannot start a statement)
 
-	.byte	4,"T"
-	.word	LBB_TAB		; TAB
-	.byte	4,"E"
-	.word	LBB_ELSE	; ELSE
-	.byte	2,"T"
-	.word	LBB_TO		; TO
+	.byte	9,"T"
+	.word	LBB_TAB		; TAB		; TABULADOR
+	.byte	9,"C"
+	.word	LBB_ELSE	; ELSE		; CONTRARIO
+	.byte	5,"H"
+	.word	LBB_TO		; TO		; HASTA
 	.byte	2,"F"
 	.word	LBB_FN		; FN
-	.byte	4,"S"
-	.word	LBB_SPC		; SPC
-	.byte	4,"T"
-	.word	LBB_THEN	; THEN
-	.byte	3,"N"
-	.word	LBB_NOT		; NOT
-	.byte	4,"S"
-	.word	LBB_STEP	; STEP
-	.byte	5,"U"
-	.word	LBB_UNTIL	; UNTIL
-	.byte	5,"W"
-	.word	LBB_WHILE	; WHILE
-	.byte	3,"O"
-	.word	LBB_OFF		; OFF
+	.byte	8,"E"
+	.word	LBB_SPC		; SPC		; ESPACIOS
+	.byte	8,"E"
+	.word	LBB_THEN	; THEN		; ENTONCES
+	.byte	2,"N"
+	.word	LBB_NOT		; NOT		; NO
+	.byte	4,"P"
+	.word	LBB_STEP	; STEP		; PASO
+	.byte	8,"A"
+	.word	LBB_UNTIL	; UNTIL		; ACABANDO
+	.byte	8,"M"
+	.word	LBB_WHILE	; WHILE		; MIENTRAS
+	.byte	5,"A"
+	.word	LBB_OFF		; OFF		; APAGA
 
 ; operators
 
@@ -8690,12 +8690,12 @@ LAB_KEYT
 	.word	$0000		; /
 	.byte	1,$5E
 	.word	$0000		; ^, is this OK?
-	.byte	3,"A"
-	.word	LBB_AND		; AND
-	.byte	3,"E"
-	.word	LBB_EOR		; EOR
-	.byte	2,"O"
-	.word	LBB_OR		; OR
+	.byte	3,"M"
+	.word	LBB_AND		; AND		; MAS
+	.byte	8,"D"
+	.word	LBB_EOR		; EOR		; DISTINTO
+	.byte	5,"O"
+	.word	LBB_OR		; OR		; OBIEN
 	.byte	2,">"
 	.word	LBB_RSHIFT	; >>
 	.byte	2,"<"
@@ -8707,78 +8707,78 @@ LAB_KEYT
 	.byte	1,"<"
 	.word	$0000		; <
 
-; functions
+; functions, INCLUDE ( FOR LENGTH
 
-	.byte	4,"S"
-	.word	LBB_SGN		; SGN
-	.byte	4,"I"
-	.word	LBB_INT		; INT
-	.byte	4,"A"
-	.word	LBB_ABS		; ABS
-	.byte	4,"U"
-	.word	LBB_USR		; USR
-	.byte	4,"F"
-	.word	LBB_FRE		; FRE
-	.byte	4,"P"
-	.word	LBB_POS		; POS
-	.byte	4,"S"
-	.word	LBB_SQR		; SQR
-	.byte	4,"R"
-	.word	LBB_RND		; RND
-	.byte	4,"L"
-	.word	LBB_LOG		; LOG
-	.byte	4,"E"
-	.word	LBB_EXP		; EXP
-	.byte	4,"C"
-	.word	LBB_COS		; COS
-	.byte	4,"S"
-	.word	LBB_SIN		; SIN
-	.byte	4,"T"
-	.word	LBB_TAN		; TAN
-	.byte	4,"A"
-	.word	LBB_ATN		; ATN
-	.byte	5,"P"
-	.word	LBB_PEEK	; PEEK
-	.byte	5,"D"
-	.word	LBB_DEEK	; DEEK
+	.byte	6,"S"
+	.word	LBB_SGN		; SGN		; SIGNO
+	.byte	7,"E"
+	.word	LBB_INT		; INT		; ENTERO
+	.byte	9,"A"
+	.word	LBB_ABS		; ABS		; ABSOLUTO
+	.byte	8,"U"
+	.word	LBB_USR		; USR		; USUARIO
+	.byte	6,"L"
+	.word	LBB_FRE		; FRE		; LIBRE
+	.byte	9,"P"
+	.word	LBB_POS		; POS		; POSICION
+	.byte	5,"R"
+	.word	LBB_SQR		; SQR		; RAIZ
+	.byte	5,"A"
+	.word	LBB_RND		; RND		; AZAR
+	.byte	10,"L"
+	.word	LBB_LOG		; LOG		; LOGARITMO
+	.byte	12,"E"
+	.word	LBB_EXP		; EXP		; EXPONENCIAL
+	.byte	7,"C"
+	.word	LBB_COS		; COS		; COSENO
 	.byte	5,"S"
-	.word	LBB_SADD	; SADD
-	.byte	4,"L"
-	.word	LBB_LEN		; LEN
+	.word	LBB_SIN		; SIN		; SENO
+	.byte	9,"T"
+	.word	LBB_TAN		; TAN		; TANGENTE
+	.byte	13,"A"
+	.word	LBB_ATN		; ATN		; ARCOTANGENTE
 	.byte	5,"S"
-	.word	LBB_STRS	; STR$
-	.byte	4,"V"
-	.word	LBB_VAL		; VAL
-	.byte	4,"A"
-	.word	LBB_ASC		; ASC
-	.byte	7,"U"
-	.word	LBB_UCASES	; UCASE$
+	.word	LBB_PEEK	; PEEK		; SACA
+	.byte	8,"S"
+	.word	LBB_DEEK	; DEEK		; SACADOS
+	.byte	6,"L"
+	.word	LBB_SADD	; SADD		; LUGAR
+	.byte	6,"L"
+	.word	LBB_LEN		; LEN		; LARGO
+	.byte	7,"T"
+	.word	LBB_STRS	; STR$		; TEXTO$
+	.byte	6,"V"
+	.word	LBB_VAL		; VAL		; VALOR
+	.byte	7,"C"
+	.word	LBB_ASC		; ASC		; CODIGO
+	.byte	11,"M"
+	.word	LBB_UCASES	; UCASE$	; MAYUSCULA$
+	.byte	11,"M"
+	.word	LBB_LCASES	; LCASE$	; MINUSCULA$
 	.byte	7,"L"
-	.word	LBB_LCASES	; LCASE$
-	.byte	5,"C"
-	.word	LBB_CHRS	; CHR$
-	.byte	5,"H"
-	.word	LBB_HEXS	; HEX$
-	.byte	5,"B"
-	.word	LBB_BINS	; BIN$
-	.byte	7,"B"
-	.word	LBB_BITTST	; BITTST
-	.byte	4,"M"
-	.word	LBB_MAX		; MAX
-	.byte	4,"M"
-	.word	LBB_MIN		; MIN
+	.word	LBB_CHRS	; CHR$		; LETRA$
+	.byte	13,"H"
+	.word	LBB_HEXS	; HEX$		; HEXADECIMAL$
+	.byte	9,"B"
+	.word	LBB_BINS	; BIN$		; BINARIO$
+	.byte	8,"M"
+	.word	LBB_BITTST	; BITTST	; MIRABIT
+	.byte	7,"M"
+	.word	LBB_MAX		; MAX		; MAXIMO
+	.byte	7,"M"
+	.word	LBB_MIN		; MIN		; MINIMO
 	.byte	2,"P"
 	.word	LBB_PI		; PI
-	.byte	5,"T"
-	.word	LBB_TWOPI	; TWOPI
-	.byte	7,"V"
-	.word	LBB_VPTR	; VARPTR
-	.byte	6,"L"
-	.word	LBB_LEFTS	; LEFT$
-	.byte	7,"R"
-	.word	LBB_RIGHTS	; RIGHT$
-	.byte	5,"M"
-	.word	LBB_MIDS	; MID$
+	.byte	5,"D"
+	.word	LBB_TWOPI	; TWOPI		; DOSPI
+	.byte	10,"D"
+	.word	LBB_VPTR	; VARPTR	; DIRECCION
+	.byte	11,"I"
+	.word	LBB_LEFTS	; LEFT$		; IZQUIERDA$
+	.byte	9,"D"
+	.word	LBB_RIGHTS	; RIGHT$	; DERECHA$
+	.byte	7,"M"
+	.word	LBB_MIDS	; MID$		; MEDIO$
 
 ; BASIC messages, mostly error messages
 
