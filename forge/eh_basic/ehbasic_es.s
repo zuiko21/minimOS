@@ -1,7 +1,7 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; *** Spanish language translation ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20221217-2205
+; last modified 20221217-2214
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -7898,11 +7898,11 @@ StrTab
 EndTab
 
 LAB_MSZM
-	.byte	$0D,"Memory size ",$00
+	.byte	$0D,"¿Toda la memoria",$00
 
 LAB_SMSG
-	.byte	" Bytes free",$0D,$0D
-	.byte	"Enhanced BASIC 2.22",$0D,$00	; *** do not know why this was $0A ***
+	.byte	" Bytes libres",$0D,$0D
+	.byte	"EhBASIC 2.22 en español",$0D,$00	; *** do not know why this was $0A ***
 
 ; numeric constants and series
 
@@ -8811,24 +8811,24 @@ LAB_BAER
 
 ;	.word ERR_UA		;$26 undimensioned array
 
-ERR_NF	.byte	"Â¿OTRO quÃ©?",$00
+ERR_NF	.byte	"¿OTRO qué?",$00
 ERR_SN	.byte	"Escrito",$00
 ERR_RG	.byte	"No hay donde VOLVER,",$00
 ERR_OD	.byte	"Faltan DATOS,",$00
-ERR_FC	.byte	"Llamada a funciÃ³n",$00
+ERR_FC	.byte	"Llamada a función",$00
 ERR_OV	.byte	"Muy grande,",$00
 ERR_OM	.byte	"No cabe en memoria,",$00
-ERR_US	.byte	"No sÃ© lo que es,",$00
+ERR_US	.byte	"No sé lo que es,",$00
 ERR_BS	.byte	"Se sale del conjunto,",$00
-ERR_DD	.byte	"Ya tiene tamaÃ±o,",$00
-ERR_D0	.byte	"Dividir por cero estÃ¡",$00
-ERR_ID	.byte	"En directo estÃ¡",$00
+ERR_DD	.byte	"Ya tiene tamaño,",$00
+ERR_D0	.byte	"Dividir por cero está",$00
+ERR_ID	.byte	"En directo está",$00
 ERR_TM	.byte	"Combina",$00
 ERR_LS	.byte	"Texto muy largo,",$00
 ERR_ST	.byte	"Texto muy complejo,",$00
 ERR_CN	.byte	"No puedo seguir,",$00
-ERR_UF	.byte	"No hay esa funciÃ³n,",$00
-ERR_LD	.byte	"Â¿QuÃ© repito?",$00
+ERR_UF	.byte	"No hay esa función,",$00
+ERR_LD	.byte	"¿Qué repito?",$00
 
 ;ERR_UV	.byte	"Undefined variable",$00
 
@@ -8838,7 +8838,7 @@ ERR_LD	.byte	"Â¿QuÃ© repito?",$00
 
 LAB_BMSG	.byte	$0D,"Parada",$00
 LAB_EMSG	.byte	" MAL",$00
-LAB_LMSG	.byte	" en la lÃ­nea ",$00
+LAB_LMSG	.byte	" en la línea ",$00
 LAB_RMSG	.byte	$0D,"Listo",$0D,$00
 
 LAB_IMSG	.byte	" Extra ignorados",$0D,$00
@@ -8856,7 +8856,7 @@ reset:
 	CLD
 	LDX #$FF
 	TXS
-	STX IOAie				; ### enable Durango-X hardware interruptÂ ###
+	STX IOAie				; ### enable Durango-X hardware interrupt ###
 	STX fw_scur				; as bit 7 is on, activates cursor
 	LDA #$B8				; start in HIRES mode, if possible (note RGB bit set, just in case)
 	STA IO8attr
@@ -8883,7 +8883,7 @@ jf_res:
 nes_loop:
 		STA IO9nes1			; send clock pulse
 		DEX
-		BNE nes_loop		; all bits read @Â IO9nes0
+		BNE nes_loop		; all bits read @ IO9nes0
 	LDA IO9nes0				; get bits
 	STA GAMEPAD_MASK1		; * MUST have a standard address, and MUST be initialised! *
 #endif
