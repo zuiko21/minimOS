@@ -8874,10 +8874,10 @@ jf_res:
 ; init gamepad
 	STA IO9nes0				; latch pad status
 	LDX #8					; number of bits to read
-nes_loop:
+nes_init:
 		STA IO9nes1			; send clock pulse
 		DEX
-		BNE nes_loop		; all bits read @ IO9nes0
+		BNE nes_init		; all bits read @ IO9nes0
 	LDA IO9nes0				; get bits
 	STA GAMEPAD_MASK1		; * MUST have a standard address, and MUST be initialised! *
 #endif
