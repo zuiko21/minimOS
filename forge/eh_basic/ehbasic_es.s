@@ -1,7 +1,7 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; *** Spanish language translation ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20221217-2214
+; last modified 20221218-1106
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -8357,10 +8357,12 @@ LBB_ASC
 	.byte	"ODIGO(",TK_ASC		; ASC(		; CODIGO
 LBB_DIM
 	.byte	"ONJUNTO",TK_DIM	; DIM		; CONJUNTO
-LBB_ELSE
-	.byte	"ONTRARIO",TK_ELSE	; ELSE		; CONTRARIO
+LBB_NOT
+	.byte	"ONTRARIO",TK_NOT	; NOT		; CONTRARIO
 LBB_COS
 	.byte	"OSENO(",TK_COS		; COS(		; COSENO
+LBB_FOR
+	.byte	"UENTA",TK_FOR		; FOR		; CUENTA
 	.byte	$00
 TAB_ASCD	; ** D **
 LBB_DATA
@@ -8382,17 +8384,19 @@ LBB_INT
 LBB_THEN
 	.byte	"NTONCES",TK_THEN	; THEN		; ENTONCES
 LBB_PRINT
-	.byte	"SCRIBE",TK_PRINT	; PRINT		; ESCRIBE ** before ES **
+	.byte	"SCRIBE",TK_PRINT	; PRINT		; ESCRIBE
 LBB_SPC
-	.byte	"SPACIOS(",TK_SPC	; SPC(		; ESPACIOS ** before ES **
+	.byte	"SPACIOS(",TK_SPC	; SPC(		; ESPACIOS
 LBB_WAIT
-	.byte	"SPERA",TK_WAIT		; WAIT		; ESPERA ** before ES **
+	.byte	"SPERA",TK_WAIT		; WAIT		; ESPERA
 LBB_REM
-	.byte	"S",TK_REM			; REM		; ES
+	.byte	"STO",TK_REM		; REM		; ESTO
 LBB_EXP
 	.byte	"XPONENCIAL(",TK_EXP	; EXP(	; EXPONENCIAL
 	.byte	$00
 TAB_ASCF	; ** F **
+LBB_ELSE
+	.byte	"ALLA",TK_ELSE		; ELSE		; FALLA
 LBB_END
 	.byte	"IN",TK_END			; END		; FIN
 LBB_FN
@@ -8411,6 +8415,8 @@ LBB_HEXS
 	.byte	"EXADECIMAL$(",TK_HEXS	; HEX$(	; HEXADECIMAL$
 	.byte	$00
 TAB_ASCI	; ** I **
+LBB_OR
+	.byte	"NCLUSO",TK_OR		; OR		; INCLUSO
 LBB_IRQ
 	.byte	"RQ",TK_IRQ			; IRQ
 LBB_LEFTS
@@ -8433,8 +8439,6 @@ LBB_SADD
 	.byte	"UGAR(",TK_SADD		; SADD(		; LUGAR
 	.byte	$00
 TAB_ASCM	; ** M **
-LBB_AND
-	.byte	"AS",TK_AND			; AND		; MAS
 LBB_MAX
 	.byte	"AXIMO(",TK_MAX		; MAX(		; MAXIMO
 LBB_UCASES
@@ -8457,22 +8461,16 @@ LBB_BITTST
 TAB_ASCN	; ** N **
 LBB_NMI
 	.byte	"MI",TK_NMI			; NMI
-LBB_NOT
-	.byte	"O",TK_NOT			; NOT		; NO
 LBB_NEW
 	.byte	"UEVO",TK_NEW		; NEW		; NUEVO
 LBB_NULL
 	.byte	"ULO",TK_NULL		; NULL		; NULO
 	.byte	$00
 TAB_ASCO	; ** O **
-LBB_OR
-	.byte	"BIEN",TK_OR		; OR		; OBIEN
 LBB_NEXT
 	.byte	"TRO",TK_NEXT		; NEXT		; OTRO
 	.byte	$00
 TAB_ASCP	; ** P **
-LBB_FOR
-	.byte	"ARA",TK_FOR		; FOR		; PARA
 LBB_STEP
 	.byte	"ASO",TK_STEP		; STEP		; PASO
 LBB_INPUT
@@ -8523,6 +8521,8 @@ LBB_INC
 TAB_ASCT	; ** T **
 LBB_TAB
 	.byte	"ABULADOR(",TK_TAB	; TAB(		; TABULADOR
+LBB_AND
+	.byte	"AMBIEN",TK_AND		; AND		; TAMBIEN
 LBB_TAN
 	.byte	"ANGENTE(",TK_TAN	; TAN(		; TANGENTE
 LBB_GET
@@ -8565,8 +8565,8 @@ TAB_POWR
 LAB_KEYT
 	.byte	3,"F"
 	.word	LBB_END		; END		; FIN
-	.byte	4,"P"
-	.word	LBB_FOR		; FOR		; PARA
+	.byte	6,"C"
+	.word	LBB_FOR		; FOR		; CUENTA
 	.byte	4,"O"
 	.word	LBB_NEXT	; NEXT		; OTRO
 	.byte	5,"D"
@@ -8597,8 +8597,8 @@ LAB_KEYT
 	.word	LBB_RETNMI	; RETNMI
 	.byte	6,"V"
 	.word	LBB_RETURN	; RETURN	; VUELVE
-	.byte	2,"E"
-	.word	LBB_REM		; REM		; ES
+	.byte	4,"E"
+	.word	LBB_REM		; REM		; ESTO
 	.byte	7,"T"
 	.word	LBB_STOP	; STOP		; TERMINA
 	.byte	5,"S"
@@ -8657,8 +8657,8 @@ LAB_KEYT
 
 	.byte	9,"T"
 	.word	LBB_TAB		; TAB		; TABULADOR
-	.byte	9,"C"
-	.word	LBB_ELSE	; ELSE		; CONTRARIO
+	.byte	5,"F"
+	.word	LBB_ELSE	; ELSE		; FALLA
 	.byte	5,"H"
 	.word	LBB_TO		; TO		; HASTA
 	.byte	2,"F"
@@ -8667,8 +8667,8 @@ LAB_KEYT
 	.word	LBB_SPC		; SPC		; ESPACIOS
 	.byte	8,"E"
 	.word	LBB_THEN	; THEN		; ENTONCES
-	.byte	2,"N"
-	.word	LBB_NOT		; NOT		; NO
+	.byte	9,"C"
+	.word	LBB_NOT		; NOT		; CONTRARIO
 	.byte	4,"P"
 	.word	LBB_STEP	; STEP		; PASO
 	.byte	8,"A"
@@ -8690,12 +8690,12 @@ LAB_KEYT
 	.word	$0000		; /
 	.byte	1,$5E
 	.word	$0000		; ^, is this OK?
-	.byte	3,"M"
-	.word	LBB_AND		; AND		; MAS
+	.byte	7,"T"
+	.word	LBB_AND		; AND		; TAMBIEN
 	.byte	8,"D"
 	.word	LBB_EOR		; EOR		; DISTINTO
-	.byte	5,"O"
-	.word	LBB_OR		; OR		; OBIEN
+	.byte	7,"I"
+	.word	LBB_OR		; OR		; INCLUSO
 	.byte	2,">"
 	.word	LBB_RSHIFT	; >>
 	.byte	2,"<"
