@@ -8837,9 +8837,9 @@ ERR_LD	.byte	"¿Qué repito?",$00
 ;ERR_UA	.byte	"Undimensioned array",$00
 
 LAB_BMSG	.byte	$0D,"Parada",$00
-LAB_EMSG	.byte	" MAL",$00
+LAB_EMSG	.byte	" MAL",$07,$00			; BEEP on error
 LAB_LMSG	.byte	" en la línea ",$00
-LAB_RMSG	.byte	$0D,"Listo",$0D,$00
+LAB_RMSG	.byte	$0D,"Dime",$0D,$00
 
 LAB_IMSG	.byte	" Extra ignorados",$0D,$00
 LAB_REDO	.byte	" Empieza de nuevo",$0D,$00
