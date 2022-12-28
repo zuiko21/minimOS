@@ -1,6 +1,6 @@
 ; COLUMNS for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221228-0059
+; last modified 20221228-1131
 
 ; ****************************
 ; *** hardware definitions ***
@@ -20,7 +20,8 @@ IOBeep	= $DFB0
 ; *** memory allocation ***
 ; *************************
 
-seed	= $FA
+colour	= $F9
+seed	= colour+1			; $FA
 src		= seed+2			; $FC
 ptr		= src+2				; $FE
 
@@ -157,6 +158,53 @@ rle_next:
 rle_exit:					; exit decompressor
 	RTS						; EEEEEEEK
 
+; ** number display **
+; input
+;	Y		type of display (0=level, 2=jewels, 4=score)
+;	X		player [0-1]
+;	colour	AND mask
+; fixed size; score=6 digits, level=2 digits, jewels=4 digits
+; BCD data array [LxJJSSSS] thus Y-indexed
+; fixed player 1 base addresses; score $6007 (14,0), level $6C5C (56,49), jewels $7E4A (20,121)
+; player 2 level adds 52 Y-offset! (64,101)
+; fixed player 2 offset; score $26 (90-14), level 4 (actually $D04) (64-56), jewels $24 (92-20)
+numdisp:
+	PHX						; save player for later
+	TXA						; player offset
+	CLC
+	ADC disp_id, Y			; select type of display
+	TAX						; offset to base address
+	LDA num_bl, X
+	STA ptr
+	LDA num_bh, X
+	STA ptr+1				; screen pointer is ready
+; TODO *** assume A is number to be displayed
+	ASL						; two bytes per raster
+	TAX						; first raster address
+
+n_rast:
+			LDA numbers, X
+			AND colour
+			STA (ptr), Y	; copy glyph raster into screen
+			INX
+			INY
+			LDA numbers, X
+			AND colour
+			STA (ptr), Y	; copy glyph raster into screen
+			TYA
+			CLC
+			ADC #63				; one raster minus 2 bytes of a number
+			TAY
+			BCC ras_nw
+				INC ptr+1
+ras_nw:
+			TXA
+			CLC
+			ADC #19				; advance to next raster in font
+			TAX
+			CPX #140			; within valid raster? (10 numbers * 2 bytes * 7 rasters)
+			BCC n_rast
+
 ; ** gamepad read **
 read_pad:
 	LDA #8
@@ -195,6 +243,19 @@ cmpr_pics:					; to be displayed by dispic
 	.word	splash
 	.word	field
 
+num_bl:						; base addresses of numeric displays (LSB, interleaved $P2P1)
+	.word	$605C			; level $6C5C, $7960 (!)
+	.word	$6E4A			; jewels $7E4A, $7E6E
+	.word	$2D07			; score $6007, $602D
+num_bh:						; base addresses of numeric displays (MSB, interleaved $P2P1)
+	.word	$796C			; level $6C5C, $7960 (!)
+	.word	$7E7E			; jewels $7E4A, $7E6E
+	.word	$6060			; score $6007, $602D
+play_col:					; player display colour
+	.byt	9, 11			; sky blue and lavender pink
+disp_id:					; identity array (every 2)
+	.word	0, 2, 4
+
 ; ********************
 ; *** picture data ***
 ; ********************
@@ -203,7 +264,11 @@ splash:
 field:
 	.bin	0, 0, "columns.rle"
 sprites:
-	.bin	0, 0, "jewels.sv4"	; uncompressed file, 4-byte wide!
+	.bin	0, 0, "jewels.sv4"						; uncompressed file, 4-byte wide!
+gameover:
+	.bin	0, 0, "col_gameover.sv24"				; uncompressed, 24-byte wide
+numbers:
+	.bin	0, 0, "../../other/data/numbers.sv20"	; generic number images, 20-byte wide
 
 ; ***************************
 ; *** ROM padding and end ***
