@@ -1,6 +1,6 @@
 ; COLUMNS for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221227-2349
+; last modified 20221228-0059
 
 ; ****************************
 ; *** hardware definitions ***
@@ -60,6 +60,7 @@ reset:
 	LDY pad1val
 	STX pad0mask			; ...and store them
 	STY pad1mask
+	JSR read_pad			; just for clearing the values
 ; * may check here for supported keyboard presence (col 6 = $2C)
 ; setup interrupt system
 	LDY #<isr
@@ -67,8 +68,15 @@ reset:
 	STY irq_ptr				; standard FW adress
 	STX irq_ptr+1
 	CLI						; enable interrupts!
-; TODO * wait for START/FIRE/CR/C/N/SPACE, while incrementing some register (say, X) * TODO
-
+; wait for action * should check keyboard also * TODO
+	LDA #%11000000			; look for start or fire
+wait_s:
+		INX
+		BIT pad0val
+	BNE start
+		BIT pad1val
+		BEQ wait_s
+start:
 	LDA ticks
 	STA seed
 	STX seed+1				; quite random seed
@@ -146,8 +154,8 @@ rle_next:
 		BCC rle_loop		; check possible carry
 			INC ptr+1
 		BNE rle_loop		; no need for BRA
-; *** end of code ***
-rle_exit:
+rle_exit:					; exit decompressor
+	RTS						; EEEEEEEK
 
 ; ** gamepad read **
 read_pad:
