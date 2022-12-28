@@ -1,6 +1,6 @@
 ; COLUMNS for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221228-1131
+; last modified 20221228-2310
 
 ; ****************************
 ; *** hardware definitions ***
@@ -20,7 +20,8 @@ IOBeep	= $DFB0
 ; *** memory allocation ***
 ; *************************
 
-colour	= $F9
+bcd_arr	= $F2
+colour	= bcd_arr+7			; $F9
 seed	= colour+1			; $FA
 src		= seed+2			; $FC
 ptr		= src+2				; $FE
@@ -88,6 +89,51 @@ start:
 	JSR dispic				; decompress!
 
 ; TODO * do game stuff... * TODO
+ldy#0
+ldx#0
+lda#$12
+sta bcd_arr
+jsr numdisp
+ldy#0
+ldx#1
+lda#$24
+sta bcd_arr
+jsr numdisp
+
+ldy#2
+ldx#0
+lda#$23
+sta bcd_arr+2
+lda#$45
+sta bcd_arr+3
+jsr numdisp
+ldy#2
+ldx#1
+lda#$46
+sta bcd_arr+2
+lda#$80
+sta bcd_arr+3
+jsr numdisp
+
+ldy#4
+ldx#0
+lda#$98
+sta bcd_arr+4
+lda#$76
+sta bcd_arr+5
+lda#$54
+sta bcd_arr+6
+jsr numdisp
+ldy#4
+ldx#1
+lda#$86
+sta bcd_arr+4
+lda#$42
+sta bcd_arr+5
+lda#$08
+sta bcd_arr+6
+jsr numdisp
+
 lock:jmp lock
 ; ***********************
 ; *** useful routines ***
@@ -164,12 +210,13 @@ rle_exit:					; exit decompressor
 ;	X		player [0-1]
 ;	colour	AND mask
 ; fixed size; score=6 digits, level=2 digits, jewels=4 digits
-; BCD data array [LxJJSSSS] thus Y-indexed
+; BCD data array [LxJJSSS] thus Y-indexed
 ; fixed player 1 base addresses; score $6007 (14,0), level $6C5C (56,49), jewels $7E4A (20,121)
 ; player 2 level adds 52 Y-offset! (64,101)
 ; fixed player 2 offset; score $26 (90-14), level 4 (actually $D04) (64-56), jewels $24 (92-20)
 numdisp:
-	PHX						; save player for later
+	LDA play_col, X			; get colour according to player
+	STA colour				; set colour
 	TXA						; player offset
 	CLC
 	ADC disp_id, Y			; select type of display
@@ -178,32 +225,60 @@ numdisp:
 	STA ptr
 	LDA num_bh, X
 	STA ptr+1				; screen pointer is ready
-; TODO *** assume A is number to be displayed
+	TAX						; this must be reset after each digit!
+bcd_loop:
+		LDA bcd_arr-1, Y	; get one BCD byte
+		PHY					; must keep these first
+		PHA					; save for LSB
+		PHX					; this will be retrieved twice
+		LSR
+		LSR
+		LSR
+		LSR					; keep MSN
+		JSR bcd_disp		; show it
+		PLX
+		STX ptr+1			; restore page
+		PLA					; retrieve full value
+		AND #15				; just LSN
+		PHX					; must store again
+		JSR bcd_disp		; and show it too
+		PLX
+		STX ptr+1			; restore page again
+		PLY
+		INY					; next two digits!
+		CPY disp_top		; is it the last one?
+		BNE bcd_loop
+	RTS
+; actual printing, A has BCD nibble
+bcd_disp:
 	ASL						; two bytes per raster
 	TAX						; first raster address
-
+	LDY #0
 n_rast:
-			LDA numbers, X
-			AND colour
-			STA (ptr), Y	; copy glyph raster into screen
-			INX
-			INY
-			LDA numbers, X
-			AND colour
-			STA (ptr), Y	; copy glyph raster into screen
-			TYA
-			CLC
-			ADC #63				; one raster minus 2 bytes of a number
-			TAY
-			BCC ras_nw
-				INC ptr+1
+		LDA numbers, X
+		AND colour
+		STA (ptr), Y		; copy glyph raster into screen
+		INX
+		INY
+		LDA numbers, X
+		AND colour
+		STA (ptr), Y		; copy glyph raster into screen
+		TYA
+		CLC
+		ADC #63				; one raster minus 2 bytes of a number
+		TAY
+		BCC ras_nw
+			INC ptr+1
 ras_nw:
-			TXA
-			CLC
-			ADC #19				; advance to next raster in font
-			TAX
-			CPX #140			; within valid raster? (10 numbers * 2 bytes * 7 rasters)
-			BCC n_rast
+		TXA
+		CLC
+		ADC #19				; advance to next raster in font
+		TAX
+		CPX #140			; within valid raster? (10 numbers * 2 bytes * 7 rasters)
+		BCC n_rast
+	INC ptr					; advance digit position
+	INC ptr
+	RTS
 
 ; ** gamepad read **
 read_pad:
@@ -254,7 +329,10 @@ num_bh:						; base addresses of numeric displays (MSB, interleaved $P2P1)
 play_col:					; player display colour
 	.byt	9, 11			; sky blue and lavender pink
 disp_id:					; identity array (every 2)
-	.word	0, 2, 4
+	.byt	0, 1
+	.byt	2, 4
+	.byt	4, 7			; even indices give index value, also start index for BCD array
+disp_top	= disp_id+1		; 'odd' indices give limit index for 1, 2 or 3 BCD bytes (2-4-6 digits)
 
 ; ********************
 ; *** picture data ***
