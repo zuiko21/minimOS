@@ -1,6 +1,6 @@
 ; COLUMNS for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221228-2310
+; last modified 20221229-0013
 
 ; ****************************
 ; *** hardware definitions ***
@@ -21,6 +21,7 @@ IOBeep	= $DFB0
 ; *************************
 
 bcd_arr	= $F2
+bcd_lim	= bcd_arr+1			; $F3
 colour	= bcd_arr+7			; $F9
 seed	= colour+1			; $FA
 src		= seed+2			; $FC
@@ -94,6 +95,7 @@ ldx#0
 lda#$12
 sta bcd_arr
 jsr numdisp
+
 ldy#0
 ldx#1
 lda#$24
@@ -114,6 +116,7 @@ sta bcd_arr+2
 lda#$80
 sta bcd_arr+3
 jsr numdisp
+
 
 ldy#4
 ldx#0
@@ -226,31 +229,29 @@ numdisp:
 	LDA num_bh, X
 	STA ptr+1				; screen pointer is ready
 	TAX						; this must be reset after each digit!
+	LDA disp_top, Y
+	STA bcd_lim				; keep offset limit! eeeeeeek
 bcd_loop:
-		LDA bcd_arr-1, Y	; get one BCD byte
-		PHY					; must keep these first
+		LDA bcd_arr, Y		; get one BCD byte
 		PHA					; save for LSB
-		PHX					; this will be retrieved twice
 		LSR
 		LSR
 		LSR
 		LSR					; keep MSN
 		JSR bcd_disp		; show it
-		PLX
 		STX ptr+1			; restore page
 		PLA					; retrieve full value
 		AND #15				; just LSN
-		PHX					; must store again
 		JSR bcd_disp		; and show it too
-		PLX
 		STX ptr+1			; restore page again
-		PLY
 		INY					; next two digits!
-		CPY disp_top		; is it the last one?
+		CPY bcd_lim 		; is it the last one?
 		BNE bcd_loop
 	RTS
 ; actual printing, A has BCD nibble
 bcd_disp:
+	PHX
+	PHY
 	ASL						; two bytes per raster
 	TAX						; first raster address
 	LDY #0
@@ -278,6 +279,8 @@ ras_nw:
 		BCC n_rast
 	INC ptr					; advance digit position
 	INC ptr
+	PLY
+	PLX
 	RTS
 
 ; ** gamepad read **
@@ -327,7 +330,7 @@ num_bh:						; base addresses of numeric displays (MSB, interleaved $P2P1)
 	.word	$7E7E			; jewels $7E4A, $7E6E
 	.word	$6060			; score $6007, $602D
 play_col:					; player display colour
-	.byt	9, 11			; sky blue and lavender pink
+	.byt	$99, $BB		; sky blue and lavender pink
 disp_id:					; identity array (every 2)
 	.byt	0, 1
 	.byt	2, 4
