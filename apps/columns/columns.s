@@ -410,7 +410,7 @@ disp_top:
 	.byt	4, 11
 	.byt	7, 14			; limit index for 1, 2 or 3 BCD bytes (2-4-6 digits)
 
-m_note:
+m_tone:
 	.byt	136, 129, 121, 114, 108, 102, 96, 90, 85, 80, 76, 71, 67, 63, 60	; C#5 to D#7
 
 ; ********************
