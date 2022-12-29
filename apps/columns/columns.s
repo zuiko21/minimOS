@@ -1,6 +1,6 @@
 ; COLUMNS for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221229-0116
+; last modified 20221229-1343
 
 ; ****************************
 ; *** hardware definitions ***
@@ -79,7 +79,14 @@ wait_s:
 	BNE start
 		BIT pad1val
 		BEQ wait_s
+jsr pulse
 start:
+; must wait for release also
+		BIT pad0val
+	BNE start
+		BIT pad1val
+	BNE start
+; done
 	LDA ticks
 	STA seed
 	STX seed+1				; quite random seed
@@ -88,7 +95,8 @@ start:
 ; display game field
 	LDX #2					; set compressed file index
 	JSR dispic				; decompress!
-
+lda#0
+jsr match
 ; TODO * do game stuff... * TODO
 lda#$12
 sta bcd_arr
@@ -316,6 +324,51 @@ pad_rdl:
 	STA pad1val
 	RTS
 
+; **********************
+; *** sound routines ***
+; **********************
+match:
+; ** sound after matching, depending on number of them **
+; input Y=0...12 for number of achieved group (plays higher)
+	PHY
+	LDA m_tone+2, Y			; initial value
+	JSR tone				; play
+	PLY
+	PHY
+	LDA m_tone+1, Y			; ditto for second one, a semitone lower
+	JSR tone
+	PLY
+	LDA m_tone+1, Y			; last tone
+;	JMP tone
+
+tone:
+; ** play tone for 50 cycles **
+; input A	= period (10+5y)
+; might call x_tone with X	= number of semicycles
+	LDX #99					; 100 semicycles
+x_tone:
+	SEI						; disable interrupts!
+s_tone:
+		STX IOBeep
+		TAY					; reload frecuency
+s_cyc:
+			DEY
+			BNE s_cyc		; delay for tone
+		DEX					; next semicycle
+		BPL s_tone			; will end at zero, thus buzzer off
+	CLI						; reenable interrupts!
+	RTS
+
+pulse:
+; ** play short single pulse **
+	LDX #13					; will do ~65 µs
+	STX IOBeep				; enable...
+ps_loop:
+		DEX
+		BNE ps_loop			; ends with buzzer off
+	STX IOBeep
+	RTS
+
 ; *********************************
 ; *** interrupt service routine ***
 ; *********************************
@@ -356,6 +409,9 @@ disp_top:
 	.byt	1, 8
 	.byt	4, 11
 	.byt	7, 14			; limit index for 1, 2 or 3 BCD bytes (2-4-6 digits)
+
+m_note:
+	.byt	136, 129, 121, 114, 108, 102, 96, 90, 85, 80, 76, 71, 67, 63, 60	; C#5 to D#7
 
 ; ********************
 ; *** picture data ***
