@@ -1,6 +1,6 @@
 ; COLUMNS for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221229-1343
+; last modified 20221229-2302
 
 ; ****************************
 ; *** hardware definitions ***
@@ -79,7 +79,6 @@ wait_s:
 	BNE start
 		BIT pad1val
 		BEQ wait_s
-jsr pulse
 start:
 ; must wait for release also
 		BIT pad0val
@@ -95,72 +94,23 @@ start:
 ; display game field
 	LDX #2					; set compressed file index
 	JSR dispic				; decompress!
-lda#0
-jsr match
-; TODO * do game stuff... * TODO
-lda#$12
-sta bcd_arr
-lda#$24
-sta bcd_arr+7
-lda#$23
-sta bcd_arr+2
-lda#$45
-sta bcd_arr+3
-lda#$46
-sta bcd_arr+9
-lda#$80
-sta bcd_arr+10
-lda#$98
-sta bcd_arr+4
-lda#$76
-sta bcd_arr+5
-lda#$54
-sta bcd_arr+6
-lda#$86
-sta bcd_arr+11
-lda#$42
-sta bcd_arr+12
-lda#$08
-sta bcd_arr+13
-mostrar:
-ldy#0
-ldx#0
-jsr numdisp
-
-ldy#0
-ldx#1
-jsr numdisp
-
-ldy#2
-ldx#0
-jsr numdisp
-ldy#2
-ldx#1
-jsr numdisp
-
-
-ldy#4
-ldx#0
-jsr numdisp
-ldy#4
-ldx#1
-jsr numdisp
-
-;jmp lock
-
-sed
-lda bcd_arr+6
-clc
-adc#1
-sta bcd_arr+6
-lda bcd_arr+5
-adc#0
-sta bcd_arr+5
-lda bcd_arr+4
-adc#0
-sta bcd_arr+4
-cld
-jmp mostrar
+stz 0;tile & y
+stz 1;x
+jsr pinta
+lda0
+ldx1
+ldy0
+jsr tiledis
+inc0
+inc1
+lda1
+cmp#6
+bne not6
+lda#9
+sta1
+lda0
+cmp#10
+bne pinta
 lock:jmp lock
 ; ***********************
 ; *** useful routines ***
@@ -230,6 +180,67 @@ rle_next:
 		BNE rle_loop		; no need for BRA
 rle_exit:					; exit decompressor
 	RTS						; EEEEEEEK
+
+; ** display tile **
+; input
+;	X = column from player 1 left (player 2 is +9)
+;	Y = row from top
+;	A = tile number [0-10, where 0 is blank]
+tiledis:
+	PHA
+	TXA						; will be LSB...
+	ASL
+	ASL
+	ASL						; ...times 8, now in pixels; divide by 4 for bytes
+	STY ptr+1				; pre MSB
+	LSR ptr+1
+	ROR
+	LSR ptr+1
+	ROR						; MSB/4 is Y times 64, plus X in bytes
+	ADC #2					; first pixel in line is 4, C known clear
+	STA ptr					; LSB is ready
+	LDA ptr+1
+	ADC #$33				; place into screen 3, 12 rasters below
+	STA ptr+1				; first address is ready!
+	PLA						; retrieve tile index
+	STA src+1				; temporary MSB
+	LDA #0					; will be LSB
+	LSR src+1
+	ROR
+	LSR src+1
+	ROR
+	LSR src+1
+	ROR						; MSB/8 is A times 32
+	ADC #<sprites			; C was clear, add base address
+	STA src
+	LDA src+1
+	ADC #>sprites			; ditto for MSB
+	STA src+1				; pointer complete!
+	LDX #8					; number of rasters
+s_rloop:
+		LDY #3				; max index per raster
+s_bloop:
+			LDA (src), Y	; get sprite data...
+			STA (ptr), Y	; ...and place on screen
+			DEY
+			BPL s_bloop		; for all 4 bytes in raster
+		LDA src
+		CLC
+		ADC #4				; next raster in sprite file
+		STA src
+		BCC s_rnw
+			INC src+1		; in case of page crossing
+s_rnw:
+		LDA ptr
+		CLC
+		ADC #64				; next raster in screen
+		STA ptr
+		BCC s_wnw
+			INC ptr+1		; in case of page crossing
+s_wnw:
+		DEX
+		BNE s_rloop			; until all rasters done
+	RTS
 
 ; ** number display **
 ; input
@@ -421,6 +432,7 @@ splash:
 field:
 	.bin	0, 0, "columns.rle"
 sprites:
+	.dsb	32, 0									; first tile is blank
 	.bin	0, 0, "jewels.sv4"						; uncompressed file, 4-byte wide!
 gameover:
 	.bin	0, 0, "col_gameover.sv24"				; uncompressed, 24-byte wide
