@@ -1,6 +1,6 @@
 ; COLUMNS for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221229-2302
+; last modified 20221229-2353
 
 ; ****************************
 ; *** hardware definitions ***
@@ -19,8 +19,8 @@ IOBeep	= $DFB0
 ; *************************
 ; *** memory allocation ***
 ; *************************
-
-bcd_arr	= $EC
+temp	= $EB
+bcd_arr	= temp+1			; $EC
 bcd_lim	= bcd_arr+1			; $ED
 colour	= bcd_arr+8			; $F4
 seed	= bcd_arr+14		; $FA
@@ -34,6 +34,7 @@ pad0mask= ticks+2			; gamepad masking values
 pad1mask= pad0mask+1
 pad0val	= pad1mask+1		; gamepad current status
 pad1val	= pad0val+1
+fields	= pad1val+1			; game status
 
 ; *****************
 ; *** main code ***
@@ -90,26 +91,61 @@ start:
 	STA seed
 	STX seed+1				; quite random seed
 ; TODO * init game stuff * TODO
+; TODO * must be in routine *
+	LDX #104				; 13th row
+	LDA #$FF				; invalid tile
+cl_loop:
+		STA fields, X		; sentinel
+		STZ fields+1, X
+		STZ fields+2, X
+		STZ fields+3, X
+		STZ fields+4, X
+		STZ fields+5, X
+		STZ fields+6, X
+		STA fields+7, X		; sentinel
+		STA fields+128, X	; ditto for player 2
+		STZ fields+129, X
+		STZ fields+130, X
+		STZ fields+131, X
+		STZ fields+132, X
+		STZ fields+133, X
+		STZ fields+134, X
+		STA fields+135, X	; ...
+		TXA
+		SEC
+		SBC #8
+		TAX
+		BNE cl_loop
+	LDA #$FF				; invalid tile
+	LDX #7					; max horiz offset
+sfh_loop:
+		STA fields, X
+		STA fields+128, X
+		STA fields+112, X	; ditto for player 2
+		STA fields+240, X
+		DEX
+		BPL sfh_loop
 
 ; display game field
 	LDX #2					; set compressed file index
 	JSR dispic				; decompress!
 stz 0;tile & y
 stz 1;x
-jsr pinta
-lda0
-ldx1
-ldy0
+pinta:
+lda 0
+ldx 1
+ldy 0
 jsr tiledis
-inc0
-inc1
-lda1
+inc 0
+inc 1
+lda 1
 cmp#6
 bne not6
 lda#9
-sta1
-lda0
-cmp#10
+sta 1
+not6:
+lda 0
+cmp#11
 bne pinta
 lock:jmp lock
 ; ***********************
@@ -181,6 +217,26 @@ rle_next:
 rle_exit:					; exit decompressor
 	RTS						; EEEEEEEK
 
+; ** display column from 8x16 matrix (6x13 in use) **
+; input
+;	X, Y	coordinates in matrix
+;	A		player [0-1]
+coldisp:
+	LSR						; extract d0...
+	ROR						; ...thru d7...
+	LSR						; ...and into d6
+	STA temp
+	TYA
+	ASL
+	ASL
+	ASL						; times 8 bytes per row
+	ADC id_table, X			; add X (1...6), C clear
+	ORA temp				; select between playfield
+	TAX						; use as index
+	LDY #3					; number of tiles per column
+cd_loop:
+		LDA fields, X		; get this tile
+		
 ; ** display tile **
 ; input
 ;	X = column from player 1 left (player 2 is +9)
@@ -188,21 +244,17 @@ rle_exit:					; exit decompressor
 ;	A = tile number [0-10, where 0 is blank]
 tiledis:
 	PHA
-	TXA						; will be LSB...
+	TYA						; will be MSB...
+	ASL						; ...two pages per row
+	ADC #$63				; place into screen 3, 12 rasters below
+	STA ptr+1				; first address is ready!
+	TXA
 	ASL
-	ASL
-	ASL						; ...times 8, now in pixels; divide by 4 for bytes
-	STY ptr+1				; pre MSB
-	LSR ptr+1
-	ROR
-	LSR ptr+1
-	ROR						; MSB/4 is Y times 64, plus X in bytes
+	ASL						; times four bytes per column
 	ADC #2					; first pixel in line is 4, C known clear
 	STA ptr					; LSB is ready
-	LDA ptr+1
-	ADC #$33				; place into screen 3, 12 rasters below
-	STA ptr+1				; first address is ready!
 	PLA						; retrieve tile index
+tileprn:					; * external interface with tile index in A, for next piece *
 	STA src+1				; temporary MSB
 	LDA #0					; will be LSB
 	LSR src+1
@@ -319,6 +371,30 @@ ras_nw:
 	PLX
 	RTS
 
+; ** death animation **
+; input
+;	X	player (0-1)
+palmatoria:
+	LDY #12
+	TXA
+	BEQ n_p2
+		LDA #9
+n_p2:
+	STA temp				; will be constant initial X
+	STY temp-1				; hack!!!!!
+dz_row:
+		LDA #8				; first explosion tile
+		STA temp-2
+dz_col:
+			LDX temp
+			LDY temp-1		; screen coordinates
+			LDA temp-2
+			JSR tiledis
+			INC temp
+			LDA temp
+			CMP #11
+			BCC dz_col
+
 ; ** gamepad read **
 read_pad:
 	LDA #8
@@ -333,6 +409,32 @@ pad_rdl:
 	LDA IO9nes1				; controller 2
 	EOR pad1mask			; compare with base status
 	STA pad1val
+	RTS
+
+; ** PRNG **
+; based on code from https://codebase64.org/doku.php?id=base:small_fast_16-bit_prng
+rnd:
+	LDA seed
+		BEQ lo_z
+	ASL seed
+	LDA seed+1
+	ROL
+	BCC no_eor
+do_eor:
+		STA seed+1
+do_eor2:
+		LDA seed
+		EOR #$2D
+		STA seed
+	RTS
+lo_z:
+	LDA seed+1
+		BEQ do_eor2
+	ASL
+	BEQ no_eor
+	BCS do_eor
+no_eor:
+	STA seed+1
 	RTS
 
 ; **********************
@@ -401,6 +503,9 @@ isr_end:					; common interrupt exit
 cmpr_pics:					; to be displayed by dispic
 	.word	splash
 	.word	field
+
+id_table:
+	.byte	0, 1, 2, 3, 4, 5, 6, 7		; useful for ADX/ADY emulation
 
 num_bl:						; base addresses of numeric displays (LSB, interleaved $P2P1)
 	.word	$605C			; level $6C5C, $7960 (!)
