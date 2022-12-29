@@ -1,6 +1,6 @@
 ; COLUMNS for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221229-0013
+; last modified 20221229-0116
 
 ; ****************************
 ; *** hardware definitions ***
@@ -20,10 +20,10 @@ IOBeep	= $DFB0
 ; *** memory allocation ***
 ; *************************
 
-bcd_arr	= $F2
-bcd_lim	= bcd_arr+1			; $F3
-colour	= bcd_arr+7			; $F9
-seed	= colour+1			; $FA
+bcd_arr	= $EC
+bcd_lim	= bcd_arr+1			; $ED
+colour	= bcd_arr+8			; $F4
+seed	= bcd_arr+14		; $FA
 src		= seed+2			; $FC
 ptr		= src+2				; $FE
 
@@ -90,53 +90,69 @@ start:
 	JSR dispic				; decompress!
 
 ; TODO * do game stuff... * TODO
-ldy#0
-ldx#0
 lda#$12
 sta bcd_arr
-jsr numdisp
-
-ldy#0
-ldx#1
 lda#$24
-sta bcd_arr
-jsr numdisp
-
-ldy#2
-ldx#0
+sta bcd_arr+7
 lda#$23
 sta bcd_arr+2
 lda#$45
 sta bcd_arr+3
-jsr numdisp
-ldy#2
-ldx#1
 lda#$46
-sta bcd_arr+2
+sta bcd_arr+9
 lda#$80
-sta bcd_arr+3
-jsr numdisp
-
-
-ldy#4
-ldx#0
+sta bcd_arr+10
 lda#$98
 sta bcd_arr+4
 lda#$76
 sta bcd_arr+5
 lda#$54
 sta bcd_arr+6
+lda#$86
+sta bcd_arr+11
+lda#$42
+sta bcd_arr+12
+lda#$08
+sta bcd_arr+13
+mostrar:
+ldy#0
+ldx#0
+jsr numdisp
+
+ldy#0
+ldx#1
+jsr numdisp
+
+ldy#2
+ldx#0
+jsr numdisp
+ldy#2
+ldx#1
+jsr numdisp
+
+
+ldy#4
+ldx#0
 jsr numdisp
 ldy#4
 ldx#1
-lda#$86
-sta bcd_arr+4
-lda#$42
-sta bcd_arr+5
-lda#$08
-sta bcd_arr+6
 jsr numdisp
 
+;jmp lock
+
+sed
+lda bcd_arr+6
+clc
+adc#1
+sta bcd_arr+6
+lda bcd_arr+5
+adc#0
+sta bcd_arr+5
+lda bcd_arr+4
+adc#0
+sta bcd_arr+4
+cld
+jmp mostrar
 lock:jmp lock
 ; ***********************
 ; *** useful routines ***
@@ -211,9 +227,8 @@ rle_exit:					; exit decompressor
 ; input
 ;	Y		type of display (0=level, 2=jewels, 4=score)
 ;	X		player [0-1]
-;	colour	AND mask
 ; fixed size; score=6 digits, level=2 digits, jewels=4 digits
-; BCD data array [LxJJSSS] thus Y-indexed
+; BCD data array [LxJJSSS] thus Y-indexed, then another one for player two
 ; fixed player 1 base addresses; score $6007 (14,0), level $6C5C (56,49), jewels $7E4A (20,121)
 ; player 2 level adds 52 Y-offset! (64,101)
 ; fixed player 2 offset; score $26 (90-14), level 4 (actually $D04) (64-56), jewels $24 (92-20)
@@ -223,14 +238,16 @@ numdisp:
 	TXA						; player offset
 	CLC
 	ADC disp_id, Y			; select type of display
-	TAX						; offset to base address
-	LDA num_bl, X
+	TAY						; offset to base address
+	LDA num_bl, Y
 	STA ptr
-	LDA num_bh, X
+	LDA num_bh, Y
 	STA ptr+1				; screen pointer is ready
 	TAX						; this must be reset after each digit!
 	LDA disp_top, Y
 	STA bcd_lim				; keep offset limit! eeeeeeek
+	LDA disp_id, Y
+	TAY						; reindex
 bcd_loop:
 		LDA bcd_arr, Y		; get one BCD byte
 		PHA					; save for LSB
@@ -332,10 +349,13 @@ num_bh:						; base addresses of numeric displays (MSB, interleaved $P2P1)
 play_col:					; player display colour
 	.byt	$99, $BB		; sky blue and lavender pink
 disp_id:					; identity array (every 2)
-	.byt	0, 1
-	.byt	2, 4
-	.byt	4, 7			; even indices give index value, also start index for BCD array
-disp_top	= disp_id+1		; 'odd' indices give limit index for 1, 2 or 3 BCD bytes (2-4-6 digits)
+	.byt	0, 7
+	.byt	2, 9
+	.byt	4, 11			; index value, also start index for BCD array (even=player1, odd=player2)
+disp_top:
+	.byt	1, 8
+	.byt	4, 11
+	.byt	7, 14			; limit index for 1, 2 or 3 BCD bytes (2-4-6 digits)
 
 ; ********************
 ; *** picture data ***
