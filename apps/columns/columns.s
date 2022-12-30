@@ -1,6 +1,6 @@
 ; COLUMNS for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221230-1634
+; last modified 20221230-1641
 
 ; ****************************
 ; *** hardware definitions ***
@@ -135,6 +135,13 @@ not6:
 lda 0
 cmp#12
 bne pinta
+ldy#<levelsel
+ldx#>levelsel
+sty src
+stx src+1
+ldx#22
+lda#1
+jsr banner
 lock:
 jsr continue
 ldx#0
@@ -426,14 +433,18 @@ dz_abort:
 	STY src
 	STX src+1				; set origin pointer
 	LDA temp				; get X for player field
+	LDX #10					; raster counter
 banner:
+; alternate input
+;	X	= rasters - 1
+;	A	= player [0-1]
+;	src		points to .sv24
 	ASL
 	ASL						; times four bytes per column
 	ADC #2					; two extra bytes
 	STA ptr
 	LDA #$6C				; two rows above centre
 	STA ptr+1
-	LDX #10					; raster counter
 go_vloop:
 		LDY #23				; max horizontal offset
 go_hloop:
@@ -629,11 +640,13 @@ field:
 	.bin	0, 0, "art/columns.rle"
 sprites:
 	.dsb	32, 0									; first tile is blank
-	.bin	0, 0, "art/jewels.sv4"						; uncompressed file, 4-byte wide!
+	.bin	0, 0, "art/jewels.sv4"					; uncompressed file, 4-byte wide!
 gameover:
 	.bin	0, 0, "art/gameover.sv24"				; uncompressed, 24-byte wide
 numbers:
 	.bin	0, 0, "../../other/data/numbers.sv20"	; generic number images, 20-byte wide
+levelsel:
+	.bin	0, 0, "art/level.sv24"					; uncompressed, 24-byte wide, 23 lines tall
 
 ; ***************************
 ; *** ROM padding and end ***
