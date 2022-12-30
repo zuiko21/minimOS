@@ -1,6 +1,6 @@
 ; COLUMNS for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221229-2353
+; last modified 20221230-1438
 
 ; ****************************
 ; *** hardware definitions ***
@@ -366,8 +366,9 @@ ras_nw:
 ; input
 ;	X	player (0-1)
 palmatoria:
-	LDY #12
-	TXA
+	LDY #12					; yb=12
+	STY yb
+	TXA						; compute base X, always the same
 	BEQ n_p2
 		LDA #9
 n_p2:
@@ -376,8 +377,20 @@ n_p2:
 	ADC #6					; compute limit
 	STA temp-1				; hack!!
 dz_row:
-		LDA #8				; initial explosion tile
+		LDY yb
 dz_tile:
+		CPY #0
+			BMI dz_abort
+		CPY #13
+			BCS dz_abort		; if Y >= 0 and Y <=12...
+		TYA
+		CLC
+		ADC #8				; initial explosion tile
+		SEC
+		SBC yb				; A = Y + 8 - yb
+		CMP #11
+		BCC dz_tile
+			SBC #11			; 0, then 1 fot exit
 			LDX temp		; retrieve coordinates
 dz_col:
 				PHA
@@ -390,21 +403,19 @@ dz_col:
 				INX			; next column
 				CPX temp-1	; limit!!
 				BCC dz_col
-			JSR vsync		; wait a bit
-			INC				; next tile
-			CMP #1			; all clear?
-				BEQ dz_cend
-			CMP #11			; last of cycle?
-			BCC dz_tile
-				LDA #0		; clear at end of cycle!
-			BRA dz_tile
-dz_cend:
+			INY				; next row
+			DEC				; was tile zero (clear)?
+			BPL dz_tile
+dz_abort:
 		LDA #30
+		JSR vsync			; wait a bit
 		PHY
 		JSR tone			; brief beep!
 		PLY
-		DEY					; next row
-		BPL dz_row
+		DEC yb				; next row
+		LDA yb
+		CMP #-4
+		BNE dz_row
 ; now print the game over banner
 	LDA temp				; get X for player field
 	ASL
