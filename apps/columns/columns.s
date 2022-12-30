@@ -140,7 +140,7 @@ ldx#>levelsel
 sty src
 stx src+1
 ldx#22
-lda#1
+lda#9
 jsr banner
 lock:
 jsr continue
@@ -437,7 +437,7 @@ dz_abort:
 banner:
 ; alternate input
 ;	X	= rasters - 1
-;	A	= player [0-1]
+;	A	= base column [0 for player 1, 9 for player 2]
 ;	src		points to .sv24
 	ASL
 	ASL						; times four bytes per column
