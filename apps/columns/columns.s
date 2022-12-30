@@ -1,6 +1,6 @@
 ; COLUMNS for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221230-1555
+; last modified 20221230-1634
 
 ; ****************************
 ; *** hardware definitions ***
@@ -624,14 +624,14 @@ m_tone:
 ; *** picture data ***
 ; ********************
 splash:
-	.bin	0, 0, "col_start.rle"
+	.bin	0, 0, "art/start.rle"
 field:
-	.bin	0, 0, "columns.rle"
+	.bin	0, 0, "art/columns.rle"
 sprites:
 	.dsb	32, 0									; first tile is blank
-	.bin	0, 0, "jewels.sv4"						; uncompressed file, 4-byte wide!
+	.bin	0, 0, "art/jewels.sv4"						; uncompressed file, 4-byte wide!
 gameover:
-	.bin	0, 0, "col_gameover.sv24"				; uncompressed, 24-byte wide
+	.bin	0, 0, "art/gameover.sv24"				; uncompressed, 24-byte wide
 numbers:
 	.bin	0, 0, "../../other/data/numbers.sv20"	; generic number images, 20-byte wide
 
