@@ -72,21 +72,7 @@ reset:
 	STY irq_ptr				; standard FW adress
 	STX irq_ptr+1
 	CLI						; enable interrupts!
-; wait for action * should check keyboard also * TODO
-	LDA #%11000000			; look for start or fire
-wait_s:
-		INX
-		BIT pad0val
-	BNE start
-		BIT pad1val
-		BEQ wait_s
-start:
-; must wait for release also
-		BIT pad0val
-	BNE start
-		BIT pad1val
-	BNE start
-; done
+	JSR continue			; wait for user action
 	LDA ticks
 	STA seed
 	STX seed+1				; quite random seed
@@ -129,10 +115,11 @@ sfh_loop:
 ; display game field
 	LDX #2					; set compressed file index
 	JSR dispic				; decompress!
-stz 0;tile & y
+stz 0;y
 stz 1;x
 pinta:
-lda 0
+jsr rnd
+and#7
 ldx 1
 ldy 0
 jsr tiledis
@@ -145,9 +132,13 @@ lda#9
 sta 1
 not6:
 lda 0
-cmp#11
+cmp#12
 bne pinta
-lock:jmp lock
+lock:
+jsr continue
+ldx#0
+jsr palmatoria
+jmp lock
 ; ***********************
 ; *** useful routines ***
 ; ***********************
@@ -371,7 +362,7 @@ ras_nw:
 	PLX
 	RTS
 
-; ** death animation **
+; ** death animation ** (non concurrent)
 ; input
 ;	X	player (0-1)
 palmatoria:
@@ -381,19 +372,77 @@ palmatoria:
 		LDA #9
 n_p2:
 	STA temp				; will be constant initial X
-	STY temp-1				; hack!!!!!
+	CLC
+	ADC #6					; compute limit
+	STA temp-1				; hack!!
 dz_row:
-		LDA #8				; first explosion tile
-		STA temp-2
+		LDA #8				; initial explosion tile
+dz_tile:
+			LDX temp		; retrieve coordinates
 dz_col:
-			LDX temp
-			LDY temp-1		; screen coordinates
-			LDA temp-2
-			JSR tiledis
-			INC temp
-			LDA temp
-			CMP #11
-			BCC dz_col
+				PHA
+				PHX
+				PHY
+				JSR tiledis
+				PLY
+				PLX
+				PLA
+				INX			; next column
+				CPX temp-1	; limit!!
+				BCC dz_col
+			JSR vsync		; wait a bit
+			INC				; next tile
+			CMP #1			; all clear?
+				BEQ dz_cend
+			CMP #11			; last of cycle?
+			BCC dz_tile
+				LDA #0		; clear at end of cycle!
+			BRA dz_tile
+dz_cend:
+		LDA #30
+		PHY
+		JSR tone			; brief beep!
+		PLY
+		DEY					; next row
+		BPL dz_row
+; now print the game over banner
+	LDA temp				; get X for player field
+	ASL
+	ASL						; times four bytes per column
+	ADC #2					; two extra bytes
+	STA ptr
+	LDA #$6E				; one row above centre
+	STA ptr+1
+	LDY #<gameover
+	LDA #>gameover
+	STY src
+	STA src+1				; set origin pointer
+	LDX #10					; raster counter
+go_vloop:
+		LDY #23				; max horizontal offset
+go_hloop:
+			LDA (src), Y
+			STA (ptr), Y
+			DEY
+			BPL go_hloop
+		DEX					; one raster is ready
+	BMI go_end
+		LDA src
+		CLC
+		ADC #24				; next raster in image
+		STA src
+		BCC go_nw
+			INC src+1
+go_nw:
+		LDA ptr
+		CLC
+		ADC #64				; next raster in screen
+		STA ptr
+		BCC go_vloop
+			INC ptr+1		; there was page crossing
+		BRA go_vloop
+go_end:
+	RTS
 
 ; ** gamepad read **
 read_pad:
@@ -409,6 +458,32 @@ pad_rdl:
 	LDA IO9nes1				; controller 2
 	EOR pad1mask			; compare with base status
 	STA pad1val
+	RTS
+
+; ** wait for action ** should check keyboard also * TODO
+continue:
+	LDA #%11000000			; look for start or fire
+wait_s:
+		INX					; just for random seed setting
+		BIT pad0val
+	BNE start
+		BIT pad1val
+		BEQ wait_s
+start:
+; must wait for release also
+		BIT pad0val
+	BNE start
+		BIT pad1val
+	BNE start
+	RTS
+
+; ** VSYNC **
+vsync:
+		BIT IO8blk
+		BVS vsync			; if already in VBlank
+wait:
+		BIT IO8blk
+		BVC wait			; wait for VBlank
 	RTS
 
 ; ** PRNG **
