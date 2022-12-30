@@ -1,6 +1,6 @@
 ; COLUMNS for Durango-X
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221230-1438
+; last modified 20221230-1555
 
 ; ****************************
 ; *** hardware definitions ***
@@ -20,6 +20,7 @@ IOBeep	= $DFB0
 ; *** memory allocation ***
 ; *************************
 temp	= $EB
+yb=temp-2
 bcd_arr	= temp+1			; $EC
 bcd_lim	= bcd_arr+1			; $ED
 colour	= bcd_arr+8			; $F4
@@ -379,18 +380,19 @@ n_p2:
 dz_row:
 		LDY yb
 dz_tile:
-		CPY #0
-			BMI dz_abort
-		CPY #13
-			BCS dz_abort		; if Y >= 0 and Y <=12...
 		TYA
 		CLC
 		ADC #8				; initial explosion tile
 		SEC
 		SBC yb				; A = Y + 8 - yb
 		CMP #11
-		BCC dz_tile
-			SBC #11			; 0, then 1 fot exit
+		BCC dz_nw
+			SBC #11			; 0, then 1 for exit
+dz_nw:
+		CPY #0
+			BMI dz_show
+		CPY #13
+			BCS dz_show;dz_abort		; if Y >= 0 and Y <=12...
 			LDX temp		; retrieve coordinates
 dz_col:
 				PHA
@@ -403,31 +405,34 @@ dz_col:
 				INX			; next column
 				CPX temp-1	; limit!!
 				BCC dz_col
+dz_show:
 			INY				; next row
 			DEC				; was tile zero (clear)?
 			BPL dz_tile
 dz_abort:
-		LDA #30
 		JSR vsync			; wait a bit
+		JSR vsync			; wait a bit
+		LDA #30
 		PHY
 		JSR tone			; brief beep!
 		PLY
 		DEC yb				; next row
 		LDA yb
-		CMP #-4
+		CMP #252			; -4
 		BNE dz_row
 ; now print the game over banner
+	LDY #<gameover
+	LDX #>gameover
+	STY src
+	STX src+1				; set origin pointer
 	LDA temp				; get X for player field
+banner:
 	ASL
 	ASL						; times four bytes per column
 	ADC #2					; two extra bytes
 	STA ptr
-	LDA #$6E				; one row above centre
+	LDA #$6C				; two rows above centre
 	STA ptr+1
-	LDY #<gameover
-	LDA #>gameover
-	STY src
-	STA src+1				; set origin pointer
 	LDX #10					; raster counter
 go_vloop:
 		LDY #23				; max horizontal offset
