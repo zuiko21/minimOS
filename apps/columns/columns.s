@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221231-1137
+; last modified 20221231-1302
 
 ; ****************************
 ; *** hardware definitions ***
@@ -20,23 +20,29 @@ IOBeep	= $DFB0
 ; *************************
 ; *** memory allocation ***
 ; *************************
-temp	= $EB
-yb=temp-2
-bcd_arr	= temp+1			; $EC
-bcd_lim	= bcd_arr+1			; $ED
-colour	= bcd_arr+8			; $F4
-seed	= bcd_arr+14		; $FA
-src		= seed+2			; $FC
-ptr		= src+2				; $FE
-
-irq_ptr	= $0200				; standard minimOS, may save a few bytes putting these on ZP
-ticks	= irq_ptr+2			; no NMI or BRK in use, and only 16-bit
-
-pad0mask= ticks+2			; gamepad masking values
+status	= 128				; array of player status [0=game over, 1=playing, 2=level select, 3=flashing?]
+speed	= status+2			; array of 16-bit counters for next event
+pad0mask= speed+4			; gamepad masking values
 pad1mask= pad0mask+1
 pad0val	= pad1mask+1		; gamepad current status
 pad1val	= pad0val+1
-fields	= pad1val+1			; game status
+yb		= pad1val+1			; base row for death animation
+limit	= yb+1				; right column for death animation
+temp	= limit+1
+bcd_arr	= temp+1			; scores etc array, includes _lim and colour $EC
+bcd_lim	= bcd_arr+1			; $ED
+colour	= bcd_arr+8			; $F4
+seed	= bcd_arr+14		; PRNG seed, $FA
+; may let these at $FC for minimOS compliance
+src		= seed+2			; $FC
+ptr		= src+2				; $FE
+; these save a few bytes and cycles in ZP
+irq_ptr	= ptr+2				; $0200 is standard minimOS, may save a few bytes putting these on ZP
+ticks	= irq_ptr+2			; $0206 but no NMI or BRK in use, and only 16-bit
+_end_zp	= ticks+2
+; these MUST be outside ZP, change start address accordingly
+fields	= $0200				; 8x16 (6x13 actually used) game status arrays (player2 = +128)
+delta	= $0300				; screen change log [0=unchanged, 1=display, 2=flashing counter?]
 
 ; *****************
 ; *** main code ***
@@ -67,23 +73,36 @@ reset:
 	STX pad0mask			; ...and store them
 	STY pad1mask
 	JSR read_pad			; just for clearing the values
-; * may check here for supported keyboard presence (col 6 = $2C)
+; TODO * may check here for supported keyboard presence (col 6 = $2C) * TODO
+; * init game stuff *
+	LDA #0
+	LDX #seed-1-status		; will clear everything below seed
+rst_loop:
+		STA status, X
+		DEX
+		BPL rst_loop		; OK if less than 128 bytes
 ; setup interrupt system
 	LDY #<isr
 	LDX #>isr				; ISR address
 	STY irq_ptr				; standard FW adress
 	STX irq_ptr+1
 	CLI						; enable interrupts!
+; let at least one player start the game
 	JSR continue			; wait for user action
 	LDA ticks
 	STA seed
 	STX seed+1				; quite random seed
 	PHY						; save selected player
-; TODO * init game stuff * TODO
-
-; display game field, then level selection according to player
+; display game field
 	LDX #2					; set compressed file index
 	JSR dispic				; decompress!
+; brief EG arpeggio
+	LDA #228				; brief E5
+	JSR tone
+	LDA #192				; longest G5
+	LDX #0
+	JSR tone
+; then level selection according to player
 	PLA						; retieve selected player
 	JSR sel_ban
 
@@ -216,6 +235,7 @@ cd_loop:
 ;	X = column from player 1 left (player 2 is +9)
 ;	Y = row from top
 ;	A = tile number [0-10, where 0 is blank]
+; affects 'colour'
 tiledis:
 	PHA
 	TYA						; will be MSB...
@@ -358,7 +378,7 @@ n_p2:
 	STA temp				; will be constant initial X
 	CLC
 	ADC #6					; compute limit
-	STA temp-1				; hack!!
+	STA limit				; hack!!
 dz_row:
 		LDY yb
 dz_tile:
@@ -385,7 +405,7 @@ dz_col:
 				PLX
 				PLA
 				INX			; next column
-				CPX temp-1	; limit!!
+				CPX limit	; limit!!
 				BCC dz_col
 dz_show:
 			INY				; next row
@@ -685,7 +705,8 @@ disp_top:
 	.byt	7, 14			; limit index for 1, 2 or 3 BCD bytes (2-4-6 digits)
 
 m_tone:
-	.byt	136, 129, 121, 114, 108, 102, 96, 90, 85, 80, 76, 71, 67, 63, 60	; C#5 to D#7
+;			C#6  D6   D#6  E6   F6   F#6  G6  G#6 A6  A#6 B6  C7  C#7 D7  D#7
+	.byt	136, 129, 121, 114, 108, 102, 96, 90, 85, 80, 76, 71, 67, 63, 60	; C#6 to D#7
 
 ; ********************
 ; *** picture data ***
