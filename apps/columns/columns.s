@@ -64,6 +64,14 @@ reset:
 ; show splash screen
 	INX						; was $FF, now 0 is the index of compressed file entry
 	JSR dispic				; decompress!
+; TODO * may check here for supported keyboard presence (col 6 = $2C) * TODO
+; * init game stuff *
+	LDA #0
+	LDX #seed-1-status		; will clear everything below seed
+rst_loop:
+		STA status, X
+		DEX
+		BPL rst_loop		; OK if less than 128 bytes
 ; setup controllers etc (assume minstrel-type kbd)
 	STZ pad0mask
 	STZ pad1mask			; need these reset the very first time
@@ -73,14 +81,6 @@ reset:
 	STX pad0mask			; ...and store them
 	STY pad1mask
 	JSR read_pad			; just for clearing the values
-; TODO * may check here for supported keyboard presence (col 6 = $2C) * TODO
-; * init game stuff *
-	LDA #0
-	LDX #seed-1-status		; will clear everything below seed
-rst_loop:
-		STA status, X
-		DEX
-		BPL rst_loop		; OK if less than 128 bytes
 ; setup interrupt system
 	LDY #<isr
 	LDX #>isr				; ISR address
@@ -96,12 +96,6 @@ rst_loop:
 ; display game field
 	LDX #2					; set compressed file index
 	JSR dispic				; decompress!
-; brief EG arpeggio
-	LDA #228				; brief E5
-	JSR tone
-	LDA #192				; longest G5
-	LDX #0
-	JSR tone
 ; then level selection according to player
 	PLA						; retieve selected player
 	JSR sel_ban
@@ -539,12 +533,23 @@ no_eor:
 	RTS
 
 ; ** draw select level menu **
+; input
+;	A	selected player position [0-9]
 sel_ban:
+	PHA						; eeeek
+; brief EG arpeggio
+	LDA #228				; brief E5
+	JSR tone
+	LDA #192				; longest G5
+	LDX #0
+	JSR tone
+; display banner
 	LDY #<levelsel
 	LDX #>levelsel
 	STY src
 	STX src+1				; set origin pointer
 	LDX #22					; raster counter
+	PLA						; proper player position
 	JMP banner				; display and return
 
 ; ** clear playfield structure **
