@@ -495,12 +495,12 @@ wait_s:
 		BIT pad1val
 		BEQ wait_s
 	LDY #9					; if arrived here, was player 2
-start:
+release:
 ; must wait for release also
 		BIT pad0val
-	BNE start
+	BNE release
 		BIT pad1val
-	BNE start
+	BNE release
 	RTS
 
 ; ** VSYNC **
