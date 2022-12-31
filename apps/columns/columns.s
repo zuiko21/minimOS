@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221231-1606
+; last modified 20221231-1609
 
 ; ****************************
 ; *** hardware definitions ***
@@ -98,7 +98,7 @@ rst_loop:
 	LDX #2					; set compressed file index
 	JSR dispic				; decompress!
 ; then level selection according to player
-	PLA						; retieve selected player
+	PLX						; retieve selected player
 	JSR sel_ban
 ; *** *** main event loop *** ***
 loop:
