@@ -485,7 +485,7 @@ continue:
 wait_s:
 		INX					; just for random seed setting
 		BIT pad0val
-	BNE start
+	BNE release
 		BIT pad1val
 		BEQ wait_s
 	LDY #9					; if arrived here, was player 2
