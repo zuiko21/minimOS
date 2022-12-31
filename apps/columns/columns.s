@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221231-1702
+; last modified 20221231-1827
 
 ; ****************************
 ; *** hardware definitions ***
@@ -20,17 +20,28 @@ IOBeep	= $DFB0
 ; ****************************
 ; *** constant definitions ***
 ; ****************************
-PAD_FIRE	= %10000000
-PAD_STRT	= %01000000
-PAD_B		= %00100000
-PAD_SEL		= %00010000
-PAD_UP		= %00001000
-PAD_LEFT	= %00000100
-PAD_DOWN	= %00000010
-PAD_RGHT	= %00000001
+#define	PAD_FIRE	%10000000
+#define	PAD_STRT	%01000000
+#define	PAD_B		%00100000
+#define	PAD_SEL		%00010000
+#define	PAD_UP		%00001000
+#define	PAD_LEFT	%00000100
+#define	PAD_DOWN	%00000010
+#define	PAD_RGHT	%00000001
 
-FIELD_PG	= $63
-BANNER_PG	= $6C
+#define	FIELD_PG	$63
+#define	BANNER_PG	$6C
+
+#define	DISP_LVL	0
+#define	DISP_JWL	2
+#define	DISP_SCO	4
+
+#define	STAT_OVER	0
+#define	STAT_LVL	1
+#define	STAT_PLAY	2
+#define	STAT_BLINK	3
+
+#define	NUM_LVLS	3
 
 ; *************************
 ; *** memory allocation ***
@@ -42,7 +53,8 @@ pad0mask= s_level+2			; gamepad masking values
 pad1mask= pad0mask+1
 pad0val	= pad1mask+1		; gamepad current status
 pad1val	= pad0val+1
-yb		= pad1val+1			; base row for death animation
+padlast	= pad1val+1			; array of last pad status
+yb		= padlast+2			; base row for death animation
 limit	= yb+1				; right column for death animation
 temp	= limit+1
 select	= temp+1			; player iteration in main loop
@@ -115,44 +127,93 @@ rst_loop:
 	JSR dispic				; decompress!
 ; then level selection according to player
 	PLX						; retieve selected player
+	LDA #STAT_LVL
+	STA status, X			; set new status
 	JSR sel_ban
+lda#9
+jsr palmatoria
 ; *** *** main event loop *** ***
 loop:
 	LDX select
 	LDA status, X			; check status of current player
-
-	CMP #1					; selecting level?
+; * * STATUS 0, game over * *
+;	CMP #STAT_OVER
+	BNE not_st0
+		LDA pad0val, X		; get this player controller status
+		BIT #PAD_FIRE|PAD_SEL|PAD_STRT	; start new game
+		BNE new_game
+not_game:
+			STA padlast, X
+			BRA not_st0
+new_game:
+		CMP padlast, X
+			BEQ not_game
+		STA padlast, X
+		LDA #STAT_LVL
+		STA status, X
+		JSR sel_ban
+		JMP next_player
+not_st0:
+; * * STATUS 1, level selection * *
+	CMP #STAT_LVL			; selecting level?
 	BNE not_st1
 ; selecting level, check up/down and fire/select/start
 		LDA pad0val, X		; get this player controller status
 		BIT #PAD_DOWN		; increment level
-		BNE not_s1d
+		BEQ not_s1d
+			CMP padlast, X	; still pressing?
+		BEQ not_s1x			; ignore!
 			JSR inv_row		; deselect current
 			INC s_level, X	; increment level
-			LDY s_level
-			CPY #3			; three levels only, wrap otherwise
-			BCS s1_nw
+			LDY s_level, X
+			CPY #NUM_LVLS	; three levels only, wrap otherwise
+			BCC s1_nw
 				STZ s_level, X
 				BRA s1_nw	; common ending
 not_s1d:
 		BIT #PAD_UP			; decrement level
-		BNE not_s1u
+		BEQ not_s1u
+			CMP padlast, X	; still pressing?
+		BEQ not_s1x			; ignore!
 			JSR inv_row		; deselect current
 			DEC s_level, X	; decrement level
-			BMI s1_nw
-				LDA #2		; wrap if negative
+			BPL s1_nw		; wrap if negative
+				LDA #2
 				STA s_level, X
 				BRA s1_nw	; common ending
 not_s1u:
 		BIT #PAD_FIRE|PAD_SEL|PAD_STRT	; select current level
-		BNE not_s1x
+		BEQ not_s1x
+; level is selected, set initial score and display
+			LDY s_level, X	; selected level
+			LDA ini_lev, Y	; as index for initial value
+			PHA				; later...
+			LDA ini_score, Y
+			LDY poff7, X	; reindex for BCD arrays
+			STA bcd_arr+DISP_SCO, Y
+			PLA
+			STA bcd_arr+DISP_LVL, Y	; place initial values in adequate array indices
+			LDX select
+			LDY #DISP_LVL
+			JSR numdisp
+			LDX select
+			LDY #DISP_JWL
+			JSR numdisp
+			LDX select
+			LDY #DISP_SCO
+			JSR numdisp
+; *** currently, just end the game ***
+			LDX select
+			LDA poff9, X
 			JSR palmatoria
-			BRA not_st1
+			JMP next_player
 s1_nw:
 			JSR inv_row		; mark new value
 			LDA pad0val, X	; restore and continue evaluation
 not_s1x:
+		STA padlast, X		; update last pad status
 not_st1:
+next_player:
 	LDA select
 	EOR #1					; toggle player in event manager
 	STA select
@@ -392,6 +453,12 @@ palmatoria:
 	STA limit
 	LDY #12					; yb=12
 	STY yb
+	LSR
+	LSR
+	LSR						; divide by 8, is 0 or 1
+	TAX
+;	LDA STAT_OVER			; conveniently zero
+	STZ status, X			; back to gameover status
 dz_row:
 		LDY yb
 dz_tile:
@@ -766,12 +833,20 @@ m_tone:
 
 ; player offsets according to routine
 ;	.byt	0, 1
+poff7:
+	.byt	0, 7
 poff9:
 	.byt	0, 9
 poff36:
 	.byt	0, 36
 poff128:
 	.byt	0, 128
+
+; initial level & scores according to difficulty
+ini_lev:
+	.byt	0, 5, $10		; initial level (BCD)
+ini_score:
+	.byt	0, 2, 5			; "third" byte initial score (BCD)
 
 ; ********************
 ; *** picture data ***
