@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221231-1302
+; last modified 20221231-1606
 
 ; ****************************
 ; *** hardware definitions ***
@@ -20,7 +20,7 @@ IOBeep	= $DFB0
 ; *************************
 ; *** memory allocation ***
 ; *************************
-status	= 128				; array of player status [0=game over, 1=playing, 2=level select, 3=flashing?]
+status	= 128				; array of player status [0=game over, 1=level select, 2=flashing entry?, 3=playing, 4=flashing?]
 speed	= status+2			; array of 16-bit counters for next event
 pad0mask= speed+4			; gamepad masking values
 pad1mask= pad0mask+1
@@ -29,7 +29,8 @@ pad1val	= pad0val+1
 yb		= pad1val+1			; base row for death animation
 limit	= yb+1				; right column for death animation
 temp	= limit+1
-bcd_arr	= temp+1			; scores etc array, includes _lim and colour $EC
+select	= temp+1			; player iteration in main loop
+bcd_arr	= select+1			; scores etc array, includes _lim and colour $EC
 bcd_lim	= bcd_arr+1			; $ED
 colour	= bcd_arr+8			; $F4
 seed	= bcd_arr+14		; PRNG seed, $FA
@@ -99,41 +100,14 @@ rst_loop:
 ; then level selection according to player
 	PLA						; retieve selected player
 	JSR sel_ban
+; *** *** main event loop *** ***
+loop:
+	
 
-; ====== TEST CODE ======/*
-stz 0;y
-stz 1;x
-pinta:
-jsr rnd
-and#7
-ldx 1
-ldy 0
-jsr tiledis
-inc 0
-inc 1
-lda 1
-cmp#6
-bne not6
-lda#9
-sta 1
-not6:
-lda 0
-cmp#12
-bne pinta
-ldy#<levelsel
-ldx#>levelsel
-sty src
-stx src+1
-ldx#22
-lda#9
-jsr banner
-lock:
-jsr continue
-ldx#0
-jsr palmatoria
-jmp lock
-; ====== END OF TEST CODE ======*/
-end:jmp end
+	LDA select
+	EOR #1					; toggle player in event manager
+	STA select
+	JMP loop
 
 ; ***********************
 ; *** useful routines ***
@@ -204,7 +178,7 @@ rle_next:
 rle_exit:					; exit decompressor
 	RTS						; EEEEEEEK
 
-; ** display column from 8x16 matrix (6x13 in use) **
+; ** display column from 8x16 matrix (6x13 in use) ** TO DO
 ; input
 ;	X, Y	coordinates in matrix
 ;	A		player [0-1]
@@ -361,18 +335,14 @@ ras_nw:
 
 ; ** death animation ** (non concurrent)
 ; input
-;	X	player (0-1)
+;	A	player (0,9)
 palmatoria:
-	LDY #12					; yb=12
-	STY yb
-	TXA						; compute base X, always the same
-	BEQ n_p2
-		LDA #9
-n_p2:
 	STA temp				; will be constant initial X
 	CLC
 	ADC #6					; compute limit
-	STA limit				; hack!!
+	STA limit
+	LDY #12					; yb=12
+	STY yb
 dz_row:
 		LDY yb
 dz_tile:
@@ -388,7 +358,7 @@ dz_nw:
 		CPY #0
 			BMI dz_show
 		CPY #13
-			BCS dz_show;dz_abort		; if Y >= 0 and Y <=12...
+			BCS dz_show		; if Y >= 0 and Y <=12...
 			LDX temp		; retrieve coordinates
 dz_col:
 				PHA
@@ -423,6 +393,7 @@ dz_abort:
 	STX src+1				; set origin pointer
 	LDA temp				; get X for player field
 	LDX #10					; raster counter
+
 banner:
 ; alternate input
 ;	X	= rasters - 1
@@ -478,7 +449,7 @@ pad_rdl:
 
 ; ** (busy) wait for action **
 ; output
-;	Y	selected player [0,9] note values!!
+;	Y	selected player (0,1)
 continue:
 	LDY #0					; default player number 1
 	LDA #%11000000			; look for start or fire
@@ -488,7 +459,7 @@ wait_s:
 	BNE release
 		BIT pad1val
 		BEQ wait_s
-	LDY #9					; if arrived here, was player 2
+	INY						; if arrived here, was player 2
 release:
 ; must wait for release also
 		BIT pad0val
@@ -534,9 +505,10 @@ no_eor:
 
 ; ** draw select level menu **
 ; input
-;	A	selected player position [0-9]
+;	X	selected player position (0,1)
 sel_ban:
-	PHA						; eeeek
+	PHX						; eeeek
+	INC status, X			; go into status 1 (level selection) *** must be called from game over status
 ; brief EG arpeggio
 	LDA #228				; brief E5
 	JSR tone
@@ -549,19 +521,18 @@ sel_ban:
 	STY src
 	STX src+1				; set origin pointer
 	LDX #22					; raster counter
-	PLA						; proper player position
+	PLY						; proper player position
+	LDA poff9, Y			; proper player index for banner
 	JMP banner				; display and return
 
 ; ** clear playfield structure **
 ; input
-;	Y	player [0,36] note special player 2 value!!
+;	Y	player (0,1)
 clearfield:
-	TYA						; check player
-	BEQ pl1a
-		LDX #232			; 13th row, player 2
-		BRA cl_loop
-pl1a:
-		LDX #104			; 13th row, player 1
+	LDA poff128, Y			; check player
+	CLC
+	ADC #104				; 13th row
+	TAX
 cl_loop:
 		LDA #$FF			; invalid tile
 		STA fields, X		; sentinel
@@ -578,13 +549,10 @@ cl_loop:
 		TAX
 		AND #$7F			; eeeek
 		BNE cl_loop
-	LDA #$FF				; invalid tile
-	TYA						; check player
-	BEQ pl1b
-		LDX #136			; max horiz offset+1, player 2
-		BRA sfh_loop
-pl1b:
-		LDX #8				; max horiz offset+1, player 1
+	LDA poff128, Y			; check player
+	CLC
+	ADC #8					; max horiz offset+1
+	TAX
 sfh_loop:
 		LDA #$FF			; invalid tile
 		STA fields-1, X		; note offsets
@@ -595,7 +563,7 @@ sfh_loop:
 		BNE sfh_loop
 ; should clear mode selection banner as well, pretty much like 'banner'
 	LDX #22					; banner rasters - 1
-	TYA						; check player
+	LDA poff36, Y			; check player
 	CLC
 	ADC #2					; will be 2 for player 1, 38 for player 2
 	STA ptr
@@ -712,6 +680,15 @@ disp_top:
 m_tone:
 ;			C#6  D6   D#6  E6   F6   F#6  G6  G#6 A6  A#6 B6  C7  C#7 D7  D#7
 	.byt	136, 129, 121, 114, 108, 102, 96, 90, 85, 80, 76, 71, 67, 63, 60	; C#6 to D#7
+
+; player offsets according to routine
+;	.byt	0, 1
+poff9:
+	.byt	0, 9
+poff36:
+	.byt	0, 36
+poff128:
+	.byt	0, 128
 
 ; ********************
 ; *** picture data ***
