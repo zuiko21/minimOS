@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221231-1609
+; last modified 20221231-1702
 
 ; ****************************
 ; *** hardware definitions ***
@@ -17,12 +17,28 @@ IO9nclk	= IO9nes1
 IOAie	= $DFA0
 IOBeep	= $DFB0
 
+; ****************************
+; *** constant definitions ***
+; ****************************
+PAD_FIRE	= %10000000
+PAD_STRT	= %01000000
+PAD_B		= %00100000
+PAD_SEL		= %00010000
+PAD_UP		= %00001000
+PAD_LEFT	= %00000100
+PAD_DOWN	= %00000010
+PAD_RGHT	= %00000001
+
+FIELD_PG	= $63
+BANNER_PG	= $6C
+
 ; *************************
 ; *** memory allocation ***
 ; *************************
 status	= 128				; array of player status [0=game over, 1=level select, 2=flashing entry?, 3=playing, 4=flashing?]
 speed	= status+2			; array of 16-bit counters for next event
-pad0mask= speed+4			; gamepad masking values
+s_level	= speed+4			; array for selected difficulty [0-2]
+pad0mask= s_level+2			; gamepad masking values
 pad1mask= pad0mask+1
 pad0val	= pad1mask+1		; gamepad current status
 pad1val	= pad0val+1
@@ -30,7 +46,7 @@ yb		= pad1val+1			; base row for death animation
 limit	= yb+1				; right column for death animation
 temp	= limit+1
 select	= temp+1			; player iteration in main loop
-bcd_arr	= select+1			; scores etc array, includes _lim and colour $EC
+bcd_arr	= select+1			; level/jewels/score arrays [LxJJSSS] in BCD for each player, includes _lim and colour $EC
 bcd_lim	= bcd_arr+1			; $ED
 colour	= bcd_arr+8			; $F4
 seed	= bcd_arr+14		; PRNG seed, $FA
@@ -102,8 +118,41 @@ rst_loop:
 	JSR sel_ban
 ; *** *** main event loop *** ***
 loop:
-	
+	LDX select
+	LDA status, X			; check status of current player
 
+	CMP #1					; selecting level?
+	BNE not_st1
+; selecting level, check up/down and fire/select/start
+		LDA pad0val, X		; get this player controller status
+		BIT #PAD_DOWN		; increment level
+		BNE not_s1d
+			JSR inv_row		; deselect current
+			INC s_level, X	; increment level
+			LDY s_level
+			CPY #3			; three levels only, wrap otherwise
+			BCS s1_nw
+				STZ s_level, X
+				BRA s1_nw	; common ending
+not_s1d:
+		BIT #PAD_UP			; decrement level
+		BNE not_s1u
+			JSR inv_row		; deselect current
+			DEC s_level, X	; decrement level
+			BMI s1_nw
+				LDA #2		; wrap if negative
+				STA s_level, X
+				BRA s1_nw	; common ending
+not_s1u:
+		BIT #PAD_FIRE|PAD_SEL|PAD_STRT	; select current level
+		BNE not_s1x
+			JSR palmatoria
+			BRA not_st1
+s1_nw:
+			JSR inv_row		; mark new value
+			LDA pad0val, X	; restore and continue evaluation
+not_s1x:
+not_st1:
 	LDA select
 	EOR #1					; toggle player in event manager
 	STA select
@@ -208,7 +257,7 @@ tiledis:
 	PHA
 	TYA						; will be MSB...
 	ASL						; ...two pages per row
-	ADC #$63				; place into screen 3, 12 rasters below
+	ADC #FIELD_PG			; place into screen 3, 12 rasters below
 	STA ptr+1				; first address is ready!
 	TXA
 	ASL
@@ -403,7 +452,7 @@ banner:
 	ASL						; times four bytes per column
 	ADC #2					; two extra bytes
 	STA ptr
-	LDA #$6C				; two rows above centre
+	LDA #BANNER_PG			; two rows above centre
 	STA ptr+1
 go_vloop:
 		LDY #23				; max horizontal offset
@@ -452,7 +501,7 @@ pad_rdl:
 ;	Y	selected player (0,1)
 continue:
 	LDY #0					; default player number 1
-	LDA #%11000000			; look for start or fire
+	LDA #PAD_STRT|PAD_SEL|PAD_FIRE		; look for start, select or fire
 wait_s:
 		INX					; just for random seed setting
 		BIT pad0val
@@ -525,6 +574,40 @@ sel_ban:
 	LDA poff9, Y			; proper player index for banner
 	JMP banner				; display and return
 
+; ** mark one row as inverted **
+; input
+;	X	player (0,1)
+inv_row:
+	PHX						; must be kept
+	LDA poff36, X
+	CLC
+	ADC #2					; 4 pixels more
+	STA ptr
+	LDA s_level, X			; current level determines row
+	ASL						; times two
+	ADC #BANNER_PG			; into banners area
+	STA ptr+1
+	LDX #7					; number of rasters
+ir_rloop:
+		LDY #23				; max. horiz offset 
+ir_bloop:
+			LDA (ptr), Y
+			EOR #$FF		; invert this byte
+			STA (ptr), Y
+			DEY
+			BPL ir_bloop
+		LDA ptr
+		CLC
+		ADC #64				; next raster in screen
+		STA ptr
+		BCC ir_nw
+			INC ptr+1
+ir_nw:
+		DEX					; one less raster
+		BNE ir_rloop
+	PLX						; retrieve and return
+	RTS
+
 ; ** clear playfield structure **
 ; input
 ;	Y	player (0,1)
@@ -567,7 +650,7 @@ sfh_loop:
 	CLC
 	ADC #2					; will be 2 for player 1, 38 for player 2
 	STA ptr
-	LDA #$6C				; two rows above centre
+	LDA #BANNER_PG			; two rows above centre
 	STA ptr+1
 clp_vloop:
 		LDY #23				; max horizontal offset
