@@ -1,6 +1,7 @@
 ; COLUMNS for Durango-X
+; original idea by SEGA
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20221230-1641
+; last modified 20221231-1137
 
 ; ****************************
 ; *** hardware definitions ***
@@ -77,45 +78,16 @@ reset:
 	LDA ticks
 	STA seed
 	STX seed+1				; quite random seed
+	PHY						; save selected player
 ; TODO * init game stuff * TODO
-; TODO * must be in routine *
-	LDX #104				; 13th row
-	LDA #$FF				; invalid tile
-cl_loop:
-		STA fields, X		; sentinel
-		STZ fields+1, X
-		STZ fields+2, X
-		STZ fields+3, X
-		STZ fields+4, X
-		STZ fields+5, X
-		STZ fields+6, X
-		STA fields+7, X		; sentinel
-		STA fields+128, X	; ditto for player 2
-		STZ fields+129, X
-		STZ fields+130, X
-		STZ fields+131, X
-		STZ fields+132, X
-		STZ fields+133, X
-		STZ fields+134, X
-		STA fields+135, X	; ...
-		TXA
-		SEC
-		SBC #8
-		TAX
-		BNE cl_loop
-	LDA #$FF				; invalid tile
-	LDX #7					; max horiz offset
-sfh_loop:
-		STA fields, X
-		STA fields+128, X
-		STA fields+112, X	; ditto for player 2
-		STA fields+240, X
-		DEX
-		BPL sfh_loop
 
-; display game field
+; display game field, then level selection according to player
 	LDX #2					; set compressed file index
 	JSR dispic				; decompress!
+	PLA						; retieve selected player
+	JSR sel_ban
+
+; ====== TEST CODE ======/*
 stz 0;y
 stz 1;x
 pinta:
@@ -147,6 +119,9 @@ jsr continue
 ldx#0
 jsr palmatoria
 jmp lock
+; ====== END OF TEST CODE ======*/
+end:jmp end
+
 ; ***********************
 ; *** useful routines ***
 ; ***********************
@@ -487,8 +462,11 @@ pad_rdl:
 	STA pad1val
 	RTS
 
-; ** wait for action ** should check keyboard also * TODO
+; ** (busy) wait for action **
+; output
+;	Y	selected player [0,9] note values!!
 continue:
+	LDY #0					; default player number 1
 	LDA #%11000000			; look for start or fire
 wait_s:
 		INX					; just for random seed setting
@@ -496,6 +474,7 @@ wait_s:
 	BNE start
 		BIT pad1val
 		BEQ wait_s
+	LDY #9					; if arrived here, was player 2
 start:
 ; must wait for release also
 		BIT pad0val
@@ -508,9 +487,9 @@ start:
 vsync:
 		BIT IO8blk
 		BVS vsync			; if already in VBlank
-wait:
+wait_v:
 		BIT IO8blk
-		BVC wait			; wait for VBlank
+		BVC wait_v			; wait for VBlank
 	RTS
 
 ; ** PRNG **
@@ -537,6 +516,83 @@ lo_z:
 	BCS do_eor
 no_eor:
 	STA seed+1
+	RTS
+
+; ** draw select level menu **
+sel_ban:
+	LDY #<levelsel
+	LDX #>levelsel
+	STY src
+	STX src+1				; set origin pointer
+	LDX #22					; raster counter
+	JMP banner				; display and return
+
+; ** clear playfield structure **
+; input
+;	Y	player [0,36] note special player 2 value!!
+clearfield:
+	TYA						; check player
+	BEQ pl1a
+		LDX #232			; 13th row, player 2
+		BRA cl_loop
+pl1a:
+		LDX #104			; 13th row, player 1
+cl_loop:
+		LDA #$FF			; invalid tile
+		STA fields, X		; sentinel
+		STZ fields+1, X
+		STZ fields+2, X
+		STZ fields+3, X
+		STZ fields+4, X
+		STZ fields+5, X
+		STZ fields+6, X
+		STA fields+7, X		; sentinel
+		TXA
+		SEC
+		SBC #8
+		TAX
+		AND #$7F			; eeeek
+		BNE cl_loop
+	LDA #$FF				; invalid tile
+	TYA						; check player
+	BEQ pl1b
+		LDX #136			; max horiz offset+1, player 2
+		BRA sfh_loop
+pl1b:
+		LDX #8				; max horiz offset+1, player 1
+sfh_loop:
+		LDA #$FF			; invalid tile
+		STA fields-1, X		; note offsets
+		STA fields+111, X
+		DEX
+		TXA
+		AND #127			; player-independent offset
+		BNE sfh_loop
+; should clear mode selection banner as well, pretty much like 'banner'
+	LDX #22					; banner rasters - 1
+	TYA						; check player
+	CLC
+	ADC #2					; will be 2 for player 1, 38 for player 2
+	STA ptr
+	LDA #$6C				; two rows above centre
+	STA ptr+1
+clp_vloop:
+		LDY #23				; max horizontal offset
+		LDA #0				; will clear area
+clp_hloop:
+			STA (ptr), Y
+			DEY
+			BPL clp_hloop
+		DEX					; one raster is ready
+	BMI clp_end
+		LDA ptr
+		CLC
+		ADC #64				; next raster in screen
+		STA ptr
+		BCC clp_vloop
+			INC ptr+1		; there was page crossing
+		BRA clp_vloop
+clp_end:
 	RTS
 
 ; **********************
@@ -595,7 +651,7 @@ tk_nw:
 	PHA						; only register to save for read_pad
 	JSR read_pad
 	PLA
-; TODO * read keyboard too? * TODO
+; TODO * read keyboard too? * TODO * as keypad emulation
 isr_end:					; common interrupt exit
 	RTI
 
