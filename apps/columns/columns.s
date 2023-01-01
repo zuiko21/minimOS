@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
-; (c) 2022 Carlos J. Santisteban
-; last modified 20221231-1827
+; (c) 2022-2023 Carlos J. Santisteban
+; last modified 20230101-0057
 
 ; ****************************
 ; *** hardware definitions ***
@@ -130,39 +130,41 @@ rst_loop:
 	LDA #STAT_LVL
 	STA status, X			; set new status
 	JSR sel_ban
-lda#9
-jsr palmatoria
+
+; *******************************
 ; *** *** main event loop *** ***
+; *******************************
 loop:
 	LDX select
 	LDA status, X			; check status of current player
+	LDY pad0val, X			; ...and its controller status
+	BNE chk_stat			; some buttons were pressed
+		STZ padlast, X		; otherwise clear that
+chk_stat:
 ; * * STATUS 0, game over * *
 ;	CMP #STAT_OVER
 	BNE not_st0
-		LDA pad0val, X		; get this player controller status
+		TYA					; get this player controller status
 		BIT #PAD_FIRE|PAD_SEL|PAD_STRT	; start new game
-		BNE new_game
-not_game:
-			STA padlast, X
-			BRA not_st0
-new_game:
+			BEQ not_st0		; not if not pressed...
 		CMP padlast, X
-			BEQ not_game
-		STA padlast, X
+			BEQ not_st0		; ...or not just released
+		STA padlast, X		; anyway, register this press
 		LDA #STAT_LVL
-		STA status, X
-		JSR sel_ban
-		JMP next_player
+		STA status, X		; go into selection status
+		JSR sel_ban			; after drawing level selection menu
+		BRA loop			; reload player status
 not_st0:
 ; * * STATUS 1, level selection * *
 	CMP #STAT_LVL			; selecting level?
 	BNE not_st1
 ; selecting level, check up/down and fire/select/start
-		LDA pad0val, X		; get this player controller status
+		TYA					; get this player controller status
 		BIT #PAD_DOWN		; increment level
-		BEQ not_s1d
+		BEQ not_s1d			; not if not pressed
 			CMP padlast, X	; still pressing?
-		BEQ not_s1x			; ignore!
+		BEQ not_st1			; ignore either!
+			STA padlast, X	; anyway, register this press
 			JSR inv_row		; deselect current
 			INC s_level, X	; increment level
 			LDY s_level, X
@@ -174,17 +176,21 @@ not_s1d:
 		BIT #PAD_UP			; decrement level
 		BEQ not_s1u
 			CMP padlast, X	; still pressing?
-		BEQ not_s1x			; ignore!
+		BEQ not_st1			; ignore!
+			STA padlast, X	; anyway, register this press
 			JSR inv_row		; deselect current
 			DEC s_level, X	; decrement level
 			BPL s1_nw		; wrap if negative
-				LDA #2
+				LDA #NUM_LVLS-1			; max level index
 				STA s_level, X
 				BRA s1_nw	; common ending
 not_s1u:
 		BIT #PAD_FIRE|PAD_SEL|PAD_STRT	; select current level
-		BEQ not_s1x
+		BEQ not_st1
 ; level is selected, set initial score and display
+			CMP padlast, X	; still pressing?
+		BEQ not_st1			; ignore!
+			STA padlast, X	; anyway, register this press
 			LDY s_level, X	; selected level
 			LDA ini_lev, Y	; as index for initial value
 			PHA				; later...
@@ -192,8 +198,8 @@ not_s1u:
 			LDY poff7, X	; reindex for BCD arrays
 			STA bcd_arr+DISP_SCO, Y
 			PLA
-			STA bcd_arr+DISP_LVL, Y	; place initial values in adequate array indices
-			LDX select
+			STA bcd_arr+DISP_LVL, Y		; place initial values in adequate array indices
+;			LDX select
 			LDY #DISP_LVL
 			JSR numdisp
 			LDX select
@@ -201,18 +207,29 @@ not_s1u:
 			JSR numdisp
 			LDX select
 			LDY #DISP_SCO
-			JSR numdisp
-; *** currently, just end the game ***
+			JSR numdisp		; display all values
+; and go into playing mode
 			LDX select
-			LDA poff9, X
-			JSR palmatoria
-			JMP next_player
+			LDA #STAT_PLAY
+			STA status, X
+; TODO * I believe some screen init is needed here * TODO
+			BRA not_st1
 s1_nw:
-			JSR inv_row		; mark new value
-			LDA pad0val, X	; restore and continue evaluation
-not_s1x:
-		STA padlast, X		; update last pad status
+		JSR inv_row			; mark new value
+		LDY pad0val, X
+		LDA status, X		; restore and continue evaluation
 not_st1:
+; * * STATUS 2, play * * TODO TODO
+	CMP #STAT_PLAY			; selecting level?
+	BNE not_st2
+
+; TODO * so far, just die *
+		LDA poff9, X 
+		JSR palmatoria
+;		JMP next_player
+
+not_st2:
+
 next_player:
 	LDA select
 	EOR #1					; toggle player in event manager
