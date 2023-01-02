@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230101-0227
+; last modified 20230102-1708
 
 ; ****************************
 ; *** hardware definitions ***
@@ -54,8 +54,14 @@ pad1mask= pad0mask+1
 pad0val	= pad1mask+1		; gamepad current status
 pad1val	= pad0val+1
 padlast	= pad1val+1			; array of last pad status
-yb		= padlast+2			; base row for death animation
-limit	= yb+1				; right column for death animation
+column0	= padlast+2			; current column for player 1
+next0	= column0+3			; next piece for player 1
+column1	= next0+3			; current column for player 2
+next1	= column+3			; next piece for player 2
+x_tile	= next1+3			; X coordinates 0...5 (note player 2 must be 9...14 instead)
+y_tile	= x_tile+2			; Y coordinates 0...12
+yb		= y_tile+2			; base row for death animation (may become an array)
+limit	= yb+1				; right column for death animation (may become an array)
 temp	= limit+1
 select	= temp+1			; player iteration in main loop
 bcd_arr	= select+1			; level/jewels/score arrays [LxJJSSS] in BCD for each player, includes _lim and colour $EC
@@ -212,6 +218,8 @@ not_s1u:
 			LDY #DISP_SCO
 			JSR numdisp		; display all values
 ; and go into playing mode
+			LDY select
+			JSR clearfield	; init game matrix and all gameplay status
 			LDX select
 			LDA #STAT_PLAY
 			STA status, X
@@ -345,7 +353,8 @@ tiledis:
 	ADC #2					; first pixel in line is 4, C known clear
 	STA ptr					; LSB is ready
 	PLA						; retrieve tile index
-tileprn:					; * external interface with tile index in A, for next piece *
+; * external interface with tile index in A, for next piece *
+tileprn:
 	STA src+1				; temporary MSB
 	LDA #0					; will be LSB
 	LSR src+1
@@ -383,6 +392,29 @@ s_rnw:
 s_wnw:
 		DEX
 		BNE s_rloop			; until all rasters done
+	RTS
+
+; ** show next column **
+; input
+;	X		player [0-1], displayed at (54,12) & (66,12), a 6-byte offset
+nextcol:
+	LDY poff6, X			; get byte offset
+	CLC
+	ADC #27					; start position for player 1,
+	STA ptr
+	LDA #FIELD_PG
+	STA ptr+1				; pointer complete
+	LDX #3					; number of tiles per column
+nc_loop:
+		PHX
+		PHY
+		LDA next0, Y		; get jewel to be displayed
+		JSR tileprn			; just show this tile
+		PLY
+		PLX
+		INY					; next tile in column
+		DEX
+		BNE nc_loop			; all tiles in column done?
 	RTS
 
 ; ** number display **
@@ -466,7 +498,20 @@ ras_nw:
 ; input
 ;	A	player (0,9)
 palmatoria:
+	SEI						; *** temporary improvement until the concurrent version ***
 	STA temp				; will be constant initial X
+	TAX
+	BEQ dz_nok
+		LDX #6				; offset between arrays for next piece
+dz_nok:
+	LDY #3					; number of tiles per column
+dz_nxt:
+		STZ next0, X		; clear next tiles for this player
+		INX
+		DEY
+		BNE dz_nxt
+	JSR nextcol				; clear this part of the display
+	LDA temp				; retreive this value
 	CLC
 	ADC #6					; compute limit
 	STA limit
@@ -522,6 +567,7 @@ dz_abort:
 		LDA yb
 		CMP #252			; -4
 		BNE dz_row
+	CLI						; *** for non-concurrent version only ***
 ; now print the game over banner
 	LDY #<gameover
 	LDX #>gameover
@@ -531,7 +577,7 @@ dz_abort:
 	LDX #10					; raster counter
 
 banner:
-; alternate input
+; alternate entry to print a 24*x banner
 ;	X	= rasters - 1
 ;	A	= base column [0 for player 1, 9 for player 2]
 ;	src		points to .sv24
@@ -583,7 +629,7 @@ pad_rdl:
 	STA pad1val
 	RTS
 
-; ** (busy) wait for action **
+; ** (busy) wait for action ** might be inlined
 ; output
 ;	Y	selected player (0,1)
 continue:
@@ -698,6 +744,26 @@ ir_nw:
 ; input
 ;	Y	player (0,1)
 clearfield:
+; init player data
+cl_jwl:
+		JSR rnd
+		TAX
+		LDA jwl_ix, X		; make it valid tile index
+		LDX poff6, Y		; jewel array offset
+		STA column0, X		; set jewel for this player
+		INX
+		CPX #6
+	BEQ cl_clear			; repeat for player 1...
+		CPX #12
+		BCC cl_jwl			; ...or for player 2
+; init coordinates
+	LDA poff9, Y			; tile offset
+	CLC
+	ADC #3					; fourth column of every player
+	STA x_tile, Y
+	LDA #254				; initial vertical position is -2
+	STA y_tile, Y
+; init matrix
 	LDA poff128, Y			; check player
 	CLC
 	ADC #104				; 13th row
@@ -824,6 +890,20 @@ cmpr_pics:					; to be displayed by dispic
 	.word	splash
 	.word	field
 
+jwl_ix:						; convert random byte into reasonable tile index [1...6] with a few magic tiles [7]
+	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6	;  0...23
+	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6	; 24...47
+	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6	; 48...71
+	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6	; 72...95
+	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6	; 96...119
+	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6	; 120...143
+	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6	; 144...167
+	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6	; 168...191
+	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6	; 192...215
+	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6	; 216...239
+	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6										; 240...251
+	.byt	7, 7, 7, 7		; 252...255 are the magic tiles
+	
 id_table:
 	.byte	0, 1, 2, 3, 4, 5, 6, 7		; useful for ADX/ADY emulation
 
@@ -852,6 +932,8 @@ m_tone:
 
 ; player offsets according to routine
 ;	.byt	0, 1
+poff6:
+	.byt	0, 6
 poff7:
 	.byt	0, 7
 poff9:
