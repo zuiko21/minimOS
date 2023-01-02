@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230102-1746
+; last modified 20230102-1807
 
 ; ****************************
 ; *** hardware definitions ***
@@ -750,13 +750,29 @@ ir_nw:
 ; input
 ;	Y	player (0,1)
 clearfield:
-; init player data
+; init player data (this actually creates new column, should be separate)
 	LDX poff6, Y			; jewel array offset
 	PHY
 cl_jwl:
 		JSR rnd
 		TAY
 		LDA jwl_ix, Y		; make it valid tile index
+		CMP #7				; is the magic jewel
+		BNE cl_nomagic
+			LDA s_level, Y	; check difficulty
+		BEQ cl_jwl			; not accepted in easy mode
+; otherwise the magic jewel fills the whole column
+			PLY
+			PHY				; otherwise retrieve and restore player index
+			LDX poff6, Y	; jewel array offset
+			LDY #3			; 3 jewels in column
+			LDA #7			; magic tile index
+cl_magic:
+				STA column0, X
+				DEY
+				BNE cl_magic
+			BRA cl_clear
+cl_nomagic:
 		STA column0, X		; set jewel for this player
 		INX
 		CPX #6
@@ -766,7 +782,7 @@ cl_jwl:
 cl_clear:
 	PLX
 	PHX
-	JSR nextcol
+	JSR nextcol				; display next column
 	PLY
 ; init coordinates
 	LDA poff9, Y			; tile offset
