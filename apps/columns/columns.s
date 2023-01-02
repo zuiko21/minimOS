@@ -127,20 +127,24 @@ rst_loop:
 	JSR dispic				; decompress!
 ; then level selection according to player
 	PLX						; retieve selected player
+lda#$f0
+sta$df94
 	LDA #STAT_LVL
 	STA status, X			; set new status
+;sta$df93
 	JSR sel_ban
-
 ; *******************************
 ; *** *** main event loop *** ***
 ; *******************************
 loop:
-	LDX select
-	LDA status, X			; check status of current player
+	LDX select				; check player...
 	LDY pad0val, X			; ...and its controller status
 	BNE chk_stat			; some buttons were pressed
 		STZ padlast, X		; otherwise clear that
+		JMP next_player		; does this make sense?
 chk_stat:
+	LDA status, X			; check status of current player
+;sta$df93
 ; * * STATUS 0, game over * *
 ;	CMP #STAT_OVER
 	BNE not_st0
@@ -152,12 +156,16 @@ chk_stat:
 		STA padlast, X		; anyway, register this press
 		LDA #STAT_LVL
 		STA status, X		; go into selection status
+;sta$df93
 		JSR sel_ban			; after drawing level selection menu
 		BRA loop			; reload player status
 not_st0:
+	LDA status, X			; check status of current player
+;sta$df93
 ; * * STATUS 1, level selection * *
-	CMP #STAT_LVL			; selecting level?
+	CMP #1			; selecting level?
 	BNE not_st1
+.byt $cb
 ; selecting level, check up/down and fire/select/start
 		TYA					; get this player controller status
 		BIT #PAD_DOWN		; increment level
@@ -190,6 +198,7 @@ not_s1u:
 ; level is selected, set initial score and display
 			CMP padlast, X	; still pressing?
 		BEQ not_st1			; ignore!
+;.byt $cb
 			STA padlast, X	; anyway, register this press
 			LDY s_level, X	; selected level
 			LDA ini_lev, Y	; as index for initial value
@@ -210,19 +219,21 @@ not_s1u:
 			JSR numdisp		; display all values
 ; and go into playing mode
 			LDX select
+.byt $cb
 			LDA #STAT_PLAY
 			STA status, X
+;sta$df93
 ; TODO * I believe some screen init is needed here * TODO
 			BRA not_st1
 s1_nw:
 		JSR inv_row			; mark new value
-		LDY pad0val, X
-		LDA status, X		; restore and continue evaluation
+		LDY pad0val, X		; restore and continue evaluation
 not_st1:
+	LDA status, X
+;sta$df93
 ; * * STATUS 2, play * * TODO TODO
 	CMP #STAT_PLAY			; selecting level?
 	BNE not_st2
-
 ; TODO * so far, just die *
 		LDA poff9, X 
 		JSR palmatoria
