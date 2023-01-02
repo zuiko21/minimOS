@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230101-0057
+; last modified 20230101-0227
 
 ; ****************************
 ; *** hardware definitions ***
@@ -131,7 +131,6 @@ lda#$f0
 sta$df94
 	LDA #STAT_LVL
 	STA status, X			; set new status
-;sta$df93
 	JSR sel_ban
 ; *******************************
 ; *** *** main event loop *** ***
@@ -144,7 +143,6 @@ loop:
 		JMP next_player		; does this make sense?
 chk_stat:
 	LDA status, X			; check status of current player
-;sta$df93
 ; * * STATUS 0, game over * *
 ;	CMP #STAT_OVER
 	BNE not_st0
@@ -156,16 +154,13 @@ chk_stat:
 		STA padlast, X		; anyway, register this press
 		LDA #STAT_LVL
 		STA status, X		; go into selection status
-;sta$df93
 		JSR sel_ban			; after drawing level selection menu
 		BRA loop			; reload player status
 not_st0:
 	LDA status, X			; check status of current player
-;sta$df93
 ; * * STATUS 1, level selection * *
-	CMP #1			; selecting level?
+	CMP #STAT_LVL			; selecting level?
 	BNE not_st1
-.byt $cb
 ; selecting level, check up/down and fire/select/start
 		TYA					; get this player controller status
 		BIT #PAD_DOWN		; increment level
@@ -177,7 +172,7 @@ not_st0:
 			INC s_level, X	; increment level
 			LDY s_level, X
 			CPY #NUM_LVLS	; three levels only, wrap otherwise
-			BCC s1_nw
+			BNE s1_nw
 				STZ s_level, X
 				BRA s1_nw	; common ending
 not_s1d:
@@ -198,7 +193,6 @@ not_s1u:
 ; level is selected, set initial score and display
 			CMP padlast, X	; still pressing?
 		BEQ not_st1			; ignore!
-;.byt $cb
 			STA padlast, X	; anyway, register this press
 			LDY s_level, X	; selected level
 			LDA ini_lev, Y	; as index for initial value
@@ -219,10 +213,8 @@ not_s1u:
 			JSR numdisp		; display all values
 ; and go into playing mode
 			LDX select
-.byt $cb
 			LDA #STAT_PLAY
 			STA status, X
-;sta$df93
 ; TODO * I believe some screen init is needed here * TODO
 			BRA not_st1
 s1_nw:
@@ -230,7 +222,6 @@ s1_nw:
 		LDY pad0val, X		; restore and continue evaluation
 not_st1:
 	LDA status, X
-;sta$df93
 ; * * STATUS 2, play * * TODO TODO
 	CMP #STAT_PLAY			; selecting level?
 	BNE not_st2
@@ -487,6 +478,7 @@ palmatoria:
 	TAX
 ;	LDA STAT_OVER			; conveniently zero
 	STZ status, X			; back to gameover status
+	STZ s_level, X			; reset this too! eeeeeeeek
 dz_row:
 		LDY yb
 dz_tile:
@@ -652,7 +644,6 @@ no_eor:
 ;	X	selected player position (0,1)
 sel_ban:
 	PHX						; eeeek
-	INC status, X			; go into status 1 (level selection) *** must be called from game over status
 ; brief EG arpeggio
 	LDA #228				; brief E5
 	JSR tone
