@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230102-1807
+; last modified 20230102-2357
 
 ; ****************************
 ; *** hardware definitions ***
@@ -133,8 +133,8 @@ rst_loop:
 	JSR dispic				; decompress!
 ; then level selection according to player
 	PLX						; retieve selected player
-lda#$f0
-sta$df94
+;lda#$f0
+;sta$df94;enable VSP for debug
 	LDA #STAT_LVL
 	STA status, X			; set new status
 	JSR sel_ban
@@ -233,11 +233,76 @@ not_st1:
 ; * * STATUS 2, play * * TODO TODO
 	CMP #STAT_PLAY			; selecting level?
 	BNE not_st2
+		TYA					; get this player controller status
+		BIT #PAD_LEFT		; move to the left?
+		BEQ not_s2l			; not if not pressed
+			CMP padlast, X	; still pressing?
+		BEQ not_st2			; ignore either!
+			STA padlast, X	; anyway, register this press
+			JSR chkroom		; is it possible?
+			ASL				; d7=0 means left OK
+		BCS not_st2			; no way!
+			DEC x_tile, X	; otherwise, x is one less
+; TODO * update screen, delta etc * TODO
+			JMP next_player
+not_s2l:
+		BIT #PAD_RGHT		; move to the right?
+		BEQ not_s2r			; not if not pressed
+			CMP padlast, X	; still pressing?
+		BEQ not_st2			; ignore either!
+			STA padlast, X	; anyway, register this press
+			JSR chkroom		; is it possible?
+			LSR				; d0=0 means right OK
+		BCS not_st2			; no way!
+			INC x_tile, X	; otherwise, x is one more
+; TODO * update screen, delta etc * TODO
+			JMP next_player
+not_s2r:
+		BIT #PAD_DOWN		; let it drop?
+		BEQ not_s2d			; not if not pressed
+;			CMP padlast, X	; still pressing? don't care, will fall asap
+;		BEQ not_st2			; ignore either!
+;			STA padlast, X	; anyway, register this press
+			JSR chkroom		; is it possible?
+			AND #64			; d6=0 means down OK
+		BNE not_st2			; no way!
+			INC y_tile, X	; otherwise, x is one more
+; TODO * update screen, delta etc * TODO
+			JMP next_player
+not_s2d:
+		BIT #PAD_FIRE		; let it drop?
+		BEQ not_s2x			; not if not pressed
+			CMP padlast, X	; still pressing?
+		BEQ not_st2			; ignore either!
+			STA padlast, X	; anyway, register this press
+; piece rotation
+			LDA #1
+			STA IOBeep		; activate sound...
+;			LDY poff6, X	; reindex for column arrays
+			LDA poff6, X	; reindex for column arrays
+ADC #3; hack to affect next piece
+TAY
+			LDA column0+2, Y
+			PHA				; save last piece
+			LDA column0+1, Y
+			STA column0+2, Y
+			LDA column0, Y
+			STA column0+1, Y			; rotate the rest
+			PLA
+			STA column0, Y	; and wrap the last one
+			STZ IOBeep		; ...and finish audio pulse
+; TODO * update screen, delta etc * TODO
+JSR nextcol; hack to display
+			JMP next_player
+not_s2x:
+
+
 ; TODO * so far, just die *
-		LDA poff9, X 
-		JSR palmatoria
+;		LDA poff9, X 
+;		JSR palmatoria
 ;		JMP next_player
 
+		LDY pad0val, X		; restore and continue evaluation, is this neeed?
 not_st2:
 
 next_player:
