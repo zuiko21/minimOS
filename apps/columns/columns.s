@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230102-1708
+; last modified 20230102-1746
 
 ; ****************************
 ; *** hardware definitions ***
@@ -57,7 +57,7 @@ padlast	= pad1val+1			; array of last pad status
 column0	= padlast+2			; current column for player 1
 next0	= column0+3			; next piece for player 1
 column1	= next0+3			; current column for player 2
-next1	= column+3			; next piece for player 2
+next1	= column1+3			; next piece for player 2
 x_tile	= next1+3			; X coordinates 0...5 (note player 2 must be 9...14 instead)
 y_tile	= x_tile+2			; Y coordinates 0...12
 yb		= y_tile+2			; base row for death animation (may become an array)
@@ -399,8 +399,9 @@ s_wnw:
 ;	X		player [0-1], displayed at (54,12) & (66,12), a 6-byte offset
 nextcol:
 	LDY poff6, X			; get byte offset
+	TYA						; eeeeek
 	CLC
-	ADC #27					; start position for player 1,
+	ADC #27					; start position for player 1
 	STA ptr
 	LDA #FIELD_PG
 	STA ptr+1				; pointer complete
@@ -500,18 +501,23 @@ ras_nw:
 palmatoria:
 	SEI						; *** temporary improvement until the concurrent version ***
 	STA temp				; will be constant initial X
-	TAX
-	BEQ dz_nok
-		LDX #6				; offset between arrays for next piece
-dz_nok:
-	LDY #3					; number of tiles per column
-dz_nxt:
-		STZ next0, X		; clear next tiles for this player
-		INX
-		DEY
-		BNE dz_nxt
-	JSR nextcol				; clear this part of the display
-	LDA temp				; retreive this value
+; this section is for clearing the next piece field, but no really necessary
+;	TAX
+;	BEQ dz_nok
+;		LDX #6				; offset between arrays for next piece
+;dz_nok:
+;	LDY #3					; number of tiles per column
+;dz_nxt:
+;		STZ next0, X		; clear next tiles for this player
+;		INX
+;		DEY
+;		BNE dz_nxt
+;	LDX temp				; must be 0 or 1
+;	BEQ dz_nnok
+;		LDX #1				; ...and not 9
+;dz_nnok:
+;	JSR nextcol				; clear this part of the display
+;	LDA temp				; retreive this value
 	CLC
 	ADC #6					; compute limit
 	STA limit
@@ -745,17 +751,23 @@ ir_nw:
 ;	Y	player (0,1)
 clearfield:
 ; init player data
+	LDX poff6, Y			; jewel array offset
+	PHY
 cl_jwl:
 		JSR rnd
-		TAX
-		LDA jwl_ix, X		; make it valid tile index
-		LDX poff6, Y		; jewel array offset
+		TAY
+		LDA jwl_ix, Y		; make it valid tile index
 		STA column0, X		; set jewel for this player
 		INX
 		CPX #6
 	BEQ cl_clear			; repeat for player 1...
 		CPX #12
 		BCC cl_jwl			; ...or for player 2
+cl_clear:
+	PLX
+	PHX
+	JSR nextcol
+	PLY
 ; init coordinates
 	LDA poff9, Y			; tile offset
 	CLC
