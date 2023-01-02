@@ -684,6 +684,11 @@ go_nw:
 go_end:
 	RTS
 
+; ** check for available movements **
+chkroom:
+LDA#0
+RTS
+
 ; ** gamepad read **
 read_pad:
 	LDA #8
