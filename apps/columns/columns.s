@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230103-2303
+; last modified 20230103-2359
 
 ; ****************************
 ; *** hardware definitions ***
@@ -69,8 +69,8 @@ posit	= next_c+3			; position in 8x16 matrix
 bcd_arr	= posit+1			; level/jewels/score arrays [LJJSSS] in BCD
 ; common data (non-duplicated)
 yb		= posit+1			; base row for death animation (may become an array)
-limit	= yb+1				; right column for death animation (ditto)
-temp	= limit+1
+temp2	= yb+1				; now another temporary
+temp	= temp2+1
 select	= temp+1			; player iteration in main loop
 bcd_lim	= select+1
 colour	= bcd_lim+1
@@ -155,7 +155,8 @@ rst_loop:
 ;sta$df94;enable VSP for debug
 	LDA #STAT_LVL
 	STA status, X			; set new status
-	JSR sel_ban
+jsr palmatoria
+;	JSR sel_ban
 ; *******************************
 ; *** *** main event loop *** ***
 ; *******************************
@@ -329,7 +330,7 @@ not_st2:
 
 next_player:
 	LDA select
-	EOR #1					; toggle player in event manager
+	EOR #128				; toggle player in event manager
 	STA select
 	JMP loop
 
@@ -424,9 +425,11 @@ cd_loop:
 		
 ; ** display tile ** new format
 ; input
-;	Y = position index
+;	Y = position index - 1
+;	A = tile to print!
 ; affects 'colour'
 tiledis:
+	STA temp2				; eeeeek
 	TYA						; will be MSB...
 	AND #%01111000			; filter row
 	CMP #120
@@ -447,7 +450,7 @@ tiledis:
 	ASL						; times four bytes per column
 	ADC psum36, X			; first pixel in line is 4, perhaps with 36-byte offset, C known clear
 	STA ptr					; LSB is ready
-	LDA field, Y			; retrieve tile index
+	LDA temp2				; eeeeek
 ; * external interface with tile index in A, for next piece *
 tileprn:
 	STA src+1				; temporary MSB
@@ -575,21 +578,21 @@ palmatoria:
 ;	LDA STAT_OVER			; conveniently zero, and X is proper player offset
 	STZ status, X			; back to gameover status
 	STZ s_level, X			; reset this too! eeeeeeeek
-	LDA #113				; 1+14*8
+	LDA #112				; 14*8
 	ORA id_table, X			; first column in new coordinates, plus player offset
-	TAX						; eeeek
-	LDY #15					; needs 16 iterations non-visible rows
-	STY yb
+	TAY						; eeeek
+	LDX #15					; needs 16 iterations non-visible rows
+	STX yb
 dz_row:
 		LDA #7				; initial explosion tile - 1
 dz_tile:
-		INC					; next tile
-		STA temp			; will hold current tile
-		CMP #11
-		BCC dz_nw
-			SBC #11			; 0, then 1 for exit
+			INC				; next tile
+			CMP #11
+			BNE dz_nw
+				LDA #0		; 0, then 1 for exit
 dz_nw:
-			LDY #6			; six columns
+			STA temp		; will hold current tile
+			LDX #6			; six columns
 dz_col:
 				PHX
 				PHY
@@ -597,26 +600,26 @@ dz_col:
 				JSR tiledis
 				PLY
 				PLX
-				INX			; next column
-				DEY			; check limit
+				INY			; next column
+				DEX			; check limit
 				BNE dz_col
 dz_show:
-			TXA
+			TYA
 			CLC
 			ADC #2			; skip 2 sentinels
-			TAX				; next row index
+			TAY				; next row index
 			LDA temp
 			BNE dz_tile		; did tile type 0, thus last one
-		TXA
+		TYA
 		SEC
 		SBC #40				; 5 rows back
-		TAX
+		TAY
 		JSR vsync			; wait a bit
 		JSR vsync			; wait a bit
-		PHX
 		LDA #30
+		PHY
 		JSR tone			; brief beep!
-		PLX
+		PLY					; eeeek
 		DEC yb				; one less row
 		BPL dz_row
 	CLI						; *** for non-concurrent version only ***
