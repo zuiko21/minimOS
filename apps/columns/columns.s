@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230102-0125
+; last modified 20230103-1259
 
 ; ****************************
 ; *** hardware definitions ***
@@ -38,8 +38,8 @@ IOBeep	= $DFB0
 #define	BANNER_PG	$6C
 
 #define	DISP_LVL	0
-#define	DISP_JWL	2
-#define	DISP_SCO	4
+#define	DISP_JWL	1
+#define	DISP_SCO	2
 
 #define	STAT_OVER	0
 #define	STAT_LVL	1
@@ -48,42 +48,54 @@ IOBeep	= $DFB0
 
 #define	NUM_LVLS	3
 
+#define	MAGIC_JWL	7
+
 ; *************************
 ; *** memory allocation ***
 ; *************************
-status	= 128				; array of player status [0=game over, 1=level select, 2=flashing entry?, 3=playing, 4=flashing?]
-speed	= status+2			; 8-bit values between events (255 at level 0, halving after that, but never under 5?)
-ev_dly	= speed+2			; array of 8-bit counters for next event (ditto)
-s_level	= ev_dly+2			; array for selected difficulty
-pad0mask= s_level+2			; gamepad masking values
-pad1mask= pad0mask+1
-pad0val	= pad1mask+1		; gamepad current status
-pad1val	= pad0val+1
-padlast	= pad1val+1			; array of last pad status
-column0	= padlast+2			; current column for player 1
-next0	= column0+3			; next piece for player 1
-column1	= next0+3			; current column for player 2
-next1	= column1+3			; next piece for player 2
-x_tile	= next1+3			; X coordinates 0...5 (note player 2 must be 9...14 instead)
-y_tile	= x_tile+2			; Y coordinates 0...12
-yb		= y_tile+2			; base row for death animation (may become an array)
-limit	= yb+1				; right column for death animation (may become an array)
+; player-1 data (player 2 has 128-byte offset)
+status	= 64				; player status [0=game over, 1=level select, 2=playing, 3=flashing?]
+speed	= status+1			; 7-bit value between events (127 at level 0, halving after that, but never under 5?)
+ev_dly	= speed+1			; 8-bit counter for next event (ditto)
+s_level	= ev_dly+1			; selected difficulty
+pad0mask= s_level+1			; gamepad masking values
+pad1mask= pad0mask+128
+pad0val	= pad0mask+1		; gamepad current status
+pad1val	= pad0val+128
+padlast	= pad0val+1			; last pad status
+column	= padlast+1			; current column
+next_c	= column+3			; next piece
+posit	= next_c+3			; position in 8x16 matrix
+bcd_arr	= posit+1			; level/jewels/score arrays [LJJSSS] in BCD
+; common data (non-duplicated)
+yb		= posit+1			; base row for death animation (may become an array)
+limit	= yb+1				; right column for death animation (ditto)
 temp	= limit+1
 select	= temp+1			; player iteration in main loop
-bcd_arr	= select+1			; level/jewels/score arrays [LxJJSSS] in BCD for each player, includes _lim and colour $EC
-bcd_lim	= bcd_arr+1			; $ED
-colour	= bcd_arr+8			; $F4
-seed	= bcd_arr+14		; PRNG seed, $FA
+bcd_lim	= select+1
+colour	= bcd_lim+1
+seed	= colour+14			; PRNG seed
 ; may let these at $FC for minimOS compliance
 src		= seed+2			; $FC
 ptr		= src+2				; $FE
 ; these save a few bytes and cycles in ZP
 irq_ptr	= ptr+2				; $0200 is standard minimOS, may save a few bytes putting these on ZP
 ticks	= irq_ptr+2			; $0206 but no NMI or BRK in use, and only 8-bit!!
-_end_zp	= ticks+1
+; player 2 data for convenience
+status2	= 192				; player status [0=game over, 1=level select, 2=playing, 3=flashing?]
+speed2	= status2+1			; 7-bit value between events (127 at level 0, halving after that, but never under 5?)
+ev_dly2	= speed2+1			; 8-bit counter for next event (ditto)
+s_level2= ev_dly2+1			; selected difficulty
+padlast2= pad1val+1			; last pad status
+column2	= padlast2+1		; current column
+next_c2	= column2+3			; next piece
+posit2	= next_c2+3			; position in 8x16 matrix
+bcd_arr2= posit2+1			; level/jewels/score arrays [LJJSSS] in BCD
+
+_end_zp	= posit2+1
 ; these MUST be outside ZP, change start address accordingly
-fields	= $0200				; 8x16 (6x13 actually used) game status arrays (player2 = +128)
-delta	= $0300				; screen change log [0=unchanged, 1=display, 2=flashing counter?]
+field	= $0200				; 8x16 (6x13 visible) game status arrays (player2 = +128)
+;field2	= $0280
 
 ; *****************
 ; *** main code ***
@@ -207,7 +219,7 @@ not_s1u:
 		BEQ not_st1			; ignore!
 			STA padlast, X	; anyway, register this press
 			LDY s_level, X	; selected level
-			LDA spd_ini, Y	; intial speed
+			LDA ini_spd, Y	; intial speed
 			CLC
 			ADC ticks
 			STA ev_dly, X	; compute delay until next event
@@ -277,23 +289,23 @@ not_s2d:
 			LDA #1
 			STA IOBeep		; activate sound...
 			LDY poff6, X	; reindex for column arrays
-			LDA column0+2, Y
+			LDA column+2, Y
 			PHA				; save last piece
-			LDA column0+1, Y
-			STA column0+2, Y
-			LDA column0, Y
-			STA column0+1, Y			; rotate the rest
+			LDA column+1, Y
+			STA column+2, Y
+			LDA column, Y
+			STA column+1, Y			; rotate the rest
 			PLA
-			STA column0, Y	; and wrap the last one
+			STA column, Y	; and wrap the last one
 			STZ IOBeep		; ...and finish audio pulse
 			LDY #MOV_ROT	; this was a rotation
-			BRA s2_end
+			BRA s2end
 not_s2f:
 ; in case of timeout, put piece down... or take another
 		LDA ticks
 		LSR					; half the time
 		CMP ev_dly, X
-		BCC s2_end			; if timeout expired...
+		BCC s2end			; if timeout expired...
 			LDA ev_dly, X
 			CLC
 			ADC speed
@@ -408,26 +420,32 @@ coldisp:
 	TAX						; use as index
 	LDY #3					; number of tiles per column
 cd_loop:
-		LDA fields, X		; get this tile
+		LDA field, X		; get this tile
 		
-; ** display tile **
+; ** display tile ** new format
 ; input
-;	X = column from player 1 left (player 2 is +9)
-;	Y = row from top
-;	A = tile number [0-10, where 0 is blank]
+;	Y = position index
 ; affects 'colour'
 tiledis:
-	PHA
 	TYA						; will be MSB...
-	ASL						; ...two pages per row
+	AND #%01111000			; filter row
+	LSR
+	LSR						; ...two pages per row
 	ADC #FIELD_PG			; place into screen 3, 12 rasters below
 	STA ptr+1				; first address is ready!
-	TXA
+	TYA
+	AND #%00000111			; filter column
 	ASL
 	ASL						; times four bytes per column
 	ADC #2					; first pixel in line is 4, C known clear
 	STA ptr					; LSB is ready
-	PLA						; retrieve tile index
+	TYA
+	BPL td_p1				; check d7 for player
+		LDA ptr
+		ADC #36				; player 2 adds 9-column (36-byte) offset
+		STA ptr
+td_p1:
+	LDA field, Y			; retrieve tile index
 ; * external interface with tile index in A, for next piece *
 tileprn:
 	STA src+1				; temporary MSB
@@ -469,9 +487,9 @@ s_wnw:
 		BNE s_rloop			; until all rasters done
 	RTS
 
-; ** show next column **
+; ** show next column ** new
 ; input
-;	X		player [0-1], displayed at (54,12) & (66,12), a 6-byte offset
+;	X		player [0-128], displayed at (54,12) & (66,12), a 6-byte offset
 nextcol:
 	LDY poff6, X			; get byte offset
 	TYA						; eeeeek
@@ -484,7 +502,7 @@ nextcol:
 nc_loop:
 		PHX
 		PHY
-		LDA next0, Y		; get jewel to be displayed
+		LDA next_c, Y		; get jewel to be displayed
 		JSR tileprn			; just show this tile
 		PLY
 		PLX
@@ -493,12 +511,12 @@ nc_loop:
 		BNE nc_loop			; all tiles in column done?
 	RTS
 
-; ** number display **
+; ** number display ** new format
 ; input
-;	Y		type of display (0=level, 2=jewels, 4=score)
-;	X		player [0-1]
+;	Y		type of display (0=level, 1=jewels, 2=score)
+;	X		player [0-128]
 ; fixed size; score=6 digits, level=2 digits, jewels=4 digits
-; BCD data array [LxJJSSS] thus Y-indexed, then another one for player two
+; BCD data array [LJJSSS]
 ; fixed player 1 base addresses; score $6007 (14,0), level $6C5C (56,49), jewels $7E4A (20,121)
 ; player 2 level adds 52 Y-offset! (64,101)
 ; fixed player 2 offset; score $26 (90-14), level 4 (actually $D04) (64-56), jewels $24 (92-20)
@@ -506,14 +524,13 @@ numdisp:
 	LDA play_col, X			; get colour according to player
 	STA colour				; set colour
 	TXA						; player offset
-	CLC
-	ADC disp_id, Y			; select type of display
+	ORA id_table, Y			; select type of display, easier as separate bit d7
 	TAY						; offset to base address
 	LDA num_bl, Y
 	STA ptr
 	LDA num_bh, Y
 	STA ptr+1				; screen pointer is ready
-	TAX						; this must be reset after each digit!
+	TAX						; page number must be restored after each digit!
 	LDA disp_top, Y
 	STA bcd_lim				; keep offset limit! eeeeeeek
 	LDA disp_id, Y
@@ -570,29 +587,14 @@ ras_nw:
 	PLX
 	RTS
 
-; ** death animation ** (non concurrent)
+; ** death animation ** (non concurrent) new
 ; input
-;	A	player (0,9)
+;	X	player (0,128)
 palmatoria:
 	SEI						; *** temporary improvement until the concurrent version ***
+	LDA poff9, X
 	STA temp				; will be constant initial X
-; this section is for clearing the next piece field, but no really necessary
-;	TAX
-;	BEQ dz_nok
-;		LDX #6				; offset between arrays for next piece
-;dz_nok:
-;	LDY #3					; number of tiles per column
-;dz_nxt:
-;		STZ next0, X		; clear next tiles for this player
-;		INX
-;		DEY
-;		BNE dz_nxt
-;	LDX temp				; must be 0 or 1
-;	BEQ dz_nnok
-;		LDX #1				; ...and not 9
-;dz_nnok:
-;	JSR nextcol				; clear this part of the display
-;	LDA temp				; retreive this value
+
 	CLC
 	ADC #6					; compute limit
 	STA limit
@@ -826,41 +828,11 @@ ir_nw:
 	PLX						; retrieve and return
 	RTS
 
-; ** clear playfield structure **
+; ** clear playfield structure ** new
 ; input
-;	Y	player (0,1)
+;	X	player (0,128)
 clearfield:
 ; init player data (this actually creates new column, should be separate)
-	LDX poff6, Y			; jewel array offset
-	PHY
-cl_jwl:
-		JSR rnd
-		TAY
-		LDA jwl_ix, Y		; make it valid tile index
-		CMP #7				; is the magic jewel
-		BNE cl_nomagic
-			LDA s_level, Y	; check difficulty
-		BEQ cl_jwl			; not accepted in easy mode
-; otherwise the magic jewel fills the whole column
-			PLY
-			PHY				; otherwise retrieve and restore player index
-			LDX poff6, Y	; jewel array offset
-			LDY #3			; 3 jewels in column
-			LDA #7			; magic tile index
-cl_magic:
-				STA column0, X
-				DEY
-				BNE cl_magic
-			BRA cl_clear
-cl_nomagic:
-		STA column0, X		; set jewel for this player
-		INX
-		CPX #6
-	BEQ cl_clear			; repeat for player 1...
-		CPX #12
-		BCC cl_jwl			; ...or for player 2
-cl_clear:
-	PLX
 	PHX
 	JSR nextcol				; display next column
 	PLY
@@ -878,14 +850,14 @@ cl_clear:
 	TAX
 cl_loop:
 		LDA #$FF			; invalid tile
-		STA fields, X		; sentinel
-		STZ fields+1, X
-		STZ fields+2, X
-		STZ fields+3, X
-		STZ fields+4, X
-		STZ fields+5, X
-		STZ fields+6, X
-		STA fields+7, X		; sentinel
+		STA field, X		; sentinel
+		STZ field+1, X
+		STZ field+2, X
+		STZ field+3, X
+		STZ field+4, X
+		STZ field+5, X
+		STZ field+6, X
+		STA field+7, X		; sentinel
 		TXA
 		SEC
 		SBC #8
@@ -898,8 +870,8 @@ cl_loop:
 	TAX
 sfh_loop:
 		LDA #$FF			; invalid tile
-		STA fields-1, X		; note offsets
-		STA fields+111, X
+		STA field-1, X		; note offsets
+		STA field+111, X
 		DEX
 		TXA
 		AND #127			; player-independent offset
@@ -929,6 +901,50 @@ clp_hloop:
 			INC ptr+1		; there was page crossing
 		BRA clp_vloop
 clp_end:
+	RTS
+
+; ** generate new column with 3 jewels ** new format
+; input
+;	X	player [0-128]
+gen_col:
+	PHX
+; transfer new column into current
+	LDY #3					; jewels per column
+gc_copy:
+		LDA next_c, X
+		STA column, X		; copy next column into actual one
+		INX
+		DEY
+		BNE gc_copy
+	PLX
+	PHX						; restore player index
+	LDY #3					; now I need 3 jewels
+; generate new jewel
+gc_jwl:
+		PHY
+		JSR rnd
+		TAY
+		LDA jwl_ix, Y		; make it valid tile index
+		PLY
+		CMP #7				; is the magic jewel
+		BNE gc_nomagic
+			LDA s_level, X	; check difficulty
+		BEQ gc_jwl			; not accepted in easy mode
+; otherwise the magic jewel fills the whole column
+			PLX
+			PHX				; otherwise retrieve and restore player index
+			LDA #7			; magic tile index
+			STA next_c, X
+			STA next_c+1, X
+			STA next_c+2, X	; store three jewels
+			BRA gc_clear
+gc_nomagic:
+		STA next_c, X		; set next jewel for this player
+		INX
+		DEY					; one jewel less
+		BNE gc_jwl			; until the array is done
+gc_clear:
+	PLX
 	RTS
 
 ; **********************
@@ -968,7 +984,7 @@ s_cyc:
 
 pulse:
 ; ** play short single pulse **
-	LDX #13					; will do ~65 µs
+	LDX #43					; will do ~200 µs
 	STX IOBeep				; enable...
 ps_loop:
 		DEX
@@ -991,13 +1007,120 @@ tk_nw:
 isr_end:					; common interrupt exit
 	RTI
 
+; ********************
+; *** picture data ***
+; ********************
+splash:
+	.bin	0, 0, "art/start.rle"
+playfield:
+	.bin	0, 0, "art/columns.rle"
+sprites:
+	.dsb	32, 0									; first tile is blank
+	.bin	0, 0, "art/jewels.sv4"					; uncompressed file, 4-byte wide!
+gameover:
+	.bin	0, 0, "art/gameover.sv24"				; uncompressed, 24-byte wide
+numbers:
+	.bin	0, 0, "../../other/data/numbers.sv20"	; generic number images, 20-byte wide
+levelsel:
+	.bin	0, 0, "art/level.sv24"					; uncompressed, 24-byte wide, 23 lines tall
+
 ; **************
 ; *** tables ***
 ; **************
+
+	.dsb	$FD00-*, $FF	; padding to avoid cross-page speed penalty
+
+; *** data for player 1 *** (player 2 uses 128-byte offset)
+id_table:
+	.byt	0, 1, 2, 3, 4, 5, 6, 7		; useful for ADX/ADY emulation, note reindex at 0
+
+play_col:					; player display colour
+	.byt	$99				; sky blue for player 1
+
+num_bl:						; base addresses of numeric displays (LSB, player 1)
+	.byt	$5C				; level $6C5C
+	.byt	$4A				; jewels $7E4A
+	.byt	$07				; score $6007
+num_bh:						; base addresses of numeric displays (MSB, player 1)
+	.byt	$6C				; level $6C5C
+	.byt	$7E				; jewels $7E4A
+	.byt	$60				; score $6007
+
+disp_id:
+	.byt	0, 1, 3, 7			; starting offsets on BCD array (player 1)
+disp_top	= disp_id+1			; limit index for 1, 2 or 3 BCD bytes (2-4-6 digits, player 1)
+
+poff9:
+	.byt	0				; 9-col offset b
+
+; * common data *
 cmpr_pics:					; to be displayed by dispic
 	.word	splash
-	.word	field
+	.word	playfield
 
+m_tone:
+;			C#6  D6   D#6  E6   F6   F#6  G6  G#6 A6  A#6 B6  C7  C#7 D7  D#7
+	.byt	136, 129, 121, 114, 108, 102, 96, 90, 85, 80, 76, 71, 67, 63, 60	; C#6 to D#7
+
+ix_dir:
+	.byt	1, 8, 255, 0	; matrix index displacement
+
+bit_pos:
+	.byt	%00000001, %00000010, %00000100, %00001000		; allowable movements for each direction, ····xLDR
+
+; initial level & scores according to difficulty
+ini_lev:
+	.byt	0, 5, $10		; initial level (BCD)
+
+ini_score:
+	.byt	0, 2, 5			; "third" byte initial score (BCD)
+
+ini_spd:
+	.byt	127, 3, 2		; initial speed value, halving each level, but never below 4 interrupts (note these are HALF values)
+
+;*******
+; revise these!
+
+; player offsets according to routine
+;	.byt	0, 1
+poff6:
+	.byt	0, 6
+poff7:
+	.byt	0, 7
+poff36:
+	.byt	0, 36
+poff128:
+	.byt	0, 128
+;********
+
+	.dsb	$FD80-*, $FF	; padding to avoid cross-page speed penalty
+
+; *** data for player 2 *** (labels for convenience, always +128)
+
+id_table2:
+	.byt	1, 129, 130, 131, 132, 133, 134, 135		; note reindex at 0
+
+play_col2:					; player display colour
+	.byt	$BB				; lavender pink for player 2
+
+num_bl2:					; base addresses of numeric displays (LSB, player 2)
+	.byt	$60				; level $7960 (!)
+	.byt	$6E				; jewels $7E6E
+	.byt	$2D				; score $602D
+num_bh2:					; base addresses of numeric displays (MSB, player 2)
+	.byt	$79				; level $7960 (!)
+	.byt	$7E				; jewels $7E6E
+	.byt	$60				; score $602D
+
+disp_id2:
+	.byt	128, 129, 131, 135			; starting offsets on BCD array (player 2)
+disp_top2	= disp_id2+1				; limit index for 1, 2 or 3 BCD bytes (2-4-6 digits, player 2)
+
+; any more?
+
+	.dsb	$FE00-*, $FF	; padding to avoid cross-page speed penalty
+
+; this table preferably goes in another full page
 jwl_ix:						; convert random byte into reasonable tile index [1...6] with a few magic tiles [7]
 	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6	;  0...23
 	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6	; 24...47
@@ -1011,81 +1134,6 @@ jwl_ix:						; convert random byte into reasonable tile index [1...6] with a few
 	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6	; 216...239
 	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6										; 240...251
 	.byt	7, 7, 7, 7		; 252...255 are the magic tiles
-	
-id_table:
-	.byt	0, 1, 2, 3, 4, 5, 6, 7		; useful for ADX/ADY emulation
-
-bit_pos:
-	.byt	%00000001, %00000010, %00000100, %00001000		; allowable movements for each direction, ····xLDR
-
-dx_dir:
-	.byt	1, 0, 255, 0	; delta-x for each direction
-dy_dir:
-	.byt	0, 1, 0, 0		; ditto for delta-y
-ix_dir:
-	.byt	1, 8, 255, 0	; matrix index displacement
-
-spd_ini:
-	.byt	127, 3, 2		; initial speed value, halving each level, but never below 4 interrupts (note these are HALF values)
-
-num_bl:						; base addresses of numeric displays (LSB, interleaved $P2P1)
-	.word	$605C			; level $6C5C, $7960 (!)
-	.word	$6E4A			; jewels $7E4A, $7E6E
-	.word	$2D07			; score $6007, $602D
-num_bh:						; base addresses of numeric displays (MSB, interleaved $P2P1)
-	.word	$796C			; level $6C5C, $7960 (!)
-	.word	$7E7E			; jewels $7E4A, $7E6E
-	.word	$6060			; score $6007, $602D
-play_col:					; player display colour
-	.byt	$99, $BB		; sky blue and lavender pink
-disp_id:					; identity array (every 2)
-	.byt	0, 7
-	.byt	2, 9
-	.byt	4, 11			; index value, also start index for BCD array (even=player1, odd=player2)
-disp_top:
-	.byt	1, 8
-	.byt	4, 11
-	.byt	7, 14			; limit index for 1, 2 or 3 BCD bytes (2-4-6 digits)
-
-m_tone:
-;			C#6  D6   D#6  E6   F6   F#6  G6  G#6 A6  A#6 B6  C7  C#7 D7  D#7
-	.byt	136, 129, 121, 114, 108, 102, 96, 90, 85, 80, 76, 71, 67, 63, 60	; C#6 to D#7
-
-; player offsets according to routine
-;	.byt	0, 1
-poff6:
-	.byt	0, 6
-poff7:
-	.byt	0, 7
-poff9:
-	.byt	0, 9
-poff36:
-	.byt	0, 36
-poff128:
-	.byt	0, 128
-
-; initial level & scores according to difficulty
-ini_lev:
-	.byt	0, 5, $10		; initial level (BCD)
-ini_score:
-	.byt	0, 2, 5			; "third" byte initial score (BCD)
-
-; ********************
-; *** picture data ***
-; ********************
-splash:
-	.bin	0, 0, "art/start.rle"
-field:
-	.bin	0, 0, "art/columns.rle"
-sprites:
-	.dsb	32, 0									; first tile is blank
-	.bin	0, 0, "art/jewels.sv4"					; uncompressed file, 4-byte wide!
-gameover:
-	.bin	0, 0, "art/gameover.sv24"				; uncompressed, 24-byte wide
-numbers:
-	.bin	0, 0, "../../other/data/numbers.sv20"	; generic number images, 20-byte wide
-levelsel:
-	.bin	0, 0, "art/level.sv24"					; uncompressed, 24-byte wide, 23 lines tall
 
 ; ***************************
 ; *** ROM padding and end ***
