@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230103-2037
+; last modified 20230103-2303
 
 ; ****************************
 ; *** hardware definitions ***
@@ -255,7 +255,7 @@ not_st1:
 ; * * STATUS 2, play * * TODO TODO
 	CMP #STAT_PLAY			; selecting level?
 	BNE not_st2
-		TYA					; get this player controller status
+/*		TYA					; get this player controller status
 		BIT #PAD_LEFT		; move to the left?
 		BEQ not_s2l			; not if not pressed
 			CMP padlast, X	; still pressing?
@@ -316,12 +316,12 @@ not_s2f:
 s2end:
 ; move according to Y-direction, if possible
 			JSR chkroom
-
+*/
 
 ; TODO * so far, just die *
-;		LDA poff9, X 
-;		JSR palmatoria
-;		JMP next_player
+		LDX select 
+		JSR palmatoria
+		JMP next_player
 not_move:
 		LDX select
 		LDY pad0val, X		; restore and continue evaluation, is this neeed?
@@ -566,7 +566,7 @@ ras_nw:
 	PLX
 	RTS
 
-; ** death animation ** (non concurrent) new
+; ** death animation ** (non concurrent) new format
 ; input
 ;	X	player [0,128]
 palmatoria:
@@ -619,7 +619,6 @@ dz_show:
 		PLX
 		DEC yb				; one less row
 		BPL dz_row
-	PLX
 	CLI						; *** for non-concurrent version only ***
 ; now print the game over banner
 	LDY #<gameover
@@ -628,18 +627,14 @@ dz_show:
 	STX src+1				; set origin pointer
 	LDA temp				; get X for player field
 	LDY #10					; raster counter
-
+	PLX
 banner:
 ; alternate entry to print a 24*x banner
 ;	Y	= rasters - 1
 ;	X	= player [0-128]
 ;	src		points to .sv24
-
 	STY temp				; counter in memory
-
-	ASL
-	ASL						; times four bytes per column
-	ADC #2					; two extra bytes
+	LDA psum36, X
 	STA ptr
 	LDA #BANNER_PG			; two rows above centre
 	STA ptr+1
