@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230103-1904
+; last modified 20230103-2037
 
 ; ****************************
 ; *** hardware definitions ***
@@ -490,29 +490,6 @@ s_wnw:
 td_exit:
 	RTS
 
-; ** show next column ** new format
-; input
-;	X		player [0-128], displayed at (54,12) & (66,12), a 6-byte offset
-nextcol:
-	LDA poff6, X			; check player for offset
-	CLC
-	ADC #27					; start position for player 1
-	STA ptr
-	LDA #FIELD_PG
-	STA ptr+1				; pointer complete
-	LDY #3					; number of tiles per column
-nc_loop:
-		PHX
-		PHY
-		LDA next_c, X		; get jewel to be displayed
-		JSR tileprn			; just show this tile
-		PLY
-		PLX
-		INX					; next tile in column
-		DEY
-		BNE nc_loop			; all tiles in column done?
-	RTS
-
 ; ** number display ** new format
 ; input
 ;	Y		type of display (0=level, 1=jewels, 2=score)
@@ -821,62 +798,17 @@ ir_nw:
 	PLX						; retrieve and return
 	RTS
 
-; ** clear playfield structure ** new
+; ** clear playfield structure ** new format
 ; input
-;	X	player (0,128)
+;	X	player [0,128]
 clearfield:
-; init player data (this actually creates new column, should be separate)
-/*	PHX
-	JSR nextcol				; display next column
-	PLY
-; init coordinates
-	LDA poff9, Y			; tile offset
-	CLC
-	ADC #3					; fourth column of every player
-	STA x_tile, Y
-	LDA #254				; initial vertical position is -2
-	STA y_tile, Y
-; init matrix
-	LDA poff128, Y			; check player
-	CLC
-	ADC #104				; 13th row
-	TAX
-cl_loop:
-		LDA #$FF			; invalid tile
-		STA field, X		; sentinel
-		STZ field+1, X
-		STZ field+2, X
-		STZ field+3, X
-		STZ field+4, X
-		STZ field+5, X
-		STZ field+6, X
-		STA field+7, X		; sentinel
-		TXA
-		SEC
-		SBC #8
-		TAX
-		AND #$7F			; eeeek
-		BNE cl_loop
-	LDA poff128, Y			; check player
-	CLC
-	ADC #8					; max horiz offset+1
-	TAX
-sfh_loop:
-		LDA #$FF			; invalid tile
-		STA field-1, X		; note offsets
-		STA field+111, X
-		DEX
-		TXA
-		AND #127			; player-independent offset
-		BNE sfh_loop
 ; should clear mode selection banner as well, pretty much like 'banner'
-	LDX #22					; banner rasters - 1
-	LDA poff36, Y			; check player
-	CLC
-	ADC #2					; will be 2 for player 1, 38 for player 2
+	LDA psum36, X			; check player (make sure X is preserved)
 	STA ptr
 	LDA #BANNER_PG			; two rows above centre
 	STA ptr+1
+	LDY #22					; banner rasters - 1
+	STY temp
 clp_vloop:
 		LDY #23				; max horizontal offset
 		LDA #0				; will clear area
@@ -884,7 +816,7 @@ clp_hloop:
 			STA (ptr), Y
 			DEY
 			BPL clp_hloop
-		DEX					; one raster is ready
+		DEC temp			; one raster is ready
 	BMI clp_end
 		LDA ptr
 		CLC
@@ -894,7 +826,42 @@ clp_hloop:
 			INC ptr+1		; there was page crossing
 		BRA clp_vloop
 clp_end:
-*/	RTS
+	PHX
+	JSR gen_col				; create new column, display it and init coordinates
+	PLX
+; init matrix
+	PHX
+	TXA						; check player
+	CLC
+	ADC #118				; last visible tile
+	TAX						; should be recovered later
+	TAY						; faster counter
+cl_loop:
+		STZ field, X		; until all visible tiles are clear
+		DEX
+		DEY					; one less
+		BPL cl_loop
+	LDY #16					; sentinels won't change, can be set for both players always!
+cl_sent:
+		LDA #$FF			; invalid tile
+		STA field, Y		; sentinel
+		STA field+7, Y
+		STA field+128, Y	; sentinel (2nd player)
+		STA field+135, Y
+		TYA
+		CLC
+		ADC #8				; next row
+		TAY
+		BPL cl_sent
+; bottom row of sentinels
+	LDY #121
+	LDA #$FF				; invalid tile
+sfh_loop:
+		STA field, Y
+		STA field+128, Y
+		INX
+		BPL sfh_loop		; last one gets repeated, but no worries
+	RTS
 
 ; ** generate new column with 3 jewels ** new format
 ; input
@@ -930,14 +897,42 @@ gc_jwl:
 			STA next_c, X
 			STA next_c+1, X
 			STA next_c+2, X	; store three jewels
-			BRA gc_clear
+			BRA reset_pos
 gc_nomagic:
 		STA next_c, X		; set next jewel for this player
 		INX
 		DEY					; one jewel less
 		BNE gc_jwl			; until the array is done
-gc_clear:
 	PLX
+; alternative entry point, just in case (X = player 0/128)
+reset_pos:
+	TXA						; player offset
+	CLC
+	ADC #3					; first row (not visible), fourth column of every player
+	STA posit, X			; position set as matrix index
+;	JMP nextcol				; show new column and return
+
+; ** show next column ** new format
+; input
+;	X		player [0-128], displayed at (54,12) & (66,12), a 6-byte offset
+nextcol:
+	LDA poff6, X			; check player for offset
+	CLC
+	ADC #27					; start position for player 1
+	STA ptr
+	LDA #FIELD_PG
+	STA ptr+1				; pointer complete
+	LDY #3					; number of tiles per column
+nc_loop:
+		PHX
+		PHY
+		LDA next_c, X		; get jewel to be displayed
+		JSR tileprn			; just show this tile
+		PLY
+		PLX
+		INX					; next tile in column
+		DEY
+		BNE nc_loop			; all tiles in column done?
 	RTS
 
 ; **********************
