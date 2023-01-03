@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230102-2357
+; last modified 20230102-0125
 
 ; ****************************
 ; *** hardware definitions ***
@@ -29,6 +29,11 @@ IOBeep	= $DFB0
 #define	PAD_DOWN	%00000010
 #define	PAD_RGHT	%00000001
 
+#define	MOV_LEFT	2
+#define	MOV_RGHT	0
+#define	MOV_DOWN	1
+#define	MOV_ROT		3
+
 #define	FIELD_PG	$63
 #define	BANNER_PG	$6C
 
@@ -47,8 +52,9 @@ IOBeep	= $DFB0
 ; *** memory allocation ***
 ; *************************
 status	= 128				; array of player status [0=game over, 1=level select, 2=flashing entry?, 3=playing, 4=flashing?]
-speed	= status+2			; array of 16-bit counters for next event
-s_level	= speed+4			; array for selected difficulty [0-2]
+speed	= status+2			; 8-bit values between events (255 at level 0, halving after that, but never under 5?)
+ev_dly	= speed+2			; array of 8-bit counters for next event (ditto)
+s_level	= ev_dly+2			; array for selected difficulty
 pad0mask= s_level+2			; gamepad masking values
 pad1mask= pad0mask+1
 pad0val	= pad1mask+1		; gamepad current status
@@ -73,8 +79,8 @@ src		= seed+2			; $FC
 ptr		= src+2				; $FE
 ; these save a few bytes and cycles in ZP
 irq_ptr	= ptr+2				; $0200 is standard minimOS, may save a few bytes putting these on ZP
-ticks	= irq_ptr+2			; $0206 but no NMI or BRK in use, and only 16-bit
-_end_zp	= ticks+2
+ticks	= irq_ptr+2			; $0206 but no NMI or BRK in use, and only 8-bit!!
+_end_zp	= ticks+1
 ; these MUST be outside ZP, change start address accordingly
 fields	= $0200				; 8x16 (6x13 actually used) game status arrays (player2 = +128)
 delta	= $0300				; screen change log [0=unchanged, 1=display, 2=flashing counter?]
@@ -201,7 +207,11 @@ not_s1u:
 		BEQ not_st1			; ignore!
 			STA padlast, X	; anyway, register this press
 			LDY s_level, X	; selected level
-			LDA ini_lev, Y	; as index for initial value
+			LDA spd_ini, Y	; intial speed
+			CLC
+			ADC ticks
+			STA ev_dly, X	; compute delay until next event
+			LDA ini_lev, Y	; level as index for initial value
 			PHA				; later...
 			LDA ini_score, Y
 			LDY poff7, X	; reindex for BCD arrays
@@ -239,49 +249,34 @@ not_st1:
 			CMP padlast, X	; still pressing?
 		BEQ not_st2			; ignore either!
 			STA padlast, X	; anyway, register this press
-			JSR chkroom		; is it possible?
-			ASL				; d7=0 means left OK
-		BCS not_st2			; no way!
-			DEC x_tile, X	; otherwise, x is one less
-; TODO * update screen, delta etc * TODO
-			JMP next_player
+			LDY #MOV_LEFT	; otherwise, x is one less
+			BRA s2end
 not_s2l:
 		BIT #PAD_RGHT		; move to the right?
 		BEQ not_s2r			; not if not pressed
 			CMP padlast, X	; still pressing?
 		BEQ not_st2			; ignore either!
 			STA padlast, X	; anyway, register this press
-			JSR chkroom		; is it possible?
-			LSR				; d0=0 means right OK
-		BCS not_st2			; no way!
-			INC x_tile, X	; otherwise, x is one more
-; TODO * update screen, delta etc * TODO
-			JMP next_player
+			LDY #MOV_RGHT	; otherwise, x is one more
+			BRA s2end
 not_s2r:
 		BIT #PAD_DOWN		; let it drop?
 		BEQ not_s2d			; not if not pressed
 ;			CMP padlast, X	; still pressing? don't care, will fall asap
 ;		BEQ not_st2			; ignore either!
 ;			STA padlast, X	; anyway, register this press
-			JSR chkroom		; is it possible?
-			AND #64			; d6=0 means down OK
-		BNE not_st2			; no way!
-			INC y_tile, X	; otherwise, x is one more
-; TODO * update screen, delta etc * TODO
-			JMP next_player
+			LDY #MOV_DOWN	; otherwise, y is one more
+			BRA s2end
 not_s2d:
-		BIT #PAD_FIRE		; let it drop?
-		BEQ not_s2x			; not if not pressed
+		BIT #PAD_FIRE		; flip?
+		BEQ not_s2f			; not if not pressed
 			CMP padlast, X	; still pressing?
 		BEQ not_st2			; ignore either!
 			STA padlast, X	; anyway, register this press
 ; piece rotation
 			LDA #1
 			STA IOBeep		; activate sound...
-;			LDY poff6, X	; reindex for column arrays
-			LDA poff6, X	; reindex for column arrays
-ADC #3; hack to affect next piece
-TAY
+			LDY poff6, X	; reindex for column arrays
 			LDA column0+2, Y
 			PHA				; save last piece
 			LDA column0+1, Y
@@ -291,17 +286,32 @@ TAY
 			PLA
 			STA column0, Y	; and wrap the last one
 			STZ IOBeep		; ...and finish audio pulse
-; TODO * update screen, delta etc * TODO
-JSR nextcol; hack to display
-			JMP next_player
-not_s2x:
+			LDY #MOV_ROT	; this was a rotation
+			BRA s2_end
+not_s2f:
+; in case of timeout, put piece down... or take another
+		LDA ticks
+		LSR					; half the time
+		CMP ev_dly, X
+		BCC s2_end			; if timeout expired...
+			LDA ev_dly, X
+			CLC
+			ADC speed
+			STA ev_dly, X	; update time for next event
+; check if possible to move down * TODO
+
+		
+s2end:
+; move according to Y-direction, if possible
+			JSR chkroom
 
 
 ; TODO * so far, just die *
 ;		LDA poff9, X 
 ;		JSR palmatoria
 ;		JMP next_player
-
+not_move:
+		LDX select
 		LDY pad0val, X		; restore and continue evaluation, is this neeed?
 not_st2:
 
@@ -971,8 +981,8 @@ ps_loop:
 ; *********************************
 isr:
 	INC ticks
-	BNE tk_nw
-		INC ticks+1
+;	BNE tk_nw
+;		INC ticks+1
 tk_nw:
 	PHA						; only register to save for read_pad
 	JSR read_pad
@@ -1003,7 +1013,20 @@ jwl_ix:						; convert random byte into reasonable tile index [1...6] with a few
 	.byt	7, 7, 7, 7		; 252...255 are the magic tiles
 	
 id_table:
-	.byte	0, 1, 2, 3, 4, 5, 6, 7		; useful for ADX/ADY emulation
+	.byt	0, 1, 2, 3, 4, 5, 6, 7		; useful for ADX/ADY emulation
+
+bit_pos:
+	.byt	%00000001, %00000010, %00000100, %00001000		; allowable movements for each direction, ····xLDR
+
+dx_dir:
+	.byt	1, 0, 255, 0	; delta-x for each direction
+dy_dir:
+	.byt	0, 1, 0, 0		; ditto for delta-y
+ix_dir:
+	.byt	1, 8, 255, 0	; matrix index displacement
+
+spd_ini:
+	.byt	127, 3, 2		; initial speed value, halving each level, but never below 4 interrupts (note these are HALF values)
 
 num_bl:						; base addresses of numeric displays (LSB, interleaved $P2P1)
 	.word	$605C			; level $6C5C, $7960 (!)
