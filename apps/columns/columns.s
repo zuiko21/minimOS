@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230103-2359
+; last modified 20230104-0040
 
 ; ****************************
 ; *** hardware definitions ***
@@ -118,13 +118,13 @@ reset:
 	INX						; was $FF, now 0 is the index of compressed file entry
 	JSR dispic				; decompress!
 ; TODO * may check here for supported keyboard presence (col 6 = $2C) * TODO
-; * init game stuff *
+; * init game stuff * actually whole ZP
 	LDA #0
-	LDX #seed-1-status		; will clear everything below seed
+	TAX
 rst_loop:
-		STA status, X
-		DEX
-		BPL rst_loop		; OK if less than 128 bytes
+		STA 0, X			; was status, X
+		INX
+		BNE rst_loop
 ; setup controllers etc (assume minstrel-type kbd)
 	STZ pad0mask
 	STZ pad1mask			; need these reset the very first time
@@ -155,8 +155,7 @@ rst_loop:
 ;sta$df94;enable VSP for debug
 	LDA #STAT_LVL
 	STA status, X			; set new status
-jsr palmatoria
-;	JSR sel_ban
+	JSR sel_ban
 ; *******************************
 ; *** *** main event loop *** ***
 ; *******************************
@@ -227,10 +226,9 @@ not_s1u:
 			LDA ini_lev, Y	; level as index for initial value
 			PHA				; later...
 			LDA ini_score, Y
-			LDY poff7, X	; reindex for BCD arrays
-			STA bcd_arr+DISP_SCO, Y
+;			STA bcd_arr+3, X			; score counter eeeeek
 			PLA
-			STA bcd_arr+DISP_LVL, Y		; place initial values in adequate array indices
+;			STA bcd_arr, X				; place initial values in adequate array indices
 ;			LDX select
 			LDY #DISP_LVL
 			JSR numdisp
@@ -241,7 +239,7 @@ not_s1u:
 			LDY #DISP_SCO
 			JSR numdisp		; display all values
 ; and go into playing mode
-			LDY select
+			LDX select
 			JSR clearfield	; init game matrix and all gameplay status
 			LDX select
 			LDA #STAT_PLAY
@@ -828,7 +826,6 @@ clp_end:
 	JSR gen_col				; create new column, display it and init coordinates
 	PLX
 ; init matrix
-	PHX
 	TXA						; check player
 	CLC
 	ADC #118				; last visible tile
@@ -914,9 +911,7 @@ reset_pos:
 ; input
 ;	X		player [0-128], displayed at (54,12) & (66,12), a 6-byte offset
 nextcol:
-	LDA poff6, X			; check player for offset
-	CLC
-	ADC #27					; start position for player 1
+	LDA psum6, X			; check player for offset
 	STA ptr
 	LDA #FIELD_PG
 	STA ptr+1				; pointer complete
@@ -1033,9 +1028,11 @@ num_bh:						; base addresses of numeric displays (MSB, player 1)
 	.byt	$60				; score $6007
 
 disp_id:
-	.byt	0, 1, 3, 7		; starting offsets on BCD array (player 1)
+	.byt	0, 1, 3, 6		; starting offsets on BCD array (player 1)
 disp_top	= disp_id+1		; limit index for 1, 2 or 3 BCD bytes (2-4-6 digits, player 1)
 
+psum6:
+	.byt	27				; 6-byte offset for next piece
 poff9:
 	.byt	0				; 9-col offset, player 1
 psum36:
@@ -1066,19 +1063,6 @@ ini_score:
 ini_spd:
 	.byt	127, 3, 2		; initial speed value, halving each level, but never below 4 interrupts (note these are HALF values)
 
-;*******
-; revise these!
-
-; player offsets according to routine
-;	.byt	0, 1
-poff6:
-	.byt	0, 6
-poff7:
-	.byt	0, 7
-poff128:
-	.byt	0, 128
-;********
-
 	.dsb	$FD80-*, $FF	; padding to avoid cross-page speed penalty
 
 ; *** data for player 2 *** (labels for convenience, always +128)
@@ -1099,9 +1083,11 @@ num_bh2:					; base addresses of numeric displays (MSB, player 2)
 	.byt	$60				; score $602D
 
 disp_id2:
-	.byt	128, 129, 131, 135			; starting offsets on BCD array (player 2)
+	.byt	128, 129, 131, 134			; starting offsets on BCD array (player 2)
 disp_top2	= disp_id2+1				; limit index for 1, 2 or 3 BCD bytes (2-4-6 digits, player 2)
 
+psum6_2:
+	.byt	33				; 6-byte offset for next piece, player 2
 poff9_2:
 	.byt	9				; 9-col offset, player 2
 psum36_2:
