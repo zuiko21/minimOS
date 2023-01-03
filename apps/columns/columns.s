@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230103-1259
+; last modified 20230103-1904
 
 ; ****************************
 ; *** hardware definitions ***
@@ -144,8 +144,8 @@ rst_loop:
 	JSR continue			; wait for user action
 	LDA ticks
 	STA seed
-	STX seed+1				; quite random seed
-	PHY						; save selected player
+	STY seed+1				; quite random seed
+	PHX						; save selected player
 ; display game field
 	LDX #2					; set compressed file index
 	JSR dispic				; decompress!
@@ -337,7 +337,7 @@ next_player:
 ; *** useful routines ***
 ; ***********************
 
-; ** display one full screen from list index in X (always even) **
+; ** display one full screen from list index in X (always even) ** ok
 dispic:
 	LDY cmpr_pics, X
 	LDA cmpr_pics+1, X
@@ -429,22 +429,24 @@ cd_loop:
 tiledis:
 	TYA						; will be MSB...
 	AND #%01111000			; filter row
+	CMP #120
+		BCS td_exit			; last row (15) is not-visible
+	CMP #16
+		BCC td_exit			; first two rows aren't either
+	SBC #16					; first visible row is 2 (C known set)
 	LSR
 	LSR						; ...two pages per row
 	ADC #FIELD_PG			; place into screen 3, 12 rasters below
 	STA ptr+1				; first address is ready!
 	TYA
+	AND #128
+	TAX						; just sign as player index
+	TYA
 	AND #%00000111			; filter column
 	ASL
 	ASL						; times four bytes per column
-	ADC #2					; first pixel in line is 4, C known clear
+	ADC psum36, X			; first pixel in line is 4, perhaps with 36-byte offset, C known clear
 	STA ptr					; LSB is ready
-	TYA
-	BPL td_p1				; check d7 for player
-		LDA ptr
-		ADC #36				; player 2 adds 9-column (36-byte) offset
-		STA ptr
-td_p1:
 	LDA field, Y			; retrieve tile index
 ; * external interface with tile index in A, for next piece *
 tileprn:
@@ -485,29 +487,29 @@ s_rnw:
 s_wnw:
 		DEX
 		BNE s_rloop			; until all rasters done
+td_exit:
 	RTS
 
-; ** show next column ** new
+; ** show next column ** new format
 ; input
 ;	X		player [0-128], displayed at (54,12) & (66,12), a 6-byte offset
 nextcol:
-	LDY poff6, X			; get byte offset
-	TYA						; eeeeek
+	LDA poff6, X			; check player for offset
 	CLC
 	ADC #27					; start position for player 1
 	STA ptr
 	LDA #FIELD_PG
 	STA ptr+1				; pointer complete
-	LDX #3					; number of tiles per column
+	LDY #3					; number of tiles per column
 nc_loop:
 		PHX
 		PHY
-		LDA next_c, Y		; get jewel to be displayed
+		LDA next_c, X		; get jewel to be displayed
 		JSR tileprn			; just show this tile
 		PLY
 		PLX
-		INY					; next tile in column
-		DEX
+		INX					; next tile in column
+		DEY
 		BNE nc_loop			; all tiles in column done?
 	RTS
 
@@ -589,67 +591,58 @@ ras_nw:
 
 ; ** death animation ** (non concurrent) new
 ; input
-;	X	player (0,128)
+;	X	player [0,128]
 palmatoria:
 	SEI						; *** temporary improvement until the concurrent version ***
-	LDA poff9, X
-	STA temp				; will be constant initial X
-
-	CLC
-	ADC #6					; compute limit
-	STA limit
-	LDY #12					; yb=12
-	STY yb
-	LSR
-	LSR
-	LSR						; divide by 8, is 0 or 1
-	TAX
-;	LDA STAT_OVER			; conveniently zero
+	PHX
+;	LDA STAT_OVER			; conveniently zero, and X is proper player offset
 	STZ status, X			; back to gameover status
 	STZ s_level, X			; reset this too! eeeeeeeek
+	LDA #113				; 1+14*8
+	ORA id_table, X			; first column in new coordinates, plus player offset
+	TAX						; eeeek
+	LDY #15					; needs 16 iterations non-visible rows
+	STY yb
 dz_row:
-		LDY yb
+		LDA #7				; initial explosion tile - 1
 dz_tile:
-		TYA
-		CLC
-		ADC #8				; initial explosion tile
-		SEC
-		SBC yb				; A = Y + 8 - yb
+		INC					; next tile
+		STA temp			; will hold current tile
 		CMP #11
 		BCC dz_nw
 			SBC #11			; 0, then 1 for exit
 dz_nw:
-		CPY #0
-			BMI dz_show
-		CPY #13
-			BCS dz_show		; if Y >= 0 and Y <=12...
-			LDX temp		; retrieve coordinates
+			LDY #6			; six columns
 dz_col:
-				PHA
 				PHX
 				PHY
+				LDA temp	; get tile from here
 				JSR tiledis
 				PLY
 				PLX
-				PLA
 				INX			; next column
-				CPX limit	; limit!!
-				BCC dz_col
+				DEY			; check limit
+				BNE dz_col
 dz_show:
-			INY				; next row
-			DEC				; was tile zero (clear)?
-			BPL dz_tile
-dz_abort:
+			TXA
+			CLC
+			ADC #2			; skip 2 sentinels
+			TAX				; next row index
+			LDA temp
+			BNE dz_tile		; did tile type 0, thus last one
+		TXA
+		SEC
+		SBC #40				; 5 rows back
+		TAX
 		JSR vsync			; wait a bit
 		JSR vsync			; wait a bit
+		PHX
 		LDA #30
-		PHY
 		JSR tone			; brief beep!
-		PLY
-		DEC yb				; next row
-		LDA yb
-		CMP #252			; -4
-		BNE dz_row
+		PLX
+		DEC yb				; one less row
+		BPL dz_row
+	PLX
 	CLI						; *** for non-concurrent version only ***
 ; now print the game over banner
 	LDY #<gameover
@@ -657,13 +650,16 @@ dz_abort:
 	STY src
 	STX src+1				; set origin pointer
 	LDA temp				; get X for player field
-	LDX #10					; raster counter
+	LDY #10					; raster counter
 
 banner:
 ; alternate entry to print a 24*x banner
-;	X	= rasters - 1
-;	A	= base column [0 for player 1, 9 for player 2]
+;	Y	= rasters - 1
+;	X	= player [0-128]
 ;	src		points to .sv24
+
+	STY temp				; counter in memory
+
 	ASL
 	ASL						; times four bytes per column
 	ADC #2					; two extra bytes
@@ -677,7 +673,7 @@ go_hloop:
 			STA (ptr), Y
 			DEY
 			BPL go_hloop
-		DEX					; one raster is ready
+		DEC	temp			; one raster is ready
 	BMI go_end
 		LDA src
 		CLC
@@ -696,12 +692,12 @@ go_nw:
 go_end:
 	RTS
 
-; ** check for available movements **
+; ** check for available movements ** TO DO
 chkroom:
 LDA#0
 RTS
 
-; ** gamepad read **
+; ** gamepad read ** ok
 read_pad:
 	LDA #8
 	STA IO9nlat				; latch controller status
@@ -717,19 +713,19 @@ pad_rdl:
 	STA pad1val
 	RTS
 
-; ** (busy) wait for action ** might be inlined
+; ** (busy) wait for action ** might be inlined * new format
 ; output
-;	Y	selected player (0,1)
+;	X	selected player [0,128]
 continue:
-	LDY #0					; default player number 1
+	LDX #0					; default player number 1
 	LDA #PAD_STRT|PAD_SEL|PAD_FIRE		; look for start, select or fire
 wait_s:
-		INX					; just for random seed setting
+		INY					; just for random seed setting
 		BIT pad0val
 	BNE release
 		BIT pad1val
 		BEQ wait_s
-	INY						; if arrived here, was player 2
+	LDX #128				; if arrived here, was player 2
 release:
 ; must wait for release also
 		BIT pad0val
@@ -738,7 +734,7 @@ release:
 	BNE release
 	RTS
 
-; ** VSYNC **
+; ** VSYNC ** ok
 vsync:
 		BIT IO8blk
 		BVS vsync			; if already in VBlank
@@ -747,7 +743,7 @@ wait_v:
 		BVC wait_v			; wait for VBlank
 	RTS
 
-; ** PRNG **
+; ** PRNG ** ok
 ; based on code from https://codebase64.org/doku.php?id=base:small_fast_16-bit_prng
 rnd:
 	LDA seed
@@ -773,9 +769,9 @@ no_eor:
 	STA seed+1
 	RTS
 
-; ** draw select level menu **
+; ** draw select level menu ** new format
 ; input
-;	X	selected player position (0,1)
+;	X	selected player position [0,128]
 sel_ban:
 	PHX						; eeeek
 ; brief EG arpeggio
@@ -789,19 +785,16 @@ sel_ban:
 	LDX #>levelsel
 	STY src
 	STX src+1				; set origin pointer
-	LDX #22					; raster counter
-	PLY						; proper player position
-	LDA poff9, Y			; proper player index for banner
+	LDY #22					; raster counter
+	PLX						; proper player index for banner
 	JMP banner				; display and return
 
-; ** mark one row as inverted **
+; ** mark one row as inverted ** new format
 ; input
-;	X	player (0,1)
+;	X	player [0,128]
 inv_row:
 	PHX						; must be kept
-	LDA poff36, X
-	CLC
-	ADC #2					; 4 pixels more
+	LDA psum36, X			; horizontal position in raster
 	STA ptr
 	LDA s_level, X			; current level determines row
 	ASL						; times two
@@ -833,7 +826,7 @@ ir_nw:
 ;	X	player (0,128)
 clearfield:
 ; init player data (this actually creates new column, should be separate)
-	PHX
+/*	PHX
 	JSR nextcol				; display next column
 	PLY
 ; init coordinates
@@ -901,7 +894,7 @@ clp_hloop:
 			INC ptr+1		; there was page crossing
 		BRA clp_vloop
 clp_end:
-	RTS
+*/	RTS
 
 ; ** generate new column with 3 jewels ** new format
 ; input
@@ -1047,11 +1040,13 @@ num_bh:						; base addresses of numeric displays (MSB, player 1)
 	.byt	$60				; score $6007
 
 disp_id:
-	.byt	0, 1, 3, 7			; starting offsets on BCD array (player 1)
-disp_top	= disp_id+1			; limit index for 1, 2 or 3 BCD bytes (2-4-6 digits, player 1)
+	.byt	0, 1, 3, 7		; starting offsets on BCD array (player 1)
+disp_top	= disp_id+1		; limit index for 1, 2 or 3 BCD bytes (2-4-6 digits, player 1)
 
 poff9:
-	.byt	0				; 9-col offset b
+	.byt	0				; 9-col offset, player 1
+psum36:
+	.byt	2				; 36-byte x-position, player 1
 
 ; * common data *
 cmpr_pics:					; to be displayed by dispic
@@ -1087,8 +1082,6 @@ poff6:
 	.byt	0, 6
 poff7:
 	.byt	0, 7
-poff36:
-	.byt	0, 36
 poff128:
 	.byt	0, 128
 ;********
@@ -1098,7 +1091,7 @@ poff128:
 ; *** data for player 2 *** (labels for convenience, always +128)
 
 id_table2:
-	.byt	1, 129, 130, 131, 132, 133, 134, 135		; note reindex at 0
+	.byt	128, 129, 130, 131, 132, 133, 134, 135		; no longer reindex at 0
 
 play_col2:					; player display colour
 	.byt	$BB				; lavender pink for player 2
@@ -1115,6 +1108,11 @@ num_bh2:					; base addresses of numeric displays (MSB, player 2)
 disp_id2:
 	.byt	128, 129, 131, 135			; starting offsets on BCD array (player 2)
 disp_top2	= disp_id2+1				; limit index for 1, 2 or 3 BCD bytes (2-4-6 digits, player 2)
+
+poff9_2:
+	.byt	9				; 9-col offset, player 2
+psum36_2:
+	.byt	38				; 36-byte offset, player 2
 
 ; any more?
 
