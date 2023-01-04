@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230104-0128
+; last modified 20230104-1126
 
 ; ****************************
 ; *** hardware definitions ***
@@ -229,17 +229,13 @@ not_s1u:
 			STA bcd_arr+3, X			; score counter eeeeek
 			PLA
 			STA bcd_arr, X				; place initial values in adequate array indices
-;			LDX select
 			LDY #DISP_LVL
 			JSR numdisp
-			LDX select
 			LDY #DISP_JWL
 			JSR numdisp
-			LDX select
 			LDY #DISP_SCO
 			JSR numdisp		; display all values
 ; and go into playing mode
-			LDX select
 			JSR clearfield	; init game matrix and all gameplay status
 			LDX select
 			LDA #STAT_PLAY
@@ -318,9 +314,8 @@ s2end:
 */
 
 ; TODO * so far, just die *
-		LDX select 
 		JSR palmatoria
-		JMP next_player
+;		JMP next_player
 not_move:
 		LDX select
 		LDY pad0val, X		; restore and continue evaluation, is this neeed?
@@ -336,16 +331,19 @@ next_player:
 ; *** useful routines ***
 ; ***********************
 
-; ** display one full screen from list index in X (always even) ** ok
+; ** display one compressed full screen **
+; input
+;	X	index for addresses list (always even)
+; affects all registers
 dispic:
 	LDY cmpr_pics, X
 	LDA cmpr_pics+1, X
 	STY src
 	STA src+1				; set source pointer
 	LDY #<screen3
-	LDX #>screen3			; screen 3 start address
+	LDA #>screen3			; screen 3 start address
 	STY ptr
-	STX ptr+1				; set destination pointer
+	STA ptr+1				; set destination pointer
 ;	JMP rle_loop			; decompress and return!
 
 ; ** RLE decompressor **
@@ -401,7 +399,7 @@ rle_next:
 rle_exit:					; exit decompressor
 	RTS						; EEEEEEEK
 
-; ** display column from 8x16 matrix (6x13 in use) ** TO DO
+; TO DO ** display column from 8x16 matrix (6x13 in use) ** TO DO
 ; input
 ;	X, Y	coordinates in matrix
 ;	A		player [0-1]
@@ -421,13 +419,14 @@ coldisp:
 cd_loop:
 		LDA field, X		; get this tile
 		
-; ** display tile ** new format
+; ** display tile **
 ; input
-;	Y = position index - 1
+;	Y = position index
 ;	A = tile to print!
-; affects 'colour'
+; affects colour, temp2 and all registers (not worth saving here as two entry points)
 tiledis:
 	STA temp2				; eeeeek
+	DEY						; let's be consistent...
 	TYA						; will be MSB...
 	AND #%01111000			; filter row
 	CMP #120
@@ -449,9 +448,23 @@ tiledis:
 	ADC psum36, X			; first pixel in line is 4, perhaps with 36-byte offset, C known clear
 	STA ptr					; LSB is ready
 	LDA temp2				; eeeeek
-; * external interface with tile index in A, for next piece *
+; * external interface for next piece *
+; input
+;	A		tile index
+;	ptr		screen position
+; affects colour and all registers
 tileprn:
 	STA src+1				; temporary MSB
+	LDX #$FF				; full colour by default
+	CMP #MAGIC_JWL			; is it the magic jewel?
+	BNE tp_nm
+tp_rnd:
+		JSR rnd
+		TAX
+		LDY jwl_ix, X		; get some valid colour index
+		LDX magic_colour, Y	; get some valid colour mask
+tp_nm:
+	STX colour				; set colour mask
 	LDA #0					; will be LSB
 	LSR src+1
 	ROR
@@ -469,6 +482,7 @@ s_rloop:
 		LDY #3				; max index per raster
 s_bloop:
 			LDA (src), Y	; get sprite data...
+			AND colour
 			STA (ptr), Y	; ...and place on screen
 			DEY
 			BPL s_bloop		; for all 4 bytes in raster
@@ -491,15 +505,18 @@ s_wnw:
 td_exit:
 	RTS
 
-; ** number display ** new format
+; ** number display **
 ; input
 ;	Y		type of display (0=level, 1=jewels, 2=score)
-;;	X		player [0-128]
-; fixed size; score=6 digits, level=2 digits, jewels=4 digits
-; BCD data array [LJJSSS]
-; fixed player 1 base addresses; score $6007 (14,0), level $6C5C (56,49), jewels $7E4A (20,121)
+;	bcd_arr	scores array
+;	select	player [0-128]
+; affects colour, bcd_lim and all registers
+
+; score=6 digits, level=2 digits, jewels=4 digits
+; BCD data array [LJJSSS], big endian
+; player 1 base addresses; score $6007 (14,0), level $6C5C (56,49), jewels $7E4A (20,121)
 ; player 2 level adds 52 Y-offset! (64,101)
-; fixed player 2 offset; score $26 (90-14), level 4 (actually $D04) (64-56), jewels $24 (92-20)
+; player 2 offset; score $26 (90-14), level 4 (actually $D04) (64-56), jewels $24 (92-20)
 numdisp:
 	LDX select
 	LDA play_col, X			; get colour according to player
@@ -533,7 +550,11 @@ bcd_loop:
 		CPY bcd_lim 		; is it the last one?
 		BNE bcd_loop
 	RTS
-; actual printing, A has BCD nibble
+; * single number printing *
+; input
+;	A		BCD nibble
+;	colour	II format
+; affects A
 bcd_disp:
 	PHX
 	PHY
@@ -558,9 +579,9 @@ n_rast:
 ras_nw:
 		TXA
 		CLC
-		ADC #19				; advance to next raster in font
+		ADC #19				; advance to next raster in font (31 for hex)
 		TAX
-		CPX #140			; within valid raster? (10 numbers * 2 bytes * 7 rasters)
+		CPX #140			; within valid raster? (10 numbers * 2 bytes * 7 rasters) (224 for hex)
 		BCC n_rast
 	INC ptr					; advance digit position
 	INC ptr
@@ -568,17 +589,17 @@ ras_nw:
 	PLX
 	RTS
 
-; ** death animation ** (non concurrent) new format
+; ** death animation ** (non concurrent)
 ; input
-;;	X	player [0,128]
+;	select	player [0,128]
+; affects status, s_level, yb, temp and all registers
 palmatoria:
 	SEI						; *** temporary improvement until the concurrent version ***
-;	PHX
 	LDX select
 ;	LDA STAT_OVER			; conveniently zero, and X is proper player offset
 	STZ status, X			; back to gameover status
 	STZ s_level, X			; reset this too! eeeeeeeek
-	LDA #112				; 14*8
+	LDA #113				; 14*8+1
 	ORA id_table, X			; first column in new coordinates, plus player offset
 	TAY						; eeeek
 	LDX #15					; needs 16 iterations non-visible rows
@@ -630,11 +651,12 @@ dz_show:
 	STX src+1				; set origin pointer
 	LDA temp				; get X for player field
 	LDY #10					; raster counter
-banner:
-; alternate entry to print a 24*x banner
-;	Y	= rasters - 1
-;;	X	= player [0-128]
+; * alternate entry to print a 24*x banner *
+;	Y		rasters - 1
+;	select	player [0-128]
 ;	src		points to .sv24
+; affects temp and all registers
+banner:
 	LDX select
 	STY temp				; counter in memory
 	LDA psum36, X
@@ -667,12 +689,17 @@ go_nw:
 go_end:
 	RTS
 
-; ** check for available movements ** TO DO
+; TO DO ** check for available movements ** TO DO
 chkroom:
 LDA#0
 RTS
 
-; ** gamepad read ** ok
+; ** gamepad read **
+; input
+;	padXmask	previously set inverting mask (0 for positive logic)
+; output
+;	padXval	button pattern
+; affects A
 read_pad:
 	LDA #8
 	STA IO9nlat				; latch controller status
@@ -688,9 +715,11 @@ pad_rdl:
 	STA pad1val
 	RTS
 
-; ** (busy) wait for action ** might be inlined * new format
+; ** (busy) wait for action ** might be inlined
 ; output
 ;	X	selected player [0,128]
+;	Y	randomish number
+; affects all registers
 continue:
 	LDX #0					; default player number 1
 	LDA #PAD_STRT|PAD_SEL|PAD_FIRE		; look for start, select or fire
@@ -709,7 +738,7 @@ release:
 	BNE release
 	RTS
 
-; ** VSYNC ** ok
+; ** VSYNC **
 vsync:
 		BIT IO8blk
 		BVS vsync			; if already in VBlank
@@ -718,8 +747,13 @@ wait_v:
 		BVC wait_v			; wait for VBlank
 	RTS
 
-; ** PRNG ** ok
+; ** PRNG **
 ; based on code from https://codebase64.org/doku.php?id=base:small_fast_16-bit_prng
+; input
+;	seed
+; output
+;	A	random value
+; affects seed and A
 rnd:
 	LDA seed
 		BEQ lo_z
@@ -744,11 +778,11 @@ no_eor:
 	STA seed+1
 	RTS
 
-; ** draw select level menu ** new format
+; ** draw select level menu **
 ; input
-;;	X	selected player position [0,128]
+;	select	player position [0,128] (actually for banner)
+; affects all registers (plus whatever banner does, temp)
 sel_ban:
-;	PHX						; eeeek
 ; brief EG arpeggio
 	LDA #228				; brief E5
 	JSR tone
@@ -761,15 +795,14 @@ sel_ban:
 	STY src
 	STX src+1				; set origin pointer
 	LDY #22					; raster counter
-;	PLX						; proper player index for banner
-;	LDX select
 	JMP banner				; display and return
 
-; ** mark one row as inverted ** new format
+; ** mark one row as inverted **
 ; input
-;;	X	player [0,128]
+;	select	player [0,128]
+;	s_level	currently selected
+; affects all registers
 inv_row:
-;	PHX						; must be kept
 	LDX select
 	LDA psum36, X			; horizontal position in raster
 	STA ptr
@@ -795,13 +828,13 @@ ir_bloop:
 ir_nw:
 		DEX					; one less raster
 		BNE ir_rloop
-	LDX select
-;	PLX						; retrieve and return
+	LDX select				; retrieve and return
 	RTS
 
-; ** clear playfield structure ** new format
+; ** clear playfield structure **
 ; input
-;	X	player [0,128]
+;	select	player [0,128]
+; affects all registers plus whatever gen_col does
 clearfield:
 ; should clear mode selection banner as well, pretty much like 'banner'
 	LDX select
@@ -819,7 +852,7 @@ clp_hloop:
 			DEY
 			BPL clp_hloop
 		DEC temp			; one raster is ready
-	BMI clp_end
+	BMI clp_end				; no more rasters
 		LDA ptr
 		CLC
 		ADC #64				; next raster in screen
@@ -828,12 +861,9 @@ clp_hloop:
 			INC ptr+1		; there was page crossing
 		BRA clp_vloop
 clp_end:
-;	PHX
 	JSR gen_col				; create new column, display it and init coordinates
-;	PLX
 ; init matrix
-;	TXA						; check player
-	LDA select
+	LDA select				; check player
 	CLC
 	ADC #118				; last visible tile
 	TAX						; should be recovered later
@@ -843,12 +873,13 @@ cl_loop:
 		DEX
 		DEY					; one less
 		BPL cl_loop
-	LDY #16					; sentinels won't change, can be set for both players always!
+; sentinels won't ever change, can be always set for both players!
+	LDY #16					; first visible row index
 cl_sent:
 		LDA #$FF			; invalid tile
-		STA field, Y		; sentinel
-		STA field+7, Y
-		STA field+128, Y	; sentinel (2nd player)
+		STA field, Y		; left sentinel
+		STA field+7, Y		; right sentinel
+		STA field+128, Y	; sentinels (2nd player)
 		STA field+135, Y
 		TYA
 		CLC
@@ -865,11 +896,12 @@ sfh_loop:
 		BPL sfh_loop		; last one gets repeated, but no worries
 	RTS
 
-; ** generate new column with 3 jewels ** new format
+; ** generate new column with 3 jewels **
 ; input
-;;	X	player [0-128]
+;	select	player [0-128]
+;	s_level	to allow magic jewels
+; affects column, next_c, posit, colour (via tileprn) and all registers
 gen_col:
-;	PHX
 	LDX select
 ; transfer new column into current
 	LDY #3					; jewels per column
@@ -879,9 +911,7 @@ gc_copy:
 		INX
 		DEY
 		BNE gc_copy
-;	PLX
-;	PHX						; restore player index
-	LDX select
+	LDX select				; restore player index
 	LDY #3					; now I need 3 jewels
 ; generate new jewel
 gc_jwl:
@@ -895,9 +925,7 @@ gc_jwl:
 			LDA s_level, X	; check difficulty
 		BEQ gc_jwl			; not accepted in easy mode
 ; otherwise the magic jewel fills the whole column
-;			PLX
-;			PHX				; otherwise retrieve and restore player index
-			LDX select
+			LDX select		; retrieve player index
 			LDA #7			; magic tile index
 			STA next_c, X
 			STA next_c+1, X
@@ -908,7 +936,6 @@ gc_nomagic:
 		INX
 		DEY					; one jewel less
 		BNE gc_jwl			; until the array is done
-;	PLX
 	LDX select
 ; alternative entry point, just in case (X = player 0/128)
 reset_pos:
@@ -918,9 +945,10 @@ reset_pos:
 	STA posit, X			; position set as matrix index
 ;	JMP nextcol				; show new column and return
 
-; ** show next column ** new format
+; ** show next column **
 ; input
-;;	X		player [0-128], displayed at (54,12) & (66,12), a 6-byte offset
+;	select	player [0-128], displayed at (54,12) & (66,12), a 6-byte offset
+; affects colour (via tileprn) and all registers
 nextcol:
 	LDX select
 	LDA psum6, X			; check player for offset
@@ -955,13 +983,13 @@ match:
 	JSR tone
 	PLY
 	LDA m_tone+1, Y			; last tone
-;	JMP tone
+;	JMP tone				; will fall and return
 
 tone:
 ; ** play tone for 50 cycles **
 ; input A	= period (10+5y)
-; might call x_tone with X	= number of semicycles
 	LDX #99					; 100 semicycles
+; * might call x_tone with X	= number of semicycles *
 x_tone:
 	SEI						; disable interrupts!
 s_tone:
@@ -1075,7 +1103,11 @@ ini_score:
 ini_spd:
 	.byt	127, 3, 2		; initial speed value, halving each level, but never below 4 interrupts (note these are HALF values)
 
-	.dsb	$FD80-*, $FF	; padding to avoid cross-page speed penalty
+magic_colour:
+	.byt	$FF, $22, $33, $77, $55, $99, $AA, $FF	; six jewel colours [1..6], note first and last entries void
+
+
+	.dsb	$FD80-*, $FF	; *** padding to avoid cross-page speed penalty ***
 
 ; *** data for player 2 *** (labels for convenience, always +128)
 
