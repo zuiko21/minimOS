@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230104-1659
+; last modified 20230104-1715
 
 ; ****************************
 ; *** hardware definitions ***
@@ -321,12 +321,13 @@ s2end:
 ;		JSR palmatoria
 ;		JMP next_player
 		LDA #STAT_DIE		; will trigger palmatoria
+		STA status, X		; eeeeeeeeeeeeeeeeeeeeek
 ; prepare loops for the new status
 		LDA #113			; 14*8+1
 		ORA id_table, X		; first column in new coordinates, plus player offset
-		STA die_y			; eeeek
-		LDX #15				; needs 16 iterations non-visible rows
-		STX yb
+		STA die_y, X		; eeeek
+		LDY #15				; needs 16 iterations non-visible rows
+		STY yb, X
 ; now will display the gameover animation concurrently!
 
 not_move:
@@ -335,13 +336,13 @@ not_move:
 not_st2:
 ; * * STATUS 3, blink * * TO DO
 
+	LDA status, X
 ; * * STATUS 4, die * * IN THE MAKING
 	CMP #STAT_DIE			; just died?
 	BNE not_st4
-		LDX select			; just in case...
 		JSR palmatoria		; will switch to STAT_OVER when finished
 
-not_st4
+not_st4:
 next_player:
 	LDA select
 	EOR #128				; toggle player in event manager
@@ -617,7 +618,7 @@ ras_nw:
 palmatoria:
 ; these will go after the last one
 ; id while changing status
-		LDX status
+		LDX select			; eeeeeeeeeek
 		LDA #7				; initial explosion tile - 1
 		LDY die_y, X
 dz_tile:
