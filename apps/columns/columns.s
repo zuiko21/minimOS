@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230104-1126
+; last modified 20230104-1308
 
 ; ****************************
 ; *** hardware definitions ***
@@ -325,6 +325,15 @@ next_player:
 	LDA select
 	EOR #128				; toggle player in event manager
 	STA select
+; check possible colour animation on magic jewel
+	LDX select				; just in case...
+	LDA next_c, X
+	CMP #MAGIC_JWL			; is the magic jewel next?
+	BNE nx_nonmagic
+		JSR magic_jewel		; pick one random colour
+		JSR nextcol			; and redisplay it
+nx_nonmagic:
+; TO DO * the same with player column *
 	JMP loop
 
 ; ***********************
@@ -423,7 +432,7 @@ cd_loop:
 ; input
 ;	Y = position index
 ;	A = tile to print!
-; affects colour, temp2 and all registers (not worth saving here as two entry points)
+; affects temp2 and all registers (not worth saving here as two entry points)
 tiledis:
 	STA temp2				; eeeeek
 	DEY						; let's be consistent...
@@ -452,19 +461,10 @@ tiledis:
 ; input
 ;	A		tile index
 ;	ptr		screen position
-; affects colour and all registers
+;	colour	mask for magic jewel
+; affects all registers
 tileprn:
 	STA src+1				; temporary MSB
-	LDX #$FF				; full colour by default
-	CMP #MAGIC_JWL			; is it the magic jewel?
-	BNE tp_nm
-tp_rnd:
-		JSR rnd
-		TAX
-		LDY jwl_ix, X		; get some valid colour index
-		LDX magic_colour, Y	; get some valid colour mask
-tp_nm:
-	STX colour				; set colour mask
 	LDA #0					; will be LSB
 	LSR src+1
 	ROR
@@ -900,7 +900,7 @@ sfh_loop:
 ; input
 ;	select	player [0-128]
 ;	s_level	to allow magic jewels
-; affects column, next_c, posit, colour (via tileprn) and all registers
+; affects column, next_c, posit, colour and all registers
 gen_col:
 	LDX select
 ; transfer new column into current
@@ -930,15 +930,18 @@ gc_jwl:
 			STA next_c, X
 			STA next_c+1, X
 			STA next_c+2, X	; store three jewels
-			BRA reset_pos
+			JSR magic_jewel	; adjust colour
+			BRA was_magic
 gc_nomagic:
 		STA next_c, X		; set next jewel for this player
 		INX
 		DEY					; one jewel less
 		BNE gc_jwl			; until the array is done
+	LDX #$FF
+	STA colour				; respect original jewel colours
+was_magic:
 	LDX select
 ; alternative entry point, just in case (X = player 0/128)
-reset_pos:
 	TXA						; player offset
 	CLC
 	ADC #3					; first row (not visible), fourth column of every player
@@ -968,6 +971,15 @@ nc_loop:
 		BNE nc_loop			; all tiles in column done?
 	RTS
 
+; ** magic jewel colour animation **
+; affects colour and all registers
+magic_jewel:
+	JSR rnd
+	TAX
+	LDY jwl_ix, X			; get some valid colour index
+	LDX magic_colour, Y		; get some valid colour mask
+	STX colour				; set colour mask
+	RTS
 ; **********************
 ; *** sound routines ***
 ; **********************
