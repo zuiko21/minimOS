@@ -938,7 +938,7 @@ gc_nomagic:
 		DEY					; one jewel less
 		BNE gc_jwl			; until the array is done
 	LDX #$FF
-	STA colour				; respect original jewel colours
+	STX colour				; respect original jewel colours
 was_magic:
 	LDX select
 ; alternative entry point, just in case (X = player 0/128)
