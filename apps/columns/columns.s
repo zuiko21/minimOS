@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230104-2221
+; last modified 20230104-2332
 
 ; ****************************
 ; *** hardware definitions ***
@@ -78,13 +78,14 @@ temp	= temp2+1
 select	= temp+1			; player iteration in main loop
 bcd_lim	= select+1
 colour	= bcd_lim+1
-seed	= colour+14			; PRNG seed
+seed	= colour+1			; PRNG seed
 ; may let these at $FC for minimOS compliance
 src		= seed+2			; $FC
 ptr		= src+2				; $FE
 ; these save a few bytes and cycles in ZP
 irq_ptr	= ptr+2				; $0200 is standard minimOS, may save a few bytes putting these on ZP
 ticks	= irq_ptr+2			; $0206 but no NMI or BRK in use, and only 8-bit!!
+ticks_h	= ticks+1
 ; player 2 data for convenience
 status2	= 192				; player status [0=game over, 1=level select, 2=playing, 3=flashing?]
 speed2	= status2+1			; 7-bit value between events (127 at level 0, halving after that, but never under 5?)
@@ -117,7 +118,7 @@ reset:
 ; Durango-X specifics
 	STX IOAie				; enable interrupts, as X is an odd value
 	STX ticks
-	STX ticks+1				; will reach zero upon the very first interrupt
+;	STX ticks+1				; will reach zero upon the very first interrupt
 	LDA #$38				; colour mode, screen 3, RGB
 	STA IO8attr				; set video mode
 ; show splash screen
@@ -223,10 +224,8 @@ not_s1u:
 		BEQ not_st1			; ignore!
 			STA padlast, X	; anyway, register this press
 			LDY s_level, X	; selected level
-			LDA ini_spd, Y	; intial speed
-			CLC
-			ADC ticks
-			STA ev_dly, X	; compute delay until next event
+			LDA ini_spd, Y
+			STA speed, X	; eeeeek
 			LDA ini_lev, Y	; level as index for initial value
 			PHA				; later...
 			LDA ini_score, Y
@@ -242,6 +241,10 @@ not_s1u:
 ; and go into playing mode
 			JSR clearfield	; init game matrix and all gameplay status
 			LDX select
+			LDA speed, X	; eeeeek
+			CLC
+			ADC ticks
+			STA ev_dly, X	; compute delay until next event
 			LDA #STAT_PLAY
 			STA status, X
 ; TODO * I believe some screen init is needed here * TODO
@@ -299,23 +302,59 @@ not_s2d:
 			STZ IOBeep		; ...and finish audio pulse
 			LDY #MOV_ROT	; this was a rotation
 			BRA s2end
+*/
 not_s2f:
 ; in case of timeout, put piece down... or take another
 		LDA ticks
-		LSR					; half the time
 		CMP ev_dly, X
 		BCC s2end			; if timeout expired...
-			LDA ev_dly, X
+;			LDA ev_dly, X
 			CLC
-			ADC speed
+			ADC speed, X
 			STA ev_dly, X	; update time for next event
 ; check if possible to move down * TODO
 
+			LDY posit, X
+			PHY
+			LDA #0
+			JSR tiledis		; clear topmost tile
+			PLA
+			CLC
+			ADC #8
+			PHA
+			TAY
+			LDX select
+			LDA column, X
+			JSR tiledis		; show top tile
+			PLA
+			CLC
+			ADC #8
+			PHA
+			TAY
+			LDX select
+			LDA column+1, X
+			JSR tiledis		; middle one
+			PLA
+			CLC
+			ADC #8
+			PHA
+			TAY
+			LDX select
+			LDA column+2, X
+			JSR tiledis		; and bottom one
+			PLA
+			SEC
+			SBC #16			; back to topmost tile
+			LDX select
+			STA posit, X
 s2end:
 ; move according to Y-direction, if possible
-			JSR chkroom
-*/
-
+;			JSR chkroom
+;*/
+		LDA posit, X
+		AND #$7F
+		CMP #%01100000	; row 12
+		BCC not_move
 ; TODO * so far, just die *
 ;		JSR palmatoria
 ;		JMP next_player
@@ -881,6 +920,7 @@ clp_hloop:
 		BRA clp_vloop
 clp_end:
 	JSR gen_col				; create new column, display it and init coordinates
+	JSR gen_col				; needs another one for the current jewel!
 ; init matrix
 	LDA select				; check player
 	CLC
@@ -963,7 +1003,7 @@ was_magic:
 ; alternative entry point, just in case (X = player 0/128)
 	TXA						; player offset
 	CLC
-	ADC #3					; first row (not visible), fourth column of every player
+	ADC #4					; first row (not visible), fourth column of every player
 	STA posit, X			; position set as matrix index
 ;	JMP nextcol				; show new column and return
 
@@ -1048,11 +1088,14 @@ ps_loop:
 ; *** interrupt service routine ***
 ; *********************************
 isr:
-	INC ticks
-;	BNE tk_nw
-;		INC ticks+1
+	PHA
+	INC ticks_h				; main will increment every other 2
+	LDA ticks_h
+	AND #1					; check even/odd
+	BEQ tk_nw
+		INC ticks
 tk_nw:
-	PHA						; only register to save for read_pad
+;	PHA						; only register to save for read_pad
 	JSR read_pad
 	PLA
 ; TODO * read keyboard too? * TODO * as keypad emulation
@@ -1132,7 +1175,7 @@ ini_score:
 	.byt	0, 2, 5			; "third" byte initial score (BCD)
 
 ini_spd:
-	.byt	127, 3, 2		; initial speed value, halving each level, but never below 4 interrupts (note these are HALF values)
+	.byt	125, 32, 8;127, 3, 2		; initial speed value, halving each level, but never below 4 interrupts (note these are HALF values)
 
 magic_colour:
 	.byt	$FF, $22, $33, $77, $55, $99, $AA, $FF	; six jewel colours [1..6], note first and last entries void
