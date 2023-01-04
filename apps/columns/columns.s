@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230104-1715
+; last modified 20230104-2158
 
 ; ****************************
 ; *** hardware definitions ***
@@ -168,7 +168,7 @@ loop:
 	LDY pad0val, X			; ...and its controller status
 	BNE chk_stat			; some buttons were pressed
 		STZ padlast, X		; otherwise clear that
-		JMP next_player		; does this make sense?
+;		JMP next_player		; does this make sense?
 chk_stat:
 	LDA status, X			; check status of current player
 ; * * STATUS 0, game over * *
@@ -334,6 +334,7 @@ not_move:
 		LDX select
 		LDY pad0val, X		; restore and continue evaluation, is this neeed?
 not_st2:
+
 ; * * STATUS 3, blink * * TO DO
 
 	LDA status, X
@@ -625,7 +626,7 @@ dz_tile:
 			INC				; next tile
 			CMP #NUM_JWLS+1
 			BNE dz_nw
-				LDA #0		; 0, then 1 for exit
+				LDA #0		; 0, then exit
 dz_nw:
 			STA temp		; will hold current tile
 			LDX #6			; six columns
