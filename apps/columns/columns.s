@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230104-0040
+; last modified 20230104-0128
 
 ; ****************************
 ; *** hardware definitions ***
@@ -68,7 +68,7 @@ next_c	= column+3			; next piece
 posit	= next_c+3			; position in 8x16 matrix
 bcd_arr	= posit+1			; level/jewels/score arrays [LJJSSS] in BCD
 ; common data (non-duplicated)
-yb		= posit+1			; base row for death animation (may become an array)
+yb		= bcd_arr+6			; base row for death animation (may become an array)
 temp2	= yb+1				; now another temporary
 temp	= temp2+1
 select	= temp+1			; player iteration in main loop
@@ -92,7 +92,7 @@ next_c2	= column2+3			; next piece
 posit2	= next_c2+3			; position in 8x16 matrix
 bcd_arr2= posit2+1			; level/jewels/score arrays [LJJSSS] in BCD
 
-_end_zp	= posit2+1
+_end_zp	= bcd_arr2+1
 ; these MUST be outside ZP, change start address accordingly
 field	= $0200				; 8x16 (6x13 visible) game status arrays (player2 = +128)
 ;field2	= $0280
@@ -145,12 +145,12 @@ rst_loop:
 	LDA ticks
 	STA seed
 	STY seed+1				; quite random seed
-	PHX						; save selected player
+	STX select				; save selected player
 ; display game field
 	LDX #2					; set compressed file index
 	JSR dispic				; decompress!
 ; then level selection according to player
-	PLX						; retieve selected player
+	LDX select				; retieve selected player
 ;lda#$f0
 ;sta$df94;enable VSP for debug
 	LDA #STAT_LVL
@@ -226,9 +226,9 @@ not_s1u:
 			LDA ini_lev, Y	; level as index for initial value
 			PHA				; later...
 			LDA ini_score, Y
-;			STA bcd_arr+3, X			; score counter eeeeek
+			STA bcd_arr+3, X			; score counter eeeeek
 			PLA
-;			STA bcd_arr, X				; place initial values in adequate array indices
+			STA bcd_arr, X				; place initial values in adequate array indices
 ;			LDX select
 			LDY #DISP_LVL
 			JSR numdisp
@@ -494,13 +494,14 @@ td_exit:
 ; ** number display ** new format
 ; input
 ;	Y		type of display (0=level, 1=jewels, 2=score)
-;	X		player [0-128]
+;;	X		player [0-128]
 ; fixed size; score=6 digits, level=2 digits, jewels=4 digits
 ; BCD data array [LJJSSS]
 ; fixed player 1 base addresses; score $6007 (14,0), level $6C5C (56,49), jewels $7E4A (20,121)
 ; player 2 level adds 52 Y-offset! (64,101)
 ; fixed player 2 offset; score $26 (90-14), level 4 (actually $D04) (64-56), jewels $24 (92-20)
 numdisp:
+	LDX select
 	LDA play_col, X			; get colour according to player
 	STA colour				; set colour
 	TXA						; player offset
@@ -569,10 +570,11 @@ ras_nw:
 
 ; ** death animation ** (non concurrent) new format
 ; input
-;	X	player [0,128]
+;;	X	player [0,128]
 palmatoria:
 	SEI						; *** temporary improvement until the concurrent version ***
-	PHX
+;	PHX
+	LDX select
 ;	LDA STAT_OVER			; conveniently zero, and X is proper player offset
 	STZ status, X			; back to gameover status
 	STZ s_level, X			; reset this too! eeeeeeeek
@@ -628,12 +630,12 @@ dz_show:
 	STX src+1				; set origin pointer
 	LDA temp				; get X for player field
 	LDY #10					; raster counter
-	PLX
 banner:
 ; alternate entry to print a 24*x banner
 ;	Y	= rasters - 1
-;	X	= player [0-128]
+;;	X	= player [0-128]
 ;	src		points to .sv24
+	LDX select
 	STY temp				; counter in memory
 	LDA psum36, X
 	STA ptr
@@ -744,9 +746,9 @@ no_eor:
 
 ; ** draw select level menu ** new format
 ; input
-;	X	selected player position [0,128]
+;;	X	selected player position [0,128]
 sel_ban:
-	PHX						; eeeek
+;	PHX						; eeeek
 ; brief EG arpeggio
 	LDA #228				; brief E5
 	JSR tone
@@ -759,14 +761,16 @@ sel_ban:
 	STY src
 	STX src+1				; set origin pointer
 	LDY #22					; raster counter
-	PLX						; proper player index for banner
+;	PLX						; proper player index for banner
+;	LDX select
 	JMP banner				; display and return
 
 ; ** mark one row as inverted ** new format
 ; input
-;	X	player [0,128]
+;;	X	player [0,128]
 inv_row:
-	PHX						; must be kept
+;	PHX						; must be kept
+	LDX select
 	LDA psum36, X			; horizontal position in raster
 	STA ptr
 	LDA s_level, X			; current level determines row
@@ -791,7 +795,8 @@ ir_bloop:
 ir_nw:
 		DEX					; one less raster
 		BNE ir_rloop
-	PLX						; retrieve and return
+	LDX select
+;	PLX						; retrieve and return
 	RTS
 
 ; ** clear playfield structure ** new format
@@ -799,6 +804,7 @@ ir_nw:
 ;	X	player [0,128]
 clearfield:
 ; should clear mode selection banner as well, pretty much like 'banner'
+	LDX select
 	LDA psum36, X			; check player (make sure X is preserved)
 	STA ptr
 	LDA #BANNER_PG			; two rows above centre
@@ -822,11 +828,12 @@ clp_hloop:
 			INC ptr+1		; there was page crossing
 		BRA clp_vloop
 clp_end:
-	PHX
+;	PHX
 	JSR gen_col				; create new column, display it and init coordinates
-	PLX
+;	PLX
 ; init matrix
-	TXA						; check player
+;	TXA						; check player
+	LDA select
 	CLC
 	ADC #118				; last visible tile
 	TAX						; should be recovered later
@@ -860,9 +867,10 @@ sfh_loop:
 
 ; ** generate new column with 3 jewels ** new format
 ; input
-;	X	player [0-128]
+;;	X	player [0-128]
 gen_col:
-	PHX
+;	PHX
+	LDX select
 ; transfer new column into current
 	LDY #3					; jewels per column
 gc_copy:
@@ -871,8 +879,9 @@ gc_copy:
 		INX
 		DEY
 		BNE gc_copy
-	PLX
-	PHX						; restore player index
+;	PLX
+;	PHX						; restore player index
+	LDX select
 	LDY #3					; now I need 3 jewels
 ; generate new jewel
 gc_jwl:
@@ -886,8 +895,9 @@ gc_jwl:
 			LDA s_level, X	; check difficulty
 		BEQ gc_jwl			; not accepted in easy mode
 ; otherwise the magic jewel fills the whole column
-			PLX
-			PHX				; otherwise retrieve and restore player index
+;			PLX
+;			PHX				; otherwise retrieve and restore player index
+			LDX select
 			LDA #7			; magic tile index
 			STA next_c, X
 			STA next_c+1, X
@@ -898,7 +908,8 @@ gc_nomagic:
 		INX
 		DEY					; one jewel less
 		BNE gc_jwl			; until the array is done
-	PLX
+;	PLX
+	LDX select
 ; alternative entry point, just in case (X = player 0/128)
 reset_pos:
 	TXA						; player offset
@@ -909,8 +920,9 @@ reset_pos:
 
 ; ** show next column ** new format
 ; input
-;	X		player [0-128], displayed at (54,12) & (66,12), a 6-byte offset
+;;	X		player [0-128], displayed at (54,12) & (66,12), a 6-byte offset
 nextcol:
+	LDX select
 	LDA psum6, X			; check player for offset
 	STA ptr
 	LDA #FIELD_PG
