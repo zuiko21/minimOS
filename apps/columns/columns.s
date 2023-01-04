@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230104-2158
+; last modified 20230104-2221
 
 ; ****************************
 ; *** hardware definitions ***
@@ -311,7 +311,6 @@ not_s2f:
 			STA ev_dly, X	; update time for next event
 ; check if possible to move down * TODO
 
-		
 s2end:
 ; move according to Y-direction, if possible
 			JSR chkroom
@@ -656,7 +655,8 @@ dz_show:
 		JSR vsync			; wait a bit
 		LDA #30
 		JSR tone			; brief beep!
-		DEC yb				; one less row
+		LDX select
+		DEC yb, X			; one less row
 		BPL go_end			; not the last, give CPU back
 ; all finished, change status to definitive
 	LDX select
