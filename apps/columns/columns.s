@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230104-1630
+; last modified 20230104-1659
 
 ; ****************************
 ; *** hardware definitions ***
@@ -70,9 +70,10 @@ column	= padlast+1			; current column
 next_c	= column+3			; next piece
 posit	= next_c+3			; position in 8x16 matrix
 bcd_arr	= posit+1			; level/jewels/score arrays [LJJSSS] in BCD
+yb		= bcd_arr+6			; base row for death animation
+die_y	= yb+1				; current death animation index (formerly Y)
 ; common data (non-duplicated)
-yb		= bcd_arr+6			; base row for death animation (may become an array)
-temp2	= yb+1				; now another temporary
+temp2	= die_y+1			; now another temporary
 temp	= temp2+1
 select	= temp+1			; player iteration in main loop
 bcd_lim	= select+1
@@ -94,8 +95,10 @@ column2	= padlast2+1		; current column
 next_c2	= column2+3			; next piece
 posit2	= next_c2+3			; position in 8x16 matrix
 bcd_arr2= posit2+1			; level/jewels/score arrays [LJJSSS] in BCD
+yb2		= bcd_arr2+6		; base row for death animation
+die_y2	= yb2+1				; current death animation index (formerly Y)
 
-_end_zp	= bcd_arr2+1
+_end_zp	= die_y2+1
 ; these MUST be outside ZP, change start address accordingly
 field	= $0200				; 8x16 (6x13 visible) game status arrays (player2 = +128)
 ;field2	= $0280
@@ -248,7 +251,7 @@ s1_nw:
 		LDY pad0val, X		; restore and continue evaluation
 not_st1:
 	LDA status, X
-; * * STATUS 2, play * * TODO TODO
+; * * STATUS 2, play * * IN THE MAKING
 	CMP #STAT_PLAY			; selecting level?
 	BNE not_st2
 /*		TYA					; get this player controller status
@@ -315,13 +318,30 @@ s2end:
 */
 
 ; TODO * so far, just die *
-		JSR palmatoria
+;		JSR palmatoria
 ;		JMP next_player
+		LDA #STAT_DIE		; will trigger palmatoria
+; prepare loops for the new status
+		LDA #113			; 14*8+1
+		ORA id_table, X		; first column in new coordinates, plus player offset
+		STA die_y			; eeeek
+		LDX #15				; needs 16 iterations non-visible rows
+		STX yb
+; now will display the gameover animation concurrently!
+
 not_move:
 		LDX select
 		LDY pad0val, X		; restore and continue evaluation, is this neeed?
 not_st2:
+; * * STATUS 3, blink * * TO DO
 
+; * * STATUS 4, die * * IN THE MAKING
+	CMP #STAT_DIE			; just died?
+	BNE not_st4
+		LDX select			; just in case...
+		JSR palmatoria		; will switch to STAT_OVER when finished
+
+not_st4
 next_player:
 	LDA select
 	EOR #128				; toggle player in event manager
@@ -590,23 +610,16 @@ ras_nw:
 	PLX
 	RTS
 
-; ** death animation ** (non concurrent)
+; ** death animation ** (concurrent IN THE MAKING)
 ; input
 ;	select	player [0,128]
-; affects status, s_level, yb, temp and all registers
+; affects status, s_level, yb, die_y, temp and all registers
 palmatoria:
-	SEI						; *** temporary improvement until the concurrent version ***
-	LDX select
-;	LDA STAT_OVER			; conveniently zero, and X is proper player offset
-	STZ status, X			; back to gameover status
-	STZ s_level, X			; reset this too! eeeeeeeek
-	LDA #113				; 14*8+1
-	ORA id_table, X			; first column in new coordinates, plus player offset
-	TAY						; eeeek
-	LDX #15					; needs 16 iterations non-visible rows
-	STX yb
-dz_row:
+; these will go after the last one
+; id while changing status
+		LDX status
 		LDA #7				; initial explosion tile - 1
+		LDY die_y, X
 dz_tile:
 			INC				; next tile
 			CMP #NUM_JWLS+1
@@ -635,16 +648,19 @@ dz_show:
 		TYA
 		SEC
 		SBC #40				; 5 rows back
-		TAY
+		LDX select
+		STA die_y, X		; store for next call!
 		JSR vsync			; wait a bit
 		JSR vsync			; wait a bit
 		LDA #30
-		PHY
 		JSR tone			; brief beep!
-		PLY					; eeeek
 		DEC yb				; one less row
-		BPL dz_row
-	CLI						; *** for non-concurrent version only ***
+		BPL go_end			; not the last, give CPU back
+; all finished, change status to definitive
+	LDX select
+;	LDA STAT_OVER			; conveniently zero, and X is proper player offset
+	STZ status, X			; back to gameover status
+	STZ s_level, X			; reset this too! eeeeeeeek
 ; now print the game over banner
 	LDY #<gameover
 	LDX #>gameover
