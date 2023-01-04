@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230104-1308
+; last modified 20230104-1630
 
 ; ****************************
 ; *** hardware definitions ***
@@ -44,9 +44,12 @@ IOBeep	= $DFB0
 #define	STAT_OVER	0
 #define	STAT_LVL	1
 #define	STAT_PLAY	2
-#define	STAT_BLINK	3
+#define	STAT_BLNK	3
+#define	STAT_DIE	4
 
 #define	NUM_LVLS	3
+
+#define	NUM_JWLS	10
 
 #define	MAGIC_JWL	7
 
@@ -151,8 +154,6 @@ rst_loop:
 	JSR dispic				; decompress!
 ; then level selection according to player
 	LDX select				; retieve selected player
-;lda#$f0
-;sta$df94;enable VSP for debug
 	LDA #STAT_LVL
 	STA status, X			; set new status
 	JSR sel_ban
@@ -608,7 +609,7 @@ dz_row:
 		LDA #7				; initial explosion tile - 1
 dz_tile:
 			INC				; next tile
-			CMP #11
+			CMP #NUM_JWLS+1
 			BNE dz_nw
 				LDA #0		; 0, then 1 for exit
 dz_nw:
