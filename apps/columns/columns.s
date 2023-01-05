@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230105-1128
+; last modified 20230105-1131
 
 ; ****************************
 ; *** hardware definitions ***
@@ -737,7 +737,7 @@ go_hloop:
 			DEY
 			BPL go_hloop
 		DEC	temp			; one raster is ready
-	BMI go_end
+	BMI go_exit
 		LDA src
 		CLC
 		ADC #24				; next raster in image
