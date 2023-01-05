@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230104-2332
+; last modified 20230105-1128
 
 ; ****************************
 ; *** hardware definitions ***
@@ -366,6 +366,9 @@ s2end:
 		STA die_y, X		; eeeek
 		LDY #15				; needs 16 iterations non-visible rows
 		STY yb, X
+; start this animation immediatly, then once every 5 ticks (10 interrupts ~ 2 fields)
+		LDA ticks
+		STA ev_dly, X
 ; now will display the gameover animation concurrently!
 
 not_move:
@@ -376,12 +379,18 @@ not_st2:
 ; * * STATUS 3, blink * * TO DO
 
 	LDA status, X
-; * * STATUS 4, die * * IN THE MAKING
+; * * STATUS 4, die * *
 	CMP #STAT_DIE			; just died?
 	BNE not_st4
-		JSR palmatoria		; will switch to STAT_OVER when finished
-
+		LDA ticks
+		CMP ev_dly, X
+		BCC not_st4			; if timeout expired...
+			CLC
+			ADC #5			; next in 5 ticks
+			STA ev_dly, X	; update time for next event
+			JSR palmatoria	; will switch to STAT_OVER when finished
 not_st4:
+
 next_player:
 	LDA select
 	EOR #128				; toggle player in event manager
@@ -690,13 +699,12 @@ dz_show:
 		SBC #40				; 5 rows back
 		LDX select
 		STA die_y, X		; store for next call!
-		JSR vsync			; wait a bit
-		JSR vsync			; wait a bit
+; no wait here, will be called every 10 interrupts
 		LDA #30
 		JSR tone			; brief beep!
 		LDX select
 		DEC yb, X			; one less row
-		BPL go_end			; not the last, give CPU back
+		BPL go_exit			; not the last, give CPU back
 ; all finished, change status to definitive
 	LDX select
 ;	LDA STAT_OVER			; conveniently zero, and X is proper player offset
@@ -744,7 +752,7 @@ go_nw:
 		BCC go_vloop
 			INC ptr+1		; there was page crossing
 		BRA go_vloop
-go_end:
+go_exit:
 	RTS
 
 ; TO DO ** check for available movements ** TO DO
