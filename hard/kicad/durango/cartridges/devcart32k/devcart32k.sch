@@ -20,7 +20,7 @@ U 1 1 6248CC58
 P 2900 2375
 F 0 "U1" H 2725 1325 50  0000 C CNN
 F 1 "27/28C256" H 3150 1325 50  0000 C CNN
-F 2 "Package_DIP:DIP-28_W15.24mm_Socket" H 2900 2375 50  0001 C CNN
+F 2 "Socket:DIP_Socket-28_W11.9_W12.7_W15.24_W17.78_W18.5_3M_228-1277-00-0602J" H 2900 2375 50  0001 C CNN
 F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/doc0015.pdf" H 2900 2375 50  0001 C CNN
 	1    2900 2375
 	1    0    0    -1  
@@ -74,7 +74,7 @@ L edge_conn:Durango_ROM J1
 U 1 1 629256A2
 P 1550 2225
 F 0 "J1" H 1725 3300 50  0000 C CNN
-F 1 "Edge Connector" H 1225 3300 50  0000 C CNN
+F 1 "to Computer" H 1225 3300 50  0000 C CNN
 F 2 "edge_conn:Durango_ROM" H 1250 1225 50  0001 C CNN
 F 3 "" H 1250 1225 50  0001 C CNN
 	1    1550 2225
@@ -1006,17 +1006,6 @@ Wire Wire Line
 Wire Wire Line
 	2575 7250 3050 7250
 Connection ~ 2575 5375
-$Comp
-L Connector_Generic:Conn_01x08 J2
-U 1 1 63F6CEF4
-P 6900 5350
-F 0 "J2" H 6980 5342 50  0000 L CNN
-F 1 "SD Interface" H 6980 5251 50  0000 L CNN
-F 2 "Connector_PinSocket_2.54mm:PinSocket_1x08_P2.54mm_Vertical" H 6900 5350 50  0001 C CNN
-F 3 "~" H 6900 5350 50  0001 C CNN
-	1    6900 5350
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	5950 5750 6700 5750
 Wire Wire Line
@@ -1028,6 +1017,43 @@ Wire Wire Line
 	6650 3725 6650 5250
 Wire Wire Line
 	6650 5250 6700 5250
+Connection ~ 4950 3725
+Text Label 6700 5350 2    50   ~ 0
+~SSEL
+Text Label 6700 5450 2    50   ~ 0
+MOSI
+Text Label 6700 5550 2    50   ~ 0
+MCLK
+Text Label 6700 5650 2    50   ~ 0
+MISO
+$Comp
+L Connector_Generic:Conn_02x08_Odd_Even J2
+U 1 1 63B847A5
+P 6900 5350
+F 0 "J2" H 6950 5867 50  0000 C CNN
+F 1 "SD Interface" H 6950 5776 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x08_P2.54mm_Vertical" H 6900 5350 50  0001 C CNN
+F 3 "~" H 6900 5350 50  0001 C CNN
+	1    6900 5350
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	6700 5050 7200 5050
+Connection ~ 6700 5050
+NoConn ~ 7200 5150
+Wire Wire Line
+	6700 5250 7200 5250
+Connection ~ 6700 5250
+Wire Wire Line
+	6700 5350 7200 5350
+Wire Wire Line
+	6700 5450 7200 5450
+Wire Wire Line
+	6700 5550 7200 5550
+Wire Wire Line
+	6700 5650 7200 5650
+Wire Wire Line
+	6700 5750 7200 5750
 Wire Bus Line
 	3550 875  3550 2075
 Wire Bus Line
@@ -1038,13 +1064,40 @@ Wire Bus Line
 	3975 775  3975 2750
 Wire Bus Line
 	5700 875  5700 4750
-Connection ~ 4950 3725
-Text Label 6700 5350 2    50   ~ 0
-~SSEL
-Text Label 6700 5450 2    50   ~ 0
-MOSI
-Text Label 6700 5550 2    50   ~ 0
-MCLK
-Text Label 6700 5650 2    50   ~ 0
-MISO
+Connection ~ 6700 5750
+$Comp
+L Graphic:Logo_Open_Hardware_Large LOGO1
+U 1 1 63BF327C
+P 10600 1100
+F 0 "LOGO1" H 10600 1600 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Large" H 10600 700 50  0001 C CNN
+F 2 "Symbol:OSHW-Logo2_24.3x20mm_SilkScreen" H 10600 1100 50  0001 C CNN
+F 3 "~" H 10600 1100 50  0001 C CNN
+	1    10600 1100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Graphic:Logo_Open_Hardware_Small LOGO2
+U 1 1 63BF61E9
+P 10600 1875
+F 0 "LOGO2" H 10600 2150 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Small" H 10600 1650 50  0001 C CNN
+F 2 "durango:jaqueria" H 10600 1875 50  0001 C CNN
+F 3 "~" H 10600 1875 50  0001 C CNN
+	1    10600 1875
+	1    0    0    -1  
+$EndComp
+Text Label 4050 4150 1    50   ~ 0
+~WE
+$Comp
+L Graphic:Logo_Open_Hardware_Small LOGO3
+U 1 1 63C2970C
+P 10600 2400
+F 0 "LOGO3" H 10600 2675 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Small" H 10600 2175 50  0001 C CNN
+F 2 "durango:durango-x90" H 10600 2400 50  0001 C CNN
+F 3 "~" H 10600 2400 50  0001 C CNN
+	1    10600 2400
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
