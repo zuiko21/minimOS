@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230105-1128
+; last modified 20230105-1203
 
 ; ****************************
 ; *** hardware definitions ***
@@ -72,8 +72,9 @@ posit	= next_c+3			; position in 8x16 matrix
 bcd_arr	= posit+1			; level/jewels/score arrays [LJJSSS] in BCD
 yb		= bcd_arr+6			; base row for death animation
 die_y	= yb+1				; current death animation index (formerly Y)
+mag_col	= die_y+1			; specific magic jewel colour animation
 ; common data (non-duplicated)
-temp2	= die_y+1			; now another temporary
+temp2	= mag_col+1			; now another temporary
 temp	= temp2+1
 select	= temp+1			; player iteration in main loop
 bcd_lim	= select+1
@@ -98,8 +99,9 @@ posit2	= next_c2+3			; position in 8x16 matrix
 bcd_arr2= posit2+1			; level/jewels/score arrays [LJJSSS] in BCD
 yb2		= bcd_arr2+6		; base row for death animation
 die_y2	= yb2+1				; current death animation index (formerly Y)
+mag_col2= die_y2+1			; specific magic jewel colour animation
 
-_end_zp	= die_y2+1
+_end_zp	= mag_col2+1
 ; these MUST be outside ZP, change start address accordingly
 field	= $0200				; 8x16 (6x13 visible) game status arrays (player2 = +128)
 ;field2	= $0280
@@ -531,9 +533,16 @@ tiledis:
 ; input
 ;	A		tile index
 ;	ptr		screen position
-;	colour	mask for magic jewel
+;	colour*	mask for magic jewel
 ; affects all registers
 tileprn:
+	LDY #$FF
+	CMP #MAGIC_JWL			; is it the magic jewel?
+	BNE tp_nm
+		LDX select
+		LDY mag_col, X
+tp_nm:
+	STY colour
 	STA src+1				; temporary MSB
 	LDA #0					; will be LSB
 	LSR src+1
@@ -737,7 +746,7 @@ go_hloop:
 			DEY
 			BPL go_hloop
 		DEC	temp			; one raster is ready
-	BMI go_end
+	BMI go_exit
 		LDA src
 		CLC
 		ADC #24				; next raster in image
@@ -967,7 +976,7 @@ sfh_loop:
 ; input
 ;	select	player [0-128]
 ;	s_level	to allow magic jewels
-; affects column, next_c, posit, colour and all registers
+; affects column, next_c, posit, colour* and all registers
 gen_col:
 	LDX select
 ; transfer new column into current
@@ -1004,8 +1013,8 @@ gc_nomagic:
 		INX
 		DEY					; one jewel less
 		BNE gc_jwl			; until the array is done
-	LDX #$FF
-	STX colour				; respect original jewel colours
+;	LDX #$FF
+;	STX colour				; respect original jewel colours
 was_magic:
 	LDX select
 ; alternative entry point, just in case (X = player 0/128)
@@ -1045,7 +1054,8 @@ magic_jewel:
 	TAX
 	LDY jwl_ix, X			; get some valid colour index
 	LDX magic_colour, Y		; get some valid colour mask
-	STX colour				; set colour mask
+	LDY select
+	STX mag_col, Y			; set colour mask for magic jewel only
 	RTS
 ; **********************
 ; *** sound routines ***
