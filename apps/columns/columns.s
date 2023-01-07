@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230107-1106
+; last modified 20230107-1127
 
 ; ****************************
 ; *** hardware definitions ***
@@ -248,7 +248,6 @@ not_s1u:
 			CLC
 			ADC ticks
 			STA ev_dly, X	; compute delay until next event
-sta$df93
 			LDA #STAT_PLAY
 			STA status, X
 ; TODO * I believe some screen init is needed here * TODO
@@ -311,12 +310,11 @@ not_s2f:
 ; in case of timeout, put piece down... or take another
 		LDA ticks
 		CMP ev_dly, X
-		BCC s2end			; if timeout expired...
+		BMI s2end			; if timeout expired... but not BCC eeeeeek
 ;			LDA ev_dly, X
 			CLC
 			ADC speed, X
 			STA ev_dly, X	; update time for next event
-sta$df93
 ; check if possible to move down * TODO
 
 			LDY posit, X
@@ -374,7 +372,6 @@ s2end:
 ; start this animation immediatly, then once every 5 ticks (10 interrupts ~ 2 fields)
 		LDA ticks
 		STA ev_dly, X
-sta$df93
 ; now will display the gameover animation concurrently!
 
 not_move:
@@ -389,11 +386,10 @@ not_st2:
 	BNE not_st4
 		LDA ticks
 		CMP ev_dly, X
-		BCC not_st4			; if timeout expired...
+		BMI not_st4			; if timeout expired... but not BCC
 			CLC
 			ADC #5			; next in 5 ticks
 			STA ev_dly, X	; update time for next event
-sta$df93
 			JSR palmatoria	; will switch to STAT_OVER when finished
 not_st4:
 
