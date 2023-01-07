@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230107-1203
+; last modified 20230107-1705
 
 ; ****************************
 ; *** hardware definitions ***
@@ -307,7 +307,13 @@ not_s2d:
 			BRA s2end
 */
 not_s2f:
-; 
+; first of all, check for magic jewel
+		LDA column, X
+		CMP #MAGIC_JWL
+		BNE do_advance
+			LDY posit, X
+			JSR coldisp
+do_advance:
 ; in case of timeout, put piece down... or take another
 		LDA ticks
 		CMP ev_dly, X
