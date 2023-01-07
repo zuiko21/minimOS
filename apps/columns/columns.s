@@ -260,7 +260,7 @@ not_st1:
 ; * * STATUS 2, play * * IN THE MAKING
 	CMP #STAT_PLAY			; selecting level?
 	BNE not_st2
-/*		TYA					; get this player controller status
+		TYA					; get this player controller status
 		BIT #PAD_LEFT		; move to the left?
 		BEQ not_s2l			; not if not pressed
 			CMP padlast, X	; still pressing?
@@ -305,7 +305,7 @@ not_s2d:
 			STZ IOBeep		; ...and finish audio pulse
 			LDY #MOV_ROT	; this was a rotation
 			BRA s2end
-*/
+
 not_s2f:
 ; first of all, check for magic jewel
 		LDA column, X
@@ -337,15 +337,24 @@ do_advance:
 
 s2end:
 ; move according to Y-direction, if possible
-;			JSR chkroom
+			JSR chkroom		; will return on Carry set if NOT enabled
+			BCS not_move
+				LDA posit, X
+				ADC ix_dir, Y			; add proper offset according to direction, C was clear
+				PHA						; store new position
+				JSR clear_jwl			; delete old one according to direcion in Y
+				PLA						; retrieve and update position
+				STA posit, X
+				TAY
+				JSR coldisp				; display column at new location
+;				BRA not_move			; all OK?
 ;*/
+; TODO * so far, just die upon reaching the bottom *
+; this seems to be OK, just not die
 		LDA posit, X
 		AND #$7F
 		CMP #%01100000	; row 12
 		BCC not_move
-; TODO * so far, just die *
-;		JSR palmatoria
-;		JMP next_player
 		LDA #STAT_DIE		; will trigger palmatoria
 		STA status, X		; eeeeeeeeeeeeeeeeeeeeek
 ; prepare loops for the new status
