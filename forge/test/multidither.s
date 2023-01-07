@@ -50,6 +50,7 @@ loop_copy:
 			STA (ptr), Y
 			INY
 			BNE loop_copy
+		INC src+1
 		INX
 		BPL pg_copy			; negative is the end of screen 3
 ; display dots waiting for a key press...
@@ -96,7 +97,7 @@ rom_pics:
 	.dsb	$FFD6-*, $FF	; filler
 
 	.asc	"DmOS"			; standard sigature
-	.dsb	$FFFB-*, $FF	; one byte before vectors
+	.dsb	$FFF9-*, $FF	; one byte before vectors
 null:
 	RTI						; null interrupt handler, just in case
 
