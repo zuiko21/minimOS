@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230105-1203
+; last modified 20230107-1004
 
 ; ****************************
 ; *** hardware definitions ***
@@ -119,8 +119,7 @@ reset:
 	TXS
 ; Durango-X specifics
 	STX IOAie				; enable interrupts, as X is an odd value
-	STX ticks
-;	STX ticks+1				; will reach zero upon the very first interrupt
+	STZ ticks
 	LDA #$38				; colour mode, screen 3, RGB
 	STA IO8attr				; set video mode
 ; show splash screen
@@ -1109,11 +1108,11 @@ isr:
 	PHA
 	INC ticks_h				; main will increment every other 2
 	LDA ticks_h
-	AND #1					; check even/odd
-	BEQ tk_nw
+	AND #3;1					; check even/odd
+;try quarter speed
+	BNE tk_nw
 		INC ticks
 tk_nw:
-;	PHA						; only register to save for read_pad
 	JSR read_pad
 	PLA
 ; TODO * read keyboard too? * TODO * as keypad emulation
