@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230107-1127
+; last modified 20230107-1203
 
 ; ****************************
 ; *** hardware definitions ***
@@ -307,6 +307,7 @@ not_s2d:
 			BRA s2end
 */
 not_s2f:
+; 
 ; in case of timeout, put piece down... or take another
 		LDA ticks
 		CMP ev_dly, X
@@ -318,38 +319,16 @@ not_s2f:
 ; check if possible to move down * TODO
 
 			LDY posit, X
-			PHY
 			LDA #0
 			JSR tiledis		; clear topmost tile
-			PLA
+			LDX select		; eeeeeek
+			LDA posit, X	; reload original position
 			CLC
 			ADC #8
-			PHA
 			TAY
-			LDX select
-			LDA column, X
-			JSR tiledis		; show top tile
-			PLA
-			CLC
-			ADC #8
-			PHA
-			TAY
-			LDX select
-			LDA column+1, X
-			JSR tiledis		; middle one
-			PLA
-			CLC
-			ADC #8
-			PHA
-			TAY
-			LDX select
-			LDA column+2, X
-			JSR tiledis		; and bottom one
-			LDX select
-			PLA
-			SEC
-			SBC #16			; back to topmost tile
-			STA posit, X
+			STA posit, X	; one row down
+			JSR coldisp		; show all column
+
 s2end:
 ; move according to Y-direction, if possible
 ;			JSR chkroom
@@ -480,26 +459,35 @@ rle_next:
 rle_exit:					; exit decompressor
 	RTS						; EEEEEEEK
 
-; TO DO ** display column from 8x16 matrix (6x13 in use) ** TO DO
+; ** display falling column ** ** temporary hack
 ; input
-;	X, Y	coordinates in matrix
-;	A		player [0-1]
+;	Y	coordinate index
+;	X		player [0-128]
+; affects A, Y and some vars from tiledis
 coldisp:
-	LSR						; extract d0...
-	ROR						; ...thru d7...
-	LSR						; ...and into d6
-	STA temp
-	TYA
-	ASL
-	ASL
-	ASL						; times 8 bytes per row
-	ADC id_table, X			; add X (1...6), C clear
-	ORA temp				; select between playfield
-	TAX						; use as index
-	LDY #3					; number of tiles per column
-cd_loop:
-		LDA field, X		; get this tile
-		
+; this displays falling column at index Y
+	PHY				; eeeeeek
+	LDX select
+	LDA column, X
+	JSR tiledis		; show top tile
+	PLA
+	CLC
+	ADC #8
+	PHA
+	TAY
+	LDX select
+	LDA column+1, X
+	JSR tiledis		; middle one
+	PLA
+	CLC
+	ADC #8
+	TAY				; last one does not need to be saved
+	LDX select
+	LDA column+2, X
+	JSR tiledis		; and bottom one
+	LDX select
+	RTS
+
 ; ** display tile **
 ; input
 ;	Y = position index
