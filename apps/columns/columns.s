@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230107-1004
+; last modified 20230107-1029
 
 ; ****************************
 ; *** hardware definitions ***
@@ -159,6 +159,7 @@ rst_loop:
 	JSR dispic				; decompress!
 ; then level selection according to player
 	LDX select				; retieve selected player
+txa:and#127:beq*+3:brk
 	LDA #STAT_LVL
 	STA status, X			; set new status
 	JSR sel_ban
@@ -167,6 +168,7 @@ rst_loop:
 ; *******************************
 loop:
 	LDX select				; check player...
+txa:and#127:beq*+3:brk
 	LDY pad0val, X			; ...and its controller status
 	BNE chk_stat			; some buttons were pressed
 		STZ padlast, X		; otherwise clear that
@@ -242,6 +244,7 @@ not_s1u:
 ; and go into playing mode
 			JSR clearfield	; init game matrix and all gameplay status
 			LDX select
+txa:and#127:beq*+3:brk
 			LDA speed, X	; eeeeek
 			CLC
 			ADC ticks
@@ -325,6 +328,7 @@ not_s2f:
 			PHA
 			TAY
 			LDX select
+txa:and#127:beq*+3:brk
 			LDA column, X
 			JSR tiledis		; show top tile
 			PLA
@@ -333,6 +337,7 @@ not_s2f:
 			PHA
 			TAY
 			LDX select
+txa:and#127:beq*+3:brk
 			LDA column+1, X
 			JSR tiledis		; middle one
 			PLA
@@ -341,12 +346,14 @@ not_s2f:
 			PHA
 			TAY
 			LDX select
+txa:and#127:beq*+3:brk
 			LDA column+2, X
 			JSR tiledis		; and bottom one
+			LDX select
+txa:and#127:beq*+3:brk
 			PLA
 			SEC
 			SBC #16			; back to topmost tile
-			LDX select
 			STA posit, X
 s2end:
 ; move according to Y-direction, if possible
@@ -374,11 +381,12 @@ s2end:
 
 not_move:
 		LDX select
+txa:and#127:beq*+3:brk
 		LDY pad0val, X		; restore and continue evaluation, is this neeed?
 not_st2:
 
 ; * * STATUS 3, blink * * TO DO
-
+txa:and#127:beq*+3:brk
 	LDA status, X
 ; * * STATUS 4, die * *
 	CMP #STAT_DIE			; just died?
@@ -397,7 +405,8 @@ next_player:
 	EOR #128				; toggle player in event manager
 	STA select
 ; check possible colour animation on magic jewel
-	LDX select				; just in case...
+	LDX select				; just in case... or just TAX?
+txa:and#127:beq*+3:brk
 	LDA next_c, X
 	CMP #MAGIC_JWL			; is the magic jewel next?
 	BNE nx_nonmagic
@@ -538,8 +547,11 @@ tileprn:
 	LDY #$FF
 	CMP #MAGIC_JWL			; is it the magic jewel?
 	BNE tp_nm
+pha
 		LDX select
+txa:and#127:beq*+3:brk
 		LDY mag_col, X
+pla
 tp_nm:
 	STY colour
 	STA src+1				; temporary MSB
@@ -597,6 +609,7 @@ td_exit:
 ; player 2 offset; score $26 (90-14), level 4 (actually $D04) (64-56), jewels $24 (92-20)
 numdisp:
 	LDX select
+txa:and#127:beq*+3:brk
 	LDA play_col, X			; get colour according to player
 	STA colour				; set colour
 	TXA						; player offset
@@ -675,6 +688,7 @@ palmatoria:
 ; these will go after the last one
 ; id while changing status
 		LDX select			; eeeeeeeeeek
+txa:and#127:beq*+3:brk
 		LDA #7				; initial explosion tile - 1
 		LDY die_y, X
 dz_tile:
@@ -706,15 +720,18 @@ dz_show:
 		SEC
 		SBC #40				; 5 rows back
 		LDX select
+txa:and#127:beq*+3:brk
 		STA die_y, X		; store for next call!
 ; no wait here, will be called every 10 interrupts
 		LDA #30
 		JSR tone			; brief beep!
 		LDX select
+txa:and#127:beq*+3:brk
 		DEC yb, X			; one less row
 		BPL go_exit			; not the last, give CPU back
 ; all finished, change status to definitive
 	LDX select
+txa:and#127:beq*+3:brk
 ;	LDA STAT_OVER			; conveniently zero, and X is proper player offset
 	STZ status, X			; back to gameover status
 	STZ s_level, X			; reset this too! eeeeeeeek
@@ -732,6 +749,7 @@ dz_show:
 ; affects temp and all registers
 banner:
 	LDX select
+txa:and#127:beq*+3:brk
 	STY temp				; counter in memory
 	LDA psum36, X
 	STA ptr
@@ -878,6 +896,7 @@ sel_ban:
 ; affects all registers
 inv_row:
 	LDX select
+txa:and#127:beq*+3:brk
 	LDA psum36, X			; horizontal position in raster
 	STA ptr
 	LDA s_level, X			; current level determines row
@@ -903,6 +922,7 @@ ir_nw:
 		DEX					; one less raster
 		BNE ir_rloop
 	LDX select				; retrieve and return
+txa:and#127:beq*+3:brk
 	RTS
 
 ; ** clear playfield structure **
@@ -912,6 +932,7 @@ ir_nw:
 clearfield:
 ; should clear mode selection banner as well, pretty much like 'banner'
 	LDX select
+txa:and#127:beq*+3:brk
 	LDA psum36, X			; check player (make sure X is preserved)
 	STA ptr
 	LDA #BANNER_PG			; two rows above centre
@@ -978,6 +999,7 @@ sfh_loop:
 ; affects column, next_c, posit, colour* and all registers
 gen_col:
 	LDX select
+txa:and#127:beq*+3:brk
 ; transfer new column into current
 	LDY #3					; jewels per column
 gc_copy:
@@ -987,6 +1009,7 @@ gc_copy:
 		DEY
 		BNE gc_copy
 	LDX select				; restore player index
+txa:and#127:beq*+3:brk
 	LDY #3					; now I need 3 jewels
 ; generate new jewel
 gc_jwl:
@@ -1001,6 +1024,7 @@ gc_jwl:
 		BEQ gc_jwl			; not accepted in easy mode
 ; otherwise the magic jewel fills the whole column
 			LDX select		; retrieve player index
+txa:and#127:beq*+3:brk
 			LDA #7			; magic tile index
 			STA next_c, X
 			STA next_c+1, X
@@ -1016,6 +1040,7 @@ gc_nomagic:
 ;	STX colour				; respect original jewel colours
 was_magic:
 	LDX select
+txa:and#127:beq*+3:brk
 ; alternative entry point, just in case (X = player 0/128)
 	TXA						; player offset
 	CLC
@@ -1026,9 +1051,11 @@ was_magic:
 ; ** show next column **
 ; input
 ;	select	player [0-128], displayed at (54,12) & (66,12), a 6-byte offset
+;	select	player [0-128], displayed at (54,12) & (66,12), a 6-byte offset
 ; affects colour (via tileprn) and all registers
 nextcol:
 	LDX select
+txa:and#127:beq*+3:brk
 	LDA psum6, X			; check player for offset
 	STA ptr
 	LDA #FIELD_PG
@@ -1054,6 +1081,7 @@ magic_jewel:
 	LDY jwl_ix, X			; get some valid colour index
 	LDX magic_colour, Y		; get some valid colour mask
 	LDY select
+tya:and#127:beq*+3:brk
 	STX mag_col, Y			; set colour mask for magic jewel only
 	RTS
 ; **********************
@@ -1108,8 +1136,7 @@ isr:
 	PHA
 	INC ticks_h				; main will increment every other 2
 	LDA ticks_h
-	AND #3;1					; check even/odd
-;try quarter speed
+	AND #1					; check even/odd
 	BNE tk_nw
 		INC ticks
 tk_nw:
