@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230107-1705
+; last modified 20230107-2212
 
 ; ****************************
 ; *** hardware definitions ***
@@ -260,7 +260,7 @@ not_st1:
 ; * * STATUS 2, play * * IN THE MAKING
 	CMP #STAT_PLAY			; selecting level?
 	BNE not_st2
-		TYA					; get this player controller status
+/*		TYA					; get this player controller status
 		BIT #PAD_LEFT		; move to the left?
 		BEQ not_s2l			; not if not pressed
 			CMP padlast, X	; still pressing?
@@ -293,19 +293,23 @@ not_s2d:
 ; piece rotation
 			LDA #1
 			STA IOBeep		; activate sound...
-			LDY poff6, X	; reindex for column arrays
-			LDA column+2, Y
+			LDA column+2, X
 			PHA				; save last piece
-			LDA column+1, Y
-			STA column+2, Y
+			LDA column+1, X
+			STA column+2, X
 			LDA column, Y
-			STA column+1, Y			; rotate the rest
+			STA column+1, X			; rotate the rest
 			PLA
-			STA column, Y	; and wrap the last one
+			STA column, X	; and wrap the last one
 			STZ IOBeep		; ...and finish audio pulse
 			LDY #MOV_ROT	; this was a rotation
 			BRA s2end
+*/
+bra not_s2f
 
+
+not_st2:
+		BRA not_st2f
 not_s2f:
 ; first of all, check for magic jewel
 		LDA column, X
@@ -324,10 +328,8 @@ do_advance:
 			STA ev_dly, X	; update time for next event
 ; check if possible to move down * TODO
 
-			LDY posit, X
-			LDA #0
-			JSR tiledis		; clear topmost tile
-			LDX select		; eeeeeek
+			LDY #MOV_ROT
+			JSR clear_jwl	; clear topmost tile
 			LDA posit, X	; reload original position
 			CLC
 			ADC #8
@@ -371,7 +373,7 @@ s2end:
 not_move:
 		LDX select
 		LDY pad0val, X		; restore and continue evaluation, is this neeed?
-not_st2:
+not_st2f:
 
 ; * * STATUS 3, blink * * TO DO
 	LDA status, X
@@ -479,6 +481,8 @@ rle_exit:					; exit decompressor
 ;	Y		future direction
 ; affects X plus whatever tiledisp takes
 clear_jwl:
+	CPY #MOV_ROT
+	BEQ cj_end
 	CPY #MOV_DOWN
 	BEQ clear_one
 		LDX #3				; unless it's going down, must clear three tiles
@@ -497,6 +501,8 @@ cj_loop:
 		PLX
 		DEX
 		BNE cj_loop
+cj_end:
+	LDX select
 	RTS
 
 ; ** display falling column ** ** temporary hack
@@ -794,7 +800,7 @@ go_exit:
 
 ; TO DO ** check for available movements ** TO DO
 chkroom:
-LDA#0
+CLC
 RTS
 
 ; ** gamepad read **
