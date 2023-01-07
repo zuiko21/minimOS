@@ -474,6 +474,31 @@ rle_next:
 rle_exit:					; exit decompressor
 	RTS						; EEEEEEEK
 
+; ** delete old column **
+; input
+;	Y		future direction
+; affects X plus whatever tiledisp takes
+clear_jwl:
+	CPY #MOV_DOWN
+	BEQ clear_one
+		LDX #3				; unless it's going down, must clear three tiles
+		BRA cj_loop
+clear_one:
+	LDX #1					; tiles to be cleared
+cj_loop:
+		PHX
+		PHY
+		LDA #0				; no tile for clearing
+		JSR tiledis
+		PLA
+		CLC
+		ADC #8				; one row below
+		TAY
+		PLX
+		DEX
+		BNE cj_loop
+	RTS
+
 ; ** display falling column ** ** temporary hack
 ; input
 ;	Y	coordinate index
