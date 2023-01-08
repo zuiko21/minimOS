@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230107-2212
+; last modified 20230108-1301
 
 ; ****************************
 ; *** hardware definitions ***
@@ -293,31 +293,21 @@ not_s2d:
 ; piece rotation
 			LDA #1
 			STA IOBeep		; activate sound...
-			LDA column+2, X
+			LDY poff6, X	; reindex for column arrays
+			LDA column+2, Y
 			PHA				; save last piece
-			LDA column+1, X
-			STA column+2, X
+			LDA column+1, Y
+			STA column+2, Y
 			LDA column, Y
-			STA column+1, X			; rotate the rest
+			STA column+1, Y			; rotate the rest
 			PLA
-			STA column, X	; and wrap the last one
+			STA column, Y	; and wrap the last one
 			STZ IOBeep		; ...and finish audio pulse
 			LDY #MOV_ROT	; this was a rotation
 			BRA s2end
 */
-bra not_s2f
-
-
-not_st2:
-		BRA not_st2f
 not_s2f:
-; first of all, check for magic jewel
-		LDA column, X
-		CMP #MAGIC_JWL
-		BNE do_advance
-			LDY posit, X
-			JSR coldisp
-do_advance:
+; 
 ; in case of timeout, put piece down... or take another
 		LDA ticks
 		CMP ev_dly, X
@@ -328,35 +318,27 @@ do_advance:
 			STA ev_dly, X	; update time for next event
 ; check if possible to move down * TODO
 
-			LDY #MOV_ROT
-			JSR clear_jwl	; clear topmost tile
+			LDY posit, X
+			LDA #0
+			JSR tiledis		; clear topmost tile
+			LDX select		; eeeeeek
 			LDA posit, X	; reload original position
 			CLC
 			ADC #8
-			TAY
 			STA posit, X	; one row down
 			JSR coldisp		; show all column
 
 s2end:
 ; move according to Y-direction, if possible
-			JSR chkroom		; will return on Carry set if NOT enabled
-			BCS not_move
-				LDA posit, X
-				ADC ix_dir, Y			; add proper offset according to direction, C was clear
-				PHA						; store new position
-				JSR clear_jwl			; delete old one according to direcion in Y
-				PLA						; retrieve and update position
-				STA posit, X
-				TAY
-				JSR coldisp				; display column at new location
-;				BRA not_move			; all OK?
+;			JSR chkroom
 ;*/
-; TODO * so far, just die upon reaching the bottom *
-; this seems to be OK, just not die
 		LDA posit, X
 		AND #$7F
 		CMP #%01100000	; row 12
 		BCC not_move
+; TODO * so far, just die *
+;		JSR palmatoria
+;		JMP next_player
 		LDA #STAT_DIE		; will trigger palmatoria
 		STA status, X		; eeeeeeeeeeeeeeeeeeeeek
 ; prepare loops for the new status
@@ -373,7 +355,7 @@ s2end:
 not_move:
 		LDX select
 		LDY pad0val, X		; restore and continue evaluation, is this neeed?
-not_st2f:
+not_st2:
 
 ; * * STATUS 3, blink * * TO DO
 	LDA status, X
@@ -476,46 +458,16 @@ rle_next:
 rle_exit:					; exit decompressor
 	RTS						; EEEEEEEK
 
-; ** delete old column **
-; input
-;	Y		future direction
-; affects X plus whatever tiledisp takes
-clear_jwl:
-	CPY #MOV_ROT
-	BEQ cj_end
-	CPY #MOV_DOWN
-	BEQ clear_one
-		LDX #3				; unless it's going down, must clear three tiles
-		BRA cj_loop
-clear_one:
-	LDX #1					; tiles to be cleared
-cj_loop:
-		PHX
-		PHY
-		LDA #0				; no tile for clearing
-		JSR tiledis
-		PLA
-		CLC
-		ADC #8				; one row below
-		TAY
-		PLX
-		DEX
-		BNE cj_loop
-cj_end:
-	LDX select
-	RTS
-
 ; ** display falling column ** ** temporary hack
 ; input
-;	Y	coordinate index
 ;	X		player [0-128]
 ; affects A, Y and some vars from tiledis
 coldisp:
 ; this displays falling column at index Y
-	PHY				; eeeeeek
-	LDX select
+	LDY posit, X			; get current position
+	PHY						; eeeeeek
 	LDA column, X
-	JSR tiledis		; show top tile
+	JSR tiledis				; show top tile
 	PLA
 	CLC
 	ADC #8
@@ -523,14 +475,14 @@ coldisp:
 	TAY
 	LDX select
 	LDA column+1, X
-	JSR tiledis		; middle one
+	JSR tiledis				; middle one
 	PLA
 	CLC
 	ADC #8
-	TAY				; last one does not need to be saved
+	TAY						; last one does not need to be saved
 	LDX select
 	LDA column+2, X
-	JSR tiledis		; and bottom one
+	JSR tiledis				; and bottom one
 	LDX select
 	RTS
 
@@ -800,7 +752,7 @@ go_exit:
 
 ; TO DO ** check for available movements ** TO DO
 chkroom:
-CLC
+LDA#0
 RTS
 
 ; ** gamepad read **
