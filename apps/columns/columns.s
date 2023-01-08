@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230108-1301
+; last modified 20230108-1324
 
 ; ****************************
 ; *** hardware definitions ***
@@ -309,10 +309,12 @@ not_s2d:
 not_s2f:
 ; *** CODE UNDER TEST ***
 ; first of all, check for magic jewel
+		LDX select
 		LDA column, X
 		CMP #MAGIC_JWL
 		BNE do_advance
 			LDY posit, X
+.byt$cb
 			JSR coldisp
 do_advance:
 ; *** *** ***
@@ -987,6 +989,7 @@ gc_copy:
 gc_jwl:
 		PHY
 		JSR rnd
+ora#240
 		TAY
 		LDA jwl_ix, Y		; make it valid tile index
 		PLY
