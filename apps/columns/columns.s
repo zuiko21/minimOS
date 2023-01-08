@@ -307,7 +307,15 @@ not_s2d:
 			BRA s2end
 */
 not_s2f:
-; 
+; *** CODE UNDER TEST ***
+; first of all, check for magic jewel
+		LDA column, X
+		CMP #MAGIC_JWL
+		BNE do_advance
+			LDY posit, X
+			JSR coldisp
+do_advance:
+; *** *** ***
 ; in case of timeout, put piece down... or take another
 		LDA ticks
 		CMP ev_dly, X
