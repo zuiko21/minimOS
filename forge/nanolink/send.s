@@ -1,6 +1,6 @@
 ; nanoLink sender routine (Durango-X speed)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230113-2334
+; last modified 20230113-2348
 
 ; *** send one byte thru nanoLink ***
 ; input
@@ -28,23 +28,23 @@ send_loop:
 		NOP
 		NOP					; delay to be safe (2+2+2, 13+ since NMI)
 		STA IO9nano			; data is sent, clock goes down, most likely safe to do right now (4, 17+ since NMI is pretty safe)
-		ROR					; recover sent bit! (2, 19+ since NMI)
+		ROR					; recover sent bit into C! (2, 19+ since NMI)
 ; with data bit already sent, cannot clear it before the NMI-enabled IRQ is executed!
 ; that's 58t for 0, 85t for 1 (might actually use the 58t delay everywhere and add 27t after reading)
 		JSR wait			; wait for the bit to be read (42, 61+ since NMI)
 		BCC was_zero		; transmitted zeros are faster! (3, 64+ since NMI or...)
-			JSR wait2		; add 28t extra, minus one of not taken BCC (...27 if bit=1, 91+ after NMI)***********
+			JSR wait2		; add 28t extra, minus one of not taken BCC (...27 if bit=1, 91+ after NMI)
 was_zero:
-		STZ IO9nano			; clear data, thus release interrupt line! (4, + since NMI)
-		JSR exit			; interbit delay is needed! (14)
+		STZ IO9nano			; clear data, thus release interrupt line! (4, 68+/95+ since NMI)
+		JSR exit			; interbit delay is needed! (14, 82+/109+)
 		DEX
-		BPL send_loop		; all bits in byte (2+3)
-	INC ptr					; advance to next byte (5)
-	BNE same_page			; (3 within same page / 2+5 page crossing)
-		INC ptr+1
+		BPL send_loop		; all bits in byte (2+3, 87+/114+ and still 6 clocks of margin)
+	INC ptr					; advance to next byte (-1 +5, 91+/118+)
+	BNE same_page			; (3 within same page / 2+5 page crossing, assume 94+/121+)
+		INC ptr+1			; new page should add some important delay, maybe outside the routine
 same_page:
-	JSR exit				; make sure cannot be called too early! (14) is this enough?
-	RTS						; (6)
+	JSR exit				; make sure cannot be called too early! (14, 108+/135+) adding calling overhead is enough
+	RTS						; (6, no less than 114+/141+, actually valid even for page crossing)
 
 ; *** support routines ***
 wait:
