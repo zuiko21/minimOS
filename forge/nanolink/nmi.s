@@ -1,6 +1,6 @@
 ; nanoLink NMI handler for transparent reception
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230113-1034
+; last modified 20230113-2330
 
 ; *****************************************
 ; *** NMI handler for nanoLink receiver ***
@@ -8,6 +8,18 @@
 ;	sys_sp	= 8 to enable, 0 to disable
 ;	sysptr	= pointer to receive buffer
 ; *****************************************
+
+#ifndef	NANOLINK
+#define	NANOLINK
+; standard minimOS interrupt-reserved variables
+sysptr	= $FC				; download buffer pointer
+systmp	= $FE				; temporary bit shifting
+sys_sp	= $FF				; bit counter, set to 8 to enable, set to zero to disable
+; standard minimOS firmware interrupt vector, may set in ZP for performance
+fw_irq	= $0200
+; hardware definitions
+-IOAie	= $DFA0				; Durango-X interrupt enable
+#endif
 
 rcv_nmi:
 .(

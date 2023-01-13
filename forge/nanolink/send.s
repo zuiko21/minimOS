@@ -1,11 +1,18 @@
 ; nanoLink sender routine (Durango-X speed)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230113-1222
+; last modified 20230113-2334
 
 ; *** send one byte thru nanoLink ***
 ; input
 ;	ptr		address of byte (will be advanced)
 ; affects A, X and temp, autoincrements ptr (ZP)
+
+; *** zeropage allocation ***
+temp	= $ED				; minimOS local3+1, could be elsewhere
+ptr		= $EE
+
+; *** hardware definitions ***
+IO9nano	= $DF97				; port address
 
 nano_send:
 .(
