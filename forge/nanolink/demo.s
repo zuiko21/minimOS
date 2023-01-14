@@ -1,6 +1,6 @@
 ; nanoLink demo game
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230114-1720
+; last modified 20230114-1905
 
 ; *** memory allocation ***
 posbuf		= $F0			; received coordinates (YYYYXXXX), 1-based
@@ -150,7 +150,7 @@ no_move:
 ; check challenger and redraw if moved (or appeared)
 		LDA posbuf
 		CMP oldpos
-		BNE no_chal
+		BEQ no_chal			; eeeeeeeeeek
 			LDA #<posbuf
 			STA sysptr		; restore receive pointer
 			LDY oldpos		; clear old position
