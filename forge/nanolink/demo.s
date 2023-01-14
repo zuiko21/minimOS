@@ -1,6 +1,6 @@
 ; nanoLink demo game
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230114-1402
+; last modified 20230114-1720
 
 ; *** memory allocation ***
 posbuf		= $F0			; received coordinates (YYYYXXXX), 1-based
@@ -25,7 +25,9 @@ IOAie		= $DFA0
 ; *** code ***
 ; ************
 
-	*	= $FE00				; 512b should be more than enough!
+	* = $C000				; for 16K EPROM
+	.dsb	$FE00-*, $FF
+;	*	= $FE00				; 512b should be enough!
 
 ; *** external stuff ***
 ; nanoLink send routine
@@ -49,7 +51,8 @@ reset:
 	STA IO8attr				; colour mode, screen 3, RGB
 	STZ pad_mask
 	JSR readpad
-	STA pad_mask			; returns with mask in A
+	LDA pad_value			; eeeeeek
+	STA pad_mask			; returns with mask in A -- NOPE!
 	STZ pad_value
 ; clear screen ASAP
 	LDX #$60				; screen 3 MSB
@@ -87,7 +90,7 @@ cl_byt:
 ; *** main loop ***
 loop:
 ; check pad action and redraw player if moved
-		LDA pad_value		; ABetUDLR
+		LDA pad_value		; AtBeULDR
 		CMP old_pad			; some changes?
 			BEQ no_move
 		STA old_pad			; if so, take note
@@ -175,7 +178,7 @@ rp_loop:
 	LDA IO9pad1
 	EOR pad_mask
 	STA pad_value			; store corrected value
-; pad emulation by keyboard (QAOP -> ABetUDLR)
+; pad emulation by keyboard (QAOP -> AtBeULDR)
 	LDA #1					; most keys are on column 1
 	STA IO9kbd
 	LDA IO9kbd				; get this column
@@ -185,26 +188,26 @@ rp_loop:
 		LDA #%00001000		; set d3
 		BRA addbit
 not_q:
-; A=down (col 1 row 3) sets d2
-	BIT #%00000100			; up?
+; A=down (col 1 row 3) sets d1
+	BIT #%00000100			; down?
 	BEQ not_a
-		LDA #%00000100		; set d2
+		LDA #%00000010		; set d1
 		BRA addbit
 not_a:
 ; P=right (col 1 row 5) sets d0
-	BIT #%00010000			; up?
+	BIT #%00010000			; right?
 	BEQ not_p
 		LDA #%00000001		; set d0
 		BRA addbit
 not_p:
-; O=left (col 2 row 5) sets d1
+; O=left (col 2 row 5) sets d2
 	LDA #2					; select column 2
 	STA IO9kbd
 	LDA IO9kbd
-	BIT #%00010000			; up?
+	BIT #%00010000			; left?
 	BEQ not_o
-		LDA #%00000010		; set d1
-		BRA addbit
+		LDA #%00000100		; set d2
+;		BRA addbit
 addbit:
 	TSB pad_value			; set emulated bits
 not_o:
