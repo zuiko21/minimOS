@@ -1,14 +1,14 @@
 ; nanoLink demo game
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230114-1905
+; last modified 20230114-1928
 
 ; *** memory allocation ***
 posbuf		= $F0			; received coordinates (YYYYXXXX), 1-based
-mypos		= $F4			; ditto for local player
-oldpos		= $F5			; previous challenger position
-pad_mask	= $F8			; single pad stuff
-pad_value	= $F9
-old_pad		= $FA			; avoid continuous
+oldpos		= $F7			; previous challenger position
+mypos		= $F8			; local player coordinates, same as posbuf
+old_pad		= $F9			; avoid continuous
+pad_value	= $FA			; single pad stuff
+pad_mask	= $FB
 demo_ptr	= $EA
 
 ; *** hardware definitions ***
@@ -151,17 +151,18 @@ no_move:
 		LDA posbuf
 		CMP oldpos
 		BEQ no_chal			; eeeeeeeeeek
-			LDA #<posbuf
-			STA sysptr		; restore receive pointer
+			PHA				; may be safer
 			LDY oldpos		; clear old position
 			BEQ appear		; just arrived, do not clear
 				LDX #0		; in black
 				JSR draw
 appear:
-			LDY posbuf
+			PLY				; make sure it's the expected value
 			STY oldpos		; update position
 			LDX #$22		; in red
 			JSR draw
+			LDA #<posbuf
+			STA sysptr		; restore receive pointer
 no_chal:
 		JMP loop
 
@@ -216,12 +217,12 @@ not_o:
 ; delete previous position
 clear_me:
 	LDX #0					; black as background
-	LDY mypos				; current position
-	JMP draw
+	BRA do_me
 
 ; draw green dot at current position
 draw_me:
 	LDX #$55				; green
+do_me:
 	LDY mypos				; current position
 ;	JMP draw
 
