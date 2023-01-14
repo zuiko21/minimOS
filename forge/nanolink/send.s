@@ -1,6 +1,6 @@
 ; nanoLink sender routine (Durango-X speed)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230114-0114
+; last modified 20230114-1404
 
 ; *** send one byte thru nanoLink ***
 ; input
@@ -18,6 +18,7 @@ temp	= $ED				; minimOS local3+1, could be elsewhere
 ptr		= $EE
 
 	LDA (ptr)				; get data, CMOS only (5)
++byte_send:					; alternative access
 	STA temp				; store byte (3+)
 	LDX #7					; max bit index per byte (2)
 send_loop:

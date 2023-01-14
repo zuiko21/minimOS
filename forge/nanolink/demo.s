@@ -1,6 +1,6 @@
 ; nanoLink demo game
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230114-0127
+; last modified 20230114-1402
 
 ; *** memory allocation ***
 posbuf		= $F0			; received coordinates (YYYYXXXX), 1-based
@@ -14,6 +14,7 @@ demo_ptr	= $EA
 ; *** hardware definitions ***
 IO8attr		= $DF80
 IO8blnk		= $DF88
+IO9kbd		= $DF9B
 IO9pad1		= $DF9C
 IO9pad2		= $DF9D
 IO9nes_lat	= IO9pad1
@@ -174,6 +175,39 @@ rp_loop:
 	LDA IO9pad1
 	EOR pad_mask
 	STA pad_value			; store corrected value
+; pad emulation by keyboard (QAOP -> ABetUDLR)
+	LDA #1					; most keys are on column 1
+	STA IO9kbd
+	LDA IO9kbd				; get this column
+; Q=up (col 1 row 2) sets d3
+	BIT #%00000010			; up?
+	BEQ not_q
+		LDA #%00001000		; set d3
+		BRA addbit
+not_q:
+; A=down (col 1 row 3) sets d2
+	BIT #%00000100			; up?
+	BEQ not_a
+		LDA #%00000100		; set d2
+		BRA addbit
+not_a:
+; P=right (col 1 row 5) sets d0
+	BIT #%00010000			; up?
+	BEQ not_p
+		LDA #%00000001		; set d0
+		BRA addbit
+not_p:
+; O=left (col 2 row 5) sets d1
+	LDA #2					; select column 2
+	STA IO9kbd
+	LDA IO9kbd
+	BIT #%00010000			; up?
+	BEQ not_o
+		LDA #%00000010		; set d1
+		BRA addbit
+addbit:
+	TSB pad_value			; set emulated bits
+not_o:
 	RTS
 
 ; delete previous position
@@ -230,13 +264,13 @@ isr:
 	PHA
 	JSR readpad
 ; should send coordinates via nanoLink
-;	PHX						; send uses A & X
-;	LDA mypos
-;
-				; demo_ptr as defined in send
-;	PLX
+	PHX						; send uses A & X
+	LDA mypos
+	JSR byte_send
+	PLX
 	PLA
 	RTI
+code_end:
 
 ; *******************************
 ; *** ROM padding and vectors ***
