@@ -1,6 +1,6 @@
 ; nanoLink demo game
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230114-1928
+; last modified 20230114-2239
 
 ; *** memory allocation ***
 posbuf		= $F0			; received coordinates (YYYYXXXX), 1-based
@@ -161,8 +161,9 @@ appear:
 			STY oldpos		; update position
 			LDX #$22		; in red
 			JSR draw
-			LDA #<posbuf
-			STA sysptr		; restore receive pointer
+;			LDA #<posbuf
+;			STA sysptr		; restore receive pointer
+;			STZ sysptr+1	; needed??
 no_chal:
 		JMP loop
 

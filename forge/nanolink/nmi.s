@@ -1,6 +1,6 @@
 ; nanoLink NMI handler for transparent reception
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230113-2330
+; last modified 20230114-2249
 
 ; *****************************************
 ; *** NMI handler for nanoLink receiver ***
@@ -50,9 +50,9 @@ rcv_nmi:
 		LDA systmp			; get read value (*3, 75+ if 0, 102+ if 1)
 		STA (sysptr)		; and store into buffer, CMOS only (*5, 80+ if 0, 107+ if 1)
 		LDA #8				; reset value for bit counter (*2, 82+ if 0, 109+ if 1)
-		INC sysptr			; advance into buffer (*5, 87+ if 0, 114+ if 1)
-		BNE no_wrap			; (*typically 3, 90+ if 0, 117+ if 1) (**or 2, 89+ if 0, 116+ if 1)
-			INC sysptr+1	; page crossing (**5, 94+ if 0, 121+ if 1)
+;		INC sysptr			; advance into buffer (*5, 87+ if 0, 114+ if 1)
+;		BNE no_wrap			; (*typically 3, 90+ if 0, 117+ if 1) (**or 2, 89+ if 0, 116+ if 1)
+;			INC sysptr+1	; page crossing (**5, 94+ if 0, 121+ if 1)
 no_wrap:
 		STA sys_sp			; eeeeek (*3, 93+ if 0, 120+ if 1) (**97+ if 0, 124+ if 1)
 		DEC					; correction needed to allow 0 as disable function (*2, 95+ if 0, 122+ if 1) (**99+ if 0, 126+ if 1)

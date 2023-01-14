@@ -1,6 +1,6 @@
 ; nanoLink sender routine (Durango-X speed)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230114-1404
+; last modified 20230114-2239
 
 ; *** send one byte thru nanoLink ***
 ; input
@@ -41,9 +41,9 @@ was_zero:
 		JSR exit			; interbit delay is needed! (14, 82+/109+)
 		DEX
 		BPL send_loop		; all bits in byte (2+3, 87+/114+ and still 6 clocks of margin)
-	INC ptr					; advance to next byte (-1 +5, 91+/118+)
-	BNE same_page			; (3 within same page / 2+5 page crossing, assume 94+/121+)
-		INC ptr+1			; new page should add some important delay, maybe outside the routine
+;	INC ptr					; advance to next byte (-1 +5, 91+/118+)
+;	BNE same_page			; (3 within same page / 2+5 page crossing, assume 94+/121+)
+;		INC ptr+1			; new page should add some important delay, maybe outside the routine
 same_page:
 	JSR exit				; make sure cannot be called too early! (14, 108+/135+) adding calling overhead is enough
 	RTS						; (6, no less than 114+/141+, actually valid even for page crossing)
