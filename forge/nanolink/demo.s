@@ -1,6 +1,6 @@
 ; nanoLink demo game
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230114-0118
+; last modified 20230114-0127
 
 ; *** memory allocation ***
 posbuf		= $F0			; received coordinates (YYYYXXXX), 1-based
@@ -197,9 +197,9 @@ draw:
 	LSR						; 2 pages per row
 	SEC
 	SBC #2					; 0-based
-	ORA #$60				; screen 3 start, OK for demo
+	ORA #$61				; screen 3 start, OK for demo
 	STA demo_ptr+1
-	LDA #$81				; adequate raster offset
+	LDA #$83				; adequate raster offset
 	STA demo_ptr
 	DEY						; 0-based
 	TYA
@@ -211,7 +211,8 @@ draw:
 	STA (demo_ptr), Y		; upper left
 	INY
 	STA (demo_ptr), Y		; upper right
-	LDX #$C1				; offset of second raster
+	LDX #$C3				; offset of second raster
+	STX demo_ptr			; eeeeeek
 	STA (demo_ptr), Y		; lower right
 	DEY
 	STA (demo_ptr), Y		; lower left
