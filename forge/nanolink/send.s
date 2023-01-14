@@ -1,26 +1,27 @@
 ; nanoLink sender routine (Durango-X speed)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230113-2348
+; last modified 20230114-0114
 
 ; *** send one byte thru nanoLink ***
 ; input
 ;	ptr		address of byte (will be advanced)
 ; affects A, X and temp, autoincrements ptr (ZP)
 
-; *** zeropage allocation ***
-temp	= $ED				; minimOS local3+1, could be elsewhere
-ptr		= $EE
 
 ; *** hardware definitions ***
 IO9nano	= $DF97				; port address
 
 nano_send:
 .(
+; *** zeropage allocation ***
+temp	= $ED				; minimOS local3+1, could be elsewhere
+ptr		= $EE
+
 	LDA (ptr)				; get data, CMOS only (5)
 	STA temp				; store byte (3+)
 	LDX #7					; max bit index per byte (2)
 send_loop:
-		LDA #NANO_CLK
+		LDA #2				; nanoLink clock bit position
 		STA IO9nano			; assert NMI in remote, needs time to disable hardware interrupts (2+4) *** NMI starts acknowledge here
 		ASL temp			; extract MSb into C (5+ since NMI)
 		ROL					; insert C into bit pattern (2, 7+ since NMI)
