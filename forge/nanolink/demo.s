@@ -1,6 +1,6 @@
 ; nanoLink demo game
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230114-2239
+; last modified 20230116-1326
 
 ; *** memory allocation ***
 posbuf		= $F0			; received coordinates (YYYYXXXX), 1-based
@@ -26,8 +26,8 @@ IOAie		= $DFA0
 ; ************
 
 	* = $C000				; for 16K EPROM
-	.dsb	$FE00-*, $FF
-;	*	= $FE00				; 512b should be enough!
+	.dsb	$FD00-*, $FF
+;	*	= $FD00				; 1K is enough!
 
 ; *** external stuff ***
 ; nanoLink send routine
@@ -83,6 +83,7 @@ cl_byt:
 	LDX #>posbuf			; actually zero
 	STY sysptr
 	STX sysptr+1			; set nanoLink buffer pointer, this one could be STZ if in ZP
+; ** ** ** should set somehow the download limit! ** ** **
 	STZ posbuf				; clear by default = not received
 	LDA #8					; 8 bits per byte, starting value
 	STA sys_sp				; start connection!
@@ -152,6 +153,7 @@ no_move:
 		CMP oldpos
 		BEQ no_chal			; eeeeeeeeeek
 			PHA				; may be safer
+; ** ** ** should REset somehow the download limit! ** ** **
 			LDY oldpos		; clear old position
 			BEQ appear		; just arrived, do not clear
 				LDX #0		; in black
@@ -161,8 +163,8 @@ appear:
 			STY oldpos		; update position
 			LDX #$22		; in red
 			JSR draw
-;			LDA #<posbuf
-;			STA sysptr		; restore receive pointer
+			LDA #<posbuf
+			STA sysptr		; restore receive pointer
 ;			STZ sysptr+1	; needed??
 no_chal:
 		JMP loop
