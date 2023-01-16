@@ -1,6 +1,6 @@
 ; Durango-X gamepad test
-; (c) 2022 Carlos J. Santisteban, based on work from Emilio López Berenguer
-; last modified 20221127-2147
+; (c) 2022-2023 Carlos J. Santisteban, based on work from Emilio López Berenguer
+; last modified 20230116-1429
 
 #ifndef	MULTIBOOT
 	*	= $F000
@@ -66,10 +66,10 @@ cl_b:
 	STY ptr
 	STX ptr+1				; update pointer
 	JSR drawpad
-
+	CLI						; enable interrupts!
 ; scan buttons and fill with appropriate colour
 main:
-		JSR readpad			; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK!
+;		JSR readpad			; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK! but this must be done at interrupt task
 		LDA $DF9C			; pad 1
 		EOR gm1				; adapt it!
 		STA tmp
@@ -177,8 +177,15 @@ end:
 ; *********************************
 ; *** stuff for standalone test ***
 #ifndef	MULTIBOOT
-nmi:
 irq:
+	PHA
+	TXA
+	PHA
+	JSR readpad
+	PLA
+	TAX
+	PLA
+nmi:
 	RTI						; standalone ROM disables all interrupts
 
 	.dsb	$FFFA - *, $FF	; ROM padding
