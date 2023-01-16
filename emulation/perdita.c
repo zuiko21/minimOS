@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
- * (c)2007-2022 Carlos J. Santisteban, Emilio López Berenguer
- * last modified 20221212-1854
+ * (c)2007-2023 Carlos J. Santisteban, Emilio López Berenguer
+ * last modified 20230116-1358
  * */
 
 /* Gamepad buttons constants */
@@ -60,9 +60,9 @@
 	byte gamepads[2];		 	// 2 gamepad hardware status
 	byte gamepads_latch[2];	 	// 2 gamepad register latch
 	int emulate_gamepads = 0;	// Allow gamepad emulation
-	int emulate_minstrel = 1;	// Emulate minstrel keyboard
-	int gp1_emulated = 0; 		// Use keyboard as gamepad 1
-	int gp2_emulated = 0; 		// Use keyboard as gamepad 2
+	int emulate_minstrel = 1;	// Emulate Minstrel keyboard
+	int gp1_emulated = 0; 		// Use keyboard as gamepad 1 (new layout WASD, Shift=start, Z=select, X='B', C=fire)
+	int gp2_emulated = 0; 		// Use keyboard as gamepad 2 (new layout IJKL, N=start, M=select, Alt='B', Space=fire)
 	int gp_shift_counter = 0;	// gamepad shift counter
 
 	byte a, x, y, s, p;			// 8-bit registers
@@ -2872,75 +2872,75 @@ void process_keyboard(SDL_Event *e) {
 
 /* Emulate first gamepad. */
 void emulate_gamepad1(SDL_Event *e) {
-	// Left key down p1 at o
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'o') {
+	// Left key down p1 at o, now A
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'a') {
 		// Left down
 		gamepads[0] |= BUTTON_LEFT;		
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'o') {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'a') {
 		// Left up
 		gamepads[0] &= ~BUTTON_LEFT;		
 	}
-	// Right key down p1 at p
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'p') {
+	// Right key down p1 at p, now D
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'd') {
 		// Right down
 		gamepads[0] |= BUTTON_RIGHT;
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'p') {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'd') {
 		// Right up
 		gamepads[0] &= ~BUTTON_RIGHT;
 	}
-	// Up key p1 at q
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'q') {
+	// Up key p1 at q, now W
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'w') {
 		// Up down
 		gamepads[0] |= BUTTON_UP;		
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'q') {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'w') {
 		// Up up
 		gamepads[0] &= ~BUTTON_UP;
 	}
-	// Down key p1 at a
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'a') {
+	// Down key p1 at a, now S
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 's') {
 		// Down down
 		gamepads[0] |= BUTTON_DOWN;		
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'a') {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 's') {
 		// Down up
 		gamepads[0] &= ~BUTTON_DOWN;
 	}
-	// A key down p1 at space
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == ' ') {
+	// A key down p1 at space, now C
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'c') {
 		// A down
 		gamepads[0] |= BUTTON_A;		
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == ' ') {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'c') {
 		// A up
 		gamepads[0] &= ~BUTTON_A;
 	}
-	// B key p1 at c
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'c') {
+	// B key p1 at c, now X
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'x') {
 		// B down
 		gamepads[0] |= BUTTON_B;		
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'c') {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'x') {
 		// B up
 		gamepads[0] &= ~BUTTON_B;
 	}
-	// START key p1 at space
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 13) {
+	// START key p1 at space, now left shift *** *** TBD, temporarily '<'
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '<') {
 		// START down
 		gamepads[0] |= BUTTON_START;
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 13) {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == '<') {
 		// START up
 		gamepads[0] &= ~BUTTON_START;
 	}
-	// SELECT key p1 at x
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'x') {
+	// SELECT key p1 at x, now Z
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'z') {
 		// SELECT down
 		gamepads[0] |= BUTTON_SELECT;
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'x') {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'z') {
 		// SELECT up
 		gamepads[0] &= ~BUTTON_SELECT;
 	}
@@ -2948,75 +2948,75 @@ void emulate_gamepad1(SDL_Event *e) {
 
 /* Emulate second gamepad. */
 void emulate_gamepad2(SDL_Event *e) {
-	// Left key down p1 at u
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'u') {
+	// Left key down p2 at u, now J
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'j') {
 		// Left down
 		gamepads[1] |= BUTTON_LEFT;		
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'u') {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'j') {
 		// Left up
 		gamepads[1] &= ~BUTTON_LEFT;		
 	}
-	// Right key down p1 at i
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'i') {
+	// Right key down p2 at i, now L
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'l') {
 		// Right down
 		gamepads[1] |= BUTTON_RIGHT;
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'i') {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'l') {
 		// Right up
 		gamepads[1] &= ~BUTTON_RIGHT;
 	}
-	// Up key p1 at w
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'w') {
+	// Up key p2 at w, now I
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'i') {
 		// Up down
 		gamepads[1] |= BUTTON_UP;		
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'w') {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'i') {
 		// Up up
 		gamepads[1] &= ~BUTTON_UP;
 	}
-	// Down key p1 at s
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 's') {
+	// Down key p2 at s, now K
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'k') {
 		// Down down
 		gamepads[1] |= BUTTON_DOWN;		
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 's') {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'k') {
 		// Down up
 		gamepads[1] &= ~BUTTON_DOWN;
 	}
-	// A key down p1 at e
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'e') {
+	// A key down p2 at e, now SPACE
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == ' ') {
 		// A down
 		gamepads[1] |= BUTTON_A;		
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'e') {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == ' ') {
 		// A up
 		gamepads[1] &= ~BUTTON_A;
 	}
-	// B key p1 at d
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'd') {
+	// B key p2 at d, now ALT *** TBD, temporarily '-' ***
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '-') {
 		// B down
 		gamepads[1] |= BUTTON_B;		
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'd') {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == '-') {
 		// B up
 		gamepads[1] &= ~BUTTON_B;
 	}
-	// START key p1 at r
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'r') {
+	// START key p2 at r, now N
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'n') {
 		// START down
 		gamepads[1] |= BUTTON_START;
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'r') {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'n') {
 		// START up
 		gamepads[1] &= ~BUTTON_START;
 	}
-	// SELECT key p1 at f
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'f') {
+	// SELECT key p2 at f, now M
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == 'm') {
 		// SELECT down
 		gamepads[1] |= BUTTON_SELECT;
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'f') {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == 'm') {
 		// SELECT up
 		gamepads[1] &= ~BUTTON_SELECT;
 	}
