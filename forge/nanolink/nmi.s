@@ -11,6 +11,8 @@
 
 #ifndef	NANOLINK
 #define	NANOLINK
+; specific nanoLink limit (new)
+linkend	= $FA				; address of LAST byte to be received
 ; standard minimOS interrupt-reserved variables
 sysptr	= $FC				; download buffer pointer
 systmp	= $FE				; temporary bit shifting
@@ -49,6 +51,15 @@ rcv_nmi:
 	BNE no_byte				; not yet complete (usually 3, 73+ if 0, 100+ if 1) (*or 2, 72+ if 0, 99+ if 1)
 		LDA systmp			; get read value (*3, 75+ if 0, 102+ if 1)
 		STA (sysptr)		; and store into buffer, CMOS only (*5, 80+ if 0, 107+ if 1)
+; *** *** *** recheck timing from here *** *** *** seems to add *9t most of the time, ocasionally *18 
+		LDA sysptr
+		CMP linkend			; time to finish reception?
+		BNE nextbyte		; not yet
+			LDA sysptr+1	; check MSB too
+			SEC
+			SBC linkend+1	; will be zero at the end
+			BEQ no_wrap		; and will disable further reception
+nextbyte:
 		LDA #8				; reset value for bit counter (*2, 82+ if 0, 109+ if 1)
 ;		INC sysptr			; advance into buffer (*5, 87+ if 0, 114+ if 1)
 ;		BNE no_wrap			; (*typically 3, 90+ if 0, 117+ if 1) (**or 2, 89+ if 0, 116+ if 1)
