@@ -1,10 +1,10 @@
 ; nanoLink sender routine (Durango-X speed)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230114-2239
+; last modified 20230116-1317
 
 ; *** send one byte thru nanoLink ***
 ; input
-;	ptr		address of byte (will be advanced)
+;	A		byte to be sent
 ; affects A, X and temp, autoincrements ptr (ZP)
 
 
@@ -12,13 +12,12 @@
 IO9nano	= $DF97				; port address
 
 nano_send:
+byte_send:					; alternative access
 .(
 ; *** zeropage allocation ***
 temp	= $ED				; minimOS local3+1, could be elsewhere
 ptr		= $EE
 
-	LDA (ptr)				; get data, CMOS only (5)
-+byte_send:					; alternative access
 	STA temp				; store byte (3+)
 	LDX #7					; max bit index per byte (2)
 send_loop:
@@ -41,12 +40,8 @@ was_zero:
 		JSR exit			; interbit delay is needed! (14, 82+/109+)
 		DEX
 		BPL send_loop		; all bits in byte (2+3, 87+/114+ and still 6 clocks of margin)
-;	INC ptr					; advance to next byte (-1 +5, 91+/118+)
-;	BNE same_page			; (3 within same page / 2+5 page crossing, assume 94+/121+)
-;		INC ptr+1			; new page should add some important delay, maybe outside the routine
-same_page:
-	JSR exit				; make sure cannot be called too early! (14, 108+/135+) adding calling overhead is enough
-	RTS						; (6, no less than 114+/141+, actually valid even for page crossing)
+	JSR exit				; make sure cannot be called too early! (14, 100+/127+) adding calling overhead is enough
+	RTS						; (6, no less than 106+/133+, actually valid even for page crossing)
 
 ; *** support routines ***
 wait:
