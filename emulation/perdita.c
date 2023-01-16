@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2023 Carlos J. Santisteban, Emilio López Berenguer
- * last modified 20230116-1358
+ * last modified 20230116-1406
  * */
 
 /* Gamepad buttons constants */
@@ -938,17 +938,17 @@ void adc(byte d) {
 	word big = a;
 
 	big += d;				// basic add... but check for Decimal mode!
-	big += (p & 1);			// add with Carry
-	a = big & 255;
+	big += (p & 1);			// add with Carry (A was computer just after this)
 
 	if (p & 0b00001000) {						// Decimal mode!
-		if ((a & 0x0F) > 9) {					// LSN overflow?
-			a += 6;								// get into next decade
+		if ((big & 0x0F) > 9) {					// LSN overflow? was 'a' instead of 'big'
+			big += 6;								// get into next decade
 		}
-		if ((a & 0xF0) > 0x90) {				// MSN overflow?
-			a += 0x60;							// correct it
+		if ((big & 0xF0) > 0x90) {				// MSN overflow?
+			big += 0x60;							// correct it
 		}
 	}
+	a = big & 255;			// placed here trying to correct Carry in BCD mode
 
 	if (big & 256)			p |= 0b00000001;	// set Carry if needed
 	else					p &= 0b11111110;
@@ -964,18 +964,18 @@ void sbc(byte d) {
 
 	big += ~d;				// basic subtract, 6502-style... but check for Decimal mode!
 	big += (p & 1);			// add with Carry
-	a = big & 255;
-
+	
 	if (p & 0b00001000) {						// Decimal mode!
-		if ((a & 0x0F) > 9) {					// LSN overflow?
-			a -= 6;								// get into next decade *** check
+		if ((big & 0x0F) > 9) {					// LSN overflow?
+			big -= 6;								// get into next decade *** check
 		}
-		if ((a & 0xF0) > 0x90) {				// MSN overflow?
-			a -= 0x60;							// correct it
+		if ((big & 0xF0) > 0x90) {				// MSN overflow?
+			big -= 0x60;							// correct it
 		}
 	}
+	a = big & 255;			// same as ADC
 
-	if (big & 256)			p &= 0b11111110;	// set Carry if needed EEEEEEEEEEEEK
+	if (big & 256)			p &= 0b11111110;	// set Carry if needed EEEEEEEEEEEEK, is this OK?
 	else					p |= 0b00000001;
 	if ((a&128)^(old&128))	p |= 0b01000000;	// set oVerflow if needed
 	else					p &= 0b10111111;
