@@ -1,11 +1,11 @@
 ; nanoLink sender routine (Durango-X speed)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230116-1317
+; last modified 20230119-0011
 
 ; *** send one byte thru nanoLink ***
 ; input
 ;	A		byte to be sent
-; affects A, X and temp, autoincrements ptr (ZP)
+; affects A, X and temp
 
 
 ; *** hardware definitions ***
@@ -31,23 +31,26 @@ send_loop:
 		STA IO9nano			; data is sent, clock goes down, most likely safe to do right now (4, 17+ since NMI is pretty safe)
 		ROR					; recover sent bit into C! (2, 19+ since NMI)
 ; with data bit already sent, cannot clear it before the NMI-enabled IRQ is executed!
-; that's 58t for 0, 85t for 1 (might actually use the 58t delay everywhere and add 27t after reading)
-		JSR wait			; wait for the bit to be read (42, 61+ since NMI)
-		BCC was_zero		; transmitted zeros are faster! (3, 64+ since NMI or...)
-			JSR wait2		; add 28t extra, minus one of not taken BCC (...27 if bit=1, 91+ after NMI)
+; ~42+ after NMI fire
+		JSR wait			; wait for the bit to be read (28, 47+ since NMI)
+		BCC was_zero		; transmitted zeros are faster! (3, 50+ since NMI or...)
+			NOP
+			NOP
+			JSR exit		; add 18t extra, minus one of not taken BCC (...17 if bit=1, 67+ after NMI)
 was_zero:
-		STZ IO9nano			; clear data, thus release interrupt line! (4, 68+/95+ since NMI)
+		STZ IO9nano			; clear data, thus release interrupt line! (4, 54+/71+ since NMI)*********
 		JSR exit			; interbit delay is needed! (14, 82+/109+)
 		DEX
 		BPL send_loop		; all bits in byte (2+3, 87+/114+ and still 6 clocks of margin)
 	JSR exit				; make sure cannot be called too early! (14, 100+/127+) adding calling overhead is enough
 	RTS						; (6, no less than 106+/133+, actually valid even for page crossing)
 
+;	CLI						; enable interrupt... (2, 42+)
+;	PLA						; (4+6, 84/106+ single bit, 116/138+ last bit, 120/142+ page cross, 126/148+ check limit, 130/152+ limit while crossing)
+
 ; *** support routines ***
 wait:
-; apply suitable delay (total 42t including call overhead)
-	JSR exit
-wait2:						; (28t including call overhead)
+; apply suitable delay (28t including call overhead)
 	JSR exit
 exit:						; (14t including call overhead)
 	NOP
