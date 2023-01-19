@@ -1,13 +1,17 @@
 ; Space Invaders sound test for Durango
-; (c) 2021-2022 Carlos J. Santisteban
+; (c) 2021-2023 Carlos J. Santisteban
 
 ; must play 494, 440, 392 and 370 Hz brief notes
 ; that's semicycles of 1555t, 1745t, 1959t and 2076t
 ; for 9t loops is ~173, 194, 218 and 231
 ; like every 0.6 s?
 
-*		= $400				; standard download
+.text
+;*		= $FF80				; standard download
+* = $c000
+.dsb $ff80-*, $ff
 
+reset:
 	SEI						; just in case
 play:
 	LDA #173				; B (494 Hz)
@@ -56,3 +60,11 @@ d_loop:
 		INY
 		BNE d_loop
 	RTS
+end:
+
+	.dsb	$FFFA-*, $ff
+	
+vectors:
+	.word	reset
+	.word	reset
+	.word	reset
