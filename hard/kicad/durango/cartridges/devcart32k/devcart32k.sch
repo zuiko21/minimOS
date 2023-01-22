@@ -705,7 +705,6 @@ Wire Wire Line
 	3050 6525 2875 6525
 Wire Wire Line
 	2875 6525 2875 4625
-NoConn ~ 4050 6525
 NoConn ~ 4050 6725
 Wire Wire Line
 	1150 5250 1100 5250
@@ -767,7 +766,7 @@ Text Label 4450 4750 2    50   ~ 0
 Text Label 4450 4850 2    50   ~ 0
 MISO
 Wire Wire Line
-	5450 6625 5450 5150
+	5450 6525 5450 5150
 Wire Wire Line
 	5450 5050 5950 5050
 Wire Wire Line
@@ -821,8 +820,8 @@ Entry Wire Line
 Wire Wire Line
 	4050 6425 4050 6075
 Wire Wire Line
-	4050 6625 5450 6625
-Text Label 4400 6625 0    50   ~ 0
+	4050 6525 5450 6525
+Text Label 4425 6525 0    50   ~ 0
 ~STATUS
 Wire Wire Line
 	2350 3975 2825 3975
@@ -1054,16 +1053,6 @@ Wire Wire Line
 	6700 5650 7200 5650
 Wire Wire Line
 	6700 5750 7200 5750
-Wire Bus Line
-	3550 875  3550 2075
-Wire Bus Line
-	2225 775  2225 2775
-Wire Bus Line
-	900  875  900  4850
-Wire Bus Line
-	3975 775  3975 2750
-Wire Bus Line
-	5700 875  5700 4750
 Connection ~ 6700 5750
 $Comp
 L Graphic:Logo_Open_Hardware_Large LOGO1
@@ -1088,7 +1077,7 @@ F 3 "~" H 10600 1875 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Text Label 4050 4150 1    50   ~ 0
-~WE
+G~WE
 $Comp
 L Graphic:Logo_Open_Hardware_Small LOGO3
 U 1 1 63C2970C
@@ -1100,4 +1089,15 @@ F 3 "~" H 10600 2400 50  0001 C CNN
 	1    10600 2400
 	1    0    0    -1  
 $EndComp
+NoConn ~ 4050 6625
+Wire Bus Line
+	3550 875  3550 2075
+Wire Bus Line
+	2225 775  2225 2775
+Wire Bus Line
+	900  875  900  4850
+Wire Bus Line
+	3975 775  3975 2750
+Wire Bus Line
+	5700 875  5700 4750
 $EndSCHEMATC
