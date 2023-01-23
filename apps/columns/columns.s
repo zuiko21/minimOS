@@ -314,7 +314,6 @@ not_s2f:
 		CMP #MAGIC_JWL
 		BNE do_advance
 			LDY posit, X
-.byt$cb
 			JSR coldisp
 do_advance:
 ; *** *** ***

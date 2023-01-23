@@ -1,6 +1,6 @@
 ; FULL test of Durango-X/S/R with 32K DevCart (ROMmable version, NMOS-savvy)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230123-1719
+; last modified 20230123-1757
 
 ; ****************************
 ; *** standard definitions ***
@@ -11,13 +11,15 @@
 	systmp	= $FC			; %11111100
 	sysptr	= $FD			; %11111101
 	himem	= $FF			; %11111111
+	ts_copy	= $5F00
 	IO8mode	= $DF80
 	IO8lf	= $DF88			; EEEEEEEK
 	IOAen	= $DFA0
 	IOBeep	= $DFB0
+	IOCart	= $DFC0			; eeeeeek
 ; ****************************
 
-* = $F000					; 4 KiB start address
+* = $C000					; 4 KiB start address
 
 ; ******************
 ; *** test suite ***
@@ -36,7 +38,7 @@ reset:
 	STA IO8mode				; set colour mode
 	STA IOAen				; disable hardware interrupt (any even value LED turns on)
 	LDA #0					; may add bit to disable /CS in SD card (d6-d5 must be ZERO)
-	STA $DFC0				; make sure RAM in cartridge is writeable, and original ROM is selected
+	STA IOCart				; make sure RAM in cartridge is writeable, and original ROM is selected
 
 ; ** zeropage test **
 ; make high pitched chirp during test
@@ -488,6 +490,7 @@ it_b:
 		STA $6FC0, X
 		DEX
 		BPL it_b			; no offset!
+	STX IOAen				; enable with $FF eeeeeeeeeeeeeeeeek
 ; inverse video during test (brief flash)
 #ifdef	HIRES
 	LDA #$F0				; HIRES inverse, for testing
@@ -547,13 +550,16 @@ it_ok:
 
 ; *** standard hardware is OK, now test in-cartridge RAM ***
 ; first install test code into RAM!
-	LDX #panic-cart_test-1
+	LDX #panic-cart_test	; actual number of bytes
 ti_loop:
 		LDA cart_test, X
-		STA $5F80, X		; copy at the very end of standard RAM, outside screen (below 128 bytes)
+		STA ts_copy, X		; copy at the last page of standard RAM +1, outside screen
 		DEX
-		BPL ti_loop
-	JSR $5F80
+		BNE ti_loop
+	JSR ts_copy+1			; note offset
+	BCC rc_ok
+		JMP panic
+rc_ok:
 
 ; ***************************
 ; *** all OK, end of test ***
@@ -671,6 +677,7 @@ rb_1:
 cart_test:
 	CLI
 	LDA #%01000000			; disable ROM, keep RAM unprotected
+	STA IOCart				; eeeeeeek
 	LDX #$80				; start of cartridge RAM
 ct_1:
 		STX test+1
@@ -687,11 +694,11 @@ ct_2:
 		TAY					; note +64 offset
 		LDA #$80			; blue dot, left pixel only
 		STA $6B00, Y		; where the NMI dots were
-		INX					; next page
-		CPX #$DF			; but not I/O!
+		CPX #$DE			; will next page be I/O?
 		BNE ct_nio
 			INX				; continue at $E0 if so
 ct_nio:
+		INX					; next page
 		BMI ct_1			; continue until end of cartridge RAM
 ; now check stored values and write page number instead
 	LDX #$80				; start of cartridge RAM
@@ -713,11 +720,11 @@ ct_4:
 		TAY					; note +64 offset
 		LDA #$E0			; fuchsia dot, left pixel only
 		STA $6B00, Y		; where the NMI dots were
-		INX					; next page
-		CPX #$DF			; but not I/O!
+		CPX #$DE			; will next page be I/O?
 		BNE ct_nio2
 			INX				; continue at $E0 if so
 ct_nio2:
+		INX					; next page
 		BMI ct_3			; continue until end of cartridge RAM
 ; now check final values
 	LDX #$80				; start of cartridge RAM
@@ -737,15 +744,16 @@ ct_6:
 		TAY					; note +64 offset
 		LDA #$50			; green dot, left pixel only
 		STA $6B00, Y		; where the NMI dots were
-		INX					; next page
-		CPX #$DF			; but not I/O!
+		CPX #$DE			; will next page be I/O?
 		BNE ct_nio3
 			INX				; continue at $E0 if so
 ct_nio3:
+		INX					; next page
 		BMI ct_5			; continue until end of cartridge RAM
 ; cartridge RAM seems OK
 	LDA #0					; may add bit to disable /CS in SD card (d6-d5 must be ZERO)
-	STA $DFC0				; make sure RAM in cartridge is writeable, and original ROM is selected
+	STA IOCart				; make sure RAM in cartridge is writeable, and original ROM is selected
+	CLC
 	RTS
 
 ct_err:						; in case any difference is found
@@ -755,10 +763,10 @@ ct_err:						; in case any difference is found
 	LDA #$22				; fully elongated red dot
 	STA $6B00, Y			; where the NMI dots were
 	LDA #0					; may add bit to disable /CS in SD card (d6-d5 must be ZERO)
-	STA $DFC0				; make sure RAM in cartridge is writeable, and original ROM is selected
+	STA IOCart				; make sure RAM in cartridge is writeable, and original ROM is selected
 	SEC
-	LDA #%11101110			; panic pattern
-;	JMP panic
+	LDA #%11001110			; panic pattern
+	RTS
 
 ; *********************
 ; *** panic routine ***
