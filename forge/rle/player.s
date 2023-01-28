@@ -1,38 +1,36 @@
 ; RLE-encoded video playback POC
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20211110-1334
+; last modified 20230128-1109
 
 ; *** zeropage variables ***
-.zero
 
-*	= 3
-
-src		.word	0			; pointer to compressed source
-ptr		.word	0			; pointer to screen output
-jiffy	.byt	0			; jiffy counter, if not provided by OS
-next	.byt	0			; next frame decoding deadline
-
-.text
-
-* = $300					; needs TONS of space!
+src		= 3					; pointer to compressed source
+ptr		= src+2				; pointer to screen output
+jiffy	= ptr+2				; jiffy counter, if not provided by OS
+next	= jiffy+1			; next frame decoding deadline
 
 ; *** parameter definitions ***
 dest	= $6400				; Durango-X screen address (for 192-px height)
- 
+
+*		= $8000				; needs TONS of space, 32K ROM!
+
+reset:
+	SEI						; should not be needed for CMOS, but...
+	CLD						; no care for stack
 ; *** actual code ***
-    LDA #$B0                ; hires mode, screen 3 for testing
-    STA $DF80               ; set video flags
+	LDA #$B0				; hires mode, screen 3 for testing
+    STA $DF80				; set video flags
 ; must install an interrupt handler, 10 fps = 25 jiffys
 	LDY #<isr_rle
 	LDA #>isr_rle
 	STY $200				; fw_isr
-	STA	$201
+	STA $201
 	STZ jiffy
 	LDA #25					; next displayed frame
 	STA next
 	STA $DFA0				; d0 is on, enable interrupts
 	CLI						; interrupt is on
-	
+
 ; *** decompressing algorithm ***
 ; preload pointers as required
 start:
@@ -101,8 +99,8 @@ rle_exit:
 	BNE rle_wait
 		INC src+1
 rle_wait:
-    LDA (src)               ; CMOS, are we on a second consecutive NULL?
-    BEQ rle_end             ; yep, playback is done (may repeat all)
+	LDA (src)				; CMOS, are we on a second consecutive NULL?
+	BEQ rle_end				; yep, playback is done (may repeat all)
 ; ...but make sure we are doing the right fps!
 rle_fps:
 	LDA jiffy
@@ -114,19 +112,38 @@ rle_fps:
 	STA next
 ; to avoid tearing, wait for vsync
 rle_vsync:
-        BIT $DF88           ; wait until VBlank (d6)
-        BVC rle_vsync
-    BVS reloop              ; then decode next frame
+		BIT $DF88			; wait until VBlank (d6)
+		BVC rle_vsync
+    BVS reloop				; then decode next frame
 rle_end:
 ; *** all frames done, maybe loop again ***
-    JMP start
+	JMP start
 ; should page-align?
 
 ; *** interrupt handler (if not provided) ***
-isr:
+irq:
+	JMP ($0200)
+; *** specific ISR, very short!!! ***
+isr_rle:
 	INC jiffy
+rti_rle:
 	RTI
 
 ; ** compressed 'file' ahead **
 source:
-	.bin	0, *, "../rle/test.rlm"
+;	.bin	0, *, "../rle/test.rlm"
+
+; *** ROM filling ***
+	.dsb	$FFD6-*, $FF
+	.asc	"DmOS"			; standard signature
+
+	.dsb	$FFDE-*, $FF
+dc_switch:
+	STA $DFC0				; assume A=%01100000 for ROM & write disable
+	JMP($FFFC)				; devCart support @ $FFE1
+
+	.dsb	$FFFA-*, $FF	; *** standard ROM end ***
+
+	.word	rti_rle			; NMI does nothing
+	.word	reset			; RESET vector
+	.word	irq				; universal IRQ handler, no BRK support though
