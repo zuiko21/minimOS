@@ -1,6 +1,6 @@
 /* nanoLink sender for Raspberry Pi *
  * (c) 2023 Carlos J. Santisteban   *
- * last modified 20230128-2041      *
+ * last modified 20230128-2254      *
  */
 
 #include <stdio.h>
@@ -53,7 +53,9 @@ int main(int argc, char *argv[]) {
 	}
 	if (start==0)
 		start=65536-length;			/* if omitted, assume it's a ROM image */
-	printf("Start address: $%04X\n", (int)start);
+	printf("Start address: $%04X", start);
+	if (!boot)	printf(" (non executable)");
+	print("\n");
 	end = start+length;
 /* GPIO setup */
 	wiringPiSetupGpio();	/* using BCM numbering! */
@@ -65,76 +67,40 @@ int main(int argc, char *argv[]) {
 	printf("Sending header...\n");
 	if (boot)	send(0x4B);	/* magic number $4B for bootable, $4E for data */
 	else		send(0x4E);
-	send(end & 255);
-	send(end >>  8);		/* end address, now little-endian */
+	send(end   & 255);
+	send(end   >>  8);		/* end address, now little-endian */
 	send(start & 255);
 	send(start >>  8);		/* start address, now little-endian */
-	sleep(5);				/* wait at least 5 ms */
+	usleep(5000);			/* wait at least 5 ms */
 /* send actual file */
 	rewind(f);
+	printf("Sending code! ");
 	for (i=start; i<end; i++) {
-		if ((i & 255) == 0) {
-			sleep(2);		/* page crossing may need some time */
+		send(fgetc(f));
+		if ((i & 255) == 255) {
+			usleep(2000);	/* page crossing may need some time */
 			printf("$%02X, ", i>>8);
 		}
-		c = fgetc(f);
-		send(c);
 	}
-	printf("\b\b!\nEnded at $%04X\n", end);
+	printf("\b\b!\nEnded at $%04X!\n", i);
 	fclose(f);
 
 	return 0;
 }
 
-
-
-
-/* old code for reference only
-
-/* *** function definitions *** */
-/* for old nanoBoot ROM, invert bit (bit^1) */
-void cabe(int x) {			/* just like dato() but with longer bit delay, whole header takes ~85 ms */
-	int bit, i = 8;
+void send(int x) {
+	int bit, i = 128;
 
 	while(i>0) {
-		bit = x & 1;
-		digitalWrite(CB2, bit);		/* send bit for OC, NO longer INVERTED */
+		bit = x & i;
 		digitalWrite(CB1, 1);
-		useg(15);			/* eeeeeek */
-		digitalWrite(CB1, 0);
-		useg(1985);			/* way too long, just in case, note OC */
-/* delay is best here in any case */
-		x >>= 1;
-		i--;
-	}
-	useg(1000);				/* shouldn't be needed, but won't harm anyway */
-}
-
-void dato(int x) {			/* send a byte at 'top' speed */
-	int bit, i = 8;
-
-	while(i>0) {
-		bit = x & 1;
+		usleep(12);					/* must trigger NMI, then wait for IRQ to be disconnected before sending data */
 		digitalWrite(CB2, bit);		/* note OC */
-		digitalWrite(CB1, 1);
-		useg(15);			/* eeeeeeek */
+		usleep(40);
 		digitalWrite(CB1, 0);
-		useg(dats);			/* *** cranked up to 55 µs or so (at 1 MHz) is pretty unreliable *** */
-/* delay is best here in any case */
-		x >>= 1;
-		i--;
+		digitalWrite(CB2, 0);		/* let data line float high, note OC */
+		usleep(28);
+		i >>= 1;
 	}
-	digitalWrite(CB2, 0);	/* let data line float high, note OC */
-	useg(125);				/* *** perhaps 200 µs or so *** */
+	usleep(32);
 }
-
-/* this actually waits for a number of t-states */
-void useg(int x){
-	int i, t;
-
-	for (t=0; t<x; t++){
-		for (i=0; i<periodo; i++);	/* *** 200 iterations = 1 µs on RPi400 *** */
-	}
-}
-
-*/

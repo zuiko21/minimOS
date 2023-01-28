@@ -1,6 +1,6 @@
 ; nanoLink sender routine (Durango-X speed)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230119-0011
+; last modified 20230128-2243
 
 ; *** send one byte thru nanoLink ***
 ; input

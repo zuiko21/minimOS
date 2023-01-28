@@ -1,6 +1,6 @@
 ; nanoLink NMI handler for transparent reception
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230118-2330
+; last modified 20230128-2243
 
 ; *****************************************
 ; *** NMI handler for nanoLink receiver ***
@@ -50,6 +50,7 @@ rcv_nmi:
 ; *** IRQ is executed if bit is 1, takes 22t (15t + ACK) ***
 ; MUST return with interrupts disabled in stacked P!
 	SEI						; ...and disable it, in case no IRQ was called! (2, 44+ if 0, 66+ if 1)
+	ROL systmp				; EEEEEEK, MSb first like SS-22 (5)
 	PLA
 	STA fw_irq
 	PLA 
