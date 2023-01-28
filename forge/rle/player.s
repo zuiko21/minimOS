@@ -10,16 +10,17 @@ jiffy	= ptr+2				; jiffy counter, if not provided by OS
 next	= jiffy+1			; next frame decoding deadline
 
 ; *** parameter definitions ***
-dest	= $6400				; Durango-X screen address (for 192-px height)
+dest	= $6400-11			; Durango-X screen address (for 192-px height) ...with patch for PBM header (ugly hack!)
 
-*		= $8000				; needs TONS of space, 32K ROM!
+*		= $C000				; needs TONS of space, 16K ROM!
 
 reset:
 	SEI						; should not be needed for CMOS, but...
 	CLD						; no care for stack
 ; *** actual code ***
 	LDA #$B0				; hires mode, screen 3 for testing
-    STA $DF80				; set video flags
+	STA $DF80				; set video flags
+; should clear screen
 ; must install an interrupt handler, 10 fps = 25 jiffys
 	LDY #<isr_rle
 	LDA #>isr_rle
@@ -131,15 +132,14 @@ rti_rle:
 
 ; ** compressed 'file' ahead **
 source:
-;	.bin	0, *, "../rle/test.rlm"
+	.bin	0, 0, "badapple.rlm"
 
 ; *** ROM filling ***
 	.dsb	$FFD6-*, $FF
 	.asc	"DmOS"			; standard signature
 
-	.dsb	$FFDE-*, $FF
-dc_switch:
-	STA $DFC0				; assume A=%01100000 for ROM & write disable
+	.dsb	$FFF0-*, $FF
+	NOP
 	JMP($FFFC)				; devCart support @ $FFE1
 
 	.dsb	$FFFA-*, $FF	; *** standard ROM end ***
