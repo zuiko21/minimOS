@@ -1,6 +1,6 @@
 ; RLE-encoded video playback POC
 ; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20230128-1109
+; last modified 20230128-1244
 
 ; *** zeropage variables ***
 
@@ -10,15 +10,15 @@ jiffy	= ptr+2				; jiffy counter, if not provided by OS
 next	= jiffy+1			; next frame decoding deadline
 
 ; *** parameter definitions ***
-dest	= $6400-11			; Durango-X screen address (for 192-px height) ...with patch for PBM header (ugly hack!)
+dest	= $6400				; Durango-X screen address (for 192-px height)
 
-*		= $C000				; needs TONS of space, 16K ROM!
+*		= $8000				; needs TONS of space, 32K ROM! needs to skip IO
 
 reset:
 	SEI						; should not be needed for CMOS, but...
 	CLD						; no care for stack
 ; *** actual code ***
-	LDA #$B0				; hires mode, screen 3 for testing
+	LDA #$F0				; hires mode, screen 3 for testing
 	STA $DF80				; set video flags
 ; should clear screen
 ; must install an interrupt handler, 10 fps = 25 jiffys
@@ -96,17 +96,17 @@ rle_next:
 ; *** end of code ***
 rle_exit:
 ; skip end-of-file, wait for VSYNC and decode next frame
-	INC src				    ; advance read pointer
-	BNE rle_wait
-		INC src+1
+;	INC src				    ; advance read pointer
+;	BNE rle_wait
+;		INC src+1
 rle_wait:
 	LDA (src)				; CMOS, are we on a second consecutive NULL?
 	BEQ rle_end				; yep, playback is done (may repeat all)
 ; ...but make sure we are doing the right fps!
 rle_fps:
-	LDA jiffy
-	CMP next				; wait until next displayable frame
-	BNE rle_fps
+		LDA jiffy
+		CMP next				; wait until next displayable frame
+		BCC rle_fps
 ; now set all for next frame
 	CLC
 	ADC #25					; for 10 fps
