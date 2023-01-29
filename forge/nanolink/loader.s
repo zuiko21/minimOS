@@ -1,7 +1,7 @@
 ; nanoLink demo loader
 ; devCart version!
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230129-2152
+; last modified 20230129-2246
 
 ; *** definitions ***
 ptr		= $F8
@@ -101,6 +101,8 @@ loading:
 				LDA link_en
 				BNE not_done
 link_disabled:
+lda link_st
+bpl not_done
 					LDA sysptr
 					CMP linktop
 				BNE not_done
