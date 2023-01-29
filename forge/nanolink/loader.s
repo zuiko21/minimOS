@@ -1,7 +1,7 @@
 ; nanoLink demo loader
 ; devCart version!
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230129-1958
+; last modified 20230129-2152
 
 ; *** definitions ***
 ptr		= $F8
@@ -141,6 +141,10 @@ beep:
 					JSR enable			; ready for another one
 not_done:
 ; either a load ended, or is in progress, or was aborted, or never started due to corrupt header
+				LDA link_en				; is it disabled?
+				BNE not_disabled
+					JSR display			; if so, keep showing time
+not_disabled:
 ; may check if the user desires to disable the load by pressing SPACE
 				LDA #1					; select column 1
 				STA IO9kbd
@@ -168,6 +172,12 @@ bot_loop:
 		STA $7F00, X
 		INX
 		BNE bot_loop
+	LDY #$F8
+	TXA
+bot_clear:
+		STA $7E00, Y		; nicer if the remainings of numbers are deleted
+		INY
+		BNE bot_clear
 	RTS
 
 enable:
