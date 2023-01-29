@@ -1,7 +1,7 @@
 ; nanoLink demo loader
 ; devCart version!
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230129-0149
+; last modified 20230129-1033
 
 ; *** definitions ***
 ptr		= $FC
@@ -50,7 +50,6 @@ reset:
 	LDX #$60				; screen start
 	LDY #0
 	STY ptr
-	STY link_st				; extra header init (0 = idle)
 	STY IOCart				; just in case
 	TYA
 p_loop:
@@ -64,11 +63,7 @@ b_loop:
 ; set everything for header reception
 	LDA #$88				; blue as enabled
 	JSR bottom				; display bottom row
-	LDA #1
-	STA ptr+1
-	STZ ptr					; set stack page for header!
-	LDA #8
-	STA link_en				; link enabled
+	JSR enable				; activate header reception
 	CLI						; eeeeeeeek
 ; *** main loop ***
 loop:
@@ -104,8 +99,7 @@ not_load:
 			STA IO9kbd
 			BIT IO9kbd		; SPACE = d7, ENTER = d6
 			BVC not_disabled
-				LDA #8
-				STA link_en		; ENTER pressed, enable nanoLink
+				JSR enable		; ENTER pressed, enable nanoLink
 				LDA #$88		; blue
 				JSR bottom
 not_disabled:
@@ -148,7 +142,7 @@ beep:
 					BNE cycle
 				CLI
 				TRB IO8attr	; clear inverse bit
-				STZ link_st	; ready for another one
+				JSR enable	; ready for another one
 not_ended:
 		LDA #1				; select column 1
 		STA IO9kbd
@@ -168,6 +162,19 @@ bot_loop:
 		STA $7F00, X
 		INX
 		BNE bot_loop
+	RTS
+
+enable:
+; activate link for next header
+	LDX #1
+	STX ptr+1
+	STZ ptr					; set stack page for header!
+	LDA #6					; address $106 must be unreachable!
+	STA linktop
+	STX linktop+1			; set loading limit EEEEEEEEEK
+	STZ link_st				; extra header init (0 = idle)
+	LDA #8
+	STA link_en				; link enabled
 	RTS
 
 display:
