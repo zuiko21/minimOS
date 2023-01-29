@@ -1,6 +1,6 @@
 /* nanoLink sender for Raspberry Pi *
  * (c) 2023 Carlos J. Santisteban   *
- * last modified 20230129-1131      *
+ * last modified 20230129-2215      *
  */
 
 #include <stdio.h>
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 		index = 2;					/* try locating -n parameter */
 		if (argv[index][0]!='-' && argc>=3)
 			index=3;				/* may be the third parameter (as usual) */
-		if (argv[index][0]=='-' && argv[index][1]|32 =='n')
+		if (argv[index][0]=='-' && (argv[index][1]|32) =='n')
 			boot=0;					/* non-executable */
 	}
 	if (start==0)
