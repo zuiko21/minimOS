@@ -1,10 +1,10 @@
 ; nanoLink demo loader
 ; devCart version!
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230129-1033
+; last modified 20230129-1818
 
 ; *** definitions ***
-ptr		= $FC
+ptr		= $F8
 link_en	= $FF				; set to 8 if enabled, 0 if disabled
 l_boot	= $100				; boot enable flag ($4B bootable, $4E data)
 link_pt	= $103				; start address copy
@@ -88,7 +88,7 @@ not_head:
 ;		LDA link_st
 		CMP #$FF			; load in progress?
 		BNE not_load
-			LDX ptr+1		; check MSB
+			LDX sysptr+1	; check MSB
 			LDA #$55		; light green
 			STA $7F00, X	; place elongated dot on bottom row
 not_load:
@@ -106,10 +106,10 @@ not_disabled:
 ; check if load ended
 		LDA link_en
 		BNE not_ended
-			LDA ptr
+			LDA sysptr
 			CMP linktop
 				BNE not_ended
-			LDA ptr+1
+			LDA sysptr+1
 			CMP linktop+1
 			BNE not_ended
 ; execute loaded code or simply notify user
@@ -167,8 +167,8 @@ bot_loop:
 enable:
 ; activate link for next header
 	LDX #1
-	STX ptr+1
-	STZ ptr					; set stack page for header!
+	STX sysptr+1
+	STZ sysptr				; set stack page for header!
 	LDA #6					; address $106 must be unreachable!
 	STA linktop
 	STX linktop+1			; set loading limit EEEEEEEEEK

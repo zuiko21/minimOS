@@ -99,14 +99,14 @@ void send(int x) {
 
 	while(i>0) {
 		bit = x & i;
-		digitalWrite(CB1, 1);
-		delayMicroseconds(18);		/*12 must trigger NMI, then wait for IRQ to be disconnected before sending data */
+		digitalWrite(CB1, 1);		/* trigger NMI */
+		delayMicroseconds(10);		/* wait for NMI acknoledge before sending IRQ */
 		digitalWrite(CB2, bit);		/* note OC */
-		delayMicroseconds(50);		//40
+		delayMicroseconds(22);		/* keep data line until IRQ is enabled */
 		digitalWrite(CB1, 0);
 		digitalWrite(CB2, 0);		/* let data line float high, note OC */
-		delayMicroseconds(36);		//28
+		delayMicroseconds(bit?41:26);	/* ones take longer to transmit */
 		i >>= 1;
 	}
-	delayMicroseconds(40);//32
+	delayMicroseconds(30);
 }
