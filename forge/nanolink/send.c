@@ -1,6 +1,6 @@
 /* nanoLink sender for Raspberry Pi *
  * (c) 2023 Carlos J. Santisteban   *
- * last modified 20230128-2309      *
+ * last modified 20230129-1131      *
  */
 
 #include <stdio.h>
@@ -16,10 +16,12 @@
 #define	CB2		20
 #define	STB		21
 
+void send(int x);
+
 int main(int argc, char *argv[]) {
 	int		boot	= 1;			/* executable by default */
 	int		start	= 0;			/* base address */
-	int		length, end;
+	int		i, index, length, end;
 	FILE	*f;
 
 	printf("*** nanoLink sender (OC) ***\n");
@@ -46,16 +48,16 @@ int main(int argc, char *argv[]) {
 		if (!start && argc>3)
 			start=(int)atof(argv[3]);	/* try with third parameter */
 		index = 2;					/* try locating -n parameter */
-		if (argv[index][0]]!='-' && argc>=3)
+		if (argv[index][0]!='-' && argc>=3)
 			index=3;				/* may be the third parameter (as usual) */
-		if (argv[index][0]]=='-' && argv[index][1]|32 =='n')
+		if (argv[index][0]=='-' && argv[index][1]|32 =='n')
 			boot=0;					/* non-executable */
 	}
 	if (start==0)
 		start=65536-length;			/* if omitted, assume it's a ROM image */
 	printf("Start address: $%04X", start);
 	if (!boot)	printf(" (non executable)");
-	print("\n");
+	printf("\n");
 	end = start+length;
 /* GPIO setup */
 	wiringPiSetupGpio();	/* using BCM numbering! */
@@ -73,18 +75,20 @@ int main(int argc, char *argv[]) {
 	send(start >>  8);		/* start address, now little-endian */
 	if (boot)	send(0x4B);	/* repeat magic number as ACK */
 	else		send(0x4E);
-	usleep(5000);			/* wait at least 5 ms */
+	delayMicroseconds(5000);			/* wait at least 5 ms */
 /* send actual file */
 	rewind(f);
 	printf("Sending code! ");
+	fflush(stdout);
 	for (i=start; i<end; i++) {
 		send(fgetc(f));
 		if ((i & 255) == 255) {
-			usleep(2000);	/* page crossing may need some time */
+			delayMicroseconds(2000);	/* page crossing may need some time */
 			printf("$%02X, ", i>>8);
+			fflush(stdout);
 		}
 	}
-	printf("\b\b!\nEnded at $%04X!\n", i);
+	printf("\b\b complete pages!\nEnded at $%04X!\n", i);
 	fclose(f);
 
 	return 0;
@@ -96,13 +100,13 @@ void send(int x) {
 	while(i>0) {
 		bit = x & i;
 		digitalWrite(CB1, 1);
-		usleep(12);					/* must trigger NMI, then wait for IRQ to be disconnected before sending data */
+		delayMicroseconds(18);		/*12 must trigger NMI, then wait for IRQ to be disconnected before sending data */
 		digitalWrite(CB2, bit);		/* note OC */
-		usleep(40);
+		delayMicroseconds(50);		//40
 		digitalWrite(CB1, 0);
 		digitalWrite(CB2, 0);		/* let data line float high, note OC */
-		usleep(28);
+		delayMicroseconds(36);		//28
 		i >>= 1;
 	}
-	usleep(32);
+	delayMicroseconds(40);//32
 }
