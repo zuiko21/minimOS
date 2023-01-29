@@ -1,7 +1,7 @@
 ; nanoLink demo loader
 ; devCart version!
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230128-2353
+; last modified 20230129-0149
 
 ; *** definitions ***
 ptr		= $FC
@@ -33,7 +33,7 @@ reset:
 	SEI
 	CLD
 	LDX #$FF
-	TSX						; usual 6502 stuff, SP setting is important
+	TXS						; usual 6502 stuff, SP setting is important
 	STX IOAen				; enable hard interrupts, turn error LED off
 	LDA #$38				; colour mode, RGB, screen 3
 	STA IO8attr
@@ -69,6 +69,7 @@ b_loop:
 	STZ ptr					; set stack page for header!
 	LDA #8
 	STA link_en				; link enabled
+	CLI						; eeeeeeeek
 ; *** main loop ***
 loop:
 ; check for received header
@@ -104,7 +105,7 @@ not_load:
 			BIT IO9kbd		; SPACE = d7, ENTER = d6
 			BVC not_disabled
 				LDA #8
-				STZ link_en		; ENTER pressed, enable nanoLink
+				STA link_en		; ENTER pressed, enable nanoLink
 				LDA #$88		; blue
 				JSR bottom
 not_disabled:
@@ -171,20 +172,19 @@ bot_loop:
 
 display:
 ; show timer in hex
-	LDX #$7E
-	LDY #$B8				; position of first digit
-;	STY ptr
-	STX ptr+1				; pointer complete, use only during disabled state
 	LDA ticks+2
 	PHA
 	LSR
 	LSR
 	LSR
 	LSR
+	LDX #$7E
+	LDY #$F8				; position of first digit
 	JSR figure
 	PLA
 	AND #15
-	LDY #$BA
+	LDX #$7E
+	LDY #$FA
 	JSR figure
 	LDA ticks+1
 	PHA
@@ -192,14 +192,17 @@ display:
 	LSR
 	LSR
 	LSR
-	LDY #$BC
+	LDX #$7E
+	LDY #$FC
 	JSR figure
 	PLA
 	AND #15
-	LDY #$BE
+	LDX #$7E
+	LDY #$FE
 ;	JSR figure
 figure:
-; display number in A at offset Y
+; display number in A at address XY
+	STX ptr+1
 	STY ptr
 	TAX
 	LDA numbers, X

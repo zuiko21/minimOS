@@ -1,6 +1,6 @@
 ; nanoLink NMI handler for transparent reception
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230128-2312
+; last modified 20230129-0151
 
 ; *****************************************
 ; *** NMI handler for nanoLink receiver ***
@@ -33,10 +33,10 @@ fw_irq	= $0200
 
 rcv_nmi:
 .(
-	STZ IOAie				; disable hardware interrupt ASAP (4+ACK)
 	PHA						; save reg (3, total 7+)
 	LDA sys_sp				; check current state (optional, usually 5t, total 12+)
 		BEQ disabled		; do not disturb operation if disabled
+	STZ IOAie				; disable hardware interrupt ASAP (4+ACK)
 	LDA fw_irq+1
 	PHA
 	LDA fw_irq
