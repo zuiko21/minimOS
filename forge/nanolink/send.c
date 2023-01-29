@@ -1,6 +1,6 @@
 /* nanoLink sender for Raspberry Pi *
  * (c) 2023 Carlos J. Santisteban   *
- * last modified 20230129-2215      *
+ * last modified 20230129-2221      *
  */
 
 #include <stdio.h>
@@ -53,8 +53,10 @@ int main(int argc, char *argv[]) {
 		if (argv[index][0]=='-' && (argv[index][1]|32) =='n')
 			boot=0;					/* non-executable */
 	}
-	if (start==0)
+	if (start==0) {
+		printf("(ROM image) ");
 		start=65536-length;			/* if omitted, assume it's a ROM image */
+	}
 	printf("Start address: $%04X", start);
 	if (!boot)	printf(" (non executable)");
 	printf("\n");
