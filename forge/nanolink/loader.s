@@ -1,7 +1,7 @@
 ; nanoLink demo loader
 ; devCart version!
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230129-2246
+; last modified 20230130-0011
 
 ; *** definitions ***
 ptr		= $F8

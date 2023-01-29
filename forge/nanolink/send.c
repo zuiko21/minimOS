@@ -69,14 +69,12 @@ int main(int argc, char *argv[]) {
 	pinMode(STB, OUTPUT);	/* not actually used */
 /* send header */
 	printf("Sending header...\n");
-	if (boot)	send(0x4B);	/* magic number $4B for bootable, $4E for data */
-	else		send(0x4E);
+	send(boot?0x4B:0x4E);	/* magic number $4B for bootable, $4E for data */
 	send(end   & 255);
 	send(end   >>  8);		/* end address, now little-endian */
 	send(start & 255);
 	send(start >>  8);		/* start address, now little-endian */
-	if (boot)	send(0x4B);	/* repeat magic number as ACK */
-	else		send(0x4E);
+	send(boot?0x4B:0x4E);	/* magic number $4B for bootable, $4E for data */
 	delayMicroseconds(5000);			/* wait at least 5 ms */
 /* send actual file */
 	rewind(f);
@@ -104,10 +102,10 @@ void send(int x) {
 		digitalWrite(CB1, 1);		/* trigger NMI */
 		delayMicroseconds(10);		/* wait for NMI acknoledge before sending IRQ */
 		digitalWrite(CB2, bit);		/* note OC */
-		delayMicroseconds(22);		/* keep data line until IRQ is enabled */
+		delayMicroseconds(27);//22		/* keep data line until IRQ is enabled */
 		digitalWrite(CB1, 0);
 		digitalWrite(CB2, 0);		/* let data line float high, note OC */
-		delayMicroseconds(bit?41:26);	/* ones take longer to transmit */
+		delayMicroseconds(bit?44:28);//41:26);	/* ones take longer to transmit */
 		i >>= 1;
 	}
 	delayMicroseconds(30);
