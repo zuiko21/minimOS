@@ -1,6 +1,6 @@
 /* nanoLink sender for Raspberry Pi *
  * (c) 2023 Carlos J. Santisteban   *
- * last modified 20230128-2254      *
+ * last modified 20230128-2309      *
  */
 
 #include <stdio.h>
@@ -71,6 +71,8 @@ int main(int argc, char *argv[]) {
 	send(end   >>  8);		/* end address, now little-endian */
 	send(start & 255);
 	send(start >>  8);		/* start address, now little-endian */
+	if (boot)	send(0x4B);	/* repeat magic number as ACK */
+	else		send(0x4E);
 	usleep(5000);			/* wait at least 5 ms */
 /* send actual file */
 	rewind(f);
