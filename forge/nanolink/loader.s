@@ -1,7 +1,7 @@
 ; nanoLink demo loader
 ; devCart version!
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230129-1818
+; last modified 20230129-1958
 
 ; *** definitions ***
 ptr		= $F8
@@ -67,91 +67,97 @@ b_loop:
 	CLI						; eeeeeeeek
 ; *** main loop ***
 loop:
-; check for received header
-		LDA link_st
-		CMP #$4B
-			BEQ prepare		; valid header detected
-		CMP #$4E
-			BNE not_head	; no header
-prepare:
-			LDX #4			; will copy 4 bytes ($101-$104)
+		LDA link_en			; is the link enabled? if so, it's either waiting or loading
+		BEQ link_disabled
+			LDA link_st
+			BMI loading		; status $FF while enabled means loading, otherwise is waiting
+				CMP #$4B	; got a bootable header?
+				BEQ do_load
+					CMP #$4E			; non-bootable will load too
+					BNE not_done		; otherwise is garbage
+do_load:
+; valid header is received, proceed with load at specified address
+				LDX #4		; will copy 4 bytes ($101-$104)
 l_loop:
-				LDA l_boot, X			; original header data
-				STA linktop-1, X		; copy into NMI space (note offset)
-				DEX
-				BNE l_loop
-			DEX
-			STX link_st		; status $FF, active load
-			TXA
-not_head:
-; update loading progress indicator
-;		LDA link_st
-		CMP #$FF			; load in progress?
-		BNE not_load
-			LDX sysptr+1	; check MSB
-			LDA #$55		; light green
-			STA $7F00, X	; place elongated dot on bottom row
-not_load:
-		LDA link_en			; disabled state?
-		BNE not_disabled
-			JSR display		; show time progression
-			LDA #1			; select column 1
-			STA IO9kbd
-			BIT IO9kbd		; SPACE = d7, ENTER = d6
-			BVC not_disabled
-				JSR enable		; ENTER pressed, enable nanoLink
-				LDA #$88		; blue
-				JSR bottom
-not_disabled:
-; check if load ended
-		LDA link_en
-		BNE not_ended
-			LDA sysptr
-			CMP linktop
-				BNE not_ended
-			LDA sysptr+1
-			CMP linktop+1
-			BNE not_ended
-; execute loaded code or simply notify user
-				LDA l_boot	; check flag
-				CMP #$4B	; bootable?
-				BNE no_boot
+					LDA l_boot, X		; original header data
+					STA linktop-1, X	; copy into NMI space (note offset)
+					DEX
+					BNE l_loop
+				DEX			; was 0, now $FF
+				STX link_st	; status $FF, active load
+				LDY linktop+1			; check final page as marker
+				LDA #$B8				; light pink just at left pixel
+				STA $7F00, Y			; display dot on bottom row
+				TXA			; status in A like above
+loading:
+; check if status is really $FF
+			CMP #$FF		; really loading, not garbage header?
+			BNE not_done
+; actually loading, update progress bar
+				LDX sysptr+1			; check MSB
+				LDA #$55				; light green
+				STA $7F00, X			; place elongated dot on bottom row
+; should check whether transfer has ended
+				LDA link_en
+				BNE not_done
+link_disabled:
+					LDA sysptr
+					CMP linktop
+				BNE not_done
+					LDA sysptr+1
+					CMP linktop+1
+				BNE not_done
+; transfer completed successfully, execute or notify
+					LDA l_boot			; check flag
+					CMP #$4B			; bootable?
+					BNE no_boot
 ; if executable is not a ROM image, just execute it
-					LDA linktop
-					ORA linktop+1		; zero if last byte was at $FFFF
-					BEQ switch
-						JMP (link_pt)	; start address copy
+						LDA linktop
+						ORA linktop+1	; zero if last byte was at $FFFF
+						BEQ switch
+							JMP (link_pt)		; start address copy
 switch:
 ; if bootable ROM image, make it switch to RAM
-					SEI
-					LDA #%01100000		; ROM disabled, protected mode
-					JMP $FFDE			; standard switchpoint
+						SEI
+						LDA #%01100000	; ROM disabled, protected mode
+						JMP $FFDE		; standard switchpoint
+; * if executed, no longer will run from this *
 no_boot:
 ; beep and flash to indicate data loaded
-				LDA #64		; inverse mode
-				TSB IO8attr	; set inverse bit
-				LDX #0
-				SEI
+					LDA #64				; inverse mode
+					TSB IO8attr			; set inverse bit
+					LDX #0
+					SEI
 cycle:
-					LDY #153 
+						LDY #153 
 beep:
-						DEY
-						BNE beep
-					INX
-					STX IOBeep
-					BNE cycle
-				CLI
-				TRB IO8attr	; clear inverse bit
-				JSR enable	; ready for another one
-not_ended:
-		LDA #1				; select column 1
-		STA IO9kbd
-		BIT IO9kbd			; SPACE = d7, ENTER = d6
-		BPL no_space
-			STZ link_en		; SPACE pressed, disable nanoLink
-			LDA #$22		; red
-			JSR bottom
+							DEY
+							BNE beep
+						INX
+						STX IOBeep
+						BNE cycle
+					CLI
+					TRB IO8attr			; clear inverse bit
+					JSR enable			; ready for another one
+not_done:
+; either a load ended, or is in progress, or was aborted, or never started due to corrupt header
+; may check if the user desires to disable the load by pressing SPACE
+				LDA #1					; select column 1
+				STA IO9kbd
+				BIT IO9kbd				; SPACE = d7, ENTER = d6
+				BPL no_space
+					STZ link_en			; SPACE pressed, disable nanoLink
+					STZ link_st
+					LDA #$22			; red
+					JSR bottom
+;					BRA no_enter		; calling bottom won't affect V flag
 no_space:
+; ...or if load status is to be reenabled by pressing ENTER
+				BVC no_enter
+					JSR enable		; ENTER pressed, enable nanoLink
+					LDA #$88		; blue
+					JSR bottom
+no_enter:
 		JMP loop
 
 ; *** support routines ***
