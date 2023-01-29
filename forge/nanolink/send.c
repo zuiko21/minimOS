@@ -1,6 +1,6 @@
 /* nanoLink sender for Raspberry Pi *
  * (c) 2023 Carlos J. Santisteban   *
- * last modified 20230129-2221      *
+ * last modified 20230129-2236      *
  */
 
 #include <stdio.h>
@@ -28,9 +28,9 @@ int main(int argc, char *argv[]) {
 	printf("pin 34=GND, 36=CLK, 38=DAT\n\n");
 /* check command syntax */
 	if (argc<2) {
-		printf("\nUSAGE: ./%s file [address] [-n]\n", argv[0]);
+		printf("\nUSAGE: ./%s file [address] [-]\n", argv[0]);
 		printf("address in decimal or hex (Intel '0x' syntax)\n");
-		printf("-n: do NOT execute upon reception\n");
+		printf("-: do NOT execute upon reception\n");
 		return -1;
 	}
 /* open source file */
@@ -45,16 +45,16 @@ int main(int argc, char *argv[]) {
 /* set parameters */
 	if (argc>2) {
 		start=(int)atof(argv[2]);		/* atoi() won't accept Hex addresses! */
-		if (!start && argc>3)
+		if ((start==0) && (argc>3))
 			start=(int)atof(argv[3]);	/* try with third parameter */
 		index = 2;					/* try locating -n parameter */
-		if (argv[index][0]!='-' && argc>=3)
+		if ((argv[index][0]!='-') && (argc>3))
 			index=3;				/* may be the third parameter (as usual) */
-		if (argv[index][0]=='-' && (argv[index][1]|32) =='n')
+		if (argv[index][0]=='-')
 			boot=0;					/* non-executable */
 	}
 	if (start==0) {
-		printf("(ROM image) ");
+		printf("(ROM image) ");fflush(stdout);
 		start=65536-length;			/* if omitted, assume it's a ROM image */
 	}
 	printf("Start address: $%04X", start);
