@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230130-1824
+; last modified 20230130-1902
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22
@@ -404,11 +404,11 @@ TK_PLOT		= TK_SCREEN+1	; PLOT x,y,c	$B1	*** new tokens for Durango-X (graphic pr
 TK_LINE		= TK_PLOT+1		; LINE x1,y1,x2,y2,c	$B2
 TK_CIRCLE	= TK_LINE+1		; CIRCLE x,y,r,c		$B3
 TK_RECT		= TK_CIRCLE+1	; RECT x1,y1,x2,y2,c	$B4 (filled)
-TK_BEEP		= TK_RECT+1		; BEEP d,n	$B5
+TK_BEEP		= TK_RECT+1		; BEEP d,n	$B5		*** new token for Durango-X (sound output)
 
 ; secondary command tokens, cannot start a statement
 
-TK_TAB		= TK_RECT+1		; TAB token $B6 ##### SYS no longer used, minimOS needs BYE ##### replaced by SQUARE so far
+TK_TAB		= TK_BEEP+1		; TAB token $B6 ##### SYS no longer used, minimOS needs BYE ##### replaced by BEEP so far
 TK_ELSE		= TK_TAB+1		; ELSE token $B7
 TK_TO		= TK_ELSE+1		; TO token $B8
 TK_FN		= TK_TO+1		; FN token $B9
@@ -7844,6 +7844,11 @@ V_SAVE					; save BASIC program *** not yet implemented ***
 
 ; perform CLS
 LAB_CLS
+	BNE LAB_CLSERR		; no more tokens should follow
+	LDA #12
+	JMP V_OUTP			; send FF to CONIO and return
+LAB_CLSERR
+	RTS
 
 ; perform INK i
 LAB_INK
@@ -8128,7 +8133,7 @@ LAB_CTBLC
 	.word	LAB_LINE		; LINE x1,y1,x2,y2,c
 	.word	LAB_CIRCLE		; CIRCLE x,y,r,c
 	.word	LAB_RECT		; RECT x1,y1,x2,y2,c
-	.word	LAB_BEEP		; BEEP d,n
+	.word	LAB_BEEP		; BEEP d,n		*** new for Durango-X (sound)
 
 ; function pre process routine table (currently NMOS)
 
@@ -8350,7 +8355,7 @@ LBB_ATN
 	.byte	$00
 TAB_ASCB
 LBB_BEEP
-	.byte	"EEP",TK_BEEP		; BEEP
+	.byte	"EEP",TK_BEEP		; BEEP	*** Durango-X
 LBB_BINS
 	.byte	"IN$(",TK_BINS		; BIN$(
 LBB_BITCLR
@@ -8368,11 +8373,11 @@ LBB_CALL
 LBB_CHRS
 	.byte	"HR$(",TK_CHRS		; CHR$(
 LBB_CIRCLE
-	.byte	"IRCLE",TK_CIRCLE	; CIRCLE
+	.byte	"IRCLE",TK_CIRCLE	; CIRCLE	*** Durango-X
 LBB_CLEAR
 	.byte	"LEAR",TK_CLEAR		; CLEAR
 LBB_CLS
-	.byte	"LS",TK_CLS			; CLS
+	.byte	"LS",TK_CLS			; CLS	*** Durango-X
 LBB_CONT
 	.byte	"ONT",TK_CONT		; CONT
 LBB_COS
@@ -8430,7 +8435,7 @@ LBB_IF
 LBB_INC
 	.byte	"NC",TK_INC			; INC
 LBB_INK
-	.byte	"NK",TK_INK			; INK
+	.byte	"NK",TK_INK			; INK	*** Durango-X
 LBB_INPUT
 	.byte	"NPUT",TK_INPUT		; INPUT
 LBB_INT
@@ -8454,7 +8459,7 @@ LBB_LIST
 LBB_LOAD
 	.byte	"OAD",TK_LOAD		; LOAD
 LBB_LOCATE
-	.byte	"OCATE",TK_LOCATE	; LOCATE
+	.byte	"OCATE",TK_LOCATE	; LOCATE	*** Durango-X
 LBB_LOG
 	.byte	"OG(",TK_LOG		; LOG(
 LBB_LOOP
@@ -8468,7 +8473,7 @@ LBB_MIDS
 LBB_MIN
 	.byte	"IN(",TK_MIN		; MIN(
 LBB_MODE
-	.byte	"ODE",TK_MODE		; MODE
+	.byte	"ODE",TK_MODE		; MODE	*** Durango-X
 	.byte	$00
 TAB_ASCN
 LBB_NEW
@@ -8492,13 +8497,13 @@ LBB_OR
 	.byte	$00
 TAB_ASCP
 LBB_PAPER
-	.byte	"APER",TK_PAPER		; PAPER
+	.byte	"APER",TK_PAPER		; PAPER	*** Durango-X
 LBB_PEEK
 	.byte	"EEK(",TK_PEEK		; PEEK(
 LBB_PI
 	.byte	"I",TK_PI			; PI
 LBB_PLOT
-	.byte	"LOT",TK_PLOT		; PLOT
+	.byte	"LOT",TK_PLOT		; PLOT	*** Durango-X
 LBB_POKE
 	.byte	"OKE",TK_POKE		; POKE
 LBB_POS
@@ -8510,7 +8515,7 @@ TAB_ASCR
 LBB_READ
 	.byte	"EAD",TK_READ		; READ
 LBB_RECT
-	.byte	"ECT",TK_RECT		; RECT
+	.byte	"ECT",TK_RECT		; RECT	*** Durango-X
 LBB_REM
 	.byte	"EM",TK_REM			; REM
 LBB_RESTORE
@@ -8533,6 +8538,8 @@ LBB_SADD
 	.byte	"ADD(",TK_SADD		; SADD(
 LBB_SAVE
 	.byte	"AVE",TK_SAVE		; SAVE
+LBB_SCREEN
+	.byte	"CREEN",TK_SCREEN	; SCREEN	*** Durango-X
 LBB_SGN
 	.byte	"GN(",TK_SGN		; SGN(
 LBB_SIN
@@ -8902,6 +8909,8 @@ AA_end_basic		; for easier size computation
 .)
 
 ; *** *** *** ***** *** *** ***
+
+	.dsb	$E000-*, $FF	; just in case, skip IO
 
 ; *****************************
 ; *** include firmware here ***
