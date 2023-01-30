@@ -1,9 +1,9 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20221213-1749
+; last modified 20230130-0940
 ; *************************************************************
 
-; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
+; Enhanced BASIC, $ver 2.22
 
 ; $E7E1 $E7CF $E7C6 $E7D3 $E7D1 $E7D5 $E7CF $E81E $E825
 
@@ -60,6 +60,7 @@ GAMEPAD_MASK1	= fw_knes+1	; EEEEEEEEK
 ; CONIO zeropage usage ($E4-$E7)
 cio_pt		= $E6
 cio_src		= $E4
+; Graphic routines ZP usage *** TO BE DONE ***
 
 ; *** Durango-X hardware definitions ****
 -IO8attr	= $DF80		; video mode register
@@ -78,9 +79,9 @@ cio_src		= $E4
 ; *** zero page usage ***
 ; ***********************
 
-uz	= 3			; ##### EhBASIC zeropage usage on minimOS #####
+uz	= 3			; ##### EhBASIC zeropage usage on minimOS ##### standalone Durango-X version might use 0-2
 
-; *** no need for vectored warm start, cannot see any use for Usrjmp ***
+; *** no need for vectored warm start ***
 
 Nullct		= uz		; nulls output after each line *** $03
 TPos		= Nullct+1	; BASIC terminal position byte *** $04
@@ -349,118 +350,128 @@ Decssp1		= Decss+1	; number to decimal string start
 
 ; primary command tokens (can start a statement)
 
-TK_END		= $80			; END token
-TK_FOR		= TK_END+1		; FOR token
-TK_NEXT		= TK_FOR+1		; NEXT token
-TK_DATA		= TK_NEXT+1		; DATA token
-TK_INPUT	= TK_DATA+1		; INPUT token
-TK_DIM		= TK_INPUT+1	; DIM token
-TK_READ		= TK_DIM+1		; READ token
-TK_LET		= TK_READ+1		; LET token
-TK_DEC		= TK_LET+1		; DEC token
-TK_GOTO		= TK_DEC+1		; GOTO token
-TK_RUN		= TK_GOTO+1		; RUN token
-TK_IF		= TK_RUN+1		; IF token
-TK_RESTORE	= TK_IF+1		; RESTORE token
-TK_GOSUB	= TK_RESTORE+1	; GOSUB token
-TK_RETIRQ	= TK_GOSUB+1	; RETIRQ token
-TK_RETNMI	= TK_RETIRQ+1	; RETNMI token
-TK_RETURN	= TK_RETNMI+1	; RETURN token
-TK_REM		= TK_RETURN+1	; REM token
-TK_STOP		= TK_REM+1		; STOP token
-TK_ON		= TK_STOP+1		; ON token
-TK_NULL		= TK_ON+1		; NULL token
-TK_INC		= TK_NULL+1		; INC token
-TK_WAIT		= TK_INC+1		; WAIT token
-TK_LOAD		= TK_WAIT+1		; LOAD token
-TK_SAVE		= TK_LOAD+1		; SAVE token
-TK_DEF		= TK_SAVE+1		; DEF token
-TK_POKE		= TK_DEF+1		; POKE token
-TK_DOKE		= TK_POKE+1		; DOKE token
-TK_CALL		= TK_DOKE+1		; CALL token
-TK_DO		= TK_CALL+1		; DO token
-TK_LOOP		= TK_DO+1		; LOOP token
-TK_PRINT	= TK_LOOP+1		; PRINT token
-TK_CONT		= TK_PRINT+1	; CONT token
-TK_LIST		= TK_CONT+1		; LIST token
-TK_CLEAR	= TK_LIST+1		; CLEAR token
-TK_NEW		= TK_CLEAR+1	; NEW token
-TK_WIDTH	= TK_NEW+1		; WIDTH token
-TK_GET		= TK_WIDTH+1	; GET token
-TK_SWAP		= TK_GET+1		; SWAP token
-TK_BITSET	= TK_SWAP+1		; BITSET token
-TK_BITCLR	= TK_BITSET+1	; BITCLR token
-TK_IRQ		= TK_BITCLR+1	; IRQ token
-TK_NMI		= TK_IRQ+1		; NMI token
-TK_BYE		= TK_NMI+1		; BYE token ##### added for minimOS as exit to shell #####
+TK_END		= $80			; END token $80
+TK_FOR		= TK_END+1		; FOR token $81
+TK_NEXT		= TK_FOR+1		; NEXT token $82
+TK_DATA		= TK_NEXT+1		; DATA token $83
+TK_INPUT	= TK_DATA+1		; INPUT token $84
+TK_DIM		= TK_INPUT+1	; DIM token $85
+TK_READ		= TK_DIM+1		; READ token $86
+TK_LET		= TK_READ+1		; LET token $87
+TK_DEC		= TK_LET+1		; DEC token $88
+TK_GOTO		= TK_DEC+1		; GOTO token $89
+TK_RUN		= TK_GOTO+1		; RUN token $8A
+TK_IF		= TK_RUN+1		; IF token $8B
+TK_RESTORE	= TK_IF+1		; RESTORE token $8C
+TK_GOSUB	= TK_RESTORE+1	; GOSUB token $8D
+TK_RETIRQ	= TK_GOSUB+1	; RETIRQ token $8E
+TK_RETNMI	= TK_RETIRQ+1	; RETNMI token $8F
+TK_RETURN	= TK_RETNMI+1	; RETURN token $90
+TK_REM		= TK_RETURN+1	; REM token $91
+TK_STOP		= TK_REM+1		; STOP token $92
+TK_ON		= TK_STOP+1		; ON token $93
+TK_NULL		= TK_ON+1		; NULL token $94
+TK_INC		= TK_NULL+1		; INC token $95
+TK_WAIT		= TK_INC+1		; WAIT token $96
+TK_LOAD		= TK_WAIT+1		; LOAD token $97
+TK_SAVE		= TK_LOAD+1		; SAVE token $98
+TK_DEF		= TK_SAVE+1		; DEF token $99
+TK_POKE		= TK_DEF+1		; POKE token $9A
+TK_DOKE		= TK_POKE+1		; DOKE token $9B
+TK_CALL		= TK_DOKE+1		; CALL token $9C
+TK_DO		= TK_CALL+1		; DO token $9D
+TK_LOOP		= TK_DO+1		; LOOP token $9E
+TK_PRINT	= TK_LOOP+1		; PRINT token $9F
+TK_CONT		= TK_PRINT+1	; CONT token $A0
+TK_LIST		= TK_CONT+1		; LIST token $A1
+TK_CLEAR	= TK_LIST+1		; CLEAR token $A2
+TK_NEW		= TK_CLEAR+1	; NEW token $A3
+TK_WIDTH	= TK_NEW+1		; WIDTH token $A4
+TK_GET		= TK_WIDTH+1	; GET token $A5
+TK_SWAP		= TK_GET+1		; SWAP token $A6
+TK_BITSET	= TK_SWAP+1		; BITSET token $A7
+TK_BITCLR	= TK_BITSET+1	; BITCLR token $A8
+TK_IRQ		= TK_BITCLR+1	; IRQ token $A9
+TK_NMI		= TK_IRQ+1		; NMI token $AA
+;TK_BYE		= TK_NMI+1		; BYE token ##### added for minimOS as exit to shell ##### NO LONGER NEEDED
+TK_CLS		= TK_NMI+1		; CLS		$AB	*** new tokens for Durango-X (CONIO support) ***
+TK_INK		= TK_CLS+1		; INK i		$AC
+TK_PAPER	= TK_INK+1		; PAPER p	$AD
+TK_LOCATE	= TK_PAPER+1	; LOCATE x,y	$AE
+TK_MODE		= TK_LOCATE+1	; MODE n	$AF	*** new tokens for Durango-X (video mode register)
+TK_SCREEN	= TK_MODE+1		; SCREEN n	$B0	not sure
+TK_PLOT		= TK_SCREEN+1	; PLOT x,y,c	$B1	*** new tokens for Durango-X (graphic primitives) maybe retrieve colour parameter from INK?
+TK_LINE		= TK_PLOT+1		; LINE x1,y1,x2,y2,c	$B2
+TK_CIRCLE	= TK_LINE+1		; CIRCLE x,y,r,c		$B3
+TK_SQUARE	= TK_CIRCLE+1	; SQUARE x1,y1,x2,y2,c	$B4
 
 ; secondary command tokens, cannot start a statement
 
-TK_TAB		= TK_BYE+1		; TAB token ##### SYS no longer used, minimOS needs BYE #####
-TK_ELSE		= TK_TAB+1		; ELSE token
-TK_TO		= TK_ELSE+1		; TO token
-TK_FN		= TK_TO+1		; FN token
-TK_SPC		= TK_FN+1		; SPC token
-TK_THEN		= TK_SPC+1		; THEN token
-TK_NOT		= TK_THEN+1		; NOT token
-TK_STEP		= TK_NOT+1		; STEP token
-TK_UNTIL	= TK_STEP+1		; UNTIL token
-TK_WHILE	= TK_UNTIL+1	; WHILE token
-TK_OFF		= TK_WHILE+1	; OFF token
+TK_TAB		= TK_SQUARE+1	; TAB token $B5 ##### SYS no longer used, minimOS needs BYE ##### replaced by SQUARE so far
+TK_ELSE		= TK_TAB+1		; ELSE token $B6
+TK_TO		= TK_ELSE+1		; TO token $B7
+TK_FN		= TK_TO+1		; FN token $B8
+TK_SPC		= TK_FN+1		; SPC token $B9
+TK_THEN		= TK_SPC+1		; THEN token $BA
+TK_NOT		= TK_THEN+1		; NOT token $BB
+TK_STEP		= TK_NOT+1		; STEP token $BC
+TK_UNTIL	= TK_STEP+1		; UNTIL token $BD
+TK_WHILE	= TK_UNTIL+1	; WHILE token $BE
+TK_OFF		= TK_WHILE+1	; OFF token $BF
 
 ; operator tokens
 
-TK_PLUS		= TK_OFF+1		; + token
-TK_MINUS	= TK_PLUS+1		; - token
-TK_MUL		= TK_MINUS+1	; * token
-TK_DIV		= TK_MUL+1		; / token
-TK_POWER	= TK_DIV+1		; ^ token
-TK_AND		= TK_POWER+1	; AND token
-TK_EOR		= TK_AND+1		; EOR token
-TK_OR		= TK_EOR+1		; OR token
-TK_RSHIFT	= TK_OR+1		; RSHIFT token
-TK_LSHIFT	= TK_RSHIFT+1	; LSHIFT token
-TK_GT		= TK_LSHIFT+1	; > token
-TK_EQUAL	= TK_GT+1		; = token
-TK_LT		= TK_EQUAL+1	; < token
+TK_PLUS		= TK_OFF+1		; + token $C0
+TK_MINUS	= TK_PLUS+1		; - token $C1
+TK_MUL		= TK_MINUS+1	; * token $C2
+TK_DIV		= TK_MUL+1		; / token $C3
+TK_POWER	= TK_DIV+1		; ^ token $C4
+TK_AND		= TK_POWER+1	; AND token $C5
+TK_EOR		= TK_AND+1		; EOR token $C6
+TK_OR		= TK_EOR+1		; OR token $C7
+TK_RSHIFT	= TK_OR+1		; RSHIFT token $C8
+TK_LSHIFT	= TK_RSHIFT+1	; LSHIFT token $C9
+TK_GT		= TK_LSHIFT+1	; > token $CA
+TK_EQUAL	= TK_GT+1		; = token $CB
+TK_LT		= TK_EQUAL+1	; < token $CC
 
 ; functions tokens
 
-TK_SGN		= TK_LT+1		; SGN token
-TK_INT		= TK_SGN+1		; INT token
-TK_ABS		= TK_INT+1		; ABS token
-TK_USR		= TK_ABS+1		; USR token
-TK_FRE		= TK_USR+1		; FRE token
-TK_POS		= TK_FRE+1		; POS token
-TK_SQR		= TK_POS+1		; SQR token
-TK_RND		= TK_SQR+1		; RND token
-TK_LOG		= TK_RND+1		; LOG token
-TK_EXP		= TK_LOG+1		; EXP token
-TK_COS		= TK_EXP+1		; COS token
-TK_SIN		= TK_COS+1		; SIN token
-TK_TAN		= TK_SIN+1		; TAN token
-TK_ATN		= TK_TAN+1		; ATN token
-TK_PEEK		= TK_ATN+1		; PEEK token
-TK_DEEK		= TK_PEEK+1		; DEEK token
-TK_SADD		= TK_DEEK+1		; SADD token
-TK_LEN		= TK_SADD+1		; LEN token
-TK_STRS		= TK_LEN+1		; STR$ token
-TK_VAL		= TK_STRS+1		; VAL token
-TK_ASC		= TK_VAL+1		; ASC token
-TK_UCASES	= TK_ASC+1		; UCASE$ token
-TK_LCASES	= TK_UCASES+1	; LCASE$ token
-TK_CHRS		= TK_LCASES+1	; CHR$ token
-TK_HEXS		= TK_CHRS+1		; HEX$ token
-TK_BINS		= TK_HEXS+1		; BIN$ token
-TK_BITTST	= TK_BINS+1		; BITTST token
-TK_MAX		= TK_BITTST+1	; MAX token
-TK_MIN		= TK_MAX+1		; MIN token
-TK_PI		= TK_MIN+1		; PI token
-TK_TWOPI	= TK_PI+1		; TWOPI token
-TK_VPTR		= TK_TWOPI+1	; VARPTR token
-TK_LEFTS	= TK_VPTR+1		; LEFT$ token
-TK_RIGHTS	= TK_LEFTS+1	; RIGHT$ token
-TK_MIDS		= TK_RIGHTS+1	; MID$ token
+TK_SGN		= TK_LT+1		; SGN token $CD
+TK_INT		= TK_SGN+1		; INT token $CE
+TK_ABS		= TK_INT+1		; ABS token $CF
+TK_USR		= TK_ABS+1		; USR token $D0
+TK_FRE		= TK_USR+1		; FRE token $D1
+TK_POS		= TK_FRE+1		; POS token $D2
+TK_SQR		= TK_POS+1		; SQR token $D3
+TK_RND		= TK_SQR+1		; RND token $D4
+TK_LOG		= TK_RND+1		; LOG token $D5
+TK_EXP		= TK_LOG+1		; EXP token $D6
+TK_COS		= TK_EXP+1		; COS token $D7
+TK_SIN		= TK_COS+1		; SIN token $D8
+TK_TAN		= TK_SIN+1		; TAN token $D9
+TK_ATN		= TK_TAN+1		; ATN token $DA
+TK_PEEK		= TK_ATN+1		; PEEK token $DB
+TK_DEEK		= TK_PEEK+1		; DEEK token $DC
+TK_SADD		= TK_DEEK+1		; SADD token $DD
+TK_LEN		= TK_SADD+1		; LEN token $DE
+TK_STRS		= TK_LEN+1		; STR$ token $DF
+TK_VAL		= TK_STRS+1		; VAL token $E0
+TK_ASC		= TK_VAL+1		; ASC token $E1
+TK_UCASES	= TK_ASC+1		; UCASE$ token $E2
+TK_LCASES	= TK_UCASES+1	; LCASE$ token $E3
+TK_CHRS		= TK_LCASES+1	; CHR$ token $E4
+TK_HEXS		= TK_CHRS+1		; HEX$ token $E5
+TK_BINS		= TK_HEXS+1		; BIN$ token $E6
+TK_BITTST	= TK_BINS+1		; BITTST token $E7
+TK_MAX		= TK_BITTST+1	; MAX token $E8
+TK_MIN		= TK_MAX+1		; MIN token $E9
+TK_PI		= TK_MIN+1		; PI token $EA
+TK_TWOPI	= TK_PI+1		; TWOPI token $EB
+TK_VPTR		= TK_TWOPI+1	; VARPTR token $EC
+TK_LEFTS	= TK_VPTR+1		; LEFT$ token $ED
+TK_RIGHTS	= TK_LEFTS+1	; RIGHT$ token $EE
+TK_MIDS		= TK_RIGHTS+1	; MID$ token $EF
 
 ; offsets from a base of X or Y
 
@@ -8017,54 +8028,7 @@ LAB_2A9C = LAB_2A9B+1
 	.byte	$00,$00,$64		; 100
 	.byte	$FF,$FF,$F6		; -10
 	.byte	$00,$00,$01		; 1
-/*
-; NMOS jump table
-LAB_CTBL
-	.word	LAB_END-1		; END
-	.word	LAB_FOR-1		; FOR
-	.word	LAB_NEXT-1		; NEXT
-	.word	LAB_DATA-1		; DATA
-	.word	LAB_INPUT-1		; INPUT
-	.word	LAB_DIM-1		; DIM
-	.word	LAB_READ-1		; READ
-	.word	LAB_LET-1		; LET
-	.word	LAB_DEC-1		; DEC			new command
-	.word	LAB_GOTO-1		; GOTO
-	.word	LAB_RUN-1		; RUN
-	.word	LAB_IF-1		; IF
-	.word	LAB_RESTORE-1	; RESTORE		modified command
-	.word	LAB_GOSUB-1		; GOSUB
-	.word	LAB_RETIRQ-1	; RETIRQ		new command
-	.word	LAB_RETNMI-1	; RETNMI		new command
-	.word	LAB_RETURN-1	; RETURN
-	.word	LAB_REM-1		; RE	M
-	.word	LAB_STOP-1		; STOP
-	.word	LAB_ON-1		; ON			modified command
-	.word	LAB_NULL-1		; NULL		modified command
-	.word	LAB_INC-1		; INC			new command
-	.word	LAB_WAIT-1		; WAIT
-	.word	V_LOAD-1		; LOAD
-	.word	V_SAVE-1		; SAVE
-	.word	LAB_DEF-1		; DEF
-	.word	LAB_POKE-1		; POKE
-	.word	LAB_DOKE-1		; DOKE		new command
-	.word	LAB_CALL-1		; CALL		new command
-	.word	LAB_DO-1		; DO			new command
-	.word	LAB_LOOP-1		; LOOP		new command
-	.word	LAB_PRINT-1		; PRINT
-	.word	LAB_CONT-1		; CONT
-	.word	LAB_LIST-1		; LIST
-	.word	LAB_CLEAR-1		; CLEAR
-	.word	LAB_NEW-1		; NEW
-	.word	LAB_WDTH-1		; WIDTH		new command
-	.word	LAB_GET-1		; GET			new command
-	.word	LAB_SWAP-1		; SWAP		new command
-	.word	LAB_BITSET-1	; BITSET		new command
-	.word	LAB_BITCLR-1	; BITCLR		new command
-	.word	LAB_IRQ-1		; IRQ			new command
-	.word	LAB_NMI-1		; NMI			new command
-	.word   LAB_EXIT-1		; BYE		##### added for minimOS #####
-*/
+
 ; CMOS jump table
 LAB_CTBLC
 	.word	LAB_END			; END
@@ -8110,9 +8074,19 @@ LAB_CTBLC
 	.word	LAB_BITCLR		; BITCLR	new command
 	.word	LAB_IRQ			; IRQ		new command
 	.word	LAB_NMI			; NMI		new command
-	.word   LAB_EXIT		; BYE		##### added for minimOS #####
+;	.word   LAB_EXIT		; BYE		##### added for minimOS ##### no longer needed
+	.word	LAB_CLS			; CLS			*** new for Durango-X (CONIO support) ***
+	.word	LAB_INK			; INK i
+	.word	LAB_PAPER		; PAPER p
+	.word	LAB_LOCATE		; LOCATE x,y
+	.word	LAB_MODE		; MODE n		*** new for Durango-X (video mode register)
+	.word	LAB_SCREEN		; SCREEN n		not sure
+	.word	LAB_PLOT		; PLOT x,y,c	*** new for Durango-X (graphic primitives) maybe retrieve colour parameter from INK?
+	.word	LAB_LINE		; LINE x1,y1,x2,y2,c
+	.word	LAB_CIRCLE		; CIRCLE x,y,r,c
+	.word	LAB_SQUARE		; SQUARE x1,y1,x2,y2,c
 
-; function pre process routine table
+; function pre process routine table (currently NMOS)
 
 LAB_FTPL
 LAB_FTPM	= LAB_FTPL+$01
