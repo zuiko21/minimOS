@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230130-1750
+; last modified 20230130-1824
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22
@@ -7838,6 +7838,48 @@ V_SAVE					; save BASIC program *** not yet implemented ***
 ;;	PLA
 ;	RTS					; exit to shell!
 
+; ***********************************
+; *** Durango-X specific commands ***
+; ***********************************
+
+; perform CLS
+LAB_CLS
+
+; perform INK i
+LAB_INK
+
+; perform PAPER p
+LAB_PAPER
+
+; perform LOCATE x,y
+LAB_LOCATE
+
+; perform MODE n
+LAB_MODE
+
+; perform SCREEN n
+LAB_SCREEN
+
+; perform PLOT x,y,c
+LAB_PLOT
+
+; perform LINE x1,y1,x2,y2,c
+LAB_LINE
+
+; perform CIRCLE x,y,r,c
+LAB_CIRCLE
+
+; perform RECT x1,y1,x2,y2,c
+LAB_RECT
+
+; perform BEEP
+LAB_BEEP
+; placeholder error
+	LDX #$20			; (Undefined Function) error
+	JMP LAB_XERR
+
+; *** end of Durango-X specifics ***
+
 ; The rest are tables messages and code for RAM
 
 ; the rest of the code is tables and BASIC start-up code
@@ -8307,6 +8349,8 @@ LBB_ATN
 	.byte	"TN(",TK_ATN		; ATN(
 	.byte	$00
 TAB_ASCB
+LBB_BEEP
+	.byte	"EEP",TK_BEEP		; BEEP
 LBB_BINS
 	.byte	"IN$(",TK_BINS		; BIN$(
 LBB_BITCLR
@@ -8323,8 +8367,12 @@ LBB_CALL
 	.byte	"ALL",TK_CALL		; CALL
 LBB_CHRS
 	.byte	"HR$(",TK_CHRS		; CHR$(
+LBB_CIRCLE
+	.byte	"IRCLE",TK_CIRCLE	; CIRCLE
 LBB_CLEAR
 	.byte	"LEAR",TK_CLEAR		; CLEAR
+LBB_CLS
+	.byte	"LS",TK_CLS			; CLS
 LBB_CONT
 	.byte	"ONT",TK_CONT		; CONT
 LBB_COS
@@ -8381,6 +8429,8 @@ LBB_IF
 	.byte	"F",TK_IF			; IF
 LBB_INC
 	.byte	"NC",TK_INC			; INC
+LBB_INK
+	.byte	"NK",TK_INK			; INK
 LBB_INPUT
 	.byte	"NPUT",TK_INPUT		; INPUT
 LBB_INT
@@ -8397,10 +8447,14 @@ LBB_LEN
 	.byte	"EN(",TK_LEN		; LEN(
 LBB_LET
 	.byte	"ET",TK_LET			; LET
+LBB_LINE
+	.byte	"INE",TK_LINE		; LINE
 LBB_LIST
 	.byte	"IST",TK_LIST		; LIST
 LBB_LOAD
 	.byte	"OAD",TK_LOAD		; LOAD
+LBB_LOCATE
+	.byte	"OCATE",TK_LOCATE	; LOCATE
 LBB_LOG
 	.byte	"OG(",TK_LOG		; LOG(
 LBB_LOOP
@@ -8413,6 +8467,8 @@ LBB_MIDS
 	.byte	"ID$(",TK_MIDS		; MID$(
 LBB_MIN
 	.byte	"IN(",TK_MIN		; MIN(
+LBB_MODE
+	.byte	"ODE",TK_MODE		; MODE
 	.byte	$00
 TAB_ASCN
 LBB_NEW
@@ -8435,10 +8491,14 @@ LBB_OR
 	.byte	"R",TK_OR			; OR
 	.byte	$00
 TAB_ASCP
+LBB_PAPER
+	.byte	"APER",TK_PAPER		; PAPER
 LBB_PEEK
 	.byte	"EEK(",TK_PEEK		; PEEK(
 LBB_PI
 	.byte	"I",TK_PI			; PI
+LBB_PLOT
+	.byte	"LOT",TK_PLOT		; PLOT
 LBB_POKE
 	.byte	"OKE",TK_POKE		; POKE
 LBB_POS
@@ -8449,6 +8509,8 @@ LBB_PRINT
 TAB_ASCR
 LBB_READ
 	.byte	"EAD",TK_READ		; READ
+LBB_RECT
+	.byte	"ECT",TK_RECT		; RECT
 LBB_REM
 	.byte	"EM",TK_REM			; REM
 LBB_RESTORE
@@ -8619,8 +8681,30 @@ LAB_KEYT
 	.word	LBB_IRQ		; IRQ
 	.byte	3,"N"
 	.word	LBB_NMI		; NMI
-	.byte	3,"B"
-	.word	LBB_BYE		; BYE		##### minimOS #####
+;	.byte	3,"B"
+;	.word	LBB_BYE		; BYE		##### minimOS ##### no longer needed
+	.byte	3,"C"
+	.word	LBB_CLS		; CLS		*** Durango-X specifics ***
+	.byte	3,"I"
+	.word	LBB_INK		; INK
+	.byte	5,"P"
+	.word	LBB_PAPER	; PAPER
+	.byte	6,"L"
+	.word	LBB_LOCATE	; LOCATE
+	.byte	4,"M"
+	.word	LBB_MODE	; MODE
+	.byte	6,"S"
+	.word	LBB_SCREEN	; SCREEN
+	.byte	4,"P"
+	.word	LBB_PLOT	; PLOT
+	.byte	4,"L"
+	.word	LBB_LINE	; LINE
+	.byte	6,"C"
+	.word	LBB_CIRCLE	; CIRCLE
+	.byte	4,"R"
+	.word	LBB_RECT	; RECT
+	.byte	4,"B"
+	.word	LBB_BEEP	; BEEP
 
 
 ; secondary commands (cannot start a statement)
@@ -8817,6 +8901,8 @@ LAB_REDO	.byte	" Redo from start",$0D,$00
 AA_end_basic		; for easier size computation
 .)
 
+; *** *** *** ***** *** *** ***
+
 ; *****************************
 ; *** include firmware here ***
 ; *****************************
@@ -8950,7 +9036,9 @@ drv_pask:
 	STA kb_asc				; store for software
 	RTS
 
-; BIOS
+; ********************
+; *** *** BIOS *** ***
+; ********************
 #include "../../OS/macros.h"
 ; EMPTY definition from abi.h
 #define	EMPTY	6
