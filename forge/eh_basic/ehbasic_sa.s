@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230130-2005
+; last modified 20230130-2239
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22
@@ -485,7 +485,7 @@ LAB_STAK	= $0100		; stack bottom, no offset
 ; *** flushed stack address (minus 2) will be stored at emptsk in runtime ***
 
 ; *** EhBASIC definitions for Durango-X ***
-Ram_base	= $0400		; start of user RAM (set as needed, should be page aligned) maybe down to $300
+Ram_base	= $0300		; start of user RAM (set as needed, should be page aligned)
 Ram_top		= $6000		; end of user RAM+1 (set as needed, should be page aligned) KEEP CLEAR Durango-X screen!
 
 ; ***************************
@@ -7853,15 +7853,41 @@ LAB_CLSERR
 
 ; perform INK i
 LAB_INK
-
+	JSR LAB_GTBY		; get argument 0...3 (may add 4,5 for greyscale)
+	PHX
+	LDA #18				; INK control code
+LAB_SENDCOL
+	JSR V_OUTP			; send to CONIO
+	PLA					; retrieve colour
+	JMP V_OUTP			; send and return
 LAB_ARGERR
 	JMP LAB_FCER		; function call error & return
 
 ; perform PAPER p
 LAB_PAPER
+	JSR LAB_GTBY		; get argument 0...3 (may add 4,5 for greyscale)
+	PHX
+	LDA #20				; PAPER control code
+	BNE LAB_SENDCOL		; continue with common code
 
 ; perform LOCATE x,y
 LAB_LOCATE
+	JSR LAB_IGBY		; column
+txa:jmp V_OUTP 
+	PHX
+brk
+	JSR LAB_SCGB		; next argument (row)
+	PHX
+	LDA #21				; ATYX control code
+	JSR V_OUTP			; send to CONIO
+	PLA					; retrieve row
+	JSR LAB_CONIO
+	PLA					; retrieve column
+LAB_CONIO
+	CLC
+	ADC #32				; make it printable for CONIO
+; should check boundaries
+	JMP V_OUTP			; send parameter and return
 
 ; perform MODE n
 LAB_MODE
@@ -7874,15 +7900,29 @@ LAB_MODE
 	ROR					; already at d7-d6
 	AND #%11000000
 	STA Temp3			; seems a safe place
-	LDA IO8attr			; get current video mode
-	AND #%00110000		; keep selected screen...
-	ORA #%00001000		; ...and RGB mode, if available (check)
-	ORA Temp3			; add selected mode
-	STA IO8attr			; set it!
+	LDA #%00110000		; keep selected screen...
+	JSR LAB_MODESET		; use common code
 	JMP LAB_DOCLS		; and clear screen (and return)
 
 ; perform SCREEN n
 LAB_SCREEN
+	JSR LAB_GTBY		; get argument 0...3
+	TXA
+	CMP #4				; max. 3
+	BCS LAB_ARGERR		; error otherwise
+	ASL
+	ASL
+	ASL
+	ASL					; now at d5-d4
+	AND #%00110000
+	STA Temp3			; seems a safe place
+	LDA #%11000000		; keep selected resolution...
+LAB_MODESET
+	AND IO8attr			; on current video mode
+	ORA #%00001000		; ...and RGB mode, if available (check)
+	ORA Temp3			; add selected mode
+	STA IO8attr			; set it!
+	RTS
 
 ; perform PLOT x,y,c
 LAB_PLOT
@@ -7978,7 +8018,8 @@ LAB_MSZM
 
 LAB_SMSG
 	.byte	" Bytes free",$0D,$0D
-	.byte	"Enhanced BASIC 2.22",$0D,$00	; *** do not know why this was $0A ***
+	.byte	"Enhanced BASIC 2.22",$0D
+	.byte	"for Durango·X",$0D,$00	; *** do not know why this was $0A ***
 
 ; numeric constants and series
 
@@ -8940,7 +8981,7 @@ reset:
 	CLD
 	LDX #$FF
 	TXS
-	STX IOAie				; ### enable Durango-X hardware interruptÂ ###
+	STX IOAie				; ### enable Durango-X hardware interrupt ###
 	STX fw_scur				; as bit 7 is on, activates cursor
 	LDA #$B8				; start in HIRES mode, if possible (note RGB bit set, just in case)
 	STA IO8attr
@@ -8967,7 +9008,7 @@ jf_res:
 nes_init:
 		STA IO9nes1			; send clock pulse
 		DEX
-		BNE nes_init		; all bits read @Â IO9nes0
+		BNE nes_init		; all bits read @ IO9nes0
 	LDA IO9nes0				; get bits
 	STA GAMEPAD_MASK1		; * MUST have a standard address, and MUST be initialised! *
 #endif
