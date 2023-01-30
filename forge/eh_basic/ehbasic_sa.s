@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20230130-0940
+; last modified 20230130-1003
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22
@@ -7826,16 +7826,16 @@ V_SAVE					; save BASIC program *** not yet implemented ***
 	LDX #$20			; (Undefined Function) error
 	JMP LAB_XERR
 
-; perform BYE	##### minimOS #####
-LAB_EXIT
-	LDX	emptsk			; new stack pointer
-	INX
-	INX					; *** discard two extra bytes
-	TXS					; reset stack
+; perform BYE	##### minimOS ##### not needed
+;LAB_EXIT
+;	LDX	emptsk			; new stack pointer
+;	INX
+;	INX					; *** discard two extra bytes
+;	TXS					; reset stack
 ; no real memory management, so nothing to free
-;	PLA					; still has to discard some return address! EEEEEEEEEK
-;	PLA
-	RTS					; exit to shell!
+;;	PLA					; still has to discard some return address! EEEEEEEEEK
+;;	PLA
+;	RTS					; exit to shell!
 
 ; The rest are tables messages and code for RAM
 
@@ -8313,8 +8313,8 @@ LBB_BITSET
 	.byte	"ITSET",TK_BITSET	; BITSET
 LBB_BITTST
 	.byte	"ITTST(",TK_BITTST	; BITTST(
-LBB_BYE
-	.byte	"YE",TK_BYE			; BYE		##### for minimOS #####
+;LBB_BYE
+;	.byte	"YE",TK_BYE			; BYE		##### for minimOS ##### no longer needed
 	.byte	$00
 TAB_ASCC
 LBB_CALL
