@@ -1,6 +1,6 @@
 /* nanoLink sender for Raspberry Pi *
  * (c) 2023 Carlos J. Santisteban   *
- * last modified 20230129-2236      *
+ * last modified 20230130-2248      *
  */
 
 #include <stdio.h>
@@ -80,6 +80,7 @@ int main(int argc, char *argv[]) {
 	rewind(f);
 	printf("Sending code! ");
 	fflush(stdout);
+	wiringPiSetupSys();
 	for (i=start; i<end; i++) {
 		send(fgetc(f));
 		if ((i & 255) == 255) {
@@ -88,7 +89,7 @@ int main(int argc, char *argv[]) {
 			fflush(stdout);
 		}
 	}
-	printf("\b\b complete pages!\nEnded at $%04X!\n", i);
+	printf("\b\b complete pages!\nEnded at $%04X (%f kiB/s)\n", i, length/1.024/millis());
 	fclose(f);
 
 	return 0;
