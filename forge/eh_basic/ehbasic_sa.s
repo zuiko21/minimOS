@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230130-1010
+; last modified 20230130-1750
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22
@@ -22,7 +22,7 @@
 ; 2.21	fixed IF .. THEN RETURN to not cause error
 ; 2.22	fixed RND() breaking the get byte routine
 
-	* = $C000
+	* = $8000
 
 ; try to assemble from here with
 ; xa ehbasic_sa.s -I ../../OS/firmware -l labels 
@@ -404,74 +404,75 @@ TK_PLOT		= TK_SCREEN+1	; PLOT x,y,c	$B1	*** new tokens for Durango-X (graphic pr
 TK_LINE		= TK_PLOT+1		; LINE x1,y1,x2,y2,c	$B2
 TK_CIRCLE	= TK_LINE+1		; CIRCLE x,y,r,c		$B3
 TK_RECT		= TK_CIRCLE+1	; RECT x1,y1,x2,y2,c	$B4 (filled)
+TK_BEEP		= TK_RECT+1		; BEEP d,n	$B5
 
 ; secondary command tokens, cannot start a statement
 
-TK_TAB		= TK_RECT+1		; TAB token $B5 ##### SYS no longer used, minimOS needs BYE ##### replaced by SQUARE so far
-TK_ELSE		= TK_TAB+1		; ELSE token $B6
-TK_TO		= TK_ELSE+1		; TO token $B7
-TK_FN		= TK_TO+1		; FN token $B8
-TK_SPC		= TK_FN+1		; SPC token $B9
-TK_THEN		= TK_SPC+1		; THEN token $BA
-TK_NOT		= TK_THEN+1		; NOT token $BB
-TK_STEP		= TK_NOT+1		; STEP token $BC
-TK_UNTIL	= TK_STEP+1		; UNTIL token $BD
-TK_WHILE	= TK_UNTIL+1	; WHILE token $BE
-TK_OFF		= TK_WHILE+1	; OFF token $BF
+TK_TAB		= TK_RECT+1		; TAB token $B6 ##### SYS no longer used, minimOS needs BYE ##### replaced by SQUARE so far
+TK_ELSE		= TK_TAB+1		; ELSE token $B7
+TK_TO		= TK_ELSE+1		; TO token $B8
+TK_FN		= TK_TO+1		; FN token $B9
+TK_SPC		= TK_FN+1		; SPC token $BA
+TK_THEN		= TK_SPC+1		; THEN token $BB
+TK_NOT		= TK_THEN+1		; NOT token $BC
+TK_STEP		= TK_NOT+1		; STEP token $BD
+TK_UNTIL	= TK_STEP+1		; UNTIL token $BE
+TK_WHILE	= TK_UNTIL+1	; WHILE token $BF
+TK_OFF		= TK_WHILE+1	; OFF token $C0
 
 ; operator tokens
 
-TK_PLUS		= TK_OFF+1		; + token $C0
-TK_MINUS	= TK_PLUS+1		; - token $C1
-TK_MUL		= TK_MINUS+1	; * token $C2
-TK_DIV		= TK_MUL+1		; / token $C3
-TK_POWER	= TK_DIV+1		; ^ token $C4
-TK_AND		= TK_POWER+1	; AND token $C5
-TK_EOR		= TK_AND+1		; EOR token $C6
-TK_OR		= TK_EOR+1		; OR token $C7
-TK_RSHIFT	= TK_OR+1		; RSHIFT token $C8
-TK_LSHIFT	= TK_RSHIFT+1	; LSHIFT token $C9
-TK_GT		= TK_LSHIFT+1	; > token $CA
-TK_EQUAL	= TK_GT+1		; = token $CB
-TK_LT		= TK_EQUAL+1	; < token $CC
+TK_PLUS		= TK_OFF+1		; + token $C1
+TK_MINUS	= TK_PLUS+1		; - token $C2
+TK_MUL		= TK_MINUS+1	; * token $C3
+TK_DIV		= TK_MUL+1		; / token $C4
+TK_POWER	= TK_DIV+1		; ^ token $C5
+TK_AND		= TK_POWER+1	; AND token $C6
+TK_EOR		= TK_AND+1		; EOR token $C7
+TK_OR		= TK_EOR+1		; OR token $C8
+TK_RSHIFT	= TK_OR+1		; RSHIFT token $C9
+TK_LSHIFT	= TK_RSHIFT+1	; LSHIFT token $CA
+TK_GT		= TK_LSHIFT+1	; > token $CB
+TK_EQUAL	= TK_GT+1		; = token $CC
+TK_LT		= TK_EQUAL+1	; < token $CD
 
 ; functions tokens
 
-TK_SGN		= TK_LT+1		; SGN token $CD
-TK_INT		= TK_SGN+1		; INT token $CE
-TK_ABS		= TK_INT+1		; ABS token $CF
-TK_USR		= TK_ABS+1		; USR token $D0
-TK_FRE		= TK_USR+1		; FRE token $D1
-TK_POS		= TK_FRE+1		; POS token $D2
-TK_SQR		= TK_POS+1		; SQR token $D3
-TK_RND		= TK_SQR+1		; RND token $D4
-TK_LOG		= TK_RND+1		; LOG token $D5
-TK_EXP		= TK_LOG+1		; EXP token $D6
-TK_COS		= TK_EXP+1		; COS token $D7
-TK_SIN		= TK_COS+1		; SIN token $D8
-TK_TAN		= TK_SIN+1		; TAN token $D9
-TK_ATN		= TK_TAN+1		; ATN token $DA
-TK_PEEK		= TK_ATN+1		; PEEK token $DB
-TK_DEEK		= TK_PEEK+1		; DEEK token $DC
-TK_SADD		= TK_DEEK+1		; SADD token $DD
-TK_LEN		= TK_SADD+1		; LEN token $DE
-TK_STRS		= TK_LEN+1		; STR$ token $DF
-TK_VAL		= TK_STRS+1		; VAL token $E0
-TK_ASC		= TK_VAL+1		; ASC token $E1
-TK_UCASES	= TK_ASC+1		; UCASE$ token $E2
-TK_LCASES	= TK_UCASES+1	; LCASE$ token $E3
-TK_CHRS		= TK_LCASES+1	; CHR$ token $E4
-TK_HEXS		= TK_CHRS+1		; HEX$ token $E5
-TK_BINS		= TK_HEXS+1		; BIN$ token $E6
-TK_BITTST	= TK_BINS+1		; BITTST token $E7
-TK_MAX		= TK_BITTST+1	; MAX token $E8
-TK_MIN		= TK_MAX+1		; MIN token $E9
-TK_PI		= TK_MIN+1		; PI token $EA
-TK_TWOPI	= TK_PI+1		; TWOPI token $EB
-TK_VPTR		= TK_TWOPI+1	; VARPTR token $EC
-TK_LEFTS	= TK_VPTR+1		; LEFT$ token $ED
-TK_RIGHTS	= TK_LEFTS+1	; RIGHT$ token $EE
-TK_MIDS		= TK_RIGHTS+1	; MID$ token $EF
+TK_SGN		= TK_LT+1		; SGN token $CE
+TK_INT		= TK_SGN+1		; INT token $CF
+TK_ABS		= TK_INT+1		; ABS token $D0
+TK_USR		= TK_ABS+1		; USR token $D1
+TK_FRE		= TK_USR+1		; FRE token $D2
+TK_POS		= TK_FRE+1		; POS token $D3
+TK_SQR		= TK_POS+1		; SQR token $D4
+TK_RND		= TK_SQR+1		; RND token $D5
+TK_LOG		= TK_RND+1		; LOG token $D6
+TK_EXP		= TK_LOG+1		; EXP token $D7
+TK_COS		= TK_EXP+1		; COS token $D8
+TK_SIN		= TK_COS+1		; SIN token $D9
+TK_TAN		= TK_SIN+1		; TAN token $DA
+TK_ATN		= TK_TAN+1		; ATN token $DB
+TK_PEEK		= TK_ATN+1		; PEEK token $DC
+TK_DEEK		= TK_PEEK+1		; DEEK token $DD
+TK_SADD		= TK_DEEK+1		; SADD token $DE
+TK_LEN		= TK_SADD+1		; LEN token $DF
+TK_STRS		= TK_LEN+1		; STR$ token $E0
+TK_VAL		= TK_STRS+1		; VAL token $E1
+TK_ASC		= TK_VAL+1		; ASC token $E2
+TK_UCASES	= TK_ASC+1		; UCASE$ token $E3
+TK_LCASES	= TK_UCASES+1	; LCASE$ token $E4
+TK_CHRS		= TK_LCASES+1	; CHR$ token $E5
+TK_HEXS		= TK_CHRS+1		; HEX$ token $E6
+TK_BINS		= TK_HEXS+1		; BIN$ token $E7
+TK_BITTST	= TK_BINS+1		; BITTST token $E8
+TK_MAX		= TK_BITTST+1	; MAX token $E9
+TK_MIN		= TK_MAX+1		; MIN token $EA
+TK_PI		= TK_MIN+1		; PI token $EB
+TK_TWOPI	= TK_PI+1		; TWOPI token $EC
+TK_VPTR		= TK_TWOPI+1	; VARPTR token $ED
+TK_LEFTS	= TK_VPTR+1		; LEFT$ token $EE
+TK_RIGHTS	= TK_LEFTS+1	; RIGHT$ token $EF
+TK_MIDS		= TK_RIGHTS+1	; MID$ token $F0
 
 ; offsets from a base of X or Y
 
@@ -484,7 +485,7 @@ LAB_STAK	= $0100		; stack bottom, no offset
 ; *** flushed stack address (minus 2) will be stored at emptsk in runtime ***
 
 ; *** EhBASIC definitions for Durango-X ***
-Ram_base	= $0400		; start of user RAM (set as needed, should be page aligned)
+Ram_base	= $0400		; start of user RAM (set as needed, should be page aligned) maybe down to $300
 Ram_top		= $6000		; end of user RAM+1 (set as needed, should be page aligned) KEEP CLEAR Durango-X screen!
 
 ; ***************************
@@ -7511,7 +7512,7 @@ LAB_MAX
 	BEQ	LAB_MAX			; go do next (branch always)
 
 ; *** this is $DF75 if assembled on a 16K ROM, may skip I/O area ***
-	.dsb $E000-*, $FF	; skip I/O area!
+;	.dsb $E000-*, $FF	; skip I/O area!
 
 ; perform MIN()
 
@@ -8085,6 +8086,7 @@ LAB_CTBLC
 	.word	LAB_LINE		; LINE x1,y1,x2,y2,c
 	.word	LAB_CIRCLE		; CIRCLE x,y,r,c
 	.word	LAB_RECT		; RECT x1,y1,x2,y2,c
+	.word	LAB_BEEP		; BEEP d,n
 
 ; function pre process routine table (currently NMOS)
 
@@ -8966,7 +8968,9 @@ drv_pask:
 	.dsb	$FFD6-*, $FF
 	.asc	"DmOS"			; minimOS-compliant Durango-X cartridge signature
 	.dsb	$FFDE-*, $FF
-	.word	$FFFF			; Fletcher-16 checksum placeholder
+	.word	$FFFF			; Fletcher-16 checksum placeholder (not currently used)
+	SEI
+	JMP ($FFFC)				; devCart support @ $FFE1!
 
 	.dsb	$FFFA-*, $FF	; *** may place PANIC routine here ***
 
