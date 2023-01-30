@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230130-1003
+; last modified 20230130-1010
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22
@@ -403,11 +403,11 @@ TK_SCREEN	= TK_MODE+1		; SCREEN n	$B0	not sure
 TK_PLOT		= TK_SCREEN+1	; PLOT x,y,c	$B1	*** new tokens for Durango-X (graphic primitives) maybe retrieve colour parameter from INK?
 TK_LINE		= TK_PLOT+1		; LINE x1,y1,x2,y2,c	$B2
 TK_CIRCLE	= TK_LINE+1		; CIRCLE x,y,r,c		$B3
-TK_SQUARE	= TK_CIRCLE+1	; SQUARE x1,y1,x2,y2,c	$B4
+TK_RECT		= TK_CIRCLE+1	; RECT x1,y1,x2,y2,c	$B4 (filled)
 
 ; secondary command tokens, cannot start a statement
 
-TK_TAB		= TK_SQUARE+1	; TAB token $B5 ##### SYS no longer used, minimOS needs BYE ##### replaced by SQUARE so far
+TK_TAB		= TK_RECT+1		; TAB token $B5 ##### SYS no longer used, minimOS needs BYE ##### replaced by SQUARE so far
 TK_ELSE		= TK_TAB+1		; ELSE token $B6
 TK_TO		= TK_ELSE+1		; TO token $B7
 TK_FN		= TK_TO+1		; FN token $B8
@@ -8084,7 +8084,7 @@ LAB_CTBLC
 	.word	LAB_PLOT		; PLOT x,y,c	*** new for Durango-X (graphic primitives) maybe retrieve colour parameter from INK?
 	.word	LAB_LINE		; LINE x1,y1,x2,y2,c
 	.word	LAB_CIRCLE		; CIRCLE x,y,r,c
-	.word	LAB_SQUARE		; SQUARE x1,y1,x2,y2,c
+	.word	LAB_RECT		; RECT x1,y1,x2,y2,c
 
 ; function pre process routine table (currently NMOS)
 
