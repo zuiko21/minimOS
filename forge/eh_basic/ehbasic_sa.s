@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230130-1902
+; last modified 20230130-2005
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22
@@ -7845,6 +7845,7 @@ V_SAVE					; save BASIC program *** not yet implemented ***
 ; perform CLS
 LAB_CLS
 	BNE LAB_CLSERR		; no more tokens should follow
+LAB_DOCLS
 	LDA #12
 	JMP V_OUTP			; send FF to CONIO and return
 LAB_CLSERR
@@ -7852,6 +7853,9 @@ LAB_CLSERR
 
 ; perform INK i
 LAB_INK
+
+LAB_ARGERR
+	JMP LAB_FCER		; function call error & return
 
 ; perform PAPER p
 LAB_PAPER
@@ -7861,6 +7865,21 @@ LAB_LOCATE
 
 ; perform MODE n
 LAB_MODE
+	JSR LAB_GTBY		; get argument 0...3 (may add 4,5 for greyscale)
+	TXA
+	CMP #4				; max. 3
+	BCS LAB_ARGERR		; error otherwise
+	ROR
+	ROR
+	ROR					; already at d7-d6
+	AND #%11000000
+	STA Temp3			; seems a safe place
+	LDA IO8attr			; get current video mode
+	AND #%00110000		; keep selected screen...
+	ORA #%00001000		; ...and RGB mode, if available (check)
+	ORA Temp3			; add selected mode
+	STA IO8attr			; set it!
+	JMP LAB_DOCLS		; and clear screen (and return)
 
 ; perform SCREEN n
 LAB_SCREEN
