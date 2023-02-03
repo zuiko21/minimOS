@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230203-1821
+; last modified 20230203-1912
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -63,6 +63,7 @@ gamepad2	= gamepad1+1				; "standard" read value at $227
 cio_pt		= $E6
 cio_src		= $E4
 ; Graphic routines ZP usage *** TO BE DONE ***
+px_col		= $0A		; actually Temp3, safe to use
 
 ; *** Durango-X hardware definitions ****
 -IO8attr	= $DF80		; video mode register
@@ -7855,7 +7856,7 @@ LAB_CLSERR
 
 ; perform INK i
 LAB_INK
-	JSR LAB_GTBY		; get argument 0...3 (may add 4,5 for greyscale)
+	JSR LAB_GTBY		; get argument 0...15
 	PHX
 	LDA #18				; INK control code
 LAB_SENDCOL
@@ -7867,7 +7868,7 @@ LAB_ARGERR
 
 ; perform PAPER p
 LAB_PAPER
-	JSR LAB_GTBY		; get argument 0...3 (may add 4,5 for greyscale)
+	JSR LAB_GTBY		; get argument 0...15
 	PHX
 	LDA #20				; PAPER control code
 	BNE LAB_SENDCOL		; continue with common code
@@ -7926,6 +7927,17 @@ LAB_MODESET
 
 ; perform PLOT x,y,c
 LAB_PLOT
+	JSR LAB_GTBY		; x coordinate
+	PHX
+	JSR LAB_SCGB		; y coordinate
+	PHX
+	JSR LAB_SCGB		; colour in A
+	TXA
+	PLY
+	PLX
+	JSR LAB_CKGR		; check coordinates and colour!
+	JMP dxplot_lib		; call graphic function and return!
+;	RTS
 
 ; perform LINE x1,y1,x2,y2,c
 LAB_LINE
@@ -8964,6 +8976,39 @@ LAB_RMSG	.byte	$0D,"Ready",$0D,$00
 
 LAB_IMSG	.byte	" Extra ignored",$0D,$00
 LAB_REDO	.byte	" Redo from start",$0D,$00
+
+; *** *** DURANGO-X GRAPHICS LIBRARY *** ***
+LAB_CKGR			; check coordinates (X,Y) and colour (A)
+	BIT IO8attr		; check video mode
+	BPL LAB_4BPP	; in colour, just repeat low nybble
+	LSR				; odd value = white, eve value = black
+	LDA #$F			; white as default (most common)
+	BCS LAB_4BPP
+	LDA #0			; otherwise is black
+LAB_4BPP
+	AND #$0F		; keep low nybble
+	STA Temp3
+	ASL
+	ASL
+	ASL
+	ASL				; repeat into high nybble
+	ORA Temp3		; combine with previous low nybble
+LAB_CKXY			; this entry point just checks coordinates (X,Y)
+	BIT IO8attr		; check video mode again
+	BMI LAB_GROK	; hires accepts all byte-sized coordinates
+	CPX #128		; check within colour limits
+	BCS LAB_GERR
+	CPY #128
+	BCS LAB_GERR
+LAB_GROK
+	RTS
+LAB_GERR
+	JMP LAB_FCER	; generate error code and warm start
+
+dxplot_lib:
+	STA px_col		; colour was in A, but X and Y already loaded
+#define	USE_PLOT
+#include "../../OS/firmware/modules/durango-plot.s"
 
 AA_end_basic		; for easier size computation
 .)
