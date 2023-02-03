@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230203-2237
+; last modified 20230203-2309
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -7997,12 +7997,14 @@ LAB_CIRCLE
 	JSR LAB_SCGB		; colour in A
 	TXA
 	PLY
-;	STY ; radius storage
+	STY radius
 	PLY
+	STY y1
 	PLX
-	JSR LAB_CKGR		; check coordinates and colour!
-;	JMP dxcircle_lib	; call graphic function and return!
-	RTS
+	STX x1
+	JSR LAB_CKRD		; check coordinates, colour and radius!
+	JMP dxcircle_lib	; call graphic function and return!
+;	RTS
 
 ; perform RECT x1,y1,x2,y2,c
 LAB_RECT
@@ -9059,6 +9061,21 @@ LAB_REDO	.byte	" Redo from start",$0D,$00
 ; *** *** ************************** *** ***
 ; *** *** DURANGO-X GRAPHICS LIBRARY *** ***
 ; *** *** ************************** *** ***
+LAB_CKRD			; *** check circle coordinates, including radius ***
+	PHA				; save colour for later
+	LDA x1
+	CMP radius		; r <= x1
+	BCC LAB_GERR
+	LDA y1
+	CMP radius		; r <= y1
+	BCC LAB_GERR
+	LDA x1			; x1+r < max.x EEEEEEEK
+	JSR LAB_PLRD	; check against screen limits
+	LDA y1
+	JSR LAB_PLRD
+	LDX x1			; load circle centre for standard function
+	LDY y1
+	PLA				; retrieve colour too
 LAB_CKGR			; *** check coordinates (X,Y) and colour (A) ***
 	BIT IO8attr		; check video mode
 	BPL LAB_4BPP	; in colour, just repeat low nybble
@@ -9086,7 +9103,16 @@ LAB_GROK
 	RTS
 LAB_GERR
 	JMP LAB_FCER	; generate error code and warm start
-
+LAB_PLRD			; check radius+coord against screen limit
+	CLC
+	ADC radius
+	BCS LAB_GERR	; over 255 is always bad
+	BIT IO8attr		; check video mode
+	BMI LAB_PLOK	; no further check in HIRES
+	TAX				; check for sign in colour mode
+	BMI LAB_GERR
+LAB_PLOK
+	RTS
 #define	USE_PLOT
 
 dxplot_lib:
