@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230203-1936
+; last modified 20230203-2214
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -62,17 +62,40 @@ gamepad2	= gamepad1+1				; "standard" read value at $227
 ; CONIO zeropage usage ($E4-$E7)
 cio_pt		= $E6
 cio_src		= $E4
-; Graphic routines ZP usage *** TO BE DONE ***
-px_col		= $0A		; actually Temp3, safe to use
+; ** graphic routines ZP usage **
+; local variables
+-locals		= $E4			; minimOS local variables area
+gr_tmp		= locals
+
+sx			= gr_tmp+1		; * used by LINE *
+sy			= sx+1
+dx			= sy+1			; this is ALWAYS positive...
+dy			= dx+1			; ...but this one is negative OR zero
+error		= dy+2			; colour mode cannot be over 254, but 16-bit arithmetic needed
+err_2		= error+2		; make room for this! (16-bit)
+
+cir_f		= gr_tmp+1		; * used by CIRCLE * 16-bit, may be moved if optimised
+ddf_x		= cir_f+2		; maybe 8 bit is OK? seems always positive
+ddf_y		= ddf_x+2		; starts negative and gets added to f, thus 16-bit
+cir_x		= ddf_y+2		; seems 8 bit
+cir_y		= cir_x+1		; 8-bit as well
+
+; parameters
+px_col		= $F0			; first byte in parameter area, used by all graphic functions
+radius		= px_col+1		; used by CIRCLE only
+x1			= px_col+4		; used by LINE, CIRCLE and RECT
+y1			= x1+1
+x2			= y1+1			; used by LINE and RECT
+y2			= x2+1
 
 ; *** Durango-X hardware definitions ****
--IO8attr	= $DF80		; video mode register
--IO8blk		= $DF88		; video blanking signals
--IO9di		= $DF9A		; data input (PASK standard)
--IO9nes0	= $DF9C		; NES controller for alternative keyboard emulation & latch
--IO9nes1	= $DF9D		; NES controller clock port
--IOAie		= $DFA0		; canonical interrupt enable address (d0)
--IOBeep		= $DFB0		; canonical buzzer address (d0)
+-IO8attr	= $DF80			; video mode register
+-IO8blk		= $DF88			; video blanking signals
+-IO9di		= $DF9A			; data input (PASK standard)
+-IO9nes0	= $DF9C			; NES controller for alternative keyboard emulation & latch
+-IO9nes1	= $DF9D			; NES controller clock port
+-IOAie		= $DFA0			; canonical interrupt enable address (d0)
+-IOBeep		= $DFB0			; canonical buzzer address (d0)
 
 .(
 	.asc	"Derived from EhBASIC v2.22 by Lee Davison", 0		; comment with IMPORTANT attribution
@@ -7900,7 +7923,7 @@ LAB_MODE
 	ROR
 	ROR					; already at d7-d6
 	AND #%11000000
-	STA Temp3			; seems a safe place
+	STA locals			; seems a safe place
 	LDA #%00110000		; keep selected screen...
 	JSR LAB_MODESET		; use common code
 	JMP LAB_DOCLS		; and clear screen (and return)
@@ -7916,12 +7939,12 @@ LAB_SCREEN
 	ASL
 	ASL					; now at d5-d4
 	AND #%00110000
-	STA Temp3			; seems a safe place
+	STA locals			; seems a safe place
 	LDA #%11000000		; keep selected resolution...
 LAB_MODESET
 	AND IO8attr			; on current video mode
 	ORA #%00001000		; ...and RGB mode, if available (check)
-	ORA Temp3			; add selected mode
+	ORA locals			; add selected mode
 	STA IO8attr			; set it!
 	RTS
 
@@ -9044,12 +9067,13 @@ LAB_CKGR			; *** check coordinates (X,Y) and colour (A) ***
 	LDA #0			; otherwise is black
 LAB_4BPP
 	AND #$0F		; keep low nybble
-	STA Temp3
+	STA locals
 	ASL
 	ASL
 	ASL
 	ASL				; repeat into high nybble
-	ORA Temp3		; combine with previous low nybble
+	ORA locals		; combine with previous low nybble
+	STA px_col		; actually the same place, but makes sense here
 LAB_CKXY			; *** this entry point just checks coordinates (X,Y) ***
 	BIT IO8attr		; check video mode again
 	BMI LAB_GROK	; hires accepts all byte-sized coordinates
@@ -9063,9 +9087,11 @@ LAB_GERR
 	JMP LAB_FCER	; generate error code and warm start
 
 dxplot_lib:
-	STA px_col		; colour was in A, but X and Y already loaded
+;	STA px_col		; colour was in A, but X and Y already loaded
 #define	USE_PLOT
 #include "../../OS/firmware/modules/durango-plot.s"
+#include "../../OS/firmware/modules/durango-line.s"
+#include "../../OS/firmware/modules/durango-circle.s"
 
 ; *** *** *********************** *** ***
 ; *** *** END OF GRAPHICS LIBRARY *** ***

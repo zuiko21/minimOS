@@ -1,7 +1,8 @@
 ; Durango-X line routines (Bresenham's Algorithm) *** unoptimised version
-; (c) 2022 Carlos J. Santisteban
-; last modified 20221021-1700
+; (c) 2022-2023 Carlos J. Santisteban
+; last modified 20230203-2152
 
+#ifndef	USE_PLOT
 #define	USE_PLOT
 ; *** input *** placeholder addresses
 x1		= $EC				; NW corner x coordinate (<128 in colour, <256 in HIRES)
@@ -20,8 +21,9 @@ err_2	= error+2			; make room for this!
 
 ; these are for PLOT, actually
 cio_pt	= err_2+2			; screen pointer
-fw_cbyt	= cio_pt+2			; (temporary storage, could be elsewhere)
-tmp		= fw_cbyt			; hopefully works! (demo only)
+gr_tmp	= cio_pt+2			; (temporary storage, could be elsewhere)
+tmp		= gr_tmp			; hopefully works! (demo only)
+#endif
 
 dxline:
 .(

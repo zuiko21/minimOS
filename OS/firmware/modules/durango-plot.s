@@ -1,6 +1,6 @@
 ; Durango-X pixel routines
-; (c) 2022 Carlos J. Santisteban
-; last modified 20221013-1714
+; (c) 2022-2023 Carlos J. Santisteban
+; last modified 20230203-2200
 
 ; *** input ***
 ; X = x coordinate (<128 in colour, <256 in HIRES)
@@ -9,7 +9,7 @@
 
 ; *** zeropage usage ***
 ; cio_pt (screen pointer)
-; fw_cbyt (temporary storage, could be elsewhere)
+; gr_tmp (temporary storage, could be elsewhere)
 
 ; NEW performance data
 ; *) remove 1t if variable in ZP
@@ -22,8 +22,8 @@
 
 #ifndef	USE_PLOT
 cio_pt	= $FB				; screen pointer
-fw_cbyt	= cio_pt+2			; (temporary storage, could be elsewhere)
-tmp		= fw_cbyt			; hopefully works! (demo only)
+gr_tmp	= cio_pt+2			; (temporary storage, could be elsewhere) cleaner this way
+tmp		= gr_tmp			; hopefully works! (demo only)
 #endif
 
 dxplot:
@@ -80,10 +80,10 @@ colplot:
 		LDX #$0F
 evpix:
 	AND (cio_pt), Y			; keep original data in byte... (5)
-	STA fw_cbyt				; store temporarily (4*)
+	STA gr_tmp				; store temporarily (4*)
 	TXA						; retrieve mask... (2)
 	AND px_col				; extract active colour bits (4*)
-	ORA fw_cbyt				; ...adding new pixel (4*)
+	ORA gr_tmp				; ...adding new pixel (4*)
 	STA (cio_pt), Y			; EEEEEEEEK (6+6)
 	RTS
 
