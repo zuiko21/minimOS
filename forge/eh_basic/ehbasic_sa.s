@@ -1,9 +1,9 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230130-2239
+; last modified 20230203-1747
 ; *************************************************************
 
-; Enhanced BASIC, $ver 2.22
+; Enhanced BASIC, $ver 2.22 with Durango-X support!
 
 ; $E7E1 $E7CF $E7C6 $E7D3 $E7D1 $E7D5 $E7CF $E81E $E825
 
@@ -56,7 +56,9 @@ fw_io9		= fw_vtop+1		; received keypress
 fw_scur		= fw_io9+1		; NEW, cursor control
 fw_knes		= fw_scur+1		; NEW, NES-pad alternative keyboard
 GAMEPAD_MASK1	= fw_knes+1	; EEEEEEEEK
-
+GAMEPAD_MASK2	= GAMEPAD_MASK1+1		; needed for standard gamepad support
+gamepad1	= GAMEPAD_MASK2+1			; "standard" read value at $226
+gamepad2	= gamepad1+1				; "standard" read value at $227
 ; CONIO zeropage usage ($E4-$E7)
 cio_pt		= $E6
 cio_src		= $E4
@@ -8999,9 +9001,6 @@ jf_res:
 	LDY #<std_nmi
 	STY fw_nmi
 	STX fw_nmi+1
-#ifdef	KBBYPAD
-	LDA #'@'				; initial character for key-by-pad
-	STA fw_knes
 ; init gamepad
 	STA IO9nes0				; latch pad status
 	LDX #8					; number of bits to read
@@ -9010,7 +9009,12 @@ nes_init:
 		DEX
 		BNE nes_init		; all bits read @ IO9nes0
 	LDA IO9nes0				; get bits
+	LDX IO9nes1				; get bits for pad 2
 	STA GAMEPAD_MASK1		; * MUST have a standard address, and MUST be initialised! *
+	STX GAMEPAD_MASK2		; * MUST have a standard address, and MUST be initialised! *
+#ifdef	KBBYPAD
+	LDA #'@'				; initial character for key-by-pad
+	STA fw_knes
 #endif
 ; * check keyboard *
 	LDX #0					; default is PASK
@@ -9053,6 +9057,24 @@ irq_sup:
 	PHY						; needed for 5x8 matrix support
 ; *** interrupt support for matrix keyboard ***
 	JSR kbd_isr
+; * after reading keyboard, gamepads are read, may suppress this for slight performance improvement *
+#ifndef	KBBYPAD
+; keep gamepad input updated (already done for KBD emulation)
+	STA IO9nes0				; latch pad status
+	LDX #8					; number of bits to read
+nes_loop:
+		STA IO9nes1			; send clock pulse
+		DEX
+		BNE nes_loop		; all bits read @ IO9nes0/1
+; done, but check GAMEPAD_MASK1 & GAMEPAD_MASK2 after reading ports in BASIC!
+#endif
+	LDA IO9nes0
+	EOR GAMEPAD_MASK1
+	STA gamepad1			; corrected value at $226, or 550
+	LDA IO9nes1
+	EOR GAMEPAD_MASK2
+	STA gamepad2			; corrected value at $227, or 551
+; * end of gamepad code *
 ; min_mon code follows
 ;	PHA						; already saved
 	LDA IrqBase
