@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230203-1747
+; last modified 20230203-1821
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -7874,13 +7874,11 @@ LAB_PAPER
 
 ; perform LOCATE x,y
 LAB_LOCATE
-	JSR LAB_IGBY		; column
-txa:jmp V_OUTP 
+	JSR LAB_GTBY		; column
 	PHX
-brk
 	JSR LAB_SCGB		; next argument (row)
 	PHX
-	LDA #21				; ATYX control code
+	LDA #23				; ATYX control code EEEEEEEEEEEEEK
 	JSR V_OUTP			; send to CONIO
 	PLA					; retrieve row
 	JSR LAB_CONIO
