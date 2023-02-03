@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230203-1912
+; last modified 20230203-1936
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -7941,12 +7941,67 @@ LAB_PLOT
 
 ; perform LINE x1,y1,x2,y2,c
 LAB_LINE
+	JSR LAB_GTBY		; x1 coordinate
+	PHX
+	JSR LAB_SCGB		; y1 coordinate
+	PHX
+	JSR LAB_SCGB		; x2 coordinate
+	PHX
+	JSR LAB_SCGB		; y2 coordinate
+	PHX
+	JSR LAB_SCGB		; colour in A
+	TXA
+	PLY
+;	STY
+	PLX
+;	STX
+	JSR LAB_CKGR		; check end point and colour
+	PLY
+	PLX
+	JSR LAB_CKXY		; check start point
+;	JMP dxline_lib		; call graphic function and return!
+	RTS
 
 ; perform CIRCLE x,y,r,c
 LAB_CIRCLE
+	JSR LAB_GTBY		; x coordinate
+	PHX
+	JSR LAB_SCGB		; y coordinate
+	PHX
+	JSR LAB_SCGB		; radius
+	PHX
+	JSR LAB_SCGB		; colour in A
+	TXA
+	PLY
+;	STY ; radius storage
+	PLY
+	PLX
+	JSR LAB_CKGR		; check coordinates and colour!
+;	JMP dxcircle_lib	; call graphic function and return!
+	RTS
 
 ; perform RECT x1,y1,x2,y2,c
 LAB_RECT
+	JSR LAB_GTBY		; x1 coordinate
+	PHX
+	JSR LAB_SCGB		; y1 coordinate
+	PHX
+	JSR LAB_SCGB		; x2 coordinate
+	PHX
+	JSR LAB_SCGB		; y2 coordinate
+	PHX
+	JSR LAB_SCGB		; colour in A
+	TXA
+	PLY
+;	STY
+	PLX
+;	STX
+	JSR LAB_CKGR		; check end point and colour
+	PLY
+	PLX
+	JSR LAB_CKXY		; check start point
+;	JMP dxrect_lib		; call graphic function and return!
+	RTS
 
 ; perform BEEP
 LAB_BEEP
@@ -8977,8 +9032,10 @@ LAB_RMSG	.byte	$0D,"Ready",$0D,$00
 LAB_IMSG	.byte	" Extra ignored",$0D,$00
 LAB_REDO	.byte	" Redo from start",$0D,$00
 
+; *** *** ************************** *** ***
 ; *** *** DURANGO-X GRAPHICS LIBRARY *** ***
-LAB_CKGR			; check coordinates (X,Y) and colour (A)
+; *** *** ************************** *** ***
+LAB_CKGR			; *** check coordinates (X,Y) and colour (A) ***
 	BIT IO8attr		; check video mode
 	BPL LAB_4BPP	; in colour, just repeat low nybble
 	LSR				; odd value = white, eve value = black
@@ -8993,7 +9050,7 @@ LAB_4BPP
 	ASL
 	ASL				; repeat into high nybble
 	ORA Temp3		; combine with previous low nybble
-LAB_CKXY			; this entry point just checks coordinates (X,Y)
+LAB_CKXY			; *** this entry point just checks coordinates (X,Y) ***
 	BIT IO8attr		; check video mode again
 	BMI LAB_GROK	; hires accepts all byte-sized coordinates
 	CPX #128		; check within colour limits
@@ -9010,6 +9067,9 @@ dxplot_lib:
 #define	USE_PLOT
 #include "../../OS/firmware/modules/durango-plot.s"
 
+; *** *** *********************** *** ***
+; *** *** END OF GRAPHICS LIBRARY *** ***
+; *** *** *********************** *** ***
 AA_end_basic		; for easier size computation
 .)
 
