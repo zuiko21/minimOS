@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230203-2214
+; last modified 20230203-2237
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -64,8 +64,7 @@ cio_pt		= $E6
 cio_src		= $E4
 ; ** graphic routines ZP usage **
 ; local variables
--locals		= $E4			; minimOS local variables area
-gr_tmp		= locals
+gr_tmp		= $E8			; eeeeeeeeeek
 
 sx			= gr_tmp+1		; * used by LINE *
 sy			= sx+1
@@ -81,9 +80,9 @@ cir_x		= ddf_y+2		; seems 8 bit
 cir_y		= cir_x+1		; 8-bit as well
 
 ; parameters
-px_col		= $F0			; first byte in parameter area, used by all graphic functions
+px_col		= $F2			; THIRD byte in parameter area, used by all graphic functions
 radius		= px_col+1		; used by CIRCLE only
-x1			= px_col+4		; used by LINE, CIRCLE and RECT
+x1			= radius+1		; used by LINE, CIRCLE and RECT
 y1			= x1+1
 x2			= y1+1			; used by LINE and RECT
 y2			= x2+1
@@ -7923,7 +7922,7 @@ LAB_MODE
 	ROR
 	ROR					; already at d7-d6
 	AND #%11000000
-	STA locals			; seems a safe place
+	STA gr_tmp			; seems a safe place
 	LDA #%00110000		; keep selected screen...
 	JSR LAB_MODESET		; use common code
 	JMP LAB_DOCLS		; and clear screen (and return)
@@ -7939,12 +7938,12 @@ LAB_SCREEN
 	ASL
 	ASL					; now at d5-d4
 	AND #%00110000
-	STA locals			; seems a safe place
+	STA gr_tmp			; seems a safe place
 	LDA #%11000000		; keep selected resolution...
 LAB_MODESET
 	AND IO8attr			; on current video mode
 	ORA #%00001000		; ...and RGB mode, if available (check)
-	ORA locals			; add selected mode
+	ORA gr_tmp			; add selected mode
 	STA IO8attr			; set it!
 	RTS
 
@@ -7975,15 +7974,17 @@ LAB_LINE
 	JSR LAB_SCGB		; colour in A
 	TXA
 	PLY
-;	STY
+	STY y2
 	PLX
-;	STX
+	STX x2
 	JSR LAB_CKGR		; check end point and colour
 	PLY
+	STY y1
 	PLX
+	STX x1
 	JSR LAB_CKXY		; check start point
-;	JMP dxline_lib		; call graphic function and return!
-	RTS
+	JMP dxline_lib		; call graphic function and return!
+;	RTS
 
 ; perform CIRCLE x,y,r,c
 LAB_CIRCLE
@@ -9067,12 +9068,12 @@ LAB_CKGR			; *** check coordinates (X,Y) and colour (A) ***
 	LDA #0			; otherwise is black
 LAB_4BPP
 	AND #$0F		; keep low nybble
-	STA locals
+	STA gr_tmp
 	ASL
 	ASL
 	ASL
 	ASL				; repeat into high nybble
-	ORA locals		; combine with previous low nybble
+	ORA gr_tmp		; combine with previous low nybble
 	STA px_col		; actually the same place, but makes sense here
 LAB_CKXY			; *** this entry point just checks coordinates (X,Y) ***
 	BIT IO8attr		; check video mode again
@@ -9086,11 +9087,16 @@ LAB_GROK
 LAB_GERR
 	JMP LAB_FCER	; generate error code and warm start
 
+#define	USE_PLOT
+
 dxplot_lib:
 ;	STA px_col		; colour was in A, but X and Y already loaded
-#define	USE_PLOT
 #include "../../OS/firmware/modules/durango-plot.s"
+
+dxline_lib:
 #include "../../OS/firmware/modules/durango-line.s"
+
+dxcircle_lib:
 #include "../../OS/firmware/modules/durango-circle.s"
 
 ; *** *** *********************** *** ***
