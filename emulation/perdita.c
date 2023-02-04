@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2023 Carlos J. Santisteban, Emilio López Berenguer
- * last modified 20230204-1057
+ * last modified 20230204-1134
  * */
 
 /* Gamepad buttons constants */
@@ -81,7 +81,7 @@
 	int irq_flag = 0;
 	int typing = 0;				// auto-typing flag
 	int type_delay;				// received keystroke timing
-	FILE *keys;					// keystroke file
+	FILE *typed;				// keystroke file
 	long cont = 0;				// total elapsed cycles
 	long stopwatch = 0;			// cycles stopwatch
 
@@ -397,18 +397,20 @@ void run_emulation (int ready) {
 /* may check for emulated keystrokes here */
 			if (typing) {
 				if (--type_delay == 0) {
-					stroke = fgetc(keys);
-					if (stroke == FEOF) {
+					stroke = fgetc(typed);
+					if (stroke == EOF) {
 						typing = 0;
 						printf(" OK!\n");
-						fclose(keys);
+						fclose(typed);
 						mem[0xDF9A] = 0;
 					} else {
 						type_delay = 25;		// just in case it scrolls
-						if (stroke = 13;		// standard minimOS NEWLINE
+						if (stroke == 10) {
+							stroke = 13;		// standard minimOS NEWLINE
 							type_delay = 50;	// extra safe value for parsers
 						}
 						mem[0xDF9A] = stroke;
+					}
 				} else mem[0xDF9A] = 0;			// simulate PASK key up
 			}
 /* generate periodic interrupt */ 
@@ -547,8 +549,7 @@ void load_dump(const char name[]) {
 		fread(&pc, sizeof(word), 1, f);
 		// Close file
 		fclose(f);
-                printf(name);
-		printf(" loaded\n");
+		printf("%s loaded\n",name);
 	}
 	else {
 		printf("*** No available dump ***\n");
@@ -3349,10 +3350,11 @@ void vdu_read_keyboard() {
 		}
 		// Press F10 = KEYSTROKES
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F10) {
-			keys=fopen("keystrokes.txt","r");
-			if (keys==NULL) {
+			typed=fopen("keystrokes.txt","r");
+			if (typed==NULL) {
 				printf("\n*** No keystrokes file! ***\n");
-			} else { 
+			} else {
+				printf("Sending keystrokes...");
 				type_delay = 1;
 				typing = 1;	// start typing from file
 			}
