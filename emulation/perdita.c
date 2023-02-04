@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2023 Carlos J. Santisteban, Emilio López Berenguer
- * last modified 20230116-1406
+ * last modified 20230204-1057
  * */
 
 /* Gamepad buttons constants */
@@ -2926,12 +2926,12 @@ void emulate_gamepad1(SDL_Event *e) {
 		// B up
 		gamepads[0] &= ~BUTTON_B;
 	}
-	// START key p1 at space, now left shift *** *** TBD, temporarily '<'
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '<') {
+	// START key p1 at space, now left shift
+	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == SDLK_LSHIFT) {
 		// START down
 		gamepads[0] |= BUTTON_START;
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == '<') {
+	if(e->type == SDL_KEYUP && e->key.keysym.sym == SDLK_LSHIFT) {
 		// START up
 		gamepads[0] &= ~BUTTON_START;
 	}
@@ -2993,12 +2993,12 @@ void emulate_gamepad2(SDL_Event *e) {
 		// A up
 		gamepads[1] &= ~BUTTON_A;
 	}
-	// B key p2 at d, now ALT *** TBD, temporarily '-' ***
-	if(e->type == SDL_KEYDOWN && e->key.keysym.sym == '-') {
+	// B key p2 at d, now ALT-GR
+	if(e->type == SDL_KEYDOWN && e->key.keysym.scancode == SDL_SCANCODE_RALT) {
 		// B down
-		gamepads[1] |= BUTTON_B;		
+		gamepads[1] |= BUTTON_B;
 	}
-	if(e->type == SDL_KEYUP && e->key.keysym.sym == '-') {
+	if(e->type == SDL_KEYUP && e->key.keysym.scancode == SDL_SCANCODE_RALT) {
 		// B up
 		gamepads[1] &= ~BUTTON_B;
 	}
