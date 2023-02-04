@@ -8036,6 +8036,7 @@ LAB_BEEP
 	JSR LAB_SCGB		; note
 ;	LDY fl_Tab, X		; period LSB
 ;	LDA fh_Tab, X		; period MSB
+	PLX
 	RTS
 
 ; *** end of Durango-X specifics ***
