@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230203-2309
+; last modified 20230204-1307
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -8029,11 +8029,14 @@ LAB_RECT
 ;	JMP dxrect_lib		; call graphic function and return!
 	RTS
 
-; perform BEEP
+; perform BEEP *** temporary hack, just integer values (len/125,note 0=C3)
 LAB_BEEP
-; placeholder error
-	LDX #$20			; (Undefined Function) error
-	JMP LAB_XERR
+	JSR LAB_GTBY		; length
+	PHX
+	JSR LAB_SCGB		; note
+;	LDY fl_Tab, X		; period LSB
+;	LDA fh_Tab, X		; period MSB
+	RTS
 
 ; *** end of Durango-X specifics ***
 
