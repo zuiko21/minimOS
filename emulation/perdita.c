@@ -79,6 +79,9 @@
 	int safe = 0;				// enable safe mode (stops on warnings and BRK)
 	int nmi_flag = 0;			// interrupt control
 	int irq_flag = 0;
+	int typing = 0;				// auto-typing flag
+	int type_delay;				// received keystroke timing
+	FILE *keys;					// keystroke file
 	long cont = 0;				// total elapsed cycles
 	long stopwatch = 0;			// cycles stopwatch
 
@@ -321,6 +324,7 @@ void run_emulation (int ready) {
 	int cyc=0, it=0;		// instruction and interrupt cycle counter
 	int ht=0;				// horizontal counter
 	int line=0;				// line count for vertical retrace flag
+	int stroke;				// received keystroke
 	clock_t next;			// delay counter
 	clock_t sleep_time;		// delay time
 	clock_t min_sleep;		// for peek performance evaluation
@@ -390,6 +394,23 @@ void run_emulation (int ready) {
 			it -= 6144;		// restore for next
 /* get keypresses from SDL here, as this get executed every 4 ms */
 			vdu_read_keyboard();	// ***is it possible to read keys without initing graphics?
+/* may check for emulated keystrokes here */
+			if (typing) {
+				if (--type_delay == 0) {
+					stroke = fgetc(keys);
+					if (stroke == FEOF) {
+						typing = 0;
+						printf(" OK!\n");
+						fclose(keys);
+						mem[0xDF9A] = 0;
+					} else {
+						type_delay = 25;		// just in case it scrolls
+						if (stroke = 13;		// standard minimOS NEWLINE
+							type_delay = 50;	// extra safe value for parsers
+						}
+						mem[0xDF9A] = stroke;
+				} else mem[0xDF9A] = 0;			// simulate PASK key up
+			}
 /* generate periodic interrupt */ 
 			if (mem[0xDFA0] & 1) {
 				irq();							// if hardware interrupts are enabled, send signal to CPU
@@ -726,9 +747,9 @@ void poke(word dir, byte v) {
 			// PSV file read
 			if(v==PSV_FREAD) {
 				if(psv_file == NULL) {
-                                    psv_file=fopen(psv_filename,"rb");
-                                }
-                                mem[0xDF93]=fgetc(psv_file);
+					psv_file=fopen(psv_filename,"rb");
+				}
+				mem[0xDF93]=fgetc(psv_file);
 			}
 			// PSV file close
 			if(v==PSV_FCLOSE) {
@@ -3326,8 +3347,15 @@ void vdu_read_keyboard() {
 			run = 3;		// ...and resume execution
 			scr_dirty = 1;	// but update screen! EEEEEK
 		}
-		// Press F10
+		// Press F10 = KEYSTROKES
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F10) {
+			keys=fopen("keystrokes.txt","r");
+			if (keys==NULL) {
+				printf("\n*** No keystrokes file! ***\n");
+			} else { 
+				type_delay = 1;
+				typing = 1;	// start typing from file
+			}
 		}
 		// Press F11
 		else if(e.type == SDL_KEYDOWN && e.key.keysym.sym==SDLK_F11) {
