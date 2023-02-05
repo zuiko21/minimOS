@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230204-1307
+; last modified 20230206-0008
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -8006,7 +8006,7 @@ LAB_CIRCLE
 	JMP dxcircle_lib	; call graphic function and return!
 ;	RTS
 
-; perform RECT x1,y1,x2,y2,c
+; perform RECT x1,y1,x2,y2,c *** STILL BUGGY
 LAB_RECT
 	JSR LAB_GTBY		; x1 coordinate
 	PHX
@@ -8029,20 +8029,48 @@ LAB_RECT
 ;	JMP dxrect_lib		; call graphic function and return!
 	RTS
 
-; perform BEEP *** temporary hack, just integer values (len/125,note 0=C3)
+; perform BEEP *** temporary hack, just integer values (len/128, note 0=C3, 47=B6)
 LAB_BEEP
 	JSR LAB_GTBY		; length
 	PHX
 	JSR LAB_SCGB		; note
-;	LDY fl_Tab, X		; period LSB
-;	LDA fh_Tab, X		; period MSB
-	PLX
+	CPX #48				; four octaves only
+	BCS LAB_BERR		; outside range!
+	LDY fr_Tab, X		; period
+	LDA cy_Tab, X		; base cycles
+	TAX
+	PLA					; retrieve duration
+	STA gr_tmp			; outside any register
+	SEI
+	TYA					; save period...
+LAB_BLNG
+	TAY					; ...and retrieve it
+LAB_BCYC
+	JSR LAB_BDLY		; waste 12 cyles...
+	NOP
+	NOP
+	NOP					; ...and another 6
+	DEY
+	BNE LAB_BCYC		; total 23t per iteration
+	DEX
+	STX IOBeep			; toggle speaker
+	BNE LAB_BLNG
+	DEC gr_tmp			; repeat until desired length
+	BNE LAB_BLNG
+	CLI					; restore interrupts!
+LAB_BDLY
 	RTS
+LAB_BERR
+	JMP LAB_FCER		; function call error & return
 
 ; *** end of Durango-X specifics ***
 
 ; The rest are tables messages and code for RAM
 
+; *** Durango-X specific, table of notes and cycles ***
+fr_Tab:
+	
+cy_Tab:
 ; the rest of the code is tables and BASIC start-up code
 
 ; this is now in ZP
