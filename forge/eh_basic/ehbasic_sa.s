@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
-; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20221213-1749
+; (c) 2015-2023 Carlos J. Santisteban
+; last modified 20230207-2251
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -77,6 +77,9 @@ cio_src		= $E4
 ; ***********************
 ; *** zero page usage ***
 ; ***********************
+
+std_in		= 0			; standard minimOS default devices, for I/O patching
+stdout		= std_in+1	; $0002 not used, free
 
 uz	= 3			; ##### EhBASIC zeropage usage on minimOS #####
 
@@ -372,7 +375,7 @@ TK_ON		= TK_STOP+1		; ON token
 TK_NULL		= TK_ON+1		; NULL token
 TK_INC		= TK_NULL+1		; INC token
 TK_WAIT		= TK_INC+1		; WAIT token
-TK_LOAD		= TK_WAIT+1		; LOAD token
+TK_LOAD		= TK_WAIT+1		; LOAD token *** think about including a MERGE command
 TK_SAVE		= TK_LOAD+1		; SAVE token
 TK_DEF		= TK_SAVE+1		; DEF token
 TK_POKE		= TK_DEF+1		; POKE token
@@ -498,6 +501,9 @@ Ram_top		= $6000		; end of user RAM+1 (set as needed, should be page aligned) KE
 ; new page 2 initialisation, copy block to ccflag on
 ; *** cannot use page 2 freely, now goes into a safe ZP/DP space ***
 LAB_COLD
+	STZ std_in
+	STZ stdout			; *** placeholder init while code below is revised ***
+
 	LDX	#PG2_TABE-PG2_TABS-1
 						; *** uses X instead of Y to make it 816-DP-savvy ***
 						; byte count-1
@@ -1375,6 +1381,7 @@ LAB_14D4
 	ORA	Itemph			; OR temporary integer high byte
 	BNE	LAB_14E2		; branch if start set
 
+LAB_FLST				; *** full listing for SAVE ***
 	LDA	#$FF			; set for -1
 	STA	Itempl			; set temporary integer low byte
 	STA	Itemph			; set temporary integer high byte
@@ -7787,13 +7794,16 @@ V_INPT					; non halting scan input device
 	PHX					; *** best to save these here ***
 	PHY
 	LDY #0				; ##### CONIO interface #####
-	JSR conio
+	JSR call_in			; *** new indexed call ***
 	TYA
 	PLY
 	PLX
 	RTS
 ; could check C and Y here for safety
 ; note C works opposite than the original EhBASIC, has been modified
+call_in
+	LDX std_in
+	JMP (dev_in, X)		; *** indexed call ***
 
 V_OUTP					; send byte to output device
 ;	STA io_c
@@ -7801,19 +7811,41 @@ V_OUTP					; send byte to output device
 	PHX					; *** must save these ***
 	PHY
 	TAY					; ##### CONIO interface #####
-	JSR conio
+	JSR call_out		; *** new indexed call ***
 	PLY					; *** this ignores errors ***
 	PLX
 ;	LDA io_c			; *** worth recovering it ***
 	PLA					; good?
+dev_null				; *** new NULL device ***
+aux_in					; *** redefinable placeholders, provided by aux_io.s ***
+aux_out
+aux_load
+aux_save
+aux_close
 	RTS
+call_out
+	LDX stdout
+	JMP (dev_out, X)	; *** indexed call ***
 
-V_LOAD					; load BASIC program *** not yet implemented ***
+V_LOAD					; load BASIC program *** now implemented via aux_io.s ***
 
-V_SAVE					; save BASIC program *** not yet implemented ***
-
-	LDX #$20			; (Undefined Function) error
-	JMP LAB_XERR
+V_SAVE					; save BASIC program *** now implemented via aux_io.s ***
+; check string arrgument...
+	JSR aux_save		; get things ready
+	LDA #2				; NULL device
+	STA std_in			; makes sense to disable input?
+	ASL					; now is 4 (AUX device)
+	STA stdout			; redirect LIST output
+	LDA IO8attr			; *** inverse video as placeholder ***
+	EOR #64
+	STA IO8attr
+	JSR LAB_FLST		; *** full LISTing is the actual SAVE ***
+	LDA IO8attr			; *** back to standard video as placeholder ***
+	EOR #64
+	STA IO8attr
+	STZ std_in
+	STZ stdout			; restore devices
+	RTS
 
 ; perform BYE	##### minimOS #####
 LAB_EXIT
@@ -7829,6 +7861,16 @@ LAB_EXIT
 ; The rest are tables messages and code for RAM
 
 ; the rest of the code is tables and BASIC start-up code
+
+; *** Durango-X version tables ***
+dev_in					; input device drivers
+	conio				; device 0, standard console (keyboard)
+	dev_null			; device 2, NULL
+	aux_in				; device 4, AUX in (supplied label in aux_io.s)
+dev_out
+	conio				; device 0, standard console (screen)
+	dev_null			; device 2, NULL
+	aux_out				; device 4, AUX out (supplied label in aux_io.s)
 
 ; this is now in ZP
 PG2_TABS
