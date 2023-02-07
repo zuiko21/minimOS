@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230207-2341
+; last modified 20230207-2355
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -7835,11 +7835,13 @@ V_SAVE					; save BASIC program *** now implemented via aux_io.s ***
 	LDA #2				; NULL device
 	STA std_in			; makes sense to disable input?
 	ASL					; now is 4 (AUX device)
-;	STA stdout			; redirect LIST output
+	STA stdout			; redirect LIST output
 	LDA IO8attr			; *** inverse video as placeholder ***
 	EOR #64
 	STA IO8attr
 	LDY #7:JSR conio;***DEBUG***
+lda#$F1;PSV_ASCII
+sta$df94;set VSP mode
 ; *** this code fragment is needed for LIST ***
 	LDA	Smeml			; get start of mem low byte
 	LDX	Smemh			; get start of mem high byte
@@ -7853,7 +7855,14 @@ V_SAVE					; save BASIC program *** now implemented via aux_io.s ***
 	STZ std_in
 	STZ stdout			; restore devices
 	RTS
-
+;PLACEHOLDER
+-aux_out
+	cmp#13
+	bne do_aux_out
+	lda#10
+do_aux_out
+	sta $df93
+	rts
 ; perform BYE	##### minimOS #####
 LAB_EXIT
 	LDX	emptsk			; new stack pointer
