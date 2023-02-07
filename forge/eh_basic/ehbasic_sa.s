@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230207-2251
+; last modified 20230207-2341
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -7835,10 +7835,17 @@ V_SAVE					; save BASIC program *** now implemented via aux_io.s ***
 	LDA #2				; NULL device
 	STA std_in			; makes sense to disable input?
 	ASL					; now is 4 (AUX device)
-	STA stdout			; redirect LIST output
+;	STA stdout			; redirect LIST output
 	LDA IO8attr			; *** inverse video as placeholder ***
 	EOR #64
 	STA IO8attr
+	LDY #7:JSR conio;***DEBUG***
+; *** this code fragment is needed for LIST ***
+	LDA	Smeml			; get start of mem low byte
+	LDX	Smemh			; get start of mem high byte
+	STA	Baslnl			; save low byte as current
+	STX	Baslnh			; save high byte as current
+
 	JSR LAB_FLST		; *** full LISTing is the actual SAVE ***
 	LDA IO8attr			; *** back to standard video as placeholder ***
 	EOR #64
@@ -7864,13 +7871,13 @@ LAB_EXIT
 
 ; *** Durango-X version tables ***
 dev_in					; input device drivers
-	conio				; device 0, standard console (keyboard)
-	dev_null			; device 2, NULL
-	aux_in				; device 4, AUX in (supplied label in aux_io.s)
+	.word	conio		; device 0, standard console (keyboard)
+	.word	dev_null	; device 2, NULL
+	.word	aux_in		; device 4, AUX in (supplied label in aux_io.s)
 dev_out
-	conio				; device 0, standard console (screen)
-	dev_null			; device 2, NULL
-	aux_out				; device 4, AUX out (supplied label in aux_io.s)
+	.word	conio		; device 0, standard console (screen)
+	.word	dev_null	; device 2, NULL
+	.word	aux_out		; device 4, AUX out (supplied label in aux_io.s)
 
 ; this is now in ZP
 PG2_TABS
