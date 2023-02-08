@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230208-2242
+; last modified 20230209-0015
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -22,15 +22,20 @@
 ; 2.21	fixed IF .. THEN RETURN to not cause error
 ; 2.22	fixed RND() breaking the get byte routine
 
-	* = $C000
+	* = $8000
 
 ; try to assemble from here with
 ; xa ehbasic_sa.s -I ../../OS/firmware -l labels 
 ; may add -DDEF=KBBYPAD for optional keyboad-by-pad
 ; add -DDEF KBDMAT for generic matrix keyboard support (instead of PASK)
+; add -DAUXIO=aux_io.s for LOAD SAVE device (replace aux_io.s by suitable file)
 
 ;#define	KBBYPAD
 #define		KBDMAT
+
+#ifndef	AUXIO
+#define	AUXIO	vsp.s
+#endif
 
 ; *****************************************************
 ; *** firmware & hardware definitions for Durango-X ***
@@ -7517,7 +7522,7 @@ LAB_MAX
 	BEQ	LAB_MAX			; go do next (branch always)
 
 ; *** this is $DF75 if assembled on a 16K ROM, may skip I/O area ***
-	.dsb $E000-*, $FF	; skip I/O area!
+;	.dsb $E000-*, $FF	; skip I/O area!
 
 ; perform MIN()
 
@@ -7825,7 +7830,7 @@ V_OUTP					; send byte to output device
 	PLX
 	PLA
 dev_null				; *** new NULL device ***
-aux_in					; *** redefinable placeholders, provided by aux_io.s ***
+aux_in					; *** redefinable placeholders, provided by AUXIO.s ***
 aux_out
 aux_load
 aux_save
@@ -7835,9 +7840,16 @@ call_out
 	LDX stdout
 	JMP (dev_out, X)	; *** indexed call ***
 
+; *** device-dependent AUX I/O driver pack *** -DAUXIO=aux_io.s or suitable file
+#include "AUXIO"
+
+; *** standard LOAD & SAVE for Durango-X ***
 V_LOAD					; load BASIC program *** now implemented via aux_io.s ***
 ; check string arrgument...
 	JSR aux_load		; get things ready
+	BCC LAB_LDOK		; (if possible)
+	JMP LAB_FCER
+LAB_LDOK
 	JSR LAB_SNEW		; if all OK, somehow execute NEW without checking syntax
 	LDA #2				; NULL device
 	STA stdout			; disable echo for speed!
@@ -7848,12 +7860,13 @@ V_LOAD					; load BASIC program *** now implemented via aux_io.s ***
 V_SAVE					; save BASIC program *** now implemented via aux_io.s ***
 ; check string arrgument...
 	JSR aux_save		; get things ready
+	BCC LAB_SVOK		; (if possible)
+	JMP LAB_FCER
+LAB_SVOK
 	LDA #2				; NULL device
 	STA std_in			; makes sense to disable input (avoid BREAK)
 	ASL					; now is 4 (AUX device)
 	STA stdout			; redirect LIST output
-lda#$F1;PSV_ASCII
-sta$df94;set VSP mode
 ; *** this code fragment is needed for LIST ***
 	LDA	Smeml			; get start of mem low byte
 	LDX	Smemh			; get start of mem high byte
@@ -7861,25 +7874,10 @@ sta$df94;set VSP mode
 	STX	Baslnh			; save high byte as current
 
 	JSR LAB_FLST		; *** full LISTing is the actual SAVE ***
+	JSR aux_close		; tidy up
 	STZ std_in
 	STZ stdout			; restore devices
 	RTS
-;PLACEHOLDER
--aux_out
-	cmp#13
-	bne do_aux_out
-	lda#10
-do_aux_out
-	sta $df93
-	rts
--aux_in;just aborts LOAD
-	lda#0
-	stz std_in
-	stz stdout
-;	LDA	#<LAB_RMSG		; point to "Ready" message low byte
-;	LDY	#>LAB_RMSG		; point to "Ready" message high byte
-;	JMP	LAB_18C3		; go do print string... and return
-	rts
 
 ; perform BYE	##### minimOS #####
 LAB_EXIT
