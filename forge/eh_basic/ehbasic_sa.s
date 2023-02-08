@@ -1449,8 +1449,7 @@ LAB_152E
 
 ; *** Int'l character support, set open quote flag for REM ***
 	CMP #TK_REM			; is the REM token?
-	BNE
-	LAB_NREM			; if so, set open quote flag until the end
+	BNE LAB_NREM		; if so, set open quote flag until the end
 	LDX #128			; bit 7 is enough
 	STX Oquote
 LAB_NREM
@@ -7836,6 +7835,15 @@ call_out
 	JMP (dev_out, X)	; *** indexed call ***
 
 V_LOAD					; load BASIC program *** now implemented via aux_io.s ***
+; check string arrgument...
+	JSR aux_load		; get things ready
+;	JSR LAB_1463		; if all OK, somehow execute NEW without checking syntax... does this work?
+	LDA #2				; NULL device
+	STA stdout			; disable echo for speed!
+	ASL					; now is 4 (AUX device)
+	STA std_in			; redirect buffer input...
+	ldy#7:jsr conio
+	RTS					; ...and let input routine exit upon EOF!
 
 V_SAVE					; save BASIC program *** now implemented via aux_io.s ***
 ; check string arrgument...
@@ -7844,10 +7852,6 @@ V_SAVE					; save BASIC program *** now implemented via aux_io.s ***
 	STA std_in			; makes sense to disable input?
 	ASL					; now is 4 (AUX device)
 	STA stdout			; redirect LIST output
-	LDA IO8attr			; *** inverse video as placeholder ***
-	EOR #64
-	STA IO8attr
-	LDY #7:JSR conio;***DEBUG***
 lda#$F1;PSV_ASCII
 sta$df94;set VSP mode
 ; *** this code fragment is needed for LIST ***
@@ -7857,9 +7861,6 @@ sta$df94;set VSP mode
 	STX	Baslnh			; save high byte as current
 
 	JSR LAB_FLST		; *** full LISTing is the actual SAVE ***
-	LDA IO8attr			; *** back to standard video as placeholder ***
-	EOR #64
-	STA IO8attr
 	STZ std_in
 	STZ stdout			; restore devices
 	RTS
@@ -7871,6 +7872,15 @@ sta$df94;set VSP mode
 do_aux_out
 	sta $df93
 	rts
+-aux_in
+	lda#0
+	stz std_in
+	stz stdout
+;	LDA	#<LAB_RMSG		; point to "Ready" message low byte
+;	LDY	#>LAB_RMSG		; point to "Ready" message high byte
+;	JMP	LAB_18C3		; go do print string... and return
+	rts
+
 ; perform BYE	##### minimOS #####
 LAB_EXIT
 	LDX	emptsk			; new stack pointer
