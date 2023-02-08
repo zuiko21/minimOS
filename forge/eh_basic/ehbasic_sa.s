@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230208-2209
+; last modified 20230208-2242
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -1278,6 +1278,30 @@ LAB_NEW
 	BNE	LAB_1460		; exit if not end of statement (to do syntax error)
 
 LAB_1463
+	JSR LAB_SNEW		; *** Shared procedure for Durango-X ***
+
+; flush stack and clear continue flag
+
+LAB_1491
+	LDX	#des_sk			; set descriptor stack pointer
+	STX	next_s			; save descriptor stack pointer
+; *** minimOS cannot assume a fixed flushed stack address ***
+	PLA					; pull return address low byte *** reversed
+	PLX					; pull return address high byte *** reversed
+	LDY	#1				; *** offset to older LAB_SKFE
+	STA	(emptsk), Y		; save to cleared stack
+	TXA					; now for MSB...
+	INY					; *** offset to older LAB_SKFF
+	STA	(emptsk), Y		; save to cleared stack
+	LDX	emptsk			; new stack pointer *** 8 or 16-bit
+	TXS					; reset stack
+;	LDA	#$00			; clear byte
+	STZ	Cpntrh			; clear continue pointer high byte
+	STZ	Sufnxf			; clear subscript/FNX flag
+LAB_14A6
+	RTS
+
+LAB_SNEW				; *** shared NEW procedure for Durango-X ***
 	LDA	#$00			; clear A
 	TAY					; clear Y
 	STA	(Smeml),Y		; clear first line, next line pointer, low byte
@@ -1315,28 +1339,7 @@ LAB_147A
 	STY	Sarryh			; save var mem end high byte
 	STA	Earryl			; save array mem end low byte
 	STY	Earryh			; save array mem end high byte
-	JSR	LAB_161A		; perform RESTORE command
-
-; flush stack and clear continue flag
-
-LAB_1491
-	LDX	#des_sk			; set descriptor stack pointer
-	STX	next_s			; save descriptor stack pointer
-; *** minimOS cannot assume a fixed flushed stack address ***
-	PLA					; pull return address low byte *** reversed
-	PLX					; pull return address high byte *** reversed
-	LDY	#1				; *** offset to older LAB_SKFE
-	STA	(emptsk), Y		; save to cleared stack
-	TXA					; now for MSB...
-	INY					; *** offset to older LAB_SKFF
-	STA	(emptsk), Y		; save to cleared stack
-	LDX	emptsk			; new stack pointer *** 8 or 16-bit
-	TXS					; reset stack
-;	LDA	#$00			; clear byte
-	STZ	Cpntrh			; clear continue pointer high byte
-	STZ	Sufnxf			; clear subscript/FNX flag
-LAB_14A6
-	RTS
+	JMP	LAB_161A		; perform RESTORE command... and return
 
 ; perform CLEAR
 
@@ -7813,16 +7816,14 @@ call_in
 	JMP (dev_in, X)		; *** indexed call ***
 
 V_OUTP					; send byte to output device
-;	STA io_c
-	PHA					; good?
+	PHA
 	PHX					; *** must save these ***
 	PHY
 	TAY					; ##### CONIO interface #####
 	JSR call_out		; *** new indexed call ***
 	PLY					; *** this ignores errors ***
 	PLX
-;	LDA io_c			; *** worth recovering it ***
-	PLA					; good?
+	PLA
 dev_null				; *** new NULL device ***
 aux_in					; *** redefinable placeholders, provided by aux_io.s ***
 aux_out
@@ -7837,19 +7838,18 @@ call_out
 V_LOAD					; load BASIC program *** now implemented via aux_io.s ***
 ; check string arrgument...
 	JSR aux_load		; get things ready
-;	JSR LAB_1463		; if all OK, somehow execute NEW without checking syntax... does this work?
+	JSR LAB_SNEW		; if all OK, somehow execute NEW without checking syntax
 	LDA #2				; NULL device
 	STA stdout			; disable echo for speed!
 	ASL					; now is 4 (AUX device)
 	STA std_in			; redirect buffer input...
-	ldy#7:jsr conio
 	RTS					; ...and let input routine exit upon EOF!
 
 V_SAVE					; save BASIC program *** now implemented via aux_io.s ***
 ; check string arrgument...
 	JSR aux_save		; get things ready
 	LDA #2				; NULL device
-	STA std_in			; makes sense to disable input?
+	STA std_in			; makes sense to disable input (avoid BREAK)
 	ASL					; now is 4 (AUX device)
 	STA stdout			; redirect LIST output
 lda#$F1;PSV_ASCII
@@ -7872,7 +7872,7 @@ sta$df94;set VSP mode
 do_aux_out
 	sta $df93
 	rts
--aux_in
+-aux_in;just aborts LOAD
 	lda#0
 	stz std_in
 	stz stdout
