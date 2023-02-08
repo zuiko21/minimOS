@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230207-2355
+; last modified 20230208-2209
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -1446,6 +1446,14 @@ LAB_152E
 						; else was token byte so uncrunch it (maybe)
 	BIT	Oquote			; test the open quote flag
 	BMI	LAB_150C		; just go print character if open quote set
+
+; *** Int'l character support, set open quote flag for REM ***
+	CMP #TK_REM			; is the REM token?
+	BNE
+	LAB_NREM			; if so, set open quote flag until the end
+	LDX #128			; bit 7 is enough
+	STX Oquote
+LAB_NREM
 
 	LDX	#>LAB_KEYT		; get table address high byte
 	ASL					; *2
