@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2023 Carlos J. Santisteban, Emilio López Berenguer
- * last modified 20230209-2242
+ * last modified 20230209-2325
  * */
 
 /* Gamepad buttons constants */
@@ -625,10 +625,12 @@ byte peek(word dir) {
 		} else if (dir<=0xDF8F) {		// sync flags
 			d = mem[0xDF88];
 		} else if ((dir==0xDF93) && (mem[0xDF94]==PSV_FREAD)) {	// Read from VSP
-			if (!feof(psv_file))	d = mem[0xDF93] = fgetc(psv_file);		// get char from input file
-			else {
-				d = mem[0xDF93] = 0;										// NULL means EOF
-				printf("WARNING: End of VSP file!n");
+			if (!feof_unlocked(psv_file))	{
+				d = mem[0xDF93] = fgetc(psv_file);				// get char from input file
+				if (ver)	printf("(%d)", d);					// DEBUG transmitted char
+			} else {
+				d = mem[0xDF93] = 0;							// NULL means EOF
+				printf("WARNING: End of VSP file\n");
 			}
 		} else if (dir==0xDF9B && emulate_minstrel) {			// Minstrel keyboard port EEEEEK
 			switch(mem[0xDF9B]) {
