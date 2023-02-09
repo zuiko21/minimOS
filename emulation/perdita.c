@@ -625,7 +625,7 @@ byte peek(word dir) {
 		} else if (dir<=0xDF8F) {		// sync flags
 			d = mem[0xDF88];
 		} else if ((dir==0xDF93) && (mem[0xDF94]==PSV_FREAD)) {	// Read from VSP
-			if (!feof_unlocked(psv_file))	{
+			if (!feof(psv_file))	{
 				d = mem[0xDF93] = fgetc(psv_file);				// get char from input file
 				if (ver)	printf("(%d)", d);					// DEBUG transmitted char
 			} else {
