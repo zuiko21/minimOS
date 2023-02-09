@@ -7856,7 +7856,9 @@ LAB_LDOK
 	STA stdout			; disable echo for speed!
 	ASL					; now is 4 (AUX device)
 	STA std_in			; redirect buffer input...
-	RTS					; ...and let input routine exit upon EOF!
+;	RTS					; ...and let input routine exit upon EOF!
+;	JMP LAB_127D
+	JMP LAB_1274
 
 V_SAVE					; save BASIC program *** now implemented via aux_io.s ***
 ; check string arrgument...

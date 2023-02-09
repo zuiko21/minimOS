@@ -1,6 +1,6 @@
 ; Virtual Serial Port driver module for EhBASIC (under perdita)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230209-2314
+; last modified 20230209-2338
 
 #echo "Using Virtual Serial Port for LOAD/SAVE"
 
@@ -12,14 +12,23 @@
 ; *** redefine placeholders for EhBASIC LOAD/SAVE routines ***
 -aux_in:					; *** device input (MUST restore devices upon EOF) ***
 	LDA $DF93				; get char from VSP
-	BNE in_ok				; until terminator
+	BEQ in_eof				; until terminator
+	CMP #10
+	BNE in_ok
+		LDA #13				; convert UNIX newline to CONIO/minimOS
+in_ok:
+	CMP #$FF				; EOF?
+	BNE do_in
+		LDA #$20
+do_in:
+	CLC						; eeeeeeeek
+	RTS
+in_eof:
 	STZ std_in
 	STZ stdout				; restore devices!
 	LDA	#<LAB_RMSG			; point to "Ready" message low byte
 	LDY	#>LAB_RMSG			; point to "Ready" message high byte
 	JMP	LAB_18C3			; go do print string... and return
-in_ok:
-	RTS
 
 -aux_out:					; *** device output ***
 	CMP #13					; check for CONIO/minimOS NEWLINE
