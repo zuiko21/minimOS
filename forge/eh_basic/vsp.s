@@ -1,6 +1,6 @@
 ; Virtual Serial Port driver module for EhBASIC (under perdita)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230209-2258
+; last modified 20230209-2314
 
 #echo "Using Virtual Serial Port for LOAD/SAVE"
 
@@ -11,13 +11,14 @@
 
 ; *** redefine placeholders for EhBASIC LOAD/SAVE routines ***
 -aux_in:					; *** device input (MUST restore devices upon EOF) ***
-;just aborts LOAD
-;	LDA #0					; EOF marker
+	LDA $DF93				; get char from VSP
+	BNE in_ok				; until terminator
 	STZ std_in
 	STZ stdout				; restore devices!
-;	LDA	#<LAB_RMSG			; point to "Ready" message low byte
-;	LDY	#>LAB_RMSG			; point to "Ready" message high byte
-;	JMP	LAB_18C3			; go do print string... and return
+	LDA	#<LAB_RMSG			; point to "Ready" message low byte
+	LDY	#>LAB_RMSG			; point to "Ready" message high byte
+	JMP	LAB_18C3			; go do print string... and return
+in_ok:
 	RTS
 
 -aux_out:					; *** device output ***
@@ -29,6 +30,19 @@ do_aux_out:
 	RTS
 
 -aux_load:					; *** prepare things for LOAD, Carry if not possible ***
+	LDA #PSV_FOPEN
+	STA $DF94				; set VSP mode for setting filename
+; must emit filename, placeholder below
+	LDX #0
+name_l:
+		LDA filename, X		; get char
+		BEQ load_ok			; until termination
+		STA $DF93			; send name character to VSP
+		INX					; eeeeeek
+		BNE name_l
+load_ok:
+	LDA #PSV_FREAD
+	STA $DF94				; will use open file for reading
 	CLC
 	RTS
 
@@ -37,13 +51,13 @@ do_aux_out:
 	STA $DF94				; set VSP mode for setting filename
 ; must emit filename, placeholder below
 	LDX #0
-name_l:
+name_s:
 		LDA filename, X		; get char
-		BEQ name_ok			; until termination
+		BEQ save_ok			; until termination
 		STA $DF93			; send name character to VSP
 		INX					; eeeeeek
-		BNE name_l
-name_ok:
+		BNE name_s
+save_ok:
 	LDA #PSV_FWRITE
 	STA $DF94				; will use open file for writing
 	CLC						; all OK this far!
