@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230209-0015
+; last modified 20230209-2247
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -33,6 +33,7 @@
 ;#define	KBBYPAD
 #define		KBDMAT
 
+; default AUX I/O is Virtual Serial Port
 #ifndef	AUXIO
 #define	AUXIO	vsp.s
 #endif
@@ -7830,11 +7831,11 @@ V_OUTP					; send byte to output device
 	PLX
 	PLA
 dev_null				; *** new NULL device ***
-aux_in					; *** redefinable placeholders, provided by AUXIO.s ***
-aux_out
-aux_load
-aux_save
-aux_close
+;aux_in					; *** redefinable placeholders, provided by AUXIO.s ***
+;aux_out
+;aux_load
+;aux_save
+;aux_close
 	RTS
 call_out
 	LDX stdout
