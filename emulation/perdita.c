@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2023 Carlos J. Santisteban, Emilio López Berenguer
- * last modified 20230209-0054
+ * last modified 20230209-2242
  * */
 
 /* Gamepad buttons constants */
@@ -757,7 +757,7 @@ void poke(word dir, byte v) {
 				} else {
 					printf("WARNING: file already open\n");	// maybe disable?
 				}
-/			}
+			}
 			// PSV file read
 			if(v==PSV_FREAD) {
 				psv_filename[psv_index] = '\0';		// I believe this is needed
