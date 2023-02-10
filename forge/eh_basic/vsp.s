@@ -1,8 +1,8 @@
 ; Virtual Serial Port driver module for EhBASIC (under perdita)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230210-2123
+; last modified 20230210-2252
 
-#echo Using Virtual Serial Port for LOAD/SAVE, test /VSP
+#echo Using Virtual Serial Port for LOAD/SAVE, back to fixed name
 
 #define	PSV_FOPEN	$11
 #define	PSV_FREAD	$12
@@ -47,11 +47,9 @@ do_aux_out:
 -aux_save:					; *** prepare things for SAVE, Carry if not possible ***
 	JSR set_name
 	LDA #PSV_FWRITE
-;	STA $DF94				; will use open file for writing
+	STA $DF94				; will use open file for writing
 	CLC						; all OK this far!
 	RTS
-filename:
-	.asc	"test.bas", 0
 
 -aux_close:					; *** tidy up after SAVE ***
 	LDA #PSV_FCLOSE
@@ -60,21 +58,23 @@ filename:
 
 set_name:
 	LDA #PSV_FOPEN
-;	STA $DF94				; set VSP mode for setting filename
-	JSR LAB_EVEZ			; check expression
-	BIT Dtypef
-	BPL name_ok				; not really a string
-	JSR LAB_22B6
-	TAX
-	BEQ name_ok				; if empty string, perdita will give EOF all the time
+	STA $DF94				; set VSP mode for setting filename
+;	JSR LAB_EVEZ			; check expression
+;	BIT Dtypef
+;	BPL name_ok				; not really a string
+;	JSR LAB_22B6
+;	TAX
+;	BEQ name_ok				; if empty string, perdita will give EOF all the time
 	LDY #0
 name_l:
-		LDA (ut1_pl), Y		; get char
-;		BEQ name_ok			; until termination
-;		STA $DF93			; send name character to VSP
-phy:tay:jsr conio:ply
+		LDA filename, Y;LDA (ut1_pl), Y		; get char
+		BEQ name_ok			; until termination
+		STA $DF93			; send name character to VSP
 		INY					; eeeeeek
 		DEX
 		BNE name_l
 name_ok:
 	RTS
+
+filename:
+	.asc	"test.bas", 0
