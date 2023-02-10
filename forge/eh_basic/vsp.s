@@ -2,7 +2,7 @@
 ; (c) 2023 Carlos J. Santisteban
 ; last modified 20230210-1707
 
-#echo Using Virtual Serial Port for LOAD/SAVE
+#echo Using Virtual Serial Port for LOAD/SAVE, test string
 
 #define	PSV_FOPEN	$11
 #define	PSV_FREAD	$12
@@ -61,12 +61,15 @@ filename:
 set_name:
 	LDA #PSV_FOPEN
 	STA $DF94				; set VSP mode for setting filename
-	LDX #0
+	JSR LAB_EVST
+	TAX
+	BEQ name_ok				; if empty string, perdita will give EOF all the time
+	LDY #0
 name_l:
-		LDA filename, X		; get char
+		LDA (ut1_pl), Y		; get char
 		BEQ name_ok			; until termination
 		STA $DF93			; send name character to VSP
-		INX					; eeeeeek
+		INY					; eeeeeek
 		BNE name_l
 name_ok:
 	RTS
