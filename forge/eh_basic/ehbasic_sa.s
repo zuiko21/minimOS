@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230209-2247
+; last modified 20230210-1645
 ; *************************************************************
 
 ; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
@@ -1016,7 +1016,6 @@ LAB_1359
 ; *** X only needs to be preserved here ***
 	JSR	V_INPT			; call scan input device
 	BCS	LAB_1359		; loop if no byte ##### minimOS way
-
 	CMP	#$07			; compare with [BELL]
 	BEQ	LAB_1378		; branch if [BELL]
 
@@ -7856,9 +7855,9 @@ LAB_LDOK
 	STA stdout			; disable echo for speed!
 	ASL					; now is 4 (AUX device)
 	STA std_in			; redirect buffer input...
-;	RTS					; ...and let input routine exit upon EOF!
+	RTS					; ...and let input routine exit upon EOF!
 ;	JMP LAB_127D
-	JMP LAB_1274
+;	JMP LAB_1274
 
 V_SAVE					; save BASIC program *** now implemented via aux_io.s ***
 ; check string arrgument...
