@@ -1,8 +1,8 @@
 ; Virtual Serial Port driver module for EhBASIC (under perdita)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230210-1707
+; last modified 20230210-2123
 
-#echo Using Virtual Serial Port for LOAD/SAVE, test string
+#echo Using Virtual Serial Port for LOAD/SAVE, test /VSP
 
 #define	PSV_FOPEN	$11
 #define	PSV_FREAD	$12
@@ -60,16 +60,21 @@ filename:
 
 set_name:
 	LDA #PSV_FOPEN
-	STA $DF94				; set VSP mode for setting filename
-	JSR LAB_EVST
+;	STA $DF94				; set VSP mode for setting filename
+	JSR LAB_EVEZ			; check expression
+	BIT Dtypef
+	BPL name_ok				; not really a string
+	JSR LAB_22B6
 	TAX
 	BEQ name_ok				; if empty string, perdita will give EOF all the time
 	LDY #0
 name_l:
 		LDA (ut1_pl), Y		; get char
-		BEQ name_ok			; until termination
-		STA $DF93			; send name character to VSP
+;		BEQ name_ok			; until termination
+;		STA $DF93			; send name character to VSP
+phy:tay:jsr conio:ply
 		INY					; eeeeeek
+		DEX
 		BNE name_l
 name_ok:
 	RTS
