@@ -703,6 +703,8 @@ void poke(word dir, byte v) {
 				if(mem[dir] >= ' ') {
 				// Save filename
 					psv_filename[psv_index++] = mem[dir];
+				} else {
+					psv_filename[psv_index++] = '_';
 				}
 			}
 			// If file write mode enabled
