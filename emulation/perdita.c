@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2023 Carlos J. Santisteban, Emilio López Berenguer
- * last modified 20230204-1134
+ * last modified 20230219-2128
  * */
 
 /* Gamepad buttons constants */
@@ -590,27 +590,27 @@ int ROMload(const char name[]) {
 		siz = ftell(f);			// get size
 		fclose(f);				// done for now, load() will reopen
 		// If dump file
-                if(siz == 65543) {
-                        printf("Loading memory dump file\n");
-                        load_dump(name);	// Load dump
+		if(siz == 65543) {
+			printf("Loading memory dump file\n");
+			load_dump(name);	// Load dump
 			return 1;
-                }
-                // If rom bigger than 32K
-                else if (siz > 32768) {
+		}
+		// If rom bigger than 32K
+		else if (siz > 32768) {
 			printf("*** ROM too large! ***\n");
 			run = 0;
-                        return -1;
+			return -1;
 		} else {
 			pos -= siz;
 			printf("Loading %s... (%ld K ROM image)\n", name, siz>>10);
 			load(name, pos);	// get actual ROM image
-                        return 0;
+			return 0;
 		}
 	}
 	else {
 		printf("*** Could not load ROM ***\n");
 		run = 0;
-                return -1;
+		return -1;
 	}
 }
 
@@ -620,11 +620,19 @@ byte peek(word dir) {
 	byte d = 0;					// supposed floating databus value?
 
 	if (dir>=0xDF80 && dir<=0xDFFF) {	// *** I/O ***
-		if (dir<=0xDF87) {		// video mode (high nibble readable)
+		if (dir<=0xDF87) {				// video mode (high nibble readable)
 			d = mem[0xDF80] | 0x0F;		// assume RGB mode and $FF floating value
-		} else if (dir<=0xDF8F) {	// sync flags
+		} else if (dir<=0xDF8F) {		// sync flags
 			d = mem[0xDF88];
-		} else if (dir==0xDF9B && emulate_minstrel) {	// Minstrel keyboard port EEEEEK
+		} else if (dir==0xDF93) {		// Read from VSP
+			if ((!feof(psv_file)) && (mem[0xDF94]==PSV_FREAD))	{
+				d = mem[0xDF93] = fgetc(psv_file);				// get char from input file
+				if (ver)	printf("(%d)", d);					// DEBUG transmitted char
+			} else {
+				d = mem[0xDF93] = 0;							// NULL means EOF
+				printf("WARNING: End of VSP file\n");
+			}
+		} else if (dir==0xDF9B && emulate_minstrel) {			// Minstrel keyboard port EEEEEK
 			switch(mem[0xDF9B]) {
 				case 1: return minstrel_keyboard[0];
 				case 2: return minstrel_keyboard[1];
@@ -633,18 +641,18 @@ byte peek(word dir) {
 				case 16: return minstrel_keyboard[4];
 				case 32: return 0x2C;
 			}
-								// no separate if-else is needed because of the default d value
-								// ...and $DF9B could be used by another device
+									// no separate if-else is needed because of the default d value
+									// ...and $DF9B could be used by another device
 		} else if (dir<=0xDF9F) {	// expansion port
-			d = mem[dir];		// *** is this OK?
-		} else if (dir<=0xDFBF) {		// interrupt control and beeper are NOT readable and WILL be corrupted otherwise
+			d = mem[dir];			// *** is this OK?
+		} else if (dir<=0xDFBF) {	// interrupt control and beeper are NOT readable and WILL be corrupted otherwise
 			if (ver)	printf("\n*** Reading from Write-only ports at $%04X ***\n", pc);
 			if (safe)	run = 0;
-		} else {				// cartridge I/O
-			d = mem[dir];		// *** is this OK?
+		} else {					// cartridge I/O
+			d = mem[dir];			// *** is this OK?
 		}
 	} else {
-		d = mem[dir];			// default memory read, either RAM or ROM
+		d = mem[dir];				// default memory read, either RAM or ROM
 	}
 
 	return d;
@@ -691,11 +699,10 @@ void poke(word dir, byte v) {
 			// If file open mode enabled
 			else if(mem[0xDF94]==PSV_FOPEN) {
 				// Filter filename
-				if((mem[dir] >= 65 && mem[dir] <= 90) ||
-					(mem[dir] >= 97 && mem[dir] <= 122) ||
-					mem[dir] == 45 || mem[dir] == 95)
+				if(mem[dir] >= ' ') {
 				// Save filename
-				psv_filename[psv_index++] = mem[dir];
+					psv_filename[psv_index++] = mem[dir];
+				}
 			}
 			// If file write mode enabled
 			else if(mem[0xDF94]==PSV_FWRITE) {
@@ -733,30 +740,53 @@ void poke(word dir, byte v) {
 			// PSV file open
 			if(v==PSV_FOPEN) {
 				psv_index = 0;
-                                psv_file = NULL;
-				psv_filename[psv_index++]='p';
-				psv_filename[psv_index++]='s';
-				psv_filename[psv_index++]='v';
-				psv_filename[psv_index++]='_';
+				if (psv_file != NULL) {
+					fclose(psv_file);	// there was something open
+					psv_file = NULL;
+					printf("WARNING: there was another open file\n");
+				}
+//				psv_filename[psv_index++]='p';
+//				psv_filename[psv_index++]='s';
+//				psv_filename[psv_index++]='v';
+//				psv_filename[psv_index++]='_';
 			}
 			// PSV file write
 			if(v==PSV_FWRITE) {
 				psv_filename[psv_index] = '\0';
 				// actual file opening
-				psv_file=fopen(psv_filename,"ab");                                
+				if(psv_file == NULL) {
+					if ((psv_file=fopen(psv_filename,"wb"))==NULL) {	// we want a brand new file
+						printf("[%d] ERROR: can't write to file %s\n", psv_index, psv_filename);
+						mem[0xDF94] = 0;								// disable VSP
+					} else {
+						printf("Opening file %s for writing...\n", psv_filename);
+					}
+				} else {
+					printf("ERROR: file already open\n");
+					mem[0xDF94] = 0;									// disable VSP
+				}
 			}
 			// PSV file read
 			if(v==PSV_FREAD) {
+				psv_filename[psv_index] = '\0';		// I believe this is needed
 				if(psv_file == NULL) {
-					psv_file=fopen(psv_filename,"rb");
+					if ((psv_file=fopen(psv_filename,"rb"))==NULL) {
+						printf("[%d] ERROR: can't open file %s\n", psv_index, psv_filename);
+						mem[0xDF94] = 0;			// disable VSP
+					} else {
+						printf("Opening file %s for reading...\n", psv_filename);
+					}
+				} else {
+					printf("ERROR: file already open\n");
+					mem[0xDF94] = 0;									// disable VSP
 				}
-				mem[0xDF93]=fgetc(psv_file);
+//				mem[0xDF93]=fgetc(psv_file);		// not done at config time, wait for actual read!
 			}
 			// PSV file close
 			if(v==PSV_FCLOSE) {
 				// close file
 				if(fclose(psv_file)!=0) {
-					printf("WARNING! Error closing file %s\n", psv_filename);
+					printf("WARNING: Error closing file %s\n", psv_filename);
 				}
 				psv_file = NULL;
 			}
