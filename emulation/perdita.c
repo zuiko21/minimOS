@@ -1,6 +1,6 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2023 Carlos J. Santisteban, Emilio López Berenguer
- * last modified 20230209-2325
+ * last modified 20230219-2128
  * */
 
 /* Gamepad buttons constants */
@@ -624,8 +624,8 @@ byte peek(word dir) {
 			d = mem[0xDF80] | 0x0F;		// assume RGB mode and $FF floating value
 		} else if (dir<=0xDF8F) {		// sync flags
 			d = mem[0xDF88];
-		} else if ((dir==0xDF93) && (mem[0xDF94]==PSV_FREAD)) {	// Read from VSP
-			if (!feof(psv_file))	{
+		} else if (dir==0xDF93) {		// Read from VSP
+			if ((!feof(psv_file)) && (mem[0xDF94]==PSV_FREAD))	{
 				d = mem[0xDF93] = fgetc(psv_file);				// get char from input file
 				if (ver)	printf("(%d)", d);					// DEBUG transmitted char
 			} else {
@@ -699,11 +699,10 @@ void poke(word dir, byte v) {
 			// If file open mode enabled
 			else if(mem[0xDF94]==PSV_FOPEN) {
 				// Filter filename
-//				if((mem[dir] >= 65 && mem[dir] <= 90) ||
-//					(mem[dir] >= 97 && mem[dir] <= 122) ||
-//					mem[dir] == 45 || mem[dir] == 95)
+				if(mem[dir] >= ' ') {
 				// Save filename
-				psv_filename[psv_index++] = mem[dir];
+					psv_filename[psv_index++] = mem[dir];
+				}
 			}
 			// If file write mode enabled
 			else if(mem[0xDF94]==PSV_FWRITE) {
@@ -741,7 +740,11 @@ void poke(word dir, byte v) {
 			// PSV file open
 			if(v==PSV_FOPEN) {
 				psv_index = 0;
-				psv_file = NULL;		// maybe it's best trying to close any existing open file
+				if (psv_file != NULL) {
+					fclose(psv_file);	// there was something open
+					psv_file = NULL;
+					printf("WARNING: there was another open file\n");
+				}
 //				psv_filename[psv_index++]='p';
 //				psv_filename[psv_index++]='s';
 //				psv_filename[psv_index++]='v';
@@ -753,11 +756,14 @@ void poke(word dir, byte v) {
 				// actual file opening
 				if(psv_file == NULL) {
 					if ((psv_file=fopen(psv_filename,"wb"))==NULL) {	// we want a brand new file
-						printf("ERROR: can't write to file");
-						mem[0xDF94] = 0;				// disable VSP
+						printf("[%d] ERROR: can't write to file %s\n", psv_index, psv_filename);
+						mem[0xDF94] = 0;								// disable VSP
+					} else {
+						printf("Opening file %s for writing...\n", psv_filename);
 					}
 				} else {
-					printf("WARNING: file already open\n");	// maybe disable?
+					printf("ERROR: file already open\n");
+					mem[0xDF94] = 0;									// disable VSP
 				}
 			}
 			// PSV file read
@@ -765,11 +771,14 @@ void poke(word dir, byte v) {
 				psv_filename[psv_index] = '\0';		// I believe this is needed
 				if(psv_file == NULL) {
 					if ((psv_file=fopen(psv_filename,"rb"))==NULL) {
-						printf("ERROR: can't open file!\n");
+						printf("[%d] ERROR: can't open file %s\n", psv_index, psv_filename);
 						mem[0xDF94] = 0;			// disable VSP
+					} else {
+						printf("Opening file %s for reading...\n", psv_filename);
 					}
 				} else {
-					printf("WARNING: file already open\n");
+					printf("ERROR: file already open\n");
+					mem[0xDF94] = 0;									// disable VSP
 				}
 //				mem[0xDF93]=fgetc(psv_file);		// not done at config time, wait for actual read!
 			}
