@@ -7845,7 +7845,6 @@ call_out
 
 ; *** standard LOAD & SAVE for Durango-X ***
 V_LOAD					; load BASIC program *** now implemented via aux_io.s ***
-; check string arrgument...
 	JSR aux_load		; get things ready
 	BCC LAB_LDOK		; (if possible)
 	JMP LAB_FCER
@@ -7860,7 +7859,6 @@ LAB_LDOK
 ;	JMP LAB_1274
 
 V_SAVE					; save BASIC program *** now implemented via aux_io.s ***
-; check string arrgument...
 	JSR aux_save		; get things ready
 	BCC LAB_SVOK		; (if possible)
 	JMP LAB_FCER

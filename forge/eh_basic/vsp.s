@@ -47,7 +47,7 @@ do_aux_out:
 -aux_save:					; *** prepare things for SAVE, Carry if not possible ***
 	JSR set_name
 	LDA #PSV_FWRITE
-	STA $DF94				; will use open file for writing
+;	STA $DF94				; will use open file for writing
 	CLC						; all OK this far!
 	RTS
 filename:
