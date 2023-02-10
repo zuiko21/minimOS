@@ -1,6 +1,6 @@
 ; Virtual Serial Port driver module for EhBASIC (under perdita)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230210-1645
+; last modified 20230210-1707
 
 #echo Using Virtual Serial Port for LOAD/SAVE
 
@@ -13,13 +13,12 @@
 -aux_in:					; *** device input (MUST restore devices upon EOF) ***
 	LDY $DF93				; get char from VSP ***** EEEEEEEEEEEEEEEEEEEEEEEEEEEEKKKKKKKKKKKK
 	BEQ in_eof				; until terminator
-	CPY #10
-	BNE in_ok
-		LDY #13				; convert UNIX newline to CONIO/minimOS
-in_ok:
+	CPY #10					; NEWLINE?
+	BEQ make_cr
 	CPY #$FF				; EOF?
 	BNE do_in
-		LDY #13
+make_cr:
+		LDY #13				; convert UNIX newline to CONIO/minimOS
 do_in:
 	CLC						; eeeeeeeek
 	RTS
@@ -39,34 +38,14 @@ do_aux_out:
 	RTS
 
 -aux_load:					; *** prepare things for LOAD, Carry if not possible ***
-	LDA #PSV_FOPEN
-	STA $DF94				; set VSP mode for setting filename
-; must emit filename, placeholder below
-	LDX #0
-name_l:
-		LDA filename, X		; get char
-		BEQ load_ok			; until termination
-		STA $DF93			; send name character to VSP
-		INX					; eeeeeek
-		BNE name_l
-load_ok:
+	JSR set_name
 	LDA #PSV_FREAD
 	STA $DF94				; will use open file for reading
 	CLC
 	RTS
 
 -aux_save:					; *** prepare things for SAVE, Carry if not possible ***
-	LDA #PSV_FOPEN
-	STA $DF94				; set VSP mode for setting filename
-; must emit filename, placeholder below
-	LDX #0
-name_s:
-		LDA filename, X		; get char
-		BEQ save_ok			; until termination
-		STA $DF93			; send name character to VSP
-		INX					; eeeeeek
-		BNE name_s
-save_ok:
+	JSR set_name
 	LDA #PSV_FWRITE
 	STA $DF94				; will use open file for writing
 	CLC						; all OK this far!
@@ -78,3 +57,16 @@ filename:
 	LDA #PSV_FCLOSE
 	STA $DF94				; tell VSP to close file
 	RTS						; nothing to do this far
+
+set_name:
+	LDA #PSV_FOPEN
+	STA $DF94				; set VSP mode for setting filename
+	LDX #0
+name_l:
+		LDA filename, X		; get char
+		BEQ name_ok			; until termination
+		STA $DF93			; send name character to VSP
+		INX					; eeeeeek
+		BNE name_l
+name_ok:
+	RTS
