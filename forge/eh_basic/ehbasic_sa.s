@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230211-2358
+; last modified 20230212-0049
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -8077,7 +8077,7 @@ LAB_BERR
 ; perform PAUSE n
 LAB_PAUSE
 	STZ $020A			; clear standard received key
-	JSR LAB_GTBY		; get length in ticks (0=infinite)
+	JSR LAB_GTBY		; get length in ticks (0=infinite) *** maybe use 16-bit quantity
 	TXA
 	BEQ LAB_INFP		; just wait for any key
 	CLC
@@ -8730,7 +8730,7 @@ TAB_ASCP
 LBB_PAPER
 	.byte	"APER",TK_PAPER		; PAPER	*** Durango-X
 LBB_PAUSE
-	.byte	"AUSE",TK_PAPER		; PAUSE	*** Durango-X
+	.byte	"AUSE",TK_PAUSE		; PAUSE	*** Durango-X
 LBB_PEEK
 	.byte	"EEK(",TK_PEEK		; PEEK(
 LBB_PI
