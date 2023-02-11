@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230211-1839
+; last modified 20230211-2358
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -423,81 +423,83 @@ TK_CLS		= TK_NMI+1		; CLS		$AB	*** new tokens for Durango-X (CONIO support) ***
 TK_INK		= TK_CLS+1		; INK i		$AC
 TK_PAPER	= TK_INK+1		; PAPER p	$AD
 TK_LOCATE	= TK_PAPER+1	; LOCATE x,y	$AE
-TK_MODE		= TK_LOCATE+1	; MODE n	$AF	*** new tokens for Durango-X (video mode register)
-TK_SCREEN	= TK_MODE+1		; SCREEN n	$B0	not sure
-TK_PLOT		= TK_SCREEN+1	; PLOT x,y,c	$B1	*** new tokens for Durango-X (graphic primitives) maybe retrieve colour parameter from INK?
-TK_LINE		= TK_PLOT+1		; LINE x1,y1,x2,y2,c	$B2
-TK_CIRCLE	= TK_LINE+1		; CIRCLE x,y,r,c		$B3
-TK_RECT		= TK_CIRCLE+1	; RECT x1,y1,x2,y2,c	$B4 (filled)
-TK_BEEP		= TK_RECT+1		; BEEP d,n	$B5		*** new token for Durango-X (sound output)
+TK_CURSOR	= TK_LOCATE+1	; CURSOR n		$AF
+TK_MODE		= TK_CURSOR+1	; MODE n	$B0	*** new tokens for Durango-X (video mode register)
+TK_SCREEN	= TK_MODE+1		; SCREEN n	$B1
+TK_PLOT		= TK_SCREEN+1	; PLOT x,y,c	$B2	*** new tokens for Durango-X (graphic primitives) maybe retrieve colour parameter from INK?
+TK_LINE		= TK_PLOT+1		; LINE x1,y1,x2,y2,c	$B3
+TK_CIRCLE	= TK_LINE+1		; CIRCLE x,y,r,c		$B4
+TK_RECT		= TK_CIRCLE+1	; RECT x1,y1,x2,y2,c	$B5 (filled)
+TK_BEEP		= TK_RECT+1		; BEEP d,n	$B6		*** new token for Durango-X (sound output)
+TK_PAUSE	= TK_BEEP+1		; PAUSE n	$B7
 
 ; secondary command tokens, cannot start a statement
 
-TK_TAB		= TK_BEEP+1		; TAB token $B6 ##### SYS no longer used, minimOS needs BYE ##### replaced by BEEP so far
-TK_ELSE		= TK_TAB+1		; ELSE token $B7
-TK_TO		= TK_ELSE+1		; TO token $B8
-TK_FN		= TK_TO+1		; FN token $B9
-TK_SPC		= TK_FN+1		; SPC token $BA
-TK_THEN		= TK_SPC+1		; THEN token $BB
-TK_NOT		= TK_THEN+1		; NOT token $BC
-TK_STEP		= TK_NOT+1		; STEP token $BD
-TK_UNTIL	= TK_STEP+1		; UNTIL token $BE
-TK_WHILE	= TK_UNTIL+1	; WHILE token $BF
-TK_OFF		= TK_WHILE+1	; OFF token $C0
+TK_TAB		= TK_PAUSE+1		; TAB token $B8 ##### SYS no longer used, minimOS needs BYE ##### replaced by BEEP so far
+TK_ELSE		= TK_TAB+1		; ELSE token $B9
+TK_TO		= TK_ELSE+1		; TO token $BA
+TK_FN		= TK_TO+1		; FN token $BB
+TK_SPC		= TK_FN+1		; SPC token $BC
+TK_THEN		= TK_SPC+1		; THEN token $BD
+TK_NOT		= TK_THEN+1		; NOT token $BE
+TK_STEP		= TK_NOT+1		; STEP token $BF
+TK_UNTIL	= TK_STEP+1		; UNTIL token $C0
+TK_WHILE	= TK_UNTIL+1	; WHILE token $C1
+TK_OFF		= TK_WHILE+1	; OFF token $C2
 
 ; operator tokens
 
-TK_PLUS		= TK_OFF+1		; + token $C1
-TK_MINUS	= TK_PLUS+1		; - token $C2
-TK_MUL		= TK_MINUS+1	; * token $C3
-TK_DIV		= TK_MUL+1		; / token $C4
-TK_POWER	= TK_DIV+1		; ^ token $C5
-TK_AND		= TK_POWER+1	; AND token $C6
-TK_EOR		= TK_AND+1		; EOR token $C7
-TK_OR		= TK_EOR+1		; OR token $C8
-TK_RSHIFT	= TK_OR+1		; RSHIFT token $C9
-TK_LSHIFT	= TK_RSHIFT+1	; LSHIFT token $CA
-TK_GT		= TK_LSHIFT+1	; > token $CB
-TK_EQUAL	= TK_GT+1		; = token $CC
-TK_LT		= TK_EQUAL+1	; < token $CD
+TK_PLUS		= TK_OFF+1		; + token $C3
+TK_MINUS	= TK_PLUS+1		; - token $C4
+TK_MUL		= TK_MINUS+1	; * token $C5
+TK_DIV		= TK_MUL+1		; / token $C6
+TK_POWER	= TK_DIV+1		; ^ token $C7
+TK_AND		= TK_POWER+1	; AND token $C8
+TK_EOR		= TK_AND+1		; EOR token $C9
+TK_OR		= TK_EOR+1		; OR token $CA
+TK_RSHIFT	= TK_OR+1		; RSHIFT token $CB
+TK_LSHIFT	= TK_RSHIFT+1	; LSHIFT token $CC
+TK_GT		= TK_LSHIFT+1	; > token $CD
+TK_EQUAL	= TK_GT+1		; = token $CE
+TK_LT		= TK_EQUAL+1	; < token $CF
 
 ; functions tokens
 
-TK_SGN		= TK_LT+1		; SGN token $CE
-TK_INT		= TK_SGN+1		; INT token $CF
-TK_ABS		= TK_INT+1		; ABS token $D0
-TK_USR		= TK_ABS+1		; USR token $D1
-TK_FRE		= TK_USR+1		; FRE token $D2
-TK_POS		= TK_FRE+1		; POS token $D3
-TK_SQR		= TK_POS+1		; SQR token $D4
-TK_RND		= TK_SQR+1		; RND token $D5
-TK_LOG		= TK_RND+1		; LOG token $D6
-TK_EXP		= TK_LOG+1		; EXP token $D7
-TK_COS		= TK_EXP+1		; COS token $D8
-TK_SIN		= TK_COS+1		; SIN token $D9
-TK_TAN		= TK_SIN+1		; TAN token $DA
-TK_ATN		= TK_TAN+1		; ATN token $DB
-TK_PEEK		= TK_ATN+1		; PEEK token $DC
-TK_DEEK		= TK_PEEK+1		; DEEK token $DD
-TK_SADD		= TK_DEEK+1		; SADD token $DE
-TK_LEN		= TK_SADD+1		; LEN token $DF
-TK_STRS		= TK_LEN+1		; STR$ token $E0
-TK_VAL		= TK_STRS+1		; VAL token $E1
-TK_ASC		= TK_VAL+1		; ASC token $E2
-TK_UCASES	= TK_ASC+1		; UCASE$ token $E3
-TK_LCASES	= TK_UCASES+1	; LCASE$ token $E4
-TK_CHRS		= TK_LCASES+1	; CHR$ token $E5
-TK_HEXS		= TK_CHRS+1		; HEX$ token $E6
-TK_BINS		= TK_HEXS+1		; BIN$ token $E7
-TK_BITTST	= TK_BINS+1		; BITTST token $E8
-TK_MAX		= TK_BITTST+1	; MAX token $E9
-TK_MIN		= TK_MAX+1		; MIN token $EA
-TK_PI		= TK_MIN+1		; PI token $EB
-TK_TWOPI	= TK_PI+1		; TWOPI token $EC
-TK_VPTR		= TK_TWOPI+1	; VARPTR token $ED
-TK_LEFTS	= TK_VPTR+1		; LEFT$ token $EE
-TK_RIGHTS	= TK_LEFTS+1	; RIGHT$ token $EF
-TK_MIDS		= TK_RIGHTS+1	; MID$ token $F0
+TK_SGN		= TK_LT+1		; SGN token $D0
+TK_INT		= TK_SGN+1		; INT token $D1
+TK_ABS		= TK_INT+1		; ABS token $D2
+TK_USR		= TK_ABS+1		; USR token $D3
+TK_FRE		= TK_USR+1		; FRE token $D4
+TK_POS		= TK_FRE+1		; POS token $D5
+TK_SQR		= TK_POS+1		; SQR token $D6
+TK_RND		= TK_SQR+1		; RND token $D7
+TK_LOG		= TK_RND+1		; LOG token $D8
+TK_EXP		= TK_LOG+1		; EXP token $D9
+TK_COS		= TK_EXP+1		; COS token $DA
+TK_SIN		= TK_COS+1		; SIN token $DB
+TK_TAN		= TK_SIN+1		; TAN token $DC
+TK_ATN		= TK_TAN+1		; ATN token $DD
+TK_PEEK		= TK_ATN+1		; PEEK token $DE
+TK_DEEK		= TK_PEEK+1		; DEEK token $DF
+TK_SADD		= TK_DEEK+1		; SADD token $E0
+TK_LEN		= TK_SADD+1		; LEN token $E1
+TK_STRS		= TK_LEN+1		; STR$ token $E2
+TK_VAL		= TK_STRS+1		; VAL token $E3
+TK_ASC		= TK_VAL+1		; ASC token $E4
+TK_UCASES	= TK_ASC+1		; UCASE$ token $E5
+TK_LCASES	= TK_UCASES+1	; LCASE$ token $E6
+TK_CHRS		= TK_LCASES+1	; CHR$ token $E7
+TK_HEXS		= TK_CHRS+1		; HEX$ token $E8
+TK_BINS		= TK_HEXS+1		; BIN$ token $E9
+TK_BITTST	= TK_BINS+1		; BITTST token $EA
+TK_MAX		= TK_BITTST+1	; MAX token $EB
+TK_MIN		= TK_MAX+1		; MIN token $EC
+TK_PI		= TK_MIN+1		; PI token $ED
+TK_TWOPI	= TK_PI+1		; TWOPI token $EE
+TK_VPTR		= TK_TWOPI+1	; VARPTR token $EF
+TK_LEFTS	= TK_VPTR+1		; LEFT$ token $F0
+TK_RIGHTS	= TK_LEFTS+1	; RIGHT$ token $F1
+TK_MIDS		= TK_RIGHTS+1	; MID$ token $F2
 
 ; offsets from a base of X or Y
 
@@ -7912,6 +7914,10 @@ LAB_CONIO
 ; should check boundaries
 	JMP V_OUTP			; send parameter and return
 
+; perform CURSOR n
+LAB_CURSOR
+	RTS					; *** placeholder ***
+
 ; perform MODE n
 LAB_MODE
 	JSR LAB_GTBY		; get argument 0...3 (may add 4,5 for greyscale)
@@ -8029,7 +8035,7 @@ LAB_RECT
 ;	JMP dxrect_lib		; call graphic function and return!
 	RTS
 
-; perform BEEP *** temporary hack, just integer values (len/25, note 0=F3, 42=B6 (ZX Spectrum value+7))
+; perform BEEP d,n (len/25, note 0=F3 ~ 42=B6 (ZX Spectrum value+7))
 LAB_BEEP
 	JSR LAB_GTBY		; length
 	STX gr_tmp			; outside any register
@@ -8060,6 +8066,10 @@ LAB_BDLY
 	RTS
 LAB_BERR
 	JMP LAB_FCER		; function call error & return
+
+; perform PAUSE n
+LAB_PAUSE
+	RTS					; *** placeholder ***
 
 ; *** end of Durango-X specifics ***
 
@@ -8321,6 +8331,7 @@ LAB_CTBLC
 	.word	LAB_INK			; INK i
 	.word	LAB_PAPER		; PAPER p
 	.word	LAB_LOCATE		; LOCATE x,y
+	.word	LAB_CURSOR		; CURSOR n
 	.word	LAB_MODE		; MODE n		*** new for Durango-X (video mode register)
 	.word	LAB_SCREEN		; SCREEN n		not sure
 	.word	LAB_PLOT		; PLOT x,y,c	*** new for Durango-X (graphic primitives) maybe retrieve colour parameter from INK?
@@ -8328,6 +8339,7 @@ LAB_CTBLC
 	.word	LAB_CIRCLE		; CIRCLE x,y,r,c
 	.word	LAB_RECT		; RECT x1,y1,x2,y2,c
 	.word	LAB_BEEP		; BEEP d,n		*** new for Durango-X (sound)
+	.word	LAB_PAUSE		; PAUSE n
 
 ; function pre process routine table (currently NMOS)
 
@@ -8576,6 +8588,8 @@ LBB_CONT
 	.byte	"ONT",TK_CONT		; CONT
 LBB_COS
 	.byte	"OS(",TK_COS		; COS(
+LBB_CURSOR
+	.byte	"URSOR",TK_CURSOR	; CURSOR	*** Durango-X
 	.byte	$00
 TAB_ASCD
 LBB_DATA
@@ -8692,6 +8706,8 @@ LBB_OR
 TAB_ASCP
 LBB_PAPER
 	.byte	"APER",TK_PAPER		; PAPER	*** Durango-X
+LBB_PAUSE
+	.byte	"AUSE",TK_PAPER		; PAUSE	*** Durango-X
 LBB_PEEK
 	.byte	"EEK(",TK_PEEK		; PEEK(
 LBB_PI
@@ -8892,6 +8908,8 @@ LAB_KEYT
 	.word	LBB_PAPER	; PAPER
 	.byte	6,"L"
 	.word	LBB_LOCATE	; LOCATE
+	.byte	6,"C"
+	.word	LBB_CURSOR	; CURSOR
 	.byte	4,"M"
 	.word	LBB_MODE	; MODE
 	.byte	6,"S"
@@ -8906,6 +8924,8 @@ LAB_KEYT
 	.word	LBB_RECT	; RECT
 	.byte	4,"B"
 	.word	LBB_BEEP	; BEEP
+	.byte	5,"P"
+	.word	LBB_PAUSE	; PAUSE
 
 
 ; secondary commands (cannot start a statement)
