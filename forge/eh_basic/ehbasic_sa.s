@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230211-1210
+; last modified 20230211-1839
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -8075,10 +8075,10 @@ fr_Tab:
 	
 cy_Tab:
 ;			C	C#	D	D#	E	F	F#	G	G#	A	A#	B		repetitions for a normalised 20 ms length
-	.byt						  7,  7,  8,  8,  9,  9, 10		; octave 3
-	.byt	 10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20		; octave 4
-	.byt	 21, 22, 23, 25, 26, 28, 30, 31, 33, 35, 37, 40		; octave 5
-	.byt	 42, 44, 47, 50, 53, 56, 59, 63, 66, 70, 75, 79		; octave 6
+	.byt						  6,  8,  8,  8,  8, 10, 10		; octave 3
+	.byt	 10, 12, 12, 12, 14, 14, 14, 16, 16, 18, 18, 20		; octave 4
+	.byt	 20, 22, 24, 24, 26, 28, 30, 30, 32, 34, 38, 38		; octave 5
+	.byt	 40, 44, 46, 50, 52, 56, 58, 60, 66, 68, 72, 78		; octave 6
 
 ; the rest of the code is tables and BASIC start-up code
 
