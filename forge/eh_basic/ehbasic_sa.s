@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230206-0008
+; last modified 20230211-1210
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -8032,19 +8032,19 @@ LAB_RECT
 ; perform BEEP *** temporary hack, just integer values (len/25, note 0=F3, 42=B6 (ZX Spectrum value+7))
 LAB_BEEP
 	JSR LAB_GTBY		; length
-	PHX
+	STX gr_tmp			; outside any register
 	JSR LAB_SCGB		; note
-	CPX #48				; four octaves only
+	CPX #43				; less than four octaves
 	BCS LAB_BERR		; outside range!
 	LDY fr_Tab, X		; period
 	LDA cy_Tab, X		; base cycles
-	TAX
-	PLA					; retrieve duration
-	STA gr_tmp			; outside any register
-	SEI
+	STA gr_tmp+1		; eeek
 	TYA					; save period...
+	SEI
+LAB_BRPT
+	LDX gr_tmp+1		; retrieve repetitions...
 LAB_BLNG
-	TAY					; ...and retrieve it
+	TAY					; ...and period
 LAB_BCYC
 	JSR LAB_BDLY		; waste 12 cyles...
 	NOP					; ...and another 2
@@ -8054,7 +8054,7 @@ LAB_BCYC
 	STX IOBeep			; toggle speaker
 	BNE LAB_BLNG
 	DEC gr_tmp			; repeat until desired length
-	BNE LAB_BLNG
+	BNE LAB_BRPT
 	CLI					; restore interrupts!
 LAB_BDLY
 	RTS
