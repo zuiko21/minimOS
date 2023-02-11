@@ -8029,7 +8029,7 @@ LAB_RECT
 ;	JMP dxrect_lib		; call graphic function and return!
 	RTS
 
-; perform BEEP *** temporary hack, just integer values (len/128, note 0=C3, 47=B6)
+; perform BEEP *** temporary hack, just integer values (len/25, note 0=F3, 42=B6 (ZX Spectrum value+7))
 LAB_BEEP
 	JSR LAB_GTBY		; length
 	PHX
@@ -8047,11 +8047,9 @@ LAB_BLNG
 	TAY					; ...and retrieve it
 LAB_BCYC
 	JSR LAB_BDLY		; waste 12 cyles...
-	NOP
-	NOP
-	NOP					; ...and another 6
+	NOP					; ...and another 2
 	DEY
-	BNE LAB_BCYC		; total 23t per iteration
+	BNE LAB_BCYC		; total 19t per iteration
 	DEX
 	STX IOBeep			; toggle speaker
 	BNE LAB_BLNG
@@ -8067,10 +8065,21 @@ LAB_BERR
 
 ; The rest are tables messages and code for RAM
 
-; *** Durango-X specific, table of notes and cycles ***
+; *** Durango-X BEEP specific, table of notes and cycles ***
 fr_Tab:
+;			C	C#	D	D#	E	F	F#	G	G#	A	A#	B
+	.byt						232,219,206,195,184,173,164		; octave 3
+	.byt	155,146,138,130,123,116,109,103, 97, 92, 87, 82		; octave 4
+	.byt	 77, 73, 69, 65, 61, 58, 55, 52, 49, 46, 43, 41		; octave 5
+	.byt	 39, 36, 34, 32, 31, 29, 27, 26, 24, 23, 22, 20		; octave 6
 	
 cy_Tab:
+;			C	C#	D	D#	E	F	F#	G	G#	A	A#	B		repetitions for a normalised 20 ms length
+	.byt						  7,  7,  8,  8,  9,  9, 10		; octave 3
+	.byt	 10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20		; octave 4
+	.byt	 21, 22, 23, 25, 26, 28, 30, 31, 33, 35, 37, 40		; octave 5
+	.byt	 42, 44, 47, 50, 53, 56, 59, 63, 66, 70, 75, 79		; octave 6
+
 ; the rest of the code is tables and BASIC start-up code
 
 ; this is now in ZP
