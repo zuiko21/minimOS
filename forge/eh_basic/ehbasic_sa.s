@@ -7887,8 +7887,6 @@ LAB_SENDCOL
 	JSR V_OUTP			; send to CONIO
 	PLA					; retrieve colour
 	JMP V_OUTP			; send and return
-LAB_ARGERR
-	JMP LAB_FCER		; function call error & return
 
 ; perform PAPER p
 LAB_PAPER
@@ -7916,7 +7914,14 @@ LAB_CONIO
 
 ; perform CURSOR n
 LAB_CURSOR
-	RTS					; *** placeholder ***
+	JSR LAB_GTBY		; get argument 0...15
+	TXA
+	LSR					; C is set for odd (on) values
+	LDA #17				; XON control code
+	BCS LAB_SENDCUR
+	ADC #2				; if C is clear from even (off) value, turn into 19 (XOFF control code)
+LAB_SENDCUR
+	JMP V_OUTP			; send to CONIO and return
 
 ; perform MODE n
 LAB_MODE
@@ -7932,6 +7937,8 @@ LAB_MODE
 	LDA #%00110000		; keep selected screen...
 	JSR LAB_MODESET		; use common code
 	JMP LAB_DOCLS		; and clear screen (and return)
+LAB_ARGERR
+	JMP LAB_FCER		; function call error & return
 
 ; perform SCREEN n
 LAB_SCREEN
