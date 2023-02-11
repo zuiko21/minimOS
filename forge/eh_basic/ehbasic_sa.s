@@ -8076,7 +8076,23 @@ LAB_BERR
 
 ; perform PAUSE n
 LAB_PAUSE
-	RTS					; *** placeholder ***
+	STZ $020A			; clear standard received key
+	JSR LAB_GTBY		; get length in ticks (0=infinite)
+	TXA
+	BEQ LAB_INFP		; just wait for any key
+	CLC
+	ADC $0206			; add current tick count
+LAB_PALP
+	LDX $020A			; check for keys
+	BNE LAB_PAEX		; something pressed, finish wait
+	CMP $0206
+	BNE LAB_PALP		; wait until specified jiffies
+	BEQ LAB_PAEX		; timeout, go away
+LAB_INFP
+	LDA $020A			; check for keys
+	BEQ LAB_INFP		; ...otherwise keep waiting
+LAB_PAEX
+	RTS
 
 ; *** end of Durango-X specifics ***
 
