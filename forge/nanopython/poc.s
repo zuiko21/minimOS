@@ -1,6 +1,6 @@
 ; nanoPython (Proof Of Concept)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230212-1004
+; last modified 20230212-1018
 
 ; *** zeropage ***
 cio_pt		= $E6
@@ -9,7 +9,10 @@ temptr		= $E8
 
 ; *** hardware definitions for Durango-X ***
 IO8attr		= $DF80
+IO9di		= $DF9A		; data input (PASK standard)
 IOAen		= $DFA0
+IOBeep		= $DFB0		; canonical buzzer address (d0)
+
 ; *** firmware definitions for Durango-X ***
 fw_irq		= $0200			; ### usual minimOS interrupt vectors ###
 fw_nmi		= $0202			; not used
@@ -34,17 +37,23 @@ fw_scur		= fw_io9+1		; NEW, cursor control
 ; *************************
 ; *** *** main code *** ***
 ; *************************
+
+*	= $C000
+
 nanopython:
 	LDX #>splash
 	LDY #<splash
 	JSR string
 repl:
 		JSR prompt
-		JSR getch
-		JSR conio	; *** just echo
-		CPY #13				; hit RETURN?
+buff:
+			JSR getch
+			PHY				; eeeek
+			JSR conio	; *** just echo
+			PLY
+			CPY #13			; hit RETURN?
 		BEQ proc
-		BNE repl
+			BNE buff
 proc:
 		LDX #>wtf
 		LDY #<wtf
@@ -82,6 +91,7 @@ str_loop:
 		LDA (temptr), Y		; get char from string
 			BEQ str_end		; terminator will finish printing
 		PHY					; keep cursor
+		TAY					; eeeeek
 		JSR conio			; display char
 		PLY					; retrieve cursor
 		INY					; next char
@@ -125,12 +135,8 @@ jf_res:
 		BPL jf_res
 	LDX #>std_irq
 	LDY #<std_irq
-	STY fw_irq				; set standard interrupt vectors
+	STY fw_irq				; set standard interrupt vectors (NMI is not used)
 	STX fw_irq+1
-	LDX #>std_nmi			; danger if commented!
-	LDY #<std_nmi
-	STY fw_nmi
-	STX fw_nmi+1
 ; * check keyboard *
 	LDX #0					; default is PASK
 	LDA #32					; column 6
@@ -150,7 +156,7 @@ not_5x8:
 	LDY #12					; FF = clear screen
 	JSR conio
 
-	JMP nanopyhton			; start nanoPython
+	JMP nanopython			; start nanoPython
 
 ; **************************
 ; *** interrupt handlers ***
@@ -218,9 +224,7 @@ drv_pask:
 #include "../../OS/firmware/modules/conio-durango-fast.s"
 
 ; keyboard driver
-#ifdef	KBDMAT
 #include "../../OS/firmware/modules/durango-5x8key.s"
-#endif
 
 ; ************************************************
 ; *** padding, signatures and hardware vectors ***
