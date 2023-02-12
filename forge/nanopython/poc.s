@@ -1,11 +1,13 @@
 ; nanoPython (Proof Of Concept)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230212-1018
+; last modified 20230212-1331
 
 ; *** zeropage ***
 cio_pt		= $E6
 cio_src		= $E4
 temptr		= $E8
+cursor		= $EA			; input buffer position
+
 
 ; *** hardware definitions for Durango-X ***
 IO8attr		= $DF80
@@ -33,6 +35,9 @@ fw_vbot		= fw_ciop+2		; page start of screen at current hardware setting (update
 fw_vtop		= fw_vbot+1		; first non-VRAM page (new)
 fw_io9		= fw_vtop+1		; received keypress
 fw_scur		= fw_io9+1		; NEW, cursor control
+; parser workspace
+buffer		= fw_scur+1		; input buffer
+;			= buffer+80
 
 ; *************************
 ; *** *** main code *** ***
@@ -46,19 +51,28 @@ nanopython:
 	JSR string
 repl:
 		JSR prompt
+		STZ cursor
 buff:
 			JSR getch
 			PHY				; eeeek
 			JSR conio	; *** just echo
-			PLY
-			CPY #13			; hit RETURN?
-		BEQ proc
+			PLA				; this was the received char
+			LDX cursor		; current position
+			STA buffer, X	; store received
+			CMP #13			; hit RETURN?
+		BEQ parse
 			BNE buff
-proc:
+parse:
+	jmp exit
 		LDX #>wtf
 		LDY #<wtf
 		JSR string
 		JMP repl
+exit:
+	LDX #>bye
+	LDY #<bye
+	JSR string
+	BRK						; this will exit with a flashing LED
 
 ; ************************
 ; *** support routines ***
@@ -72,16 +86,9 @@ getch:
 
 prompt:
 ; *** display current prompt ***
-	LDY #13
-	JSR conio
-	LDY #'>'
-	JSR conio
-	LDY #'>'
-	JSR conio
-	LDY #'>'
-	JSR conio
-	LDY #' '
-	JMP conio				; display last char and return
+	LDX #>pr3gt
+	LDY #<pr3gt
+	JMP string				; print prompt and return
 
 string:
 ; *** display string at XY ***
@@ -101,13 +108,32 @@ str_loop:
 str_end:
 	RTS
 
+; *** commands ***
+
 ; ********************
 ; *** *** data *** ***
 ; ********************
 splash:
 	.asc	"65C02 nanoPython PoC", 13, "@zuiko21", 13, 0
+bye:
+	.asc	13, "Thanks for using nanoPython on", 13, "the 65C02-powered ", 14, "Durango·X", 15,"!", 0
 wtf:
 	.asc	13, 14, "*** WTF?? ***", 15, 13, 0
+pr3gt:
+	.asc	13, ">>> ", 0
+tokens:
+	.asc	"print", 0		; 0
+	.asc	"quit()", 0		; 2
+	.asc	"if", 0			; 4
+	.asc	"while", 0		; 6
+	.asc	"type(", 0		; 8
+exec:
+	.word	do_print		; 0
+	.word	exit			; 2
+	.word	do_if			; 4
+	.word	do_while		; 6
+	.word	do_type			; 8
+
 
 ; *** *** *** ***** *** *** ***
 
