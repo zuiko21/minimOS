@@ -1,6 +1,6 @@
 ; nanoPython (Proof Of Concept)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230212-1400
+; last modified 20230212-2325
 
 ; *** zeropage ***
 cio_pt		= $E6
@@ -8,7 +8,10 @@ cio_src		= $E4
 temptr		= $E8
 cursor		= $EA			; input buffer position
 cmd_id		= $EB			; token counter
-
+vars		= $80			; a-z, single byte!
+old			= vars+26		; previous operand
+oper		= old+1			; operator (0 = none, 2/4/6/8 = +-*/)
+result		= oper+1		; last evaluation
 
 ; *** hardware definitions for Durango-X ***
 IO8attr		= $DF80
@@ -38,7 +41,7 @@ fw_io9		= fw_vtop+1		; received keypress
 fw_scur		= fw_io9+1		; NEW, cursor control
 ; parser workspace
 buffer		= fw_scur+1		; input buffer
-;			= buffer+80
+lvalue		= buffer+80		; variable to be assigned
 
 ; *************************
 ; *** *** main code *** ***
@@ -56,16 +59,31 @@ repl:
 buff:
 			JSR getch
 			PHY				; eeeek
-			JSR conio	; *** just echo
+			CPY #8			; BACKSPACE?
+			BNE echo
+				LDX cursor
+				BNE delete
+					LDY #7		; BELL if nothing to delete
+					JSR conio
+					JMP buff	; continue input
+delete:
+				DEC cursor
+				JSR conio		; actual screen deletion
+				JMP buff
+echo:
+			JSR conio		; *** just echo
 			PLA				; this was the received char
 			LDX cursor		; current position
 			STA buffer, X	; store received
+			INC cursor
 			CMP #13			; hit RETURN?
 		BEQ parse
 			BNE buff
 parse:
+		STZ buffer, X		; terminate input buffer
 		STZ cursor
 		JSR get_token
+		
 		JMP repl
 error:
 		LDX #>wtf
@@ -77,11 +95,7 @@ exit:
 	LDY #<bye
 	JSR string
 	BRK						; this will exit with a flashing LED
-; placeholders
-do_print:
-do_if:
-do_while:
-do_type:
+
 ; ************************
 ; *** support routines ***
 ; ************************
@@ -135,8 +149,10 @@ tk_char:
 			INY				; advance position
 			BNE tk_char		; keep trying
 next_tk:
+		INY					; eeeeeeeeeeeek
 		LDA (temptr), Y
 		BNE next_tk			; browse until end of token
+	INC cmd_id				; eeeeek
 	INY
 	TYA
 	CLC
@@ -150,11 +166,19 @@ tk_pass:
 ; if arrived here, token is invalid (list has ended at $FF)
 	JMP error
 found:
+	INX
+	STX cursor				; eeeek
 	ASL cmd_id				; times two for indexing
 	LDX cmd_id
 	JMP (exec, X)			; do command
 
 ; *** commands ***
+; placeholders
+do_print:
+do_if:
+do_while:
+do_else:
+	RTS
 
 ; ********************
 ; *** *** data *** ***
@@ -164,23 +188,24 @@ splash:
 bye:
 	.asc	13, "Thanks for using nanoPython on", 13, "the 65C02-powered ", 14, "Durango·X", 15,"!", 0
 wtf:
-	.asc	13, 14, "*** WTF?? ***", 15, 13, 0
+	.asc	13, 14, "*** WTF?? ***", 15, 7, 13, 0
 pr3gt:
 	.asc	13, ">>> ", 0
 tokens:
 	.asc	"print", 0		; 0
 	.asc	"quit()", 0		; 2
 	.asc	"if", 0			; 4
-	.asc	"while", 0		; 6
-	.asc	"type(", 0		; 8
+	.asc	"else:", 0		; 6
+	.asc	"while", 0		; 8
+	.asc	"=", 0			; 10
 	.byt	$FF				; list termination
 exec:
 	.word	do_print		; 0
 	.word	exit			; 2
 	.word	do_if			; 4
-	.word	do_while		; 6
-	.word	do_type			; 8
-
+	.word	do_else			; 6
+	.word	do_while		; 8
+	.word	assign			; 10
 
 ; *** *** *** ***** *** *** ***
 
