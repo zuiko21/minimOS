@@ -1,12 +1,13 @@
 ; nanoPython (Proof Of Concept)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230212-1331
+; last modified 20230212-1400
 
 ; *** zeropage ***
 cio_pt		= $E6
 cio_src		= $E4
 temptr		= $E8
 cursor		= $EA			; input buffer position
+cmd_id		= $EB			; token counter
 
 
 ; *** hardware definitions for Durango-X ***
@@ -63,7 +64,10 @@ buff:
 		BEQ parse
 			BNE buff
 parse:
-	jmp exit
+		STZ cursor
+		JSR get_token
+		JMP repl
+error:
 		LDX #>wtf
 		LDY #<wtf
 		JSR string
@@ -73,7 +77,11 @@ exit:
 	LDY #<bye
 	JSR string
 	BRK						; this will exit with a flashing LED
-
+; placeholders
+do_print:
+do_if:
+do_while:
+do_type:
 ; ************************
 ; *** support routines ***
 ; ************************
@@ -108,6 +116,44 @@ str_loop:
 str_end:
 	RTS
 
+get_token:
+; *** detect some token at specified position
+	LDY #<tokens
+	LDA #>tokens
+	STY temptr
+	STA temptr+1			; start of token list
+	STZ cmd_id				; reset token counter
+tk_loop:
+		LDX cursor			; try from current position
+		LDY #0
+tk_char:
+			LDA (temptr), Y	; check token list
+		BEQ found			; terminated token without any difference found
+			CMP buffer, X	; compare with what is at the input
+		BNE next_tk			; any difference will try next token
+			INX
+			INY				; advance position
+			BNE tk_char		; keep trying
+next_tk:
+		LDA (temptr), Y
+		BNE next_tk			; browse until end of token
+	INY
+	TYA
+	CLC
+	ADC temptr
+	STA temptr				; advance to next token in list
+	BCC tk_pass				; try another one
+		INC temptr+1		; in case of page crossing
+tk_pass:
+	LDA (temptr)			; check start of new token
+	BPL tk_loop				; go check next token...
+; if arrived here, token is invalid (list has ended at $FF)
+	JMP error
+found:
+	ASL cmd_id				; times two for indexing
+	LDX cmd_id
+	JMP (exec, X)			; do command
+
 ; *** commands ***
 
 ; ********************
@@ -116,7 +162,7 @@ str_end:
 splash:
 	.asc	"65C02 nanoPython PoC", 13, "@zuiko21", 13, 0
 bye:
-	.asc	13, "Thanks for using nanoPython on", 13, "the 65C02-powered ", 14, "DurangoÂ·X", 15,"!", 0
+	.asc	13, "Thanks for using nanoPython on", 13, "the 65C02-powered ", 14, "Durango·X", 15,"!", 0
 wtf:
 	.asc	13, 14, "*** WTF?? ***", 15, 13, 0
 pr3gt:
@@ -127,6 +173,7 @@ tokens:
 	.asc	"if", 0			; 4
 	.asc	"while", 0		; 6
 	.asc	"type(", 0		; 8
+	.byt	$FF				; list termination
 exec:
 	.word	do_print		; 0
 	.word	exit			; 2
@@ -149,7 +196,7 @@ reset:
 	CLD
 	LDX #$FF
 	TXS
-	STX IOAen				; ### enable Durango-X hardware interruptÂ ###
+	STX IOAen				; ### enable Durango-X hardware interrupt ###
 	STX fw_scur				; as bit 7 is on, activates cursor
 	LDA #$B0				; start in HIRES mode
 	STA IO8attr
