@@ -78,7 +78,7 @@ void cabe(int x) {			/* just like dato() but with longer bit delay, whole header
 
 	while(i>0) {
 		bit = x & 1;
-		digitalWrite(CB2, bit);		/* send bit for OC, NO longer INVERTED */
+		digitalWrite(CB2, bit^1);		/* send bit for OC *** ^1 is needed *** */
 		digitalWrite(CB1, 1);
 		useg(15);			/* eeeeeek */
 		digitalWrite(CB1, 0);
@@ -95,7 +95,7 @@ void dato(int x) {			/* send a byte at 'top' speed */
 
 	while(i>0) {
 		bit = x & 1;
-		digitalWrite(CB2, bit);		/* note OC */
+		digitalWrite(CB2, bit^1);		/* note OC *** ^1 is needed *** */
 		digitalWrite(CB1, 1);
 		useg(15);			/* eeeeeeek */
 		digitalWrite(CB1, 0);
