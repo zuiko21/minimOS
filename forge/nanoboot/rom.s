@@ -1,7 +1,7 @@
 ; minimal nanoBoot firmware *** now with devCart support on Durango-X
 ; v0.5b1
 ; (c) 2018-2023 Carlos J. Santisteban
-; last modified 20230215-2138
+; last modified 20230215-2312
 
 ; already NMOS-savvy
 
@@ -110,6 +110,9 @@ irq:
 	JMP (fw_isr)
 
 ; *** filling for ROM-ready files *** now with devCart support
+	.dsb	$FFD6-*, $FF
+	.asc	"DmOS"
+
 	.dsb	$FFDC-*, $FF
 
 switch:
