@@ -1,23 +1,15 @@
-; zeropage variables for nanoBoot, v0.3a3
-; (c) 2018-2022 Carlos J. Santisteban
-; last modified 20201227-1526
+; zeropage variables for nanoBoot, v0.5b1
+; (c) 2018-2023 Carlos J. Santisteban
+; last modified 20230215-2220
 
-.zero
 
-* = 2						; 6510-compatible (uz on minimOS)
-
-#ifdef	TIMEBOOT
-timeout	.word	0			; timeout counter
-#endif
-#ifdef	DISPLAY
-nb_cur	.byt	0			; selected anode on LTC4622 display (or digit)
-nb_disp	.dsb	4, 0		; bitmap patterns (including selected anode)
-#endif
-nb_rcv	.byt	0			; received value
-nb_flag	.byt	0			; a byte is ready when zero (must be preset every byte)
-nb_ptr	.word	0			; initial address, will be used as pointer
-nb_fin	.word	0			; final address (consecutive) after downloaded chunk
-nb_ex	.word	0			; copy of initial address
+timeout	= 2					; timeout counter (6510-savvy)
+nb_cur	= timeout+2			; selected anode on LTC4622 display (or digit)
+nb_disp	= nb_cur+1			; bitmap patterns (including selected anode)
+nb_rcv	= nb_disp+4			; received value
+nb_flag	= nb_rcv+1			; a byte is ready when zero (must be preset every byte)
+nb_ptr	= nb_flag+1			; initial address, will be used as pointer (will reuse for screen drawing)
+nb_fin	= nb_ptr+2			; final address (consecutive) after downloaded chunk
+nb_ex	= nb_fin+2			; copy of initial address
 ; will use three more bytes temporarily
-
-.text
+;__end	= nb_ex+2

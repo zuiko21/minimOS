@@ -1,6 +1,6 @@
-; startup nanoBoot for 6502, v0.4a2
-; (c) 2018-2022 Carlos J. Santisteban
-; last modified 20210219-0906
+; startup nanoBoot for 6502, v0.5b1
+; (c) 2018-2023 Carlos J. Santisteban
+; last modified 20230215-2155
 
 ; *** needed zeropage variables ***
 ; nb_rcv, received byte (no longer need to be reset!)
@@ -11,7 +11,7 @@
 ; *** will temporarily use 3 more bytes, the last one for checking valid header ***
 
 ; note new NBEXTRA for enhanced feedback, may impair performance
-#define	NBEXTRA	_NBEXTRA
+;#define	NBEXTRA	_NBEXTRA
 
 nb_init:
 	SEI						; make sure interrupts are off (2)
@@ -25,8 +25,10 @@ nb_svec:
 		LDA nb_tab, X		; get origin from table (4)
 		STA fw_isr, X		; and write for FW (5)
 #ifdef	DISPLAY
+#ifdef	LTC4622
 		LDA nb_boot, X		; while we are on it, prepare display message (4+4)
 		STA nb_disp, X
+#endif
 #endif
 		DEX					; next (2)
 		BPL nb_svec			; no need to preset X (3)
@@ -72,11 +74,14 @@ nb_lbit:
 ; make that 84t/bit and 672t/byte if LTC display is enabled 
 #endif
 #ifdef	DISPLAY
+#ifdef	LTC4622
 			JSR ltc_up			; mux display, total 32t per bit
+#endif
 #endif
 			LDX nb_flag			; received something? (3)
 			BNE nb_lbit			; no, keep trying (3/2)
 #ifdef	DISPLAY
+#ifdef	LTC4622
 #ifdef		NBEXTRA
 	LDA #%11101000			; dot on second digit (will show .. during header, adds a lot of overhead but transmission is slow anyway)
 	STA nb_disp+2
@@ -86,10 +91,11 @@ nb_lbit:
 	STX nb_disp+3
 #endif
 #endif
+#endif
 		LDA nb_rcv			; get received (3)
 ; note regular NMI get inverted bytes, while SO version does not
 #ifndef	SETOVER
-;		EOR #$FF			; NOPE***must invert byte, as now works the opposite (2)
+		EOR #$FF			; NOPE***must invert byte, as now works the opposite (2)
 #endif
 ; **************************
 ; *** byte received in A ***
@@ -119,7 +125,16 @@ nb_ok:
 	TAY						; last byte loaded is the index! (2)
 #ifdef	DISPLAY
 ; create acknowledge message while loading first page (12t + routine length)
+#ifdef	LTC4622
 	JSR show_pg
+#else
+; Durango-X may place a green dot on the last page position!
+	LDX nb_fin+1			; finish page
+	BEQ nb_rec				; show nothing for ROM images
+		DEX					; actual last page
+		LDA #55				; bright green
+		STA $7F00, X		; indicate last page
+#endif
 #endif
 ; **************************************
 ; *** header is OK, execute transfer ***
@@ -137,14 +152,16 @@ nb_gbit:
 		BNE nb_gbit			; no, keep trying (3/2)
 	LDA nb_rcv				; get received (3)
 #ifndef	SETOVER
-;	EOR #$FF				; NOPE***must invert byte, as now works the opposite (2) NO LONGER, but check SO option
+	EOR #$FF				; NOPE***must invert byte, as now works the opposite (2) NO LONGER, but check SO option
 #endif
 ; **************************
 ; *** byte received in A ***
 ; **************************
 		STA (nb_ptr), Y		; store at destination (5 or 6)
 #ifdef	DISPLAY
+#ifdef	LTC4622
 		JSR ltc_up			; now adds 32t per BYTE, likely irrelevant
+#endif
 #endif
 		INY					; next (2)
 		BNE nbg_nw			; check MSB too (3/7)
@@ -163,28 +180,42 @@ nbg_nw:
 ; *** transfer ended, execute loaded code! ***
 ; ********************************************
 #ifdef	DISPLAY
+#ifdef	LTC4622
 	LDA #$FF				; in case a TTL latch is used!
 	STA $FFF0				; nice to turn off display!
+#else
+	LDX #0
+	TXA
+bot_clr:
+		STA $7F00, X		; clear screen bottom
+		INX
+		BNE bot_clr
+#endif
 #endif
 #ifdef	SAFE
 ; should I reset NMI/IRQ vectors?
 #endif
-	JMP (nb_ex)				; go!
-
+;	JMP (nb_ex)				; go!
+	JMP switch				; disable ROM and run from devCart RAM!
+	
 ; **********************************************************************
 ; *** in case nonvalid header is detected, reset or continue booting ***
 ; **********************************************************************
 nb_err:
 #ifdef	DISPLAY
+#ifdef	LTC4622
 	LDA #%11100101			; dash on BOTH digits means ERROR
 	BNE ltc_ab				; if no display, same as error
 #endif
+#endif
 nb_exit:
 #ifdef	DISPLAY
+#ifdef	LTC4622
 	LDA #$FF				; will clear display in case of timeout
 							; might show '..' instead (%11101010)
 ltc_ab:
 	STA $FFF0				; put it on port
+#endif
 #endif
 	JMP abort				; get out of here, just in case
 
@@ -197,6 +228,7 @@ nb_tab:
 	.word	nb_nmi
 #endif
 #ifdef	DISPLAY
+#ifdef	LTC4622
 nb_boot:
 	.byt	%11010010, %10100001, %11011000, %00000100	; patterns to show 'nb' on LTC display (integrated anodes)
 nb_pat:						; segment patterns for hex numbers
@@ -266,6 +298,14 @@ show_pg:
 	ORA #%0100		; enable second anode of second digit (2+3)
 	STA nb_disp+3
 	RTS
+#else
+; page display on Durango-X
+show_pg:
+	LDX nb_ptr+1			; current page
+	LDA #$FF				; elongated white dot
+	STA $7F00, X			; display on screen
+	RTS
+#endif
 #endif
 ; *** all finished, continue execution if unsuccessful ***
 abort:
