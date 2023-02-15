@@ -1,6 +1,6 @@
 ; Durango-X and peripherals FULL test suite
-; (c) 2022 Carlos J. Santisteban, parts from Emilio López Berenguer
-; last modified 20221127-1228
+; (c) 2022-2023 Carlos J. Santisteban, parts from Emilio López Berenguer
+; last modified 20230215-2236
 
 ; assemble from forge/test
 #define	MULTIBOOT
@@ -66,18 +66,19 @@ ex_ptr:
 	.word	delay_hr
 ex_end:
 
-; *** standard ROM end ***
-	.dsb	$FFD6-*, $FF	; ROM padding
-	.asc	"DmOS"			; standard Durango cartridge signature
-	.dsb	$FFE0-*, $FF	; more padding, including checksum values at $FFDE-FFDF
-
 ; standard interrupt handlers
 irq_handler:
 	JMP ($0200)
 nmi_handler:
 	JMP ($0202)
 
+; *** standard ROM end ***
+	.dsb	$FFD6-*, $FF	; ROM padding
+	.asc	"DmOS"		; standard Durango cartridge signature
 ; end of ROM
+	.dsb	$FFE1-*, $FF	; devCart support
+	JMP ($FFFC)
+
 	.dsb	$FFFA-*, $FF	; more padding until hardware vectors
 
 	.word	nmi_handler
