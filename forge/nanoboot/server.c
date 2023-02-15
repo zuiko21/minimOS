@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2021 Carlos J. Santisteban *
- * last modified 20210223-2328         */
+ * last modified 20230215-2307         */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -63,7 +63,7 @@ int main(void) {
 			printf("$%02X...\n", i>>8);
 		}
 		c = fgetc(f);
-		dato(c);
+		if (i>>8 != 0xDF)	dato(c);
 	}
 	printf("\nEnded at $%04X\n", fin);
 	fclose(f);

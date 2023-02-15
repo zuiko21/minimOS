@@ -1,6 +1,6 @@
 ; startup nanoBoot for 6502, v0.5b1
 ; (c) 2018-2023 Carlos J. Santisteban
-; last modified 20230215-2155
+; last modified 20230215-2300
 
 ; *** needed zeropage variables ***
 ; nb_rcv, received byte (no longer need to be reset!)
@@ -167,6 +167,11 @@ nb_gbit:
 		BNE nbg_nw			; check MSB too (3/7)
 			INC nb_ptr+1
 ; *** page has changed, may be reflected on display ***
+		LDX nb_ptr+1			; check current page
+		CPX #$DF			; is it IO page?
+		BNE no_io
+			INC nb_ptr+1		; skip it EEEEEEK
+no_io:
 #ifdef	DISPLAY
 		JSR show_pg			; adds 12t + routine length every 256 bytes
 #endif
