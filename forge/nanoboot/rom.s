@@ -1,7 +1,7 @@
 ; minimal nanoBoot firmware *** now with devCart support on Durango-X
-; v0.5b1
+; v0.5b2
 ; (c) 2018-2023 Carlos J. Santisteban
-; last modified 20230215-2312
+; last modified 20230216-2336
 
 ; already NMOS-savvy
 
@@ -68,9 +68,11 @@ dx_clr:
 	INC nb_ptr+1
 	BPL dx_clr				; all pages
 ; Durango-X will set a blue strip at the bottom (ROM space)
-	LDA #$CC				; azur
 dx_blue:
+		LDA #$CC			; azur
 		STA $7F80, Y		; last 128 bytes of screen (Y was known to be 0)
+		LDA #0
+		STA $DF00, Y		; clear unused IO space (as per Emilio's request)
 		INY
 		BPL dx_blue
 #endif
@@ -90,7 +92,11 @@ dx_red:
 		BNE dx_red
 #endif
 #endif
-	BEQ *					; just lockout
+	LDA #>autoreset
+	LDY #<autoreset
+	STY fw_nmi
+	STA fw_nmi+1			; NMI will trigger a soft reset
+	BEQ *					; just lockout in the meanwhile
 
 
 ; *** nanoBoot interrupt service routines ***
@@ -109,6 +115,8 @@ nmi:
 irq:
 	JMP (fw_isr)
 
+_code_end:
+
 ; *** filling for ROM-ready files *** now with devCart support
 	.dsb	$FFD6-*, $FF
 	.asc	"DmOS"
@@ -117,8 +125,10 @@ irq:
 
 switch:
 	LDA #%01100000			; ROM disabled, protected RAM
+do_sw:
 	STA $DFC0
 ; * = $FFE1
+autoreset:
 	JMP ($FFFC)				; RESET on loaded image *** mandatory instruction on any ROM image ***
  
 	.dsb	$FFFA-*, $FF

@@ -1,6 +1,6 @@
-; startup nanoBoot for 6502, v0.5b1
+; startup nanoBoot for 6502, v0.5b2
 ; (c) 2018-2023 Carlos J. Santisteban
-; last modified 20230215-2300
+; last modified 20230216-2319
 
 ; *** needed zeropage variables ***
 ; nb_rcv, received byte (no longer need to be reset!)
@@ -131,9 +131,8 @@ nb_ok:
 ; Durango-X may place a green dot on the last page position!
 	LDX nb_fin+1			; finish page
 	BEQ nb_rec				; show nothing for ROM images
-		DEX					; actual last page
-		LDA #55				; bright green
-		STA $7F00, X		; indicate last page
+		LDA #$55			; bright green eeeeek
+		STA $7EFF, X		; indicate actual last page
 #endif
 #endif
 ; **************************************
@@ -167,10 +166,10 @@ nb_gbit:
 		BNE nbg_nw			; check MSB too (3/7)
 			INC nb_ptr+1
 ; *** page has changed, may be reflected on display ***
-		LDX nb_ptr+1			; check current page
+		LDX nb_ptr+1		; check current page
 		CPX #$DF			; is it IO page?
 		BNE no_io
-			INC nb_ptr+1		; skip it EEEEEEK
+			INC nb_ptr+1	; skip it EEEEEEK
 no_io:
 #ifdef	DISPLAY
 		JSR show_pg			; adds 12t + routine length every 256 bytes
@@ -202,7 +201,7 @@ bot_clr:
 #endif
 ;	JMP (nb_ex)				; go!
 	JMP switch				; disable ROM and run from devCart RAM!
-	
+
 ; **********************************************************************
 ; *** in case nonvalid header is detected, reset or continue booting ***
 ; **********************************************************************
@@ -306,9 +305,9 @@ show_pg:
 #else
 ; page display on Durango-X
 show_pg:
-	LDX nb_ptr+1			; current page
+	LDX nb_ptr+1			; current page (after switching)
 	LDA #$FF				; elongated white dot
-	STA $7F00, X			; display on screen
+	STA $7EFF, X			; display on screen (finished page)
 	RTS
 #endif
 #endif
