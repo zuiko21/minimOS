@@ -1,6 +1,6 @@
 ; nanoPython (Proof Of Concept)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230212-2325
+; last modified 20230217-1826
 
 ; *** zeropage ***
 cio_pt		= $E6
@@ -12,6 +12,8 @@ vars		= $80			; a-z, single byte!
 old			= vars+26		; previous operand
 oper		= old+1			; operator (0 = none, 2/4/6/8 = +-*/)
 result		= oper+1		; last evaluation
+lvalue		= result+1		; variable to be assigned after end of evaluation (0=none, 1=a... 26=z)
+scratch		= lvalue+1		; temporary value
 
 ; *** hardware definitions for Durango-X ***
 IO8attr		= $DF80
@@ -41,7 +43,7 @@ fw_io9		= fw_vtop+1		; received keypress
 fw_scur		= fw_io9+1		; NEW, cursor control
 ; parser workspace
 buffer		= fw_scur+1		; input buffer
-lvalue		= buffer+80		; variable to be assigned
+;lvalue		= buffer+80		; variable to be assigned
 
 ; *************************
 ; *** *** main code *** ***
@@ -164,20 +166,141 @@ tk_pass:
 	LDA (temptr)			; check start of new token
 	BPL tk_loop				; go check next token...
 ; if arrived here, token is invalid (list has ended at $FF)
-	JMP error
+	BMI eval				; try to evaluate a expression
 found:
 	INX
 	STX cursor				; eeeek
 	ASL cmd_id				; times two for indexing
 	LDX cmd_id
 	JMP (exec, X)			; do command
+eval:
+; *** simple expression evaluator ***
+; single-letter variables
+	LDA buffer, X			; take current char from buffer
+		BEQ eol				; no more in buffer! check for assignation
+	JSR isletter			; variable, perhaps?
+	BEQ evalnum				; eeeeeek
+		TAY					; use as index
+		LDA vars-1, Y		; note offset
+		BRA operand
+evalnum:
+; single-byte numbers and basic operators with no priorities nor parenthesis
+	LDA buffer, X
+	CMP #'0'
+	BCC pending
+		CMP #'9'+1
+		BCS pending			; no more numbers
+; if arrived here, it's a numnber
+		SBC #'0'-1			; C was clear, thus borrows
+		ASL result			; times 2...
+		LDY result
+		STY scratch			; ...will be added
+		ASL result
+		ASL result			; now times 8
+		CLC					; just in case
+		ADC result			; 8i+j
+		ADC scratch			; 10i+j
+operand:
+		STA result
+		INX					; next char
+		BNE evalnum			; don't bother with letters in between numbers
+pending:
+	INX						; skip last number
+	STX cursor				; advance position
+	LDA result
+	LDX oper				; any pending operation?
+	BEQ noop
+		LDA old				; get first operand
+		JSR do_op			; will return with new result in A
+		STZ oper
+		LDX cursor
+noop:
+	STA old					; store current result for later
+	STZ result				; clear for later
+	JMP get_token			; continue with expression
+eol:
+; input line has been parsed, check for assignation
+	LDY lvalue				; pending?
+	BEQ parsed
+		LDA old				; last evaluated value
+		STA vars-1, Y		; update stored value
+parsed:
+	JMP repl				; and another one
+do_op:
+	JMP (arithm-2, X)		; call operation (note offset)
+
+isletter:
+; *** check A if letter, return index 1...26 or 0 if failed
+	ORA #32					; all lower case
+	CMP #'a'				; check whether letter
+		BCC notvar
+	CMP #'z'+1
+	BCC var_ok
+not_var:
+		LDA #'a'-1			; C is set, after subraction will result 0
+var_ok:
+	SBC #'a'-2				; C known clear, but should turn 'a' into 1 (proper l_value)
+	RTS
 
 ; *** commands ***
 ; placeholders
 do_print:
 do_if:
-do_while:
-do_else:
+RTS
+
+; operator detection
+opadd:
+	LDA #2
+	BNE setop
+opsub:
+	LDA #4
+	BNE setop
+opmul:
+	LDA #6
+	BNE setop
+opdiv:
+	LDA #8
+setop:
+	STA oper
+	RTS
+; operator execution (first operand in A, take second from result, return in A)
+doadd:
+	CLC
+	ADC result
+	RTS
+dosub:
+	SEC
+	SBC result
+	RTS
+domul:
+	LDY result				; number of times
+	CLC
+		BEQ byzero
+	BNE mul_chk
+mul_loop:
+		ADC old
+mul_chk:
+		DEY
+		BNE mul_loop
+	BEQ mul_done
+byzero:
+	LDA #0
+mul_done:
+	RTS
+dodiv:;*******************************
+	RTS
+
+assign:
+; get back one char, read single name variable and set it as lvalue
+	LDX cursor				; current position after =
+	DEX
+	DEX
+	LDA buffer, X			; get variable name
+	JSR isletter
+	BNE do_assign
+		JMP error			; always a letter as lvalue, otherwise error
+do_assign:
+	STA lvalue
 	RTS
 
 ; ********************
@@ -195,17 +318,28 @@ tokens:
 	.asc	"print", 0		; 0
 	.asc	"quit()", 0		; 2
 	.asc	"if", 0			; 4
-	.asc	"else:", 0		; 6
-	.asc	"while", 0		; 8
-	.asc	"=", 0			; 10
+	.asc	"=", 0			; 6
+	.asc	"+", 0			; 8
+	.asc	"-", 0			; 10
+	.asc	"*", 0			; 12
+	.asc	"/", 0			; 14
+
 	.byt	$FF				; list termination
 exec:
 	.word	do_print		; 0
 	.word	exit			; 2
 	.word	do_if			; 4
-	.word	do_else			; 6
-	.word	do_while		; 8
-	.word	assign			; 10
+	.word	assign			; 6
+	.word	opadd			; 8
+	.word	opsub			; 10
+	.word	opmul			; 12
+	.word	opdiv			; 14
+
+arithm:						; operations themselves
+	.word	doadd
+	.word	dosub
+	.word	domul
+	.word	dodiv
 
 ; *** *** *** ***** *** *** ***
 
