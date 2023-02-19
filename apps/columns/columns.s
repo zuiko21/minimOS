@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230219-1800
+; last modified 20230219-1854
 
 ; ****************************
 ; *** hardware definitions ***
@@ -1003,6 +1003,8 @@ gc_copy:
 		DEY
 		BNE gc_copy
 	LDX select				; restore player index
+	LDA s_level, X			; check difficulty
+	STA temp2				; must store somewhere eeeek
 	LDY #3					; now I need 3 jewels
 ; generate new jewel
 gc_jwl:
@@ -1013,7 +1015,7 @@ gc_jwl:
 		PLY
 		CMP #7				; is the magic jewel
 		BNE gc_nomagic
-			LDA s_level, X	; check difficulty
+			LDA temp2		; check stored difficulty
 		BEQ gc_jwl			; not accepted in easy mode
 ; otherwise the magic jewel fills the whole column
 			LDX select		; retrieve player index
@@ -1035,7 +1037,7 @@ was_magic:
 ; alternative entry point, just in case (X = player 0/128)
 	TXA						; player offset
 	CLC
-	ADC #4					; first row (not visible), fourth column of every player
+	ADC #3					; first row (not visible), fourth column of every player
 	STA posit, X			; position set as matrix index
 ;	JMP nextcol				; show new column and return
 
