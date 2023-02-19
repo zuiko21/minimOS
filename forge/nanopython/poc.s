@@ -1,6 +1,6 @@
 ; nanoPython (Proof Of Concept)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230217-1826
+; last modified 20230218-1315
 
 ; *** zeropage ***
 cio_pt		= $E6
@@ -83,9 +83,30 @@ echo:
 			BNE buff
 parse:
 		STZ buffer, X		; terminate input buffer
+#ifdef	DEBUG
+		LDX #>parsing
+		LDY #<parsing
+		JSR string
+		LDX #>buffer
+		LDY #<buffer
+		JSR string
+		LDY #13
+		JSR conio
+		JMP ex1
+parsing:
+		.asc "Parsing: ", 0
+ex1:
+#endif
 		STZ cursor
 		JSR get_token
-		
+#ifdef	DEBUG
+		LDX #>ready
+		LDY #<ready
+		JSR string
+		JMP repl
+ready:
+		.asc 13, "Parsed OK.", 13
+#endif
 		JMP repl
 error:
 		LDX #>wtf
@@ -134,6 +155,22 @@ str_end:
 
 get_token:
 ; *** detect some token at specified position
+#ifdef	DEBUG
+	LDX #>gtk
+	LDY #<gtk
+	JSR string
+	LDA cursor
+	CLC
+	ADC #'0'
+	TAY
+	JSR conio
+	LDY #13
+	JSR conio
+	JMP ex2
+gtk:
+	.asc	13, "Token? @", 0
+ex2:
+#endif
 	LDY #<tokens
 	LDA #>tokens
 	STY temptr
@@ -170,10 +207,37 @@ tk_pass:
 found:
 	INX
 	STX cursor				; eeeek
+#ifdef	DEBUG
+	LDX #>ftk
+	LDY #<ftk
+	JSR string
+	LDA cursor
+	CLC
+	ADC #'0'
+	TAY
+	JSR conio
+	LDY #13
+	JSR conio
+	JMP ex5
+ftk:
+	.asc	13, "Found! cont @", 0
+ex5:
+#endif
 	ASL cmd_id				; times two for indexing
 	LDX cmd_id
 	JMP (exec, X)			; do command
 eval:
+#ifdef	DEBUG
+	PHX
+	LDX #>eva
+	LDY #<eva
+	JSR string
+	PLX
+	JMP ex3
+eva:
+	.asc	13, "No token, var?", 13, 0
+ex3:
+#endif
 ; *** simple expression evaluator ***
 ; single-letter variables
 	LDA buffer, X			; take current char from buffer
@@ -184,13 +248,24 @@ eval:
 		LDA vars-1, Y		; note offset
 		BRA operand
 evalnum:
+#ifdef	DEBUG
+	PHX
+	LDX #>num
+	LDY #<num
+	JSR string
+	PLX
+	JMP ex4
+num:
+	.asc	13, "No var, number?", 13, 0
+ex4:
+#endif
 ; single-byte numbers and basic operators with no priorities nor parenthesis
 	LDA buffer, X
 	CMP #'0'
 	BCC pending
 		CMP #'9'+1
 		BCS pending			; no more numbers
-; if arrived here, it's a numnber
+; if arrived here, it's a number
 		SBC #'0'-1			; C was clear, thus borrows
 		ASL result			; times 2...
 		LDY result
@@ -236,7 +311,7 @@ isletter:
 		BCC notvar
 	CMP #'z'+1
 	BCC var_ok
-not_var:
+notvar:
 		LDA #'a'-1			; C is set, after subraction will result 0
 var_ok:
 	SBC #'a'-2				; C known clear, but should turn 'a' into 1 (proper l_value)
