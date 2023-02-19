@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230108-1324
+; last modified 20230219-1239
 
 ; ****************************
 ; *** hardware definitions ***
@@ -118,8 +118,10 @@ reset:
 	LDX #$FF
 	TXS
 ; Durango-X specifics
-lda#$f0
-sta$df94;enable Virtual Serial Port
+#ifdef	DEBUG
+	lda #$f0
+	sta $df94	;enable Virtual Serial Port
+#endif
 	STX IOAie				; enable interrupts, as X is an odd value
 	STZ ticks
 	LDA #$38				; colour mode, screen 3, RGB
@@ -988,7 +990,6 @@ gc_copy:
 gc_jwl:
 		PHY
 		JSR rnd
-ora#240
 		TAY
 		LDA jwl_ix, Y		; make it valid tile index
 		PLY
@@ -1129,9 +1130,10 @@ sprites:
 gameover:
 	.bin	0, 0, "art/gameover.sv24"				; uncompressed, 24-byte wide
 numbers:
-	.bin	0, 0, "../../other/data/numbers.sv20"	; generic number images, 20-byte wide
+	.bin	0, 0, "art/numbers.sv20"				; generic number images, 20-byte wide
 levelsel:
 	.bin	0, 0, "art/level.sv24"					; uncompressed, 24-byte wide, 23 lines tall
+data_end:
 
 ; **************
 ; *** tables ***
@@ -1251,10 +1253,15 @@ jwl_ix:						; convert random byte into reasonable tile index [1...6] with a few
 	.dsb	$FFD6-*, $FF		; ROM fill
 	.asc	"DmOS"				; minimOS-compliant signature
 irq_hndl:
-	JMP (irq_ptr)				; standard IRQ handler
+	JMP (irq_ptr)				; standard IRQ handler @ $FFDA
 
-	.dsb	$FFFA-*, $FF		; ROM fill, not using cehcksum
+	.byt	$FF					; ROM fill for devCart support! $FFDD
+autoreset:
+	STZ $DFC0					; enable devCart ROM $FFDE
+	JMP ($FFFC)					; devCart switching support $FFE1
+
+	.dsb	$FFFA-*, $FF		; ROM fill, not using checksum
 ; 6502 hardware vectors
-	.word	isr_end				; null handler
+	.word	autoreset			; devCart remote RESET support
 	.word	reset
 	.word	irq_hndl
