@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230219-1707
+; last modified 20230219-1800
 
 ; ****************************
 ; *** hardware definitions ***
@@ -33,6 +33,7 @@ IOBeep	= $DFB0
 #define	MOV_RGHT	0
 #define	MOV_DOWN	1
 #define	MOV_ROT		3
+#define	MOV_NONE	3
 
 #define	FIELD_PG	$63
 #define	BANNER_PG	$6C
@@ -262,12 +263,16 @@ not_st1:
 	LDA status, X
 ; * * STATUS 2, play * * IN THE MAKING
 	CMP #STAT_PLAY			; playing?
-	BNE not_st2
+		BEQ is_st2 
+	JMP not_st2
+is_st2:
 		TYA					; get this player controller status
 		BIT #PAD_LEFT		; move to the left?
 		BEQ not_s2l			; not if not pressed
 			CMP padlast, X	; still pressing?
-		BEQ not_st2			; ignore either!
+			BNE is_s2l 
+		JMP not_st2			; ignore either!
+is_s2l:
 			STA padlast, X	; anyway, register this press
 			LDY #MOV_LEFT	; otherwise, x is one less
 			BRA s2end
@@ -275,7 +280,9 @@ not_s2l:
 		BIT #PAD_RGHT		; move to the right?
 		BEQ not_s2r			; not if not pressed
 			CMP padlast, X	; still pressing?
-		BEQ not_st2			; ignore either!
+			BNE is_s2r
+		JMP not_st2			; ignore either!
+is_s2r:
 			STA padlast, X	; anyway, register this press
 			LDY #MOV_RGHT	; otherwise, x is one more
 			BRA s2end
@@ -296,7 +303,8 @@ not_s2d:
 ; piece rotation
 			LDA #1
 			STA IOBeep		; activate sound...
-			LDY poff6, X	; reindex for column arrays
+;			LDY poff6, X	; reindex for column arrays
+			LDY select		; ***
 			LDA column+2, Y
 			PHA				; save last piece
 			LDA column+1, Y
@@ -305,11 +313,14 @@ not_s2d:
 			STA column+1, Y			; rotate the rest
 			PLA
 			STA column, Y	; and wrap the last one
+			LDY posit, X	; display recently rotated column!
+			JSR coldisp
 			STZ IOBeep		; ...and finish audio pulse
-			LDY #MOV_ROT	; this was a rotation
+			LDY #MOV_ROT	; this was a rotation, thus no change
 			BRA s2end
 /**/
 not_s2f:
+		LDY #MOV_NONE		; eeek
 ; *** CODE UNDER TEST ***
 ; first of all, check for magic jewel
 		LDX select
@@ -318,6 +329,7 @@ not_s2f:
 		BNE do_advance
 			LDY posit, X
 			JSR coldisp
+			LDY #MOV_NONE
 do_advance:
 ; *** *** ***
 ; in case of timeout, put piece down... or take another
@@ -339,12 +351,17 @@ do_advance:
 			ADC #8
 			STA posit, X	; one row down
 			JSR coldisp		; show all column
+			LDY #MOV_NONE
 
 s2end:
 ; move according to Y-direction, if possible
 ;			JSR chkroom
 ;*/
 		LDA posit, X
+		CLC
+		ADC ix_dir, Y			; add combined offset
+		STA posit, X
+; test, check bottom
 		AND #$7F
 		CMP #%01100000	; row 12
 		BCC not_move
@@ -1179,7 +1196,7 @@ m_tone:
 	.byt	136, 129, 121, 114, 108, 102, 96, 90, 85, 80, 76, 71, 67, 63, 60	; C#6 to D#7
 
 ix_dir:
-	.byt	1, 8, 255, 0	; matrix index displacement
+	.byt	1, 8, 255, 0, 0	; matrix index displacement (R/D/L/rot/none)
 
 bit_pos:
 	.byt	%00000001, %00000010, %00000100, %00001000		; allowable movements for each direction, ····xLDR
