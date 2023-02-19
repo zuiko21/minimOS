@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230219-1239
+; last modified 20230219-1707
 
 ; ****************************
 ; *** hardware definitions ***
@@ -272,7 +272,7 @@ not_st1:
 			LDY #MOV_LEFT	; otherwise, x is one less
 			BRA s2end
 not_s2l:
-/*		BIT #PAD_RGHT		; move to the right?
+		BIT #PAD_RGHT		; move to the right?
 		BEQ not_s2r			; not if not pressed
 			CMP padlast, X	; still pressing?
 		BEQ not_st2			; ignore either!
@@ -308,7 +308,7 @@ not_s2d:
 			STZ IOBeep		; ...and finish audio pulse
 			LDY #MOV_ROT	; this was a rotation
 			BRA s2end
-*/
+/**/
 not_s2f:
 ; *** CODE UNDER TEST ***
 ; first of all, check for magic jewel
@@ -328,7 +328,7 @@ do_advance:
 			CLC
 			ADC speed, X
 			STA ev_dly, X	; update time for next event
-; check if possible to move down * TODO
+; check if possible to move down * TODO * should use #MOV_DOWN
 
 			LDY posit, X
 			LDA #0
