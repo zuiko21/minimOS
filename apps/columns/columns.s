@@ -123,7 +123,7 @@ reset:
 	sta $df94	;enable Virtual Serial Port
 #endif
 	STX IOAie				; enable interrupts, as X is an odd value
-	STZ ticks
+;	STZ ticks
 	LDA #$38				; colour mode, screen 3, RGB
 	STA IO8attr				; set video mode
 ; show splash screen
@@ -131,15 +131,15 @@ reset:
 	JSR dispic				; decompress!
 ; TODO * may check here for supported keyboard presence (col 6 = $2C) * TODO
 ; * init game stuff * actually whole ZP
-	LDA #0
-	TAX
+	LDX #0
+;	TXA
 rst_loop:
-		STA 0, X			; was status, X
+		STZ 0, X			; was status, X [CMOS only, use TXA/STA otherwise]
 		INX
 		BNE rst_loop
 ; setup controllers etc (assume minstrel-type kbd)
-	STZ pad0mask
-	STZ pad1mask			; need these reset the very first time
+;	STZ pad0mask
+;	STZ pad1mask			; need these reset the very first time
 	JSR read_pad			; get initial values
 	LDX pad0val
 	LDY pad1val
@@ -166,6 +166,7 @@ rst_loop:
 	LDA #STAT_LVL
 	STA status, X			; set new status
 	JSR sel_ban
+
 ; *******************************
 ; *** *** main event loop *** ***
 ; *******************************
@@ -260,9 +261,9 @@ s1_nw:
 not_st1:
 	LDA status, X
 ; * * STATUS 2, play * * IN THE MAKING
-	CMP #STAT_PLAY			; selecting level?
+	CMP #STAT_PLAY			; playing?
 	BNE not_st2
-/*		TYA					; get this player controller status
+		TYA					; get this player controller status
 		BIT #PAD_LEFT		; move to the left?
 		BEQ not_s2l			; not if not pressed
 			CMP padlast, X	; still pressing?
@@ -271,7 +272,7 @@ not_st1:
 			LDY #MOV_LEFT	; otherwise, x is one less
 			BRA s2end
 not_s2l:
-		BIT #PAD_RGHT		; move to the right?
+/*		BIT #PAD_RGHT		; move to the right?
 		BEQ not_s2r			; not if not pressed
 			CMP padlast, X	; still pressing?
 		BEQ not_st2			; ignore either!
