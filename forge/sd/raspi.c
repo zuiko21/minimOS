@@ -13,8 +13,8 @@
 #define	SCK			16
 #define	MOSI		20
 #define	CS			21
-/* SPI-specific pin definitions, 1 (+3.3v) and 7 (BCM 4) at header */
-#define	MISO		4
+/* SPI-specific pin definitions, 1 (+3.3v) and 37 (was 7, BCM 4) at header */
+#define	MISO		26
 
 
 #define	CS_DISABLE()	digitalWrite(CS, 1)
@@ -43,17 +43,19 @@ u_int8_t SPI_transfer(u_int8_t data) {	/* exchange byte, MSb first! based on Wik
 	
 	digitalWrite(SCK, 0);
 	while (x) {
+//		delayMicroseconds(4);	//?
 		digitalWrite(MOSI, data & 128);
 		data <<= 1;
 		delayMicroseconds(4);
 		digitalWrite(SCK, 1);
 		in <<= 1;
-		in |= digitalRead(MISO);
+		if(digitalRead(MISO))	in++;
+//printf("%d-",digitalRead(MISO));
 		delayMicroseconds(4);
 		digitalWrite(SCK, 0);
 		x--;
 	}
-
+//printf("[%02X]",in);
 	return in;
 }
 
@@ -114,7 +116,7 @@ u_int8_t SD_goIdleState() {
 	return res1;
 }
 
-void SD_readRes7(uint8_t *res) {
+void SD_readRes7(u_int8_t *res) {
 	// read response 1 in R7
 	res[0] = SD_readRes1();
 
@@ -128,7 +130,7 @@ void SD_readRes7(uint8_t *res) {
 	res[4] = SPI_transfer(0xFF);
 }
 
-void SD_sendIfCond(uint8_t *res) {
+void SD_sendIfCond(u_int8_t *res) {
 	// assert chip select
 	SPI_transfer(0xFF);
 	CS_ENABLE();
@@ -154,8 +156,8 @@ void SD_sendIfCond(uint8_t *res) {
 #define	ERASE_RESET(X)		X & 0b00000010
 #define	IN_IDLE(X)			X & 0b00000001
 
-void SD_printR1(uint8_t res){
-	if(res & 0b10000000)	{	printf("\tError: MSB = 1\r\n"); return; }
+void SD_printR1(u_int8_t res){
+	if(res & 0b10000000)	{	printf("\tError: MSB = 1 ($%02X)\r\n",res); return; }
 	if(res == 0)			{	printf("\tCard Ready\r\n"); return; }
 	if(PARAM_ERROR(res))		printf("\tParameter Error\r\n");
 	if(ADDR_ERROR(res))			printf("\tAddress Error\r\n");
@@ -174,7 +176,7 @@ void SD_printR1(uint8_t res){
 #define	VOLTAGE_ACC_RES1	0b00000100
 #define	VOLTAGE_ACC_RES2	0b00001000
 
-void SD_printR7(uint8_t *res){
+void SD_printR7(u_int8_t *res){
 	SD_printR1(res[0]);
 
 	if(res[0] > 1)	return;
@@ -202,7 +204,7 @@ void SD_printR7(uint8_t *res){
 
 int main(void) {
 // array to hold responses
-	uint8_t res[5];
+	u_int8_t res[5];
 
 // initialize SPI
 	SPI_init();
