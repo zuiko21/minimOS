@@ -16,6 +16,10 @@
 /* SPI-specific pin definitions, 1 (+3.3v) and 7 (BCM 4) at header */
 #define	MISO	4
 
+#define CMD0		0
+#define CMD0_ARG	0x00000000
+#define CMD0_CRC	0x94
+
 void SPI_init() {
 /* GPIO setup */
 	wiringPiSetupGpio();	/* using BCM numbering! */
@@ -26,8 +30,8 @@ void SPI_init() {
 	pinMode(MISO, INPUT);
 }
 
-uint8_t SPI_transfer(uint8_t data) {	/* exchange byte, MSb first! based on Wikipedia code */
-	uint8_t	in = 0, x = 8;
+u_int8_t SPI_transfer(u_int8_t data) {	/* exchange byte, MSb first! based on Wikipedia code */
+	u_int8_t	in = 0, x = 8;
 	
 	digitalWrite(SCK, 0);
 	while (x) {
@@ -48,27 +52,27 @@ uint8_t SPI_transfer(uint8_t data) {	/* exchange byte, MSb first! based on Wikip
 void SD_powerUpSeq() {
 	digitalWrite(CS, 1);	// CS_DISABLE
 	delayMicroseconds(1000);
-	for (uint8_t i = 0; i < 10; i++)	SPI_transfer(0xFF);	// send 80 clocks
+	for (u_int8_t i = 0; i < 10; i++)	SPI_transfer(0xFF);	// send 80 clocks
 	digitalWrite(CS, 1);	// CS_DISABLE
 	SPI_transfer(0xFF);
 }
 
-void SD_command(uint8_t cmd, uint32_t arg, uint8_t crc) {
+void SD_command(u_int8_t cmd, u_int32_t arg, u_int8_t crc) {
 	// send command
 	SPI_transfer(cmd|0x40);
 
 	// send argument
-	SPI_transfer((uint8_t)(arg >> 24));
-	SPI_transfer((uint8_t)(arg >> 16));
-	SPI_transfer((uint8_t)(arg >> 8));
-	SPI_transfer((uint8_t)(arg));
+	SPI_transfer((u_int8_t)(arg >> 24));
+	SPI_transfer((u_int8_t)(arg >> 16));
+	SPI_transfer((u_int8_t)(arg >> 8));
+	SPI_transfer((u_int8_t)(arg));
 
 	// send CRC
 	SPI_transfer(crc|0x01);
 }
 
-uint8_t SD_readRes1() {
-	uint8_t i = 0, res1;
+u_int8_t SD_readRes1() {
+	u_int8_t i = 0, res1;
 
 	// keep polling until actual data received
 	while((res1 = SPI_transfer(0xFF)) == 0xFF)
@@ -82,7 +86,7 @@ uint8_t SD_readRes1() {
 	return res1;
 }
 
-uint8_t SD_goIdleState() {
+u_int8_t SD_goIdleState() {
 	// assert chip select
 	SPI_transfer(0xFF);
 	digitalWrite(CS, 0);	// CS_ENABLE
@@ -92,7 +96,7 @@ uint8_t SD_goIdleState() {
 	SD_command(CMD0, CMD0_ARG, CMD0_CRC);
 
 	// read response
-	uint8_t res1 = SD_readRes1();
+	u_int8_t res1 = SD_readRes1();
 
 	// deassert chip select
 	SPI_transfer(0xFF);
