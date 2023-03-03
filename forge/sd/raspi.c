@@ -314,6 +314,7 @@ void SD_printR3(u_int8_t *res) {
 
 #define	SD_SUCCESS	0
 #define	SD_ERROR	1
+#define	SD_READY	0
 
 u_int8_t SD_init()
 {
@@ -332,7 +333,7 @@ u_int8_t SD_init()
 	SD_printR1(res[0]);			//***
 
 	// send interface conditions
-	printf("\nSending interface conditions... ");	//***
+	printf("\nSending interface conditions: ");		//***
 	SD_sendIfCond(res);
 	if(res[0] != 0x01)			return SD_ERROR;
 
@@ -374,30 +375,8 @@ int main(void) {
 // initialize SPI
 	SPI_init();
 
-// start power up sequence
-	SD_powerUpSeq();
+// init SD card in full!
+	if(SD_init() != SD_SUCCESS)	{	printf("\nError initializaing SD CARD\n"); while(1); }
+	else							printf("\nSD Card initialized!\n");
 
-// command card to idle
-	printf("Sending CMD0...\r\n");
-	res[0] = SD_goIdleState();
-
-// send if conditions
-	printf("Sending CMD8...\r\n");
-	SD_sendIfCond(res);
-	printf("Response:\r\n");
-	SD_printR7(res);
-
-// send CMD58 and read response
-	printf("Sending CMD58...\r\n");
-	CS_ENABLE();
-	SD_command(CMD58, CMD58_ARG, CMD58_CRC);
-	SD_readRes7(res);		// actually R3
-	CS_DISABLE();
-	SPI_transfer(0xFF);
-
-	// print R3
-	printf("Response: \r\n");
-	SD_printR3(res);
-
-	while(1);
 }
