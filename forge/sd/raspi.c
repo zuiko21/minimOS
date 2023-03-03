@@ -26,11 +26,19 @@
 
 #define	CMD8		8
 #define	CMD8_ARG	0x0000001AA
-#define CMD8_CRC	0x86 //(1000011 << 1)
+#define	CMD8_CRC	0x86 //(1000011 << 1)
 
-#define CMD58       58
-#define CMD58_ARG   0x00000000
-#define CMD58_CRC   0x00
+#define	CMD58		58
+#define	CMD58_ARG	0x00000000
+#define	CMD58_CRC	0x00
+
+#define	CMD55		55
+#define	CMD55_ARG	0x00000000
+#define	CMD55_CRC	0x00
+
+#define	ACMD41		41
+#define	ACMD41_ARG	0x40000000
+#define	ACMD41_CRC	0x00
 
 void SPI_init() {
 /* GPIO setup */
@@ -170,6 +178,46 @@ void SD_readOCR(u_int8_t *res) {
 	SPI_transfer(0xFF);
 }
 
+u_int8_t SD_sendApp() {
+	// assert chip select
+	SPI_transfer(0xFF);
+	CS_ENABLE();
+	SPI_transfer(0xFF);
+
+	// send CMD0
+	SD_command(CMD55, CMD55_ARG, CMD55_CRC);
+
+	// read response
+	u_int8_t res1 = SD_readRes1();
+
+	// deassert chip select
+	SPI_transfer(0xFF);
+	CS_DISABLE();
+	SPI_transfer(0xFF);
+
+	return res1;
+}
+
+u_int8_t SD_sendOpCond() {
+	// assert chip select
+	SPI_transfer(0xFF);
+	CS_ENABLE();
+	SPI_transfer(0xFF);
+
+	// send CMD0
+	SD_command(ACMD41, ACMD41_ARG, ACMD41_CRC);
+
+	// read response
+	u_int8_t res1 = SD_readRes1();
+
+	// deassert chip select
+	SPI_transfer(0xFF);
+	CS_DISABLE();
+	SPI_transfer(0xFF);
+
+	return res1;
+}
+
 #define	PARAM_ERROR(X)		X & 0b01000000
 #define	ADDR_ERROR(X)		X & 0b00100000
 #define	ERASE_SEQ_ERROR(X)	X & 0b00010000
@@ -264,6 +312,61 @@ void SD_printR3(u_int8_t *res) {
 	printf("\r\n");
 }
 
+#define	SD_SUCCESS	0
+#define	SD_ERROR	1
+
+u_int8_t SD_init()
+{
+	u_int8_t res[5], cmdAttempts = 0;
+
+	SD_powerUpSeq();
+
+	// command card to idle
+	printf("Going idle");		//***
+	while((res[0] = SD_goIdleState()) != 0x01) {
+		cmdAttempts++;
+		printf(".");			//***
+		if(cmdAttempts > 10)	return SD_ERROR;
+	}
+	printf("\nResponse:\n");	//***
+	SD_printR1(res[0]);			//***
+
+	// send interface conditions
+	printf("\nSending interface conditions... ");	//***
+	SD_sendIfCond(res);
+	if(res[0] != 0x01)			return SD_ERROR;
+
+	// check echo pattern
+	if(res[4] != 0xAA)			return SD_ERROR;
+	printf("Echo pattern OK!\n");					//***
+
+	// attempt to initialize card
+//	cmdAttempts = 0;
+	printf("SD card init");		//***
+	do {
+		if(cmdAttempts > 100)	return SD_ERROR;
+
+		// send app cmd
+		res[0] = SD_sendApp();
+
+		// if no error in response
+		if(res[0] < 2)	res[0] = SD_sendOpCond();
+
+		// wait
+		delayMicroseconds(10000);
+		cmdAttempts++;
+		printf(".");			//***
+	} while(res[0] != SD_READY);
+	printf(" Ready!\n");		//***
+	// read OCR
+	SD_readOCR(res);
+
+	// check card is ready
+	if(!(res[1] & 0x80))		return SD_ERROR;
+
+	return SD_SUCCESS;
+}
+
 int main(void) {
 // array to hold responses
 	u_int8_t res[5];
@@ -277,8 +380,6 @@ int main(void) {
 // command card to idle
 	printf("Sending CMD0...\r\n");
 	res[0] = SD_goIdleState();
-	printf("Response:\r\n");
-	SD_printR1(res[0]);
 
 // send if conditions
 	printf("Sending CMD8...\r\n");
