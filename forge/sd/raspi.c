@@ -152,7 +152,7 @@ void SD_sendIfCond(u_int8_t *res) {
 	SPI_transfer(0xFF);
 }
 
-void SD_readOCR(uint8_t *res) {
+void SD_readOCR(u_int8_t *res) {
 	// assert chip select
 	SPI_transfer(0xFF);
 	CS_ENABLE();
@@ -236,7 +236,7 @@ void SD_printR7(u_int8_t *res){
 #define VDD_3435(X)         X & 0b01000000
 #define VDD_3536(X)         X & 0b10000000
 
-void SD_printR3(uint8_t *res) {
+void SD_printR3(u_int8_t *res) {
 	SD_printR1(res[0]);
 
 	if(res[0] > 1)	return;
