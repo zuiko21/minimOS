@@ -388,7 +388,7 @@ u_int8_t SD_init()
 	return SD_SUCCESS;
 }
 
-u_int8_t SD_readSingleBlock(uint32_t addr, uint8_t *buf, uint8_t *token) {
+u_int8_t SD_readSingleBlock(u_int32_t addr, u_int8_t *buf, u_int8_t *token) {
 	u_int8_t	res1, read;
 	u_int16_t	readAttempts;
 
@@ -452,8 +452,8 @@ int main(void) {
 	res[0] = SD_readSingleBlock(0x00000000, sdBuf, &token);
 
 	// print response
-	if(SD_R1_NO_ERROR(res[0]) && (token == 0xFE)) {
-		for(u_int16_t i = 0; i < 512; i++)	printf("%02X", sdBuf[i]);
+	if((res[0]<2) && (token == 0xFE)) {
+		for(u_int16_t i = 0; i < 512; i++)	printf("%c", sdBuf[i]>31?sdBuf[i]:'.');
 		printf("\n\n");
 	} else {
 		printf("Error reading sector\n");
@@ -463,7 +463,7 @@ int main(void) {
 	printf("*** TRY TO READ NON-EXISTENT SECTOR ***\n");
 	res[0] = SD_readSingleBlock(0xffffffff, sdBuf, &token);
 
-	printf("Response 1:\r\n")
+	printf("Response 1:\r\n");
 	SD_printR1(res[0]);
 
 	// if error token received
