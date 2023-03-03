@@ -28,6 +28,10 @@
 #define	CMD8_ARG	0x0000001AA
 #define CMD8_CRC	0x86 //(1000011 << 1)
 
+#define CMD58       58
+#define CMD58_ARG   0x00000000
+#define CMD58_CRC   0x00
+
 void SPI_init() {
 /* GPIO setup */
 	wiringPiSetupGpio();	/* using BCM numbering! */
@@ -116,7 +120,7 @@ u_int8_t SD_goIdleState() {
 	return res1;
 }
 
-void SD_readRes7(u_int8_t *res) {
+void SD_readRes7(u_int8_t *res) {	// also for R3
 	// read response 1 in R7
 	res[0] = SD_readRes1();
 
@@ -141,6 +145,24 @@ void SD_sendIfCond(u_int8_t *res) {
 
 	// read response
 	SD_readRes7(res);
+
+	// deassert chip select
+	SPI_transfer(0xFF);
+	CS_DISABLE();
+	SPI_transfer(0xFF);
+}
+
+void SD_readOCR(uint8_t *res) {
+	// assert chip select
+	SPI_transfer(0xFF);
+	CS_ENABLE();
+	SPI_transfer(0xFF);
+
+	// send CMD58
+	SD_command(CMD58, CMD58_ARG, CMD58_CRC);
+
+	// read response
+	SD_readRes7(res);	// actually R3
 
 	// deassert chip select
 	SPI_transfer(0xFF);
@@ -202,6 +224,46 @@ void SD_printR7(u_int8_t *res){
 	printf("\r\n");
 }
 
+#define POWER_UP_STATUS(X)  X & 0x40
+#define CCS_VAL(X)          X & 0x40
+#define VDD_2728(X)         X & 0b10000000
+#define VDD_2829(X)         X & 0b00000001
+#define VDD_2930(X)         X & 0b00000010
+#define VDD_3031(X)         X & 0b00000100
+#define VDD_3132(X)         X & 0b00001000
+#define VDD_3233(X)         X & 0b00010000
+#define VDD_3334(X)         X & 0b00100000
+#define VDD_3435(X)         X & 0b01000000
+#define VDD_3536(X)         X & 0b10000000
+
+void SD_printR3(uint8_t *res) {
+	SD_printR1(res[0]);
+
+	if(res[0] > 1)	return;
+
+	printf("\tCard Power Up Status: ");
+	if(POWER_UP_STATUS(res[1])) {
+		printf("READY\r\n");
+		printf("\tCCS Status: ");
+		if(CCS_VAL(res[1]))	{	printf("1\r\n"); }
+		else					printf("0\r\n");
+	} else {
+		printf("BUSY\r\n");
+	}
+
+	printf("\tVDD Window: ");
+	if(VDD_2728(res[3])) printf("2.7, ");
+	if(VDD_2829(res[2])) printf("2.8, ");
+	if(VDD_2930(res[2])) printf("2.9, ");
+	if(VDD_3031(res[2])) printf("3.0, ");
+	if(VDD_3132(res[2])) printf("3.1, ");
+	if(VDD_3233(res[2])) printf("3.2, ");
+	if(VDD_3334(res[2])) printf("3.3, ");
+	if(VDD_3435(res[2])) printf("3.4, ");
+	if(VDD_3536(res[2])) printf("3.5-3.6");
+	printf("\r\n");
+}
+
 int main(void) {
 // array to hold responses
 	u_int8_t res[5];
@@ -223,6 +285,18 @@ int main(void) {
 	SD_sendIfCond(res);
 	printf("Response:\r\n");
 	SD_printR7(res);
+
+// send CMD58 and read response
+	printf("Sending CMD58...\r\n");
+	CS_ENABLE();
+	SD_command(CMD58, CMD58_ARG, CMD58_CRC);
+	SD_readRes7(res);		// actually R3
+	CS_DISABLE();
+	SPI_transfer(0xFF);
+
+	// print R3
+	printf("Response: \r\n");
+	SD_printR3(res);
 
 	while(1);
 }
