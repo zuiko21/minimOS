@@ -316,6 +316,22 @@ void SD_printR3(u_int8_t *res) {
 	printf("\r\n");
 }
 
+#define	SD_TOKEN_OOR(X)		X & 0b00001000
+#define	SD_TOKEN_CECC(X)	X & 0b00000100
+#define	SD_TOKEN_CC(X)		X & 0b00000010
+#define	SD_TOKEN_ERROR(X)	X & 0b00000001
+
+void SD_printDataErrToken(u_int8_t token) {
+	if(SD_TOKEN_OOR(token))
+		printf("\tData out of range\n");
+	if(SD_TOKEN_CECC(token))
+		printf("\tCard ECC failed\n");
+	if(SD_TOKEN_CC(token))
+		printf("\tCC Error\n");
+	if(SD_TOKEN_ERROR(token))
+		printf("\tError\n");
+}
+
 #define	SD_SUCCESS	0
 #define	SD_ERROR	1
 #define	SD_READY	0
@@ -421,14 +437,42 @@ u_int8_t SD_readSingleBlock(uint32_t addr, uint8_t *buf, uint8_t *token) {
 }
 
 int main(void) {
-// array to hold responses
-	u_int8_t res[5];
+	// array to hold responses
+	u_int8_t res[5], sdBuf[512], token;
 
-// initialize SPI
+	// initialize SPI
 	SPI_init();
 
-// init SD card in full!
-	if(SD_init() != SD_SUCCESS)	{	printf("\nError initializaing SD CARD\n"); while(1); }
+	// init SD card in full!
+	if(SD_init() != SD_SUCCESS)	{	printf("\nError initializaing SD CARD\n"); return 0; }
 	else							printf("\nSD Card initialized!\n");
 
+	// read sector 0
+	printf("*** READ SECTOR 0 ***\n");
+	res[0] = SD_readSingleBlock(0x00000000, sdBuf, &token);
+
+	// print response
+	if(SD_R1_NO_ERROR(res[0]) && (token == 0xFE)) {
+		for(u_int16_t i = 0; i < 512; i++)	printf("%02X", sdBuf[i]);
+		printf("\n\n");
+	} else {
+		printf("Error reading sector\n");
+	}
+
+	// try to generate a read error
+	printf("*** TRY TO READ NON-EXISTENT SECTOR ***\n");
+	res[0] = SD_readSingleBlock(0xffffffff, sdBuf, &token);
+
+	printf("Response 1:\r\n")
+	SD_printR1(res[0]);
+
+	// if error token received
+	if(!(token & 0xF0)) {
+		printf("Error token:\r\n");
+		SD_printDataErrToken(token);	// eeek
+	} else if(token == 0xFF) {
+		printf("Timeout\n");
+	}
+
+	return 0;
 }
