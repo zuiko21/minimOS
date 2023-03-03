@@ -40,6 +40,10 @@
 #define	ACMD41_ARG	0x40000000
 #define	ACMD41_CRC	0x00
 
+#define	CMD17		17
+#define	CMD17_CRC	0x00
+#define	SD_MAX_READ_ATTEMPTS	1563
+
 void SPI_init() {
 /* GPIO setup */
 	wiringPiSetupGpio();	/* using BCM numbering! */
@@ -366,6 +370,54 @@ u_int8_t SD_init()
 	if(!(res[1] & 0x80))		return SD_ERROR;
 
 	return SD_SUCCESS;
+}
+
+u_int8_t SD_readSingleBlock(uint32_t addr, uint8_t *buf, uint8_t *token) {
+	u_int8_t	res1, read;
+	u_int16_t	readAttempts;
+
+	// set token to none
+	*token = 0xFF;
+
+	// assert chip select
+	SPI_transfer(0xFF);
+	CS_ENABLE();
+	SPI_transfer(0xFF);
+
+	// send CMD17
+	SD_command(CMD17, addr, CMD17_CRC);
+
+	// read R1
+	res1 = SD_readRes1();
+
+	// if response received from card
+	if(res1 != 0xFF) {
+		// wait for a response token (timeout = 100ms)
+		readAttempts = 0;
+		while(++readAttempts != SD_MAX_READ_ATTEMPTS)
+			if((read = SPI_transfer(0xFF)) != 0xFF)		break;
+
+		// if response token is 0xFE
+		if(read == 0xFE) {
+			// read 512 byte block
+			for(u_int16_t i = 0; i < 512; i++)
+				*buf++ = SPI_transfer(0xFF);
+
+			// read 16-bit CRC
+			SPI_transfer(0xFF);
+			SPI_transfer(0xFF);
+		}
+
+		// set token to card response
+		*token = read;
+	}
+
+	// deassert chip select
+	SPI_transfer(0xFF);
+	CS_DISABLE();
+	SPI_transfer(0xFF);
+
+	return res1;
 }
 
 int main(void) {
