@@ -188,7 +188,7 @@ u_int8_t SD_sendApp() {
 	CS_ENABLE();
 	SPI_transfer(0xFF);
 
-	// send CMD0
+	// send CMD55
 	SD_command(CMD55, CMD55_ARG, CMD55_CRC);
 
 	// read response
