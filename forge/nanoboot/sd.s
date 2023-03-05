@@ -1,7 +1,7 @@
 ; Durango-X devcart SD loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230304-1044
+; last modified 20230305-2350
 
 ; to be included into nanoboot ROM
 
@@ -11,15 +11,40 @@
 #define	SD_MISO		%10000000
 
 #define	CMD0		0
-#define	CMD0_ARG	$00000000
+#define	CMD0_ARG	0
 #define	CMD0_CRC	$94
 #define	CMD8		8
 #define	CMD8_ARG	$01AA
 #define	CMD8_CRC	$86
+#define	ACMD41		41
+#define	ACMD41_ARG	$40
+#define	ACMD41_CRC	0
 #define	CMD55		55
 #define	CMD55_ARG	0
 #define	CMD55_CRC	0
+#define	CMD58		58
+#define	CMD58_ARG	0
+#define	CMD58_CRC	0
 
+#define	CMD17		17
+#define	CMD17_CRC	0
+#define	SD_MAX_READ_ATTEMPTS	203
+
+#define	IOCart		$DFC0
+
+; *** memory usage ***
+crc		= $EF
+arg		= crc + 1	; $F0
+res		= arg + 4	; $F4
+mosi	= res + 5	; $F9
+miso	= mosi + 1	; $FA
+token	= miso + 1	; $FB
+ptr		= token + 1	; $FC
+cnt		= ptr + 2	; $FE
+
+; **********************
+; *** SD-card module ***
+; **********************
 sdmain:
 ; draw SD logo?
 
@@ -50,7 +75,7 @@ set_idle:
 		STZ arg+1
 		STZ arg+2
 		STZ arg+3			; ** assume CMD0_ARG is 0 *
-		LDA #$CMD0_CRC
+		LDA #CMD0_CRC
 		STA crc
 		LDA #CMD0
 		JSR sd_cmd			; SD_command(CMD0, CMD0_ARG, CMD0_CRC);
@@ -97,13 +122,41 @@ sdic_ok:
 	LDX #101				; cmdAttempts = 0;
 sd_ia:
 ; send app cmd
-		JSR sd_app			; res[0] = SD_sendApp();
+; ** res[0] = SD_sendApp() inlined here **
+		JSR cs_enable		; assert chip select
+; send CMD55
+		STZ arg
+		STZ arg+1
+		STZ arg+2
+		STZ arg+3
+		STZ crc				; ** assume CMD55_ARG and CMD55_CRC are 0 **
+		LDA #CMD55
+		JSR sd_cmd			; SD_command(CMD55, CMD55_ARG, CMD55_CRC);
+; read response
+		JSR rd_r1			; u_int8_t res1 = SD_readRes1();
+		JSR cs_disable		; deassert chip select
+		LDA res				; return res1;
+
 ; if no error in response
 		CMP #2
-		BCC sa_err
-			JSR sd_soc		; if(res[0] < 2)	res[0] = SD_sendOpCond();
+		BCC sa_err			; if(res[0] < 2) 
+; ** res[0] = SD_sendOpCond() inlined here **
+		JSR cs_enable		; assert chip select
+; send CMD55
+		LDA #ACMD41_ARG		; only MSB is not zero
+		STA arg
+		STZ arg+1
+		STZ arg+2
+		STZ arg+3
+		STZ crc				; ** assume rest of ACMD41_ARG and ACMD41_CRC are 0 **
+		LDA #ACMD41
+		JSR sd_cmd			; SD_command(ACMD41, ACMD41_ARG, ACMD41_CRC);
+; read response
+		JSR rd_r1			; u_int8_t res1 = SD_readRes1();
+		JSR cs_disable		; deassert chip select
+
 sa_err:
-		LDA res				; actually needed in case of error
+		LDA res				; return res1; (needed here in case of error)
 	BEQ apc_rdy				; while(res[0] != SD_READY);
 ; wait 10 ms
 		LDA #12
@@ -118,7 +171,19 @@ d10m:
 apc_rdy:
 
 ; read OCR
-; SD_readOCR(res);
+; ** SD_readOCR(res) is inlined here **
+	JSR cs_enable			; assert chip select
+; send CMD58
+	STZ arg
+	STZ arg+1
+	STZ arg+2
+	STZ arg+3
+	STZ crc					; ** assume CMD58_ARG and CMD58_CRC are 0 **
+	LDA #CMD58
+	JSR sd_cmd				; SD_command(CMD58, CMD58_ARG, CMD58_CRC);
+; read response
+	JSR rd_r7				; SD_readRes7(res); actually R3
+	JSR cs_disable			; deassert chip select
 
 ; check whether card is ready
 	LDA res
@@ -127,9 +192,21 @@ apc_rdy:
 card_rdy:					; * SD_init OK! *
 
 ; ** load 64 sectors from SD **
-
+	LDX #>$8000				; ROM start address
+	STX ptr+1
+	STZ ptr					; assume ROM is page-aligned, of course
+	STZ arg
+	STZ arg+1
+	STZ arg+2
+	STZ arg+3				; assume reading from the very first sector
+boot:
+		JSR ssec_rd			; read one 512-byte sector
+; might do some error check here...
+		INC arg				; only 64 sectors, no need to check MSB...
+		LDA ptr+1			; check current page
+		BNE boot			; until completion
 ; ** after image is loaded... **
-	JMP switch				; start RAM-loaded code!
+	JMP switch				; start code loaded into cartidge RAM!
 
 ; ************************
 ; *** support routines ***
@@ -140,11 +217,11 @@ spi_tr:
 	STA mosi
 	LDY #8					; x = 8;
 	LDA #SD_CLK
-	TRB IOCart				; digitalWrite(SCK, 0);
+	TRB IOCart				; digitalWrite(SCK, 0); (13t)
 tr_l:						; while (x)
 		ASL mosi
 		LDA IOCart
-		AND #~SD_MOSI
+		AND #SD_MOSI^$FF
 		BCC mosi_set
 			ORA #SD_MOSI
 mosi_set:
@@ -154,8 +231,8 @@ mosi_set:
 		ROL miso			; if(digitalRead(MISO)) in++;
 		DEC IOCart			; digitalWrite(SCK, 0);	** assume SD_CLK  is   1 **
 		DEY					; x--;
-		BNE tr_l
-	LDA miso				; return in;
+		BNE tr_l			; (worst case, 8*43 = 344t)
+	LDA miso				; return in; (total including call overhead = 372t, ~242 µs)
 	RTS
 
 ; *** enable card transfer ***
@@ -195,23 +272,6 @@ sd_cmd:
 	ORA #1
 	JMP spi_tr				; SPI_transfer(crc|0x01); ...and return
 
-; *** send app command in A to card ***
-sd_app:
-	JSR cs_enable			; assert chip select
-; send CMD55
-	STZ arg
-	STZ arg+1
-	STZ arg+2
-	STZ arg+3
-	STZ crc					; ** assume CMD55_ARG and CMD55_CRC are 0 **
-	LDA #CMD55
-	JSR sd_cmd				; SD_command(CMD55, CMD55_ARG, CMD55_CRC);
-; read response
-	JSR rd_r1				; u_int8_t res1 = SD_readRes1();
-	JSR cs_disable			; deassert chip select
-	LDA res					; return res1;
-	RTS
-
 ; *** read R1 response *** return result in res and A
 rd_r1:
 	LDX #8					; u_int8_t i = 0, res1;
@@ -242,6 +302,67 @@ r7loop:
 			CPX #5
 			BNE r7loop
 r7end:
+	RTS
+
+; *** read single sector ***
+ssec_rd:
+; set token to none
+	LDA #$FF
+	STA token				; *token = 0xFF;
+	JSR cs_enable			; assert chip select
+; send CMD17 (sector already at arg.l)
+	STZ crc					; ** assume CMD17_CRC is 0 **
+	LDA #CMD17
+	JSR sd_cmd				; SD_command(CMD17, sector, CMD17_CRC);
+; read response
+	JSR rd_r1				; res1 = SD_readRes1();
+	CMP #$FF
+	BEQ no_res				; if(res1 != 0xFF) {
+; if response received from card wait for a response token (timeout = 100ms)
+		LDX #SD_MAX_READ_ATTEMPTS		; readAttempts = 0;
+rd_wtok:
+			DEX
+		BEQ chk_tok			; while(++readAttempts != SD_MAX_READ_ATTEMPTS)
+			LDA #$FF
+			JSR spi_tr
+			CMP #$FF
+		BNE chk_tok			; this is done twice for a single-byte timeout loop
+			LDA #$FF
+			JSR spi_tr
+			CMP #$FF
+			BEQ rd_wtok		; if((read = SPI_transfer(0xFF)) != 0xFF)		break; (759t ~494µs)
+chk_tok:
+		STA res				; read = ...
+		CMP #$FE
+		BNE set_tk			; if(read == 0xFE) {
+; read 512 byte block
+			LDA #>512
+			STA cnt+1
+			STZ cnt			; 512 bytes per sector, LSB is zero
+byte_rd:					; for(u_int16_t i = 0; i < 512; i++) {
+				LDA #$FF
+				JSR spi_tr
+				STA (ptr)	; *buf++ = SPI_transfer(0xFF);
+				INC ptr
+				BNE brd_nw
+					INC ptr+1
+brd_nw:
+				DEC cnt
+				BNE byte_rd
+					DEC cnt+1
+				BNE byte_rd	; ... i < 512; i++)
+; discard 16-bit CRC
+			LDA #$FF
+			JSR spi_tr		; SPI_transfer(0xFF);
+			LDA #$FF
+			JSR spi_tr		; SPI_transfer(0xFF);
+			LDA res			; ... = read
+set_tk:
+; set token to card response
+		STA token			; *token = read;
+no_res:
+	JSR cs_disable			; deassert chip select
+	LDA res					; return res1;
 	RTS
 
 ; ***************************
