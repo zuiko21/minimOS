@@ -1,7 +1,7 @@
 ; Durango-X devcart SD loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230305-2350
+; last modified 20230306-1730
 
 ; to be included into nanoboot ROM
 
@@ -40,7 +40,7 @@ mosi	= res + 5	; $F9
 miso	= mosi + 1	; $FA
 token	= miso + 1	; $FB
 ptr		= token + 1	; $FC
-cnt		= ptr + 2	; $FE
+;cnt	= ptr + 2	; $FE
 
 ; **********************
 ; *** SD-card module ***
@@ -305,6 +305,7 @@ r7end:
 	RTS
 
 ; *** read single sector ***
+; ptr MUST be even, NOT starting at $DF00 and certainly (two) page-aligned
 ssec_rd:
 ; set token to none
 	LDA #$FF
@@ -336,20 +337,25 @@ chk_tok:
 		CMP #$FE
 		BNE set_tk			; if(read == 0xFE) {
 ; read 512 byte block
-			LDA #>512
-			STA cnt+1
-			STZ cnt			; 512 bytes per sector, LSB is zero
+block:
+			LDX #0			; 256-times loop reading 2-byte words => 512 bytes/sector
 byte_rd:					; for(u_int16_t i = 0; i < 512; i++) {
+				LDA #$FF
+				JSR spi_tr
+				STA (ptr)	; *buf++ = SPI_transfer(0xFF);
+				INC ptr		; won't do any page crossing here, as long as the base address is EVEN
 				LDA #$FF
 				JSR spi_tr
 				STA (ptr)	; *buf++ = SPI_transfer(0xFF);
 				INC ptr
 				BNE brd_nw
 					INC ptr+1
+; must skip I/O page! eeeeeek
+					LDA ptr+1
+					CMP #$DF			; already at I/O page?
+					BEQ io_skip
 brd_nw:
-				DEC cnt
-				BNE byte_rd
-					DEC cnt+1
+				INX
 				BNE byte_rd	; ... i < 512; i++)
 ; discard 16-bit CRC
 			LDA #$FF
@@ -364,6 +370,21 @@ no_res:
 	JSR cs_disable			; deassert chip select
 	LDA res					; return res1;
 	RTS
+; * special code for I/O page skipping *
+io_skip:
+		LDA #$FF
+		JSR spi_tr			; get one byte for $DF00-$DF7F, as per Emilio's request
+		STA (ptr)			; ptr originally pointing to $DF00
+		INC ptr				; no page crossing in the first half
+		BPL io_skip			; this will fill the accesible area at page $DF (up to $DF7F)
+io_dsc:
+		LDA #$FF
+		JSR spi_tr			; discard one byte
+		INC ptr
+		BNE io_bot			; until the end of page
+	INC ptr+1				; continue from page $E0
+	BNE block				; a new sector starts there
+
 
 ; ***************************
 ; *** standard exit point ***
