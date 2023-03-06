@@ -1,7 +1,7 @@
 ; Durango-X devcart SD loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230306-1806
+; last modified 20230306-1903
 
 ; to be included into nanoboot ROM
 
@@ -83,7 +83,6 @@ sd80c:
 		DEX
 		BNE sd80c			; this sends 80 clocks to synchronise
 	JSR cs_disable
-
 ; command card to idle
 	LDX #10
 set_idle:
@@ -296,6 +295,7 @@ sd_cmd:
 
 ; *** read R1 response *** return result in res and A
 rd_r1:
+	PHX						; eeeeeeeek
 	LDX #8					; u_int8_t i = 0, res1;
 ; keep polling until actual data received
 r1_l:
@@ -307,6 +307,7 @@ r1_l:
 		BNE r1_l			; if(i > 8) break;
 r1_got:
 	STA res					; return res1; (also in A)
+	PLX
 	RTS
 
 ; *** read R7 response *** return result in res[]

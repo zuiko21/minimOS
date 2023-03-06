@@ -1,6 +1,6 @@
-; startup nanoBoot for 6502, v0.5b2
+; startup nanoBoot for 6502, v0.6b1
 ; (c) 2018-2023 Carlos J. Santisteban
-; last modified 20230216-2319
+; last modified 20230306-1845
 
 ; *** needed zeropage variables ***
 ; nb_rcv, received byte (no longer need to be reset!)
@@ -15,6 +15,30 @@
 
 nb_init:
 	SEI						; make sure interrupts are off (2)
+#ifdef	DISPLAY
+#ifndef	LTC4622
+rpilogo	= $6B00				; Raspberry Pi logo position
+; display Raspberry Pi logo
+	LDX #>raspi
+	LDY #<raspi
+	STY nb_fin				; temporary source pointer
+	STX nb_fin+1
+	LDX #>rpilogo
+	LDY #<rpilogo			; must be zero
+	STY nb_ptr
+rp_p:
+		STX nb_ptr+1
+rp_b:
+			LDA (nb_fin), Y
+			STA (nb_ptr), Y	; copy logo on screen
+			INY
+			BNE rp_b
+		INC nb_fin+1		; eeeeeek
+		INX
+		CPX #$7F			; rpilogo + 80 lines...
+		BNE rp_p
+#endif
+#endif
 ; ******************************
 ; *** set interrupt handlers ***
 ; ******************************
@@ -309,6 +333,16 @@ show_pg:
 	LDA #$FF				; elongated white dot
 	STA $7EFF, X			; display on screen (finished page)
 	RTS
+#endif
+#endif
+#ifdef	DISPLAY
+#ifndef	LTC4622
+; *** picture data ***
+	.dsb	$e000-*, $FF	; ROM padding skipping I/O!
+raspi:
+	.bin	0, 0, "raspi.sv"
+	.dsb	192, 0		; padding up to 80 lines
+rpi_end:
 #endif
 #endif
 ; *** all finished, continue execution if unsuccessful ***
