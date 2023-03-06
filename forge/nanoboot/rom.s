@@ -1,9 +1,9 @@
 ; minimal nanoBoot firmware *** now with devCart support on Durango-X
-; v0.5b2
+; v0.6b1
 ; (c) 2018-2023 Carlos J. Santisteban
-; last modified 20230216-2336
+; last modified 20230306-1753
 
-; already NMOS-savvy
+; already NMOS-savvy EXCEPT the SD module
 
 ; *********************
 ; *** configuration ***
@@ -79,6 +79,7 @@ dx_blue:
 #endif
 
 ; ...followed by code chunks
+#include "sd.s"
 #include "init.s"
 
 ; as this simple bootloader has nothing else to do, just lock (show red strip)

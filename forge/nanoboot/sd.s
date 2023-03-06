@@ -1,7 +1,7 @@
 ; Durango-X devcart SD loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230306-1730
+; last modified 20230306-1806
 
 ; to be included into nanoboot ROM
 
@@ -31,6 +31,7 @@
 #define	SD_MAX_READ_ATTEMPTS	203
 
 #define	IOCart		$DFC0
+#define	logo		$6000
 
 ; *** memory usage ***
 crc		= $EF
@@ -46,17 +47,35 @@ ptr		= token + 1	; $FC
 ; *** SD-card module ***
 ; **********************
 sdmain:
-; draw SD logo?
-
 ; ** SD_init is inlined here... **
 ; ** ...as is SD_powerUpSeq **
 	LDA #SD_CS				; CS bit
 	TSB IOCart				; CS_DISABLE();
-	LDX #36					; ** may substitute SD logo load for this delay **
-sdpu_dl:
-		NOP
-		INX
-		BNE sdpu_dl			; delayMicroseconds(1000);
+;	LDX #36					; ** may substitute SD logo load for this delay **
+;sdpu_dl:
+;		NOP
+;		INX
+;		BNE sdpu_dl			; delayMicroseconds(1000);
+; * display SD logo here, works as a delay *
+	LDX #>sd_logo
+	LDY #<sd_logo
+	STY res					; temporary source pointer
+	STX res+1
+	LDX #>logo
+	LDY #<logo
+	STY ptr					; should be zero
+logo_p:
+		STX ptr+1
+logo_l:
+			LDA (res), Y
+			STA (ptr), Y		; copy image data
+			INY
+			BNE logo_l
+		INC res+1			; next source page
+		INX					; next pointer page
+		CPX #$6B			; 11 pages = 44 lines
+		BNE logo_p
+; continue with powerup sequence
 	LDX #9					; for (u_int8_t i = 0; i < 10; i++)		; one less as cs_disable sends another byte
 sd80c:
 		LDA #$FF
@@ -202,8 +221,11 @@ card_rdy:					; * SD_init OK! *
 boot:
 		JSR ssec_rd			; read one 512-byte sector
 ; might do some error check here...
+		LDX ptr+1			; current page (after switching)
+		LDA #$FF			; elongated white dot
+		STA $7EFF, X		; display on screen (finished page)
 		INC arg				; only 64 sectors, no need to check MSB...
-		LDA ptr+1			; check current page
+		TXA					; LDA ptr+1		; check current page
 		BNE boot			; until completion
 ; ** after image is loaded... **
 	JMP switch				; start code loaded into cartidge RAM!
@@ -381,13 +403,39 @@ io_dsc:
 		LDA #$FF
 		JSR spi_tr			; discard one byte
 		INC ptr
-		BNE io_bot			; until the end of page
+		BNE io_dsc			; until the end of page
 	INC ptr+1				; continue from page $E0
 	BNE block				; a new sector starts there
 
+; ********************
+; *** diverse data ***
+; ********************
+sd_logo:
+	.dsb	64, 0			; padding for 44-line, 11-page image
+	.bin	0, 0, "sd.sv"	; uncompressed 128x42 picture
+	.dsb	64, 0			; padding for 44-line, 11-page image
+grey:
+	.dsb	64, $F0
+	.dsb	64, $0F
+	.dsb	64, $F0
+	.dsb	64, $0F
 
 ; ***************************
 ; *** standard exit point ***
 ; ***************************
 sd_fail:					; SD card failed, try nanoBoot instead
-; could make a beep here and wait for a second
+	LDX #>logo
+	LDY #<logo
+	STY ptr					; should be zero
+grey_p:
+		STX ptr+1
+grey_l:
+			LDA (ptr), Y
+			AND grey, Y		; put pattern on image
+			STA (ptr), Y
+			INY
+			BNE grey_l
+		INX					; next pointer page
+		CPX #$6B			; 11 pages = 44 lines
+		BNE grey_p
+end_sd:
