@@ -1,7 +1,7 @@
 ; Durango-X devcart SD loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230306-1903
+; last modified 20230306-1915
 
 ; to be included into nanoboot ROM
 
@@ -107,8 +107,10 @@ set_idle:
 	BEQ is_idle				; while((res[0] = SD_goIdleState()) != 0x01)
 		DEX					; cmdAttempts++;
 		BNE set_idle
+	LDX #0					; *** ERROR 0 in red ***
 	JMP sd_fail				; if(cmdAttempts > 10)	return SD_ERROR;
 is_idle:
+	JSR pass_x				; *** PASS 0 in white ***
 ; ** SD_sendIfCond is inlined here **
 	JSR cs_enable			; assert chip select
 ; send CMD8
@@ -129,13 +131,17 @@ is_idle:
 	LDA res
 	CMP #1
 	BEQ sdic_ok
+		LDX #1				; *** ERROR 1 in red ***
 sdptec:
 		JMP sd_fail			; if(res[0] != 0x01) return SD_ERROR;
 sdic_ok:
+	JSR pass_x				; *** PASS 1 in white ***
 ; check pattern echo
+	LDX #2					; *** ERROR 2 in red ***
 	LDA res+4
 	CMP #$AA
 		BNE sdptec			; if(res[4] != 0xAA) return SD_ERROR;
+	JSR pass_x				; *** PASS 2 in white ***
 ; attempt to initialize card
 	LDX #101				; cmdAttempts = 0;
 sd_ia:
@@ -172,7 +178,6 @@ sd_ia:
 ; read response
 		JSR rd_r1			; u_int8_t res1 = SD_readRes1();
 		JSR cs_disable		; deassert chip select
-
 sa_err:
 		LDA res				; return res1; (needed here in case of error)
 	BEQ apc_rdy				; while(res[0] != SD_READY);
@@ -185,9 +190,11 @@ d10m:
 			BNE d10m		; delayMicroseconds(10000);
 		DEX					; cmdAttempts++;
 		BNE sd_ia
+	LDX #3					; *** ERROR 3 in red ***
 	JMP sd_fail				; if(cmdAttempts > 100) return SD_ERROR;
 apc_rdy:
-
+	LDX #3
+	JSR pass_x				; *** PASS 3 in white ***
 ; read OCR
 ; ** SD_readOCR(res) is inlined here **
 	JSR cs_enable			; assert chip select
@@ -204,10 +211,12 @@ apc_rdy:
 	JSR cs_disable			; deassert chip select
 
 ; check whether card is ready
+	LDX #4					; *** ERROR 4 in red ***
 	LDA res
 	BPL card_rdy
 		JMP sd_fail			; if(!(res[1] & 0x80)) return SD_ERROR;
 card_rdy:					; * SD_init OK! *
+	JSR pass_x				; *** PASS 4 in white ***
 
 ; ** load 64 sectors from SD **
 	LDX #>$8000				; ROM start address
@@ -408,6 +417,15 @@ io_dsc:
 	INC ptr+1				; continue from page $E0
 	BNE block				; a new sector starts there
 
+; *** display pass code ***
+pass_x:
+	TXA
+	ASL
+	TAX
+	LDA #$FF				; white dots
+	STA $6B58, X
+	RTS
+
 ; ********************
 ; *** diverse data ***
 ; ********************
@@ -417,14 +435,22 @@ sd_logo:
 	.dsb	64, 0			; padding for 44-line, 11-page image
 grey:
 	.dsb	64, $F0
+	.dsb	64, 0
 	.dsb	64, $0F
-	.dsb	64, $F0
-	.dsb	64, $0F
+	.dsb	64, 0
+;	.dsb	64, $F0
+;	.dsb	64, $0F
 
 ; ***************************
 ; *** standard exit point ***
 ; ***************************
 sd_fail:					; SD card failed, try nanoBoot instead
+	TXA
+	ASL
+	TAX
+	LDA #$22				; red dots
+	STA $6B58, X
+; grey out logo
 	LDX #>logo
 	LDY #<logo
 	STY ptr					; should be zero
@@ -439,4 +465,5 @@ grey_l:
 		INX					; next pointer page
 		CPX #$6B			; 11 pages = 44 lines
 		BNE grey_p
+beq *
 end_sd:
