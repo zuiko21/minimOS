@@ -1,7 +1,7 @@
 ; minimal nanoBoot firmware *** now with devCart support on Durango-X
 ; v0.6b2
 ; (c) 2018-2023 Carlos J. Santisteban
-; last modified 20230306-1753
+; last modified 20230306-1918
 
 ; already NMOS-savvy EXCEPT the SD module
 
@@ -125,7 +125,7 @@ _code_end:
 	.dsb	$FFDC-*, $FF
 
 switch:
-	LDA #%01100000			; ROM disabled, protected RAM
+	LDA #%01100100			; ROM disabled, protected RAM, and CD disabled just in case
 do_sw:
 	STA $DFC0
 ; * = $FFE1

@@ -1,7 +1,7 @@
 ; Durango-X devcart SD loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230308-1858
+; last modified 20230308-1948
 
 ; to be included into nanoboot ROM
 
@@ -234,7 +234,7 @@ boot:
 		LDX ptr+1			; current page (after switching)
 		LDA #$FF			; elongated white dot
 		STA $7EFF, X		; display on screen (finished page)
-		INC arg				; only 64 sectors, no need to check MSB...
+		INC arg+3			; only 64 sectors, no need to check MSB... EEEEEEEEK endianness!
 		TXA					; LDA ptr+1		; check current page
 		BNE boot			; until completion
 ; ** after image is loaded... **
