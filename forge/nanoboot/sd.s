@@ -1,7 +1,7 @@
 ; Durango-X devcart SD loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230306-1915
+; last modified 20230308-1858
 
 ; to be included into nanoboot ROM
 
@@ -110,6 +110,7 @@ set_idle:
 	LDX #0					; *** ERROR 0 in red ***
 	JMP sd_fail				; if(cmdAttempts > 10)	return SD_ERROR;
 is_idle:
+	LDX #0					; eeeek
 	JSR pass_x				; *** PASS 0 in white ***
 ; ** SD_sendIfCond is inlined here **
 	JSR cs_enable			; assert chip select
@@ -135,6 +136,7 @@ is_idle:
 sdptec:
 		JMP sd_fail			; if(res[0] != 0x01) return SD_ERROR;
 sdic_ok:
+	LDX #1					; eeeeeek
 	JSR pass_x				; *** PASS 1 in white ***
 ; check pattern echo
 	LDX #2					; *** ERROR 2 in red ***
@@ -163,21 +165,21 @@ sd_ia:
 
 ; if no error in response
 		CMP #2
-		BCC sa_err			; if(res[0] < 2) 
+		BCS sa_err			; if(res[0] < 2)	eeeeeeeeek
 ; ** res[0] = SD_sendOpCond() inlined here **
-		JSR cs_enable		; assert chip select
+			JSR cs_enable	; assert chip select
 ; send CMD55
-		LDA #ACMD41_ARG		; only MSB is not zero
-		STA arg
-		STZ arg+1
-		STZ arg+2
-		STZ arg+3
-		STZ crc				; ** assume rest of ACMD41_ARG and ACMD41_CRC are 0 **
-		LDA #ACMD41
-		JSR sd_cmd			; SD_command(ACMD41, ACMD41_ARG, ACMD41_CRC);
+			LDA #ACMD41_ARG	; only MSB is not zero
+			STA arg
+			STZ arg+1
+			STZ arg+2
+			STZ arg+3
+			STZ crc			; ** assume rest of ACMD41_ARG and ACMD41_CRC are 0 **
+			LDA #ACMD41
+			JSR sd_cmd		; SD_command(ACMD41, ACMD41_ARG, ACMD41_CRC);
 ; read response
-		JSR rd_r1			; u_int8_t res1 = SD_readRes1();
-		JSR cs_disable		; deassert chip select
+			JSR rd_r1		; u_int8_t res1 = SD_readRes1();
+			JSR cs_disable	; deassert chip select
 sa_err:
 		LDA res				; return res1; (needed here in case of error)
 	BEQ apc_rdy				; while(res[0] != SD_READY);
@@ -212,8 +214,8 @@ apc_rdy:
 
 ; check whether card is ready
 	LDX #4					; *** ERROR 4 in red ***
-	LDA res
-	BPL card_rdy
+	LDA res+1				; eeeeeeeeek
+	BMI card_rdy			; eeeeeeeeek
 		JMP sd_fail			; if(!(res[1] & 0x80)) return SD_ERROR;
 card_rdy:					; * SD_init OK! *
 	JSR pass_x				; *** PASS 4 in white ***
@@ -419,11 +421,8 @@ io_dsc:
 
 ; *** display pass code ***
 pass_x:
-	TXA
-	ASL
-	TAX
-	LDA #$FF				; white dots
-	STA $6B58, X
+	LDA #$FF				; white dots (will clear left half upon error)
+	STA $6AB0, X
 	RTS
 
 ; ********************
@@ -445,11 +444,8 @@ grey:
 ; *** standard exit point ***
 ; ***************************
 sd_fail:					; SD card failed, try nanoBoot instead
-	TXA
-	ASL
-	TAX
-	LDA #$22				; red dots
-	STA $6B58, X
+	LDA #$02				; red dot
+	STA $6AB0, X
 ; grey out logo
 	LDX #>logo
 	LDY #<logo
@@ -465,5 +461,4 @@ grey_l:
 		INX					; next pointer page
 		CPX #$6B			; 11 pages = 44 lines
 		BNE grey_p
-beq *
 end_sd:

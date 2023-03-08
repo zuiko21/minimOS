@@ -1,5 +1,5 @@
 ; minimal nanoBoot firmware *** now with devCart support on Durango-X
-; v0.6b1
+; v0.6b2
 ; (c) 2018-2023 Carlos J. Santisteban
 ; last modified 20230306-1753
 

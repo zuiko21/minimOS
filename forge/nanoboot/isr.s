@@ -1,5 +1,5 @@
-; nanoBoot ISR for 6502, v0.3a2
-; (c) 2018-2022 Carlos J. Santisteban
+; nanoBoot ISR for 6502, v0.6b2
+; (c) 2018-2023 Carlos J. Santisteban
 ; last modified 20201227-0149
 
 nb_irq:
