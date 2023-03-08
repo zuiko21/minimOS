@@ -1,7 +1,7 @@
 ; Durango-X devcart SD loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230308-1948
+; last modified 20230308-2354
 
 ; to be included into nanoboot ROM
 
@@ -47,6 +47,7 @@ ptr		= token + 1	; $FC
 ; *** SD-card module ***
 ; **********************
 sdmain:
+.(
 ; ** SD_init is inlined here... **
 ; ** ...as is SD_powerUpSeq **
 	LDA #SD_CS				; CS bit
@@ -232,8 +233,9 @@ boot:
 		JSR ssec_rd			; read one 512-byte sector
 ; might do some error check here...
 		LDX ptr+1			; current page (after switching)
-		LDA #$FF			; elongated white dot
-		STA $7EFF, X		; display on screen (finished page)
+		LDA #$FF			; elongated white dots
+		STA $7EFE, X
+		STA $7EFF, X		; display on screen (finished pages)
 		INC arg+3			; only 64 sectors, no need to check MSB... EEEEEEEEK endianness!
 		TXA					; LDA ptr+1		; check current page
 		BNE boot			; until completion
@@ -392,6 +394,7 @@ brd_nw:
 				INX
 				BNE byte_rd	; ... i < 512; i++)
 ; discard 16-bit CRC
+rd_crc:
 			LDA #$FF
 			JSR spi_tr		; SPI_transfer(0xFF);
 			LDA #$FF
@@ -417,7 +420,7 @@ io_dsc:
 		INC ptr
 		BNE io_dsc			; until the end of page
 	INC ptr+1				; continue from page $E0
-	BNE block				; a new sector starts there
+	BNE rd_crc				; current sector actually ended EEEEK
 
 ; *** display pass code ***
 pass_x:
@@ -462,3 +465,4 @@ grey_l:
 		CPX #$6B			; 11 pages = 44 lines
 		BNE grey_p
 end_sd:
+.)
