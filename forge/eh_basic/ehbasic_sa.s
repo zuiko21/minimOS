@@ -28,9 +28,15 @@
 ; xa ehbasic_sa.s -I ../../OS/firmware -l labels 
 ; may add -DDEF=KBBYPAD for optional keyboad-by-pad
 ; add -DDEF KBDMAT for generic matrix keyboard support (instead of PASK)
+; add -DAUXIO=aux_io.s for LOAD SAVE device (replace aux_io.s by suitable file)
 
 ;#define	KBBYPAD
 #define		KBDMAT
+
+; default AUX I/O is Virtual Serial Port
+#ifndef	AUXIO
+#define	AUXIO	vsp.s
+#endif
 
 ; *****************************************************
 ; *** firmware & hardware definitions for Durango-X ***
@@ -104,7 +110,10 @@ y2			= x2+1
 ; *** zero page usage ***
 ; ***********************
 
-uz	= 3			; ##### EhBASIC zeropage usage on minimOS ##### standalone Durango-X version might use 0-2
+std_in		= 0			; standard minimOS default devices, for I/O patching
+stdout		= std_in+1	; $0002 not used, free
+
+uz	= 3			; ##### EhBASIC zeropage usage on minimOS #####
 
 ; *** no need for vectored warm start ***
 
@@ -537,6 +546,9 @@ Ram_top		= $6000		; end of user RAM+1 (set as needed, should be page aligned) KE
 ; new page 2 initialisation, copy block to ccflag on
 ; *** cannot use page 2 freely, now goes into a safe ZP/DP space ***
 LAB_COLD
+	STZ std_in
+	STZ stdout			; *** placeholder init while code below is revised ***
+
 	LDX	#PG2_TABE-PG2_TABS-1
 						; *** uses X instead of Y to make it 816-DP-savvy ***
 						; byte count-1
@@ -1043,7 +1055,6 @@ LAB_1359
 ; *** X only needs to be preserved here ***
 	JSR	V_INPT			; call scan input device
 	BCS	LAB_1359		; loop if no byte ##### minimOS way
-
 	CMP	#$07			; compare with [BELL]
 	BEQ	LAB_1378		; branch if [BELL]
 
@@ -1311,6 +1322,30 @@ LAB_NEW
 	BNE	LAB_1460		; exit if not end of statement (to do syntax error)
 
 LAB_1463
+	JSR LAB_SNEW		; *** Shared procedure for Durango-X ***
+
+; flush stack and clear continue flag
+
+LAB_1491
+	LDX	#des_sk			; set descriptor stack pointer
+	STX	next_s			; save descriptor stack pointer
+; *** minimOS cannot assume a fixed flushed stack address ***
+	PLA					; pull return address low byte *** reversed
+	PLX					; pull return address high byte *** reversed
+	LDY	#1				; *** offset to older LAB_SKFE
+	STA	(emptsk), Y		; save to cleared stack
+	TXA					; now for MSB...
+	INY					; *** offset to older LAB_SKFF
+	STA	(emptsk), Y		; save to cleared stack
+	LDX	emptsk			; new stack pointer *** 8 or 16-bit
+	TXS					; reset stack
+;	LDA	#$00			; clear byte
+	STZ	Cpntrh			; clear continue pointer high byte
+	STZ	Sufnxf			; clear subscript/FNX flag
+LAB_14A6
+	RTS
+
+LAB_SNEW				; *** shared NEW procedure for Durango-X ***
 	LDA	#$00			; clear A
 	TAY					; clear Y
 	STA	(Smeml),Y		; clear first line, next line pointer, low byte
@@ -1348,28 +1383,7 @@ LAB_147A
 	STY	Sarryh			; save var mem end high byte
 	STA	Earryl			; save array mem end low byte
 	STY	Earryh			; save array mem end high byte
-	JSR	LAB_161A		; perform RESTORE command
-
-; flush stack and clear continue flag
-
-LAB_1491
-	LDX	#des_sk			; set descriptor stack pointer
-	STX	next_s			; save descriptor stack pointer
-; *** minimOS cannot assume a fixed flushed stack address ***
-	PLA					; pull return address low byte *** reversed
-	PLX					; pull return address high byte *** reversed
-	LDY	#1				; *** offset to older LAB_SKFE
-	STA	(emptsk), Y		; save to cleared stack
-	TXA					; now for MSB...
-	INY					; *** offset to older LAB_SKFF
-	STA	(emptsk), Y		; save to cleared stack
-	LDX	emptsk			; new stack pointer *** 8 or 16-bit
-	TXS					; reset stack
-;	LDA	#$00			; clear byte
-	STZ	Cpntrh			; clear continue pointer high byte
-	STZ	Sufnxf			; clear subscript/FNX flag
-LAB_14A6
-	RTS
+	JMP	LAB_161A		; perform RESTORE command... and return
 
 ; perform CLEAR
 
@@ -1414,6 +1428,7 @@ LAB_14D4
 	ORA	Itemph			; OR temporary integer high byte
 	BNE	LAB_14E2		; branch if start set
 
+LAB_FLST				; *** full listing for SAVE ***
 	LDA	#$FF			; set for -1
 	STA	Itempl			; set temporary integer low byte
 	STA	Itemph			; set temporary integer high byte
@@ -1478,6 +1493,13 @@ LAB_152E
 						; else was token byte so uncrunch it (maybe)
 	BIT	Oquote			; test the open quote flag
 	BMI	LAB_150C		; just go print character if open quote set
+
+; *** Int'l character support, set open quote flag for REM ***
+	CMP #TK_REM			; is the REM token?
+	BNE LAB_NREM		; if so, set open quote flag until the end
+	LDX #128			; bit 7 is enough
+	STX Oquote
+LAB_NREM
 
 	LDX	#>LAB_KEYT		; get table address high byte
 	ASL					; *2
@@ -7826,33 +7848,75 @@ V_INPT					; non halting scan input device
 	PHX					; *** best to save these here ***
 	PHY
 	LDY #0				; ##### CONIO interface #####
-	JSR conio
+	JSR call_in			; *** new indexed call ***
 	TYA
 	PLY
 	PLX
 	RTS
 ; could check C and Y here for safety
 ; note C works opposite than the original EhBASIC, has been modified
+call_in
+	LDX std_in
+	JMP (dev_in, X)		; *** indexed call ***
 
 V_OUTP					; send byte to output device
-;	STA io_c
-	PHA					; good?
+	PHA
 	PHX					; *** must save these ***
 	PHY
 	TAY					; ##### CONIO interface #####
-	JSR conio
+	JSR call_out		; *** new indexed call ***
 	PLY					; *** this ignores errors ***
 	PLX
-;	LDA io_c			; *** worth recovering it ***
-	PLA					; good?
+	PLA
+dev_null				; *** new NULL device ***
+;aux_in					; *** redefinable placeholders, provided by AUXIO.s ***
+;aux_out
+;aux_load
+;aux_save
+;aux_close
 	RTS
+call_out
+	LDX stdout
+	JMP (dev_out, X)	; *** indexed call ***
 
-V_LOAD					; load BASIC program *** not yet implemented ***
+; *** device-dependent AUX I/O driver pack *** -DAUXIO=aux_io.s or suitable file
+#include "AUXIO"
 
-V_SAVE					; save BASIC program *** not yet implemented ***
+; *** standard LOAD & SAVE for Durango-X ***
+V_LOAD					; load BASIC program *** now implemented via aux_io.s ***
+	JSR aux_load		; get things ready
+	BCC LAB_LDOK		; (if possible)
+	JMP LAB_FCER
+LAB_LDOK
+	JSR LAB_SNEW		; if all OK, somehow execute NEW without checking syntax
+	LDA #2				; NULL device
+	STA stdout			; disable echo for speed!
+	ASL					; now is 4 (AUX device)
+	STA std_in			; redirect buffer input...
+	RTS					; ...and let input routine exit upon EOF!
+;	JMP LAB_127D
+;	JMP LAB_1274
 
-	LDX #$20			; (Undefined Function) error
-	JMP LAB_XERR
+V_SAVE					; save BASIC program *** now implemented via aux_io.s ***
+	JSR aux_save		; get things ready
+	BCC LAB_SVOK		; (if possible)
+	JMP LAB_FCER
+LAB_SVOK
+	LDA #2				; NULL device
+	STA std_in			; makes sense to disable input (avoid BREAK)
+	ASL					; now is 4 (AUX device)
+	STA stdout			; redirect LIST output
+; *** this code fragment is needed for LIST ***
+	LDA	Smeml			; get start of mem low byte
+	LDX	Smemh			; get start of mem high byte
+	STA	Baslnl			; save low byte as current
+	STX	Baslnh			; save high byte as current
+
+	JSR LAB_FLST		; *** full LISTing is the actual SAVE ***
+	JSR aux_close		; tidy up
+	STZ std_in
+	STZ stdout			; restore devices
+	RTS
 
 ; perform BYE	##### minimOS ##### not needed
 ;LAB_EXIT
@@ -8114,6 +8178,16 @@ cy_Tab:
 	.byt	 40, 44, 46, 50, 52, 56, 58, 60, 66, 68, 72, 78		; octave 6
 
 ; the rest of the code is tables and BASIC start-up code
+
+; *** Durango-X version tables ***
+dev_in					; input device drivers
+	.word	conio		; device 0, standard console (keyboard)
+	.word	dev_null	; device 2, NULL
+	.word	aux_in		; device 4, AUX in (supplied label in aux_io.s)
+dev_out
+	.word	conio		; device 0, standard console (screen)
+	.word	dev_null	; device 2, NULL
+	.word	aux_out		; device 4, AUX out (supplied label in aux_io.s)
 
 ; this is now in ZP
 PG2_TABS

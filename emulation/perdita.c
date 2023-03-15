@@ -626,12 +626,13 @@ byte peek(word dir) {
 			d = mem[0xDF88];
 		} else if (dir==0xDF93) {		// Read from VSP
 			if ((!feof(psv_file)) && (mem[0xDF94]==PSV_FREAD))	{
-				d = mem[0xDF93] = fgetc(psv_file);				// get char from input file
+				d = fgetc(psv_file);	// get char from input file
 				if (ver)	printf("(%d)", d);					// DEBUG transmitted char
 			} else {
-				d = mem[0xDF93] = 0;							// NULL means EOF
+				d = 0;					// NULL means EOF
 				printf("WARNING: End of VSP file\n");
 			}
+			mem[0xDF93] = d;			// cache value
 		} else if (dir==0xDF9B && emulate_minstrel) {			// Minstrel keyboard port EEEEEK
 			switch(mem[0xDF9B]) {
 				case 1: return minstrel_keyboard[0];
@@ -702,6 +703,8 @@ void poke(word dir, byte v) {
 				if(mem[dir] >= ' ') {
 				// Save filename
 					psv_filename[psv_index++] = mem[dir];
+				} else {
+					psv_filename[psv_index++] = '_';
 				}
 			}
 			// If file write mode enabled
@@ -755,7 +758,8 @@ void poke(word dir, byte v) {
 				psv_filename[psv_index] = '\0';
 				// actual file opening
 				if(psv_file == NULL) {
-					if ((psv_file=fopen(psv_filename,"wb"))==NULL) {	// we want a brand new file
+					psv_file =fopen(psv_filename,"wb");
+					if (psv_file == NULL) {	// we want a brand new file
 						printf("[%d] ERROR: can't write to file %s\n", psv_index, psv_filename);
 						mem[0xDF94] = 0;								// disable VSP
 					} else {
@@ -770,7 +774,8 @@ void poke(word dir, byte v) {
 			if(v==PSV_FREAD) {
 				psv_filename[psv_index] = '\0';		// I believe this is needed
 				if(psv_file == NULL) {
-					if ((psv_file=fopen(psv_filename,"rb"))==NULL) {
+					psv_file =fopen(psv_filename,"rb");
+					if (psv_file == NULL) {	// we want a brand new file
 						printf("[%d] ERROR: can't open file %s\n", psv_index, psv_filename);
 						mem[0xDF94] = 0;			// disable VSP
 					} else {
