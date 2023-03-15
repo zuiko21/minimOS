@@ -1,36 +1,38 @@
 ; Durango-X circle routine (Midpoint Algorithm) *** unoptimised version
-; (c) 2022 Carlos J. Santisteban
-; last modified 20221105-1338
+; (c) 2022-2023 Carlos J. Santisteban
+; last modified 20230203-2213
 
+#ifndef	USE_PLOT
 #define	USE_PLOT
 ; *** input *** placeholder addresses
-x0		= $EC				; NW corner x coordinate (<128 in colour, <256 in HIRES)
-y0		= x0+1				; NW corner y coordinate (<128 in colour, <256 in HIRES)
-radius	= y0+1				; _not included_ SE corner x coordinate (<128 in colour, <256 in HIRES)
+x1		= $EC				; NW corner cir_x coordinate (<128 in colour, <256 in HIRES)
+y1		= x1+1				; NW corner cir_y coordinate (<128 in colour, <256 in HIRES)
+radius	= y1+1				; _not included_ SE corner cir_x coordinate (<128 in colour, <256 in HIRES)
 px_col	= radius+1			; pixel colour, in II format (17*index), HIRES expects 0 (black) or $FF (white), actually zpar
 
 ; *** zeropage usage and local variables *** 
-f		= px_col+1			; 16-bit
-ddf_x	= f+2				; maybe 8 bit is OK? seems always positive
-ddf_y	= ddf_x+2			; starts negative and gets added to f, thus 16-bit
-x		= ddf_y+2			; seems 8 bit
-y		= x+1				; 8-bit as well
+cir_f	= px_col+1			; 16-bit
+ddf_x	= cir_f+2			; maybe 8 bit is OK? seems always positive
+ddf_y	= ddf_x+2			; starts negative and gets added to cir_f, thus 16-bit
+cir_x	= ddf_y+2			; seems 8 bit
+cir_y	= cir_x+1			; 8-bit as well
 
 ; these are for PLOT, actually
-cio_pt	= y+1				; screen pointer
-fw_cbyt	= cio_pt+2			; (temporary storage, could be elsewhere)
-tmp		= fw_cbyt			; hopefully works! (demo only)
+cio_pt	= cir_y+1			; screen pointer
+gr_tmp	= cio_pt+2			; (temporary storage, could be elsewhere)
+tmp		= gr_tmp			; hopefully works! (demo only)
+#endif
 
 dxcircle:
 .(
-; compute initial f = 1 - radius
+; compute initial cir_f = 1 - radius
 	LDA #1
 	SEC
 	SBC radius
-	STA f					; LSB OK
+	STA cir_f					; LSB OK
 	LDA #0
 	SBC #0
-	STA f+1					; sign extention
+	STA cir_f+1					; sign extention
 ; ddF_x = 0
 	STZ ddf_x
 	STZ ddf_x+1
@@ -47,46 +49,46 @@ dxcircle:
 	LDA #0
 	SBC ddf_y+1
 	STA ddf_y+1				; surely there's a much faster way, but...
-; reset x & y
-	STZ x
+; reset cir_x & cir_y
+	STZ cir_x
 	LDA radius
-	STA y
+	STA cir_y
 ; draw initial dots
 ;	LDA radius				; already there!
 	CLC
-	ADC y0
+	ADC y1
 	TAY
-	LDX x0
-	JSR dxplot				; plot(x0, y0+radius)
-	LDA y0
+	LDX x1
+	JSR dxplot				; plot(x1, y1+radius)
+	LDA y1
 	SEC
 	SBC radius
 	TAY
-	LDX x0
-	JSR dxplot				; plot(x0, y0-radius)
-	LDY y0
-	LDA x0
+	LDX x1
+	JSR dxplot				; plot(x1, y1-radius)
+	LDY y1
+	LDA x1
 	CLC
 	ADC radius
 	TAX
-	JSR dxplot				; plot(x0+radius, y0)
-	LDY y0
-	LDA x0
+	JSR dxplot				; plot(x1+radius, y1)
+	LDY y1
+	LDA x1
 	SEC
 	SBC radius
 	TAX
-	JSR dxplot				; plot(x0-radius, y0)
-; main loop while x < y
+	JSR dxplot				; plot(x1-radius, y1)
+; main loop while cir_x < cir_y
 loop:
-	LDA x
-	CMP y
+	LDA cir_x
+	CMP cir_y
 	BCC c_cont
-	JMP c_end				; if x >= y, exit
+	JMP c_end				; if cir_x >= cir_y, exit
 c_cont:
-; if f >= 0... means MSB is positive
-		BIT f+1
+; if cir_f >= 0... means MSB is positive
+		BIT cir_f+1
 		BMI f_neg
-			DEC y
+			DEC cir_y
 			LDA ddf_y		; add 2 to ddF_y
 			CLC
 			ADC #2
@@ -96,15 +98,15 @@ c_cont:
 			ADC #0
 			STA ddf_y+1
 			TAX				; convenient MSB storage...
-			TYA				; ...for adding ddF_y to f
+			TYA				; ...for adding ddF_y to cir_f
 			CLC
-			ADC f
-			STA f
+			ADC cir_f
+			STA cir_f
 			TXA
-			ADC f+1
-			STA f+1
+			ADC cir_f+1
+			STA cir_f+1
 f_neg:
-		INC x
+		INC cir_x
 		LDA ddf_x			; add 2 to ddF_x
 		CLC
 		ADC #2
@@ -114,86 +116,86 @@ f_neg:
 		ADC #0
 		STA ddf_x+1
 		TAX
-		TYA					; ...for adding ddF_x to f...
+		TYA					; ...for adding ddF_x to cir_f...
 		SEC					; ...plus 1!
-		ADC f
-		STA f
+		ADC cir_f
+		STA cir_f
 		TXA
-		ADC f+1
-		STA f+1
+		ADC cir_f+1
+		STA cir_f+1
 ; do 8 plots per iteration
-	LDA x0
+	LDA x1
 	CLC
-	ADC x
+	ADC cir_x
 	TAX
-	LDA y0
+	LDA y1
 	CLC
-	ADC y
+	ADC cir_y
 	TAY
-	JSR dxplot				; plot(x0+x, y0+y)
-	LDA x0
+	JSR dxplot				; plot(x1+cir_x, y1+cir_y)
+	LDA x1
 	SEC
-	SBC x
+	SBC cir_x
 	TAX
-	LDA y0
+	LDA y1
 	CLC
-	ADC y
+	ADC cir_y
 	TAY
-	JSR dxplot				; plot(x0-x, y0+y)
-	LDA x0
+	JSR dxplot				; plot(x1-cir_x, y1+cir_y)
+	LDA x1
 	CLC
-	ADC x
+	ADC cir_x
 	TAX
-	LDA y0
+	LDA y1
 	SEC
-	SBC y
+	SBC cir_y
 	TAY
-	JSR dxplot				; plot(x0+x, y0-y)
-	LDA x0
+	JSR dxplot				; plot(x1+cir_x, y1-cir_y)
+	LDA x1
 	SEC
-	SBC x
+	SBC cir_x
 	TAX
-	LDA y0
+	LDA y1
 	SEC
-	SBC y
+	SBC cir_y
 	TAY
-	JSR dxplot				; plot(x0-x, y0-y)
-	LDA x0
+	JSR dxplot				; plot(x1-cir_x, y1-cir_y)
+	LDA x1
 	CLC
-	ADC y
+	ADC cir_y
 	TAX
-	LDA y0
+	LDA y1
 	CLC
-	ADC x
+	ADC cir_x
 	TAY
-	JSR dxplot				; plot(x0+y, y0+x)
-	LDA x0
+	JSR dxplot				; plot(x1+cir_y, y1+cir_x)
+	LDA x1
 	SEC
-	SBC y
+	SBC cir_y
 	TAX
-	LDA y0
+	LDA y1
 	CLC
-	ADC x
+	ADC cir_x
 	TAY
-	JSR dxplot				; plot(x0-y, y0+x)
-	LDA x0
+	JSR dxplot				; plot(x1-cir_y, y1+cir_x)
+	LDA x1
 	CLC
-	ADC y
+	ADC cir_y
 	TAX
-	LDA y0
+	LDA y1
 	SEC
-	SBC x
+	SBC cir_x
 	TAY
-	JSR dxplot				; plot(x0+y, y0-x)
-	LDA x0
+	JSR dxplot				; plot(x1+cir_y, y1-cir_x)
+	LDA x1
 	SEC
-	SBC y
+	SBC cir_y
 	TAX
-	LDA y0
+	LDA y1
 	SEC
-	SBC x
+	SBC cir_x
 	TAY
-	JSR dxplot				; plot(x0-y, y0-x)
+	JSR dxplot				; plot(x1-cir_y, y1-cir_x)
 	JMP loop
 c_end:
 	RTS

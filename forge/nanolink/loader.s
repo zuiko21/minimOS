@@ -1,7 +1,7 @@
 ; nanoLink demo loader
 ; devCart version!
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230130-0011
+; last modified 20230130-2353
 
 ; *** definitions ***
 ptr		= $F8
@@ -69,7 +69,7 @@ b_loop:
 loop:
 		LDA link_en			; is the link enabled? if so, it's either waiting or loading
 		BEQ link_disabled
-			LDA link_st
+			LDA l_boot;link_st
 			BMI loading		; status $FF while enabled means loading, otherwise is waiting
 				CMP #$4B	; got a bootable header?
 				BEQ do_load
@@ -86,7 +86,7 @@ l_loop:
 					DEX
 					BNE l_loop
 ldx#$ff;				DEX			; was 0, now $FF
-				STX link_st	; status $FF, active load
+				STX l_boot;link_st	; status $FF, active load
 				LDY linktop+1			; check final page as marker
 				LDA #$B8				; light pink just at left pixel
 				STA $7F00, Y			; display dot on bottom row
@@ -103,7 +103,7 @@ loading:
 				LDA link_en
 				BNE not_done
 link_disabled:
-lda link_st
+lda l_boot;link_st
 bpl not_done
 					LDA sysptr
 					CMP linktop
@@ -147,7 +147,7 @@ not_done:
 ; either a load ended, or is in progress, or was aborted, or never started due to corrupt header
 				LDA link_en				; is it disabled?
 				BNE not_disabled
-					STZ link_st			; prevent from corrupt headers
+					STZ l_boot;link_st			; prevent from corrupt headers
 					JSR display			; if so, keep showing time
 not_disabled:
 ; may check if the user desires to disable the load by pressing SPACE
@@ -156,7 +156,7 @@ not_disabled:
 				BIT IO9kbd				; SPACE = d7, ENTER = d6
 				BPL no_space
 					STZ link_en			; SPACE pressed, disable nanoLink
-					STZ link_st
+					STZ l_boot;link_st
 					LDA #$22			; red
 					JSR bottom
 ;					BRA no_enter		; calling bottom won't affect V flag
@@ -193,7 +193,7 @@ enable:
 	LDA #<link_st+1			; address $106 must be unreachable!
 	STA linktop
 	STX linktop+1			; set loading limit EEEEEEEEEK
-	STZ link_st				; extra header init (0 = idle)
+	STZ l_boot;link_st				; extra header init (0 = idle)
 	LDA #8
 	STA link_en				; link enabled
 	RTS
@@ -252,8 +252,8 @@ figure:
 ; *** tables *** hex numbers, yellow on red
 numbers:
 ;			0	1	2	3	4	5	6	7	8	9	A	B	C	D	E	F
-	.byt	$77,$07,$77,$77,$77,$77,$77,$77,$77,$77,$77,$70,$00,$07,$77,$77	; row 1
-	.byt	$77,$27,$27,$27,$77,$72,$72,$27,$77,$77,$27,$72,$22,$27,$72,$72	; row 2
+	.byt	$77,$07,$77,$77,$77,$77,$77,$77,$77,$77,$77,$70,$00,$07,$77,$77	; row 1, now on black background
+	.byt	$77,$27,$27,$27,$77,$72,$72,$27,$77,$77,$27,$72,$22,$27,$72,$72	; row 2, yellow on red background
 	.byt	$77,$27,$77,$77,$77,$77,$77,$27,$22,$77,$77,$77,$77,$77,$77,$77	; row 3
 	.byt	$77,$27,$72,$27,$27,$27,$77,$27,$77,$27,$77,$77,$72,$77,$72,$72	; row 4
 	.byt	$77,$27,$77,$77,$27,$77,$77,$27,$77,$77,$77,$77,$77,$77,$77,$72	; row 5

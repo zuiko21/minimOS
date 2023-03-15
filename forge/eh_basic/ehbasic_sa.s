@@ -1,9 +1,9 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
-; (c) 2015-2022 Carlos J. Santisteban
-; last modified 20221213-1749
+; (c) 2015-2023 Carlos J. Santisteban
+; last modified 20230212-0049
 ; *************************************************************
 
-; Enhanced BASIC to assemble under 6502 simulator, $ver 2.22
+; Enhanced BASIC, $ver 2.22 with Durango-X support!
 
 ; $E7E1 $E7CF $E7C6 $E7D3 $E7D1 $E7D5 $E7CF $E81E $E825
 
@@ -22,7 +22,7 @@
 ; 2.21	fixed IF .. THEN RETURN to not cause error
 ; 2.22	fixed RND() breaking the get byte routine
 
-	* = $C000
+	* = $8000
 
 ; try to assemble from here with
 ; xa ehbasic_sa.s -I ../../OS/firmware -l labels 
@@ -56,19 +56,45 @@ fw_io9		= fw_vtop+1		; received keypress
 fw_scur		= fw_io9+1		; NEW, cursor control
 fw_knes		= fw_scur+1		; NEW, NES-pad alternative keyboard
 GAMEPAD_MASK1	= fw_knes+1	; EEEEEEEEK
-
+GAMEPAD_MASK2	= GAMEPAD_MASK1+1		; needed for standard gamepad support
+gamepad1	= GAMEPAD_MASK2+1			; "standard" read value at $226
+gamepad2	= gamepad1+1				; "standard" read value at $227
 ; CONIO zeropage usage ($E4-$E7)
 cio_pt		= $E6
 cio_src		= $E4
+; ** graphic routines ZP usage **
+; local variables
+gr_tmp		= $E8			; eeeeeeeeeek
+
+sx			= gr_tmp+1		; * used by LINE *
+sy			= sx+1
+dx			= sy+1			; this is ALWAYS positive...
+dy			= dx+1			; ...but this one is negative OR zero
+error		= dy+2			; colour mode cannot be over 254, but 16-bit arithmetic needed
+err_2		= error+2		; make room for this! (16-bit)
+
+cir_f		= gr_tmp+1		; * used by CIRCLE * 16-bit, may be moved if optimised
+ddf_x		= cir_f+2		; maybe 8 bit is OK? seems always positive
+ddf_y		= ddf_x+2		; starts negative and gets added to f, thus 16-bit
+cir_x		= ddf_y+2		; seems 8 bit
+cir_y		= cir_x+1		; 8-bit as well
+
+; parameters
+px_col		= $F2			; THIRD byte in parameter area, used by all graphic functions
+radius		= px_col+1		; used by CIRCLE only
+x1			= radius+1		; used by LINE, CIRCLE and RECT
+y1			= x1+1
+x2			= y1+1			; used by LINE and RECT
+y2			= x2+1
 
 ; *** Durango-X hardware definitions ****
--IO8attr	= $DF80		; video mode register
--IO8blk		= $DF88		; video blanking signals
--IO9di		= $DF9A		; data input (PASK standard)
--IO9nes0	= $DF9C		; NES controller for alternative keyboard emulation & latch
--IO9nes1	= $DF9D		; NES controller clock port
--IOAie		= $DFA0		; canonical interrupt enable address (d0)
--IOBeep		= $DFB0		; canonical buzzer address (d0)
+-IO8attr	= $DF80			; video mode register
+-IO8blk		= $DF88			; video blanking signals
+-IO9di		= $DF9A			; data input (PASK standard)
+-IO9nes0	= $DF9C			; NES controller for alternative keyboard emulation & latch
+-IO9nes1	= $DF9D			; NES controller clock port
+-IOAie		= $DFA0			; canonical interrupt enable address (d0)
+-IOBeep		= $DFB0			; canonical buzzer address (d0)
 
 .(
 	.asc	"Derived from EhBASIC v2.22 by Lee Davison", 0		; comment with IMPORTANT attribution
@@ -78,9 +104,9 @@ cio_src		= $E4
 ; *** zero page usage ***
 ; ***********************
 
-uz	= 3			; ##### EhBASIC zeropage usage on minimOS #####
+uz	= 3			; ##### EhBASIC zeropage usage on minimOS ##### standalone Durango-X version might use 0-2
 
-; *** no need for vectored warm start, cannot see any use for Usrjmp ***
+; *** no need for vectored warm start ***
 
 Nullct		= uz		; nulls output after each line *** $03
 TPos		= Nullct+1	; BASIC terminal position byte *** $04
@@ -349,118 +375,131 @@ Decssp1		= Decss+1	; number to decimal string start
 
 ; primary command tokens (can start a statement)
 
-TK_END		= $80			; END token
-TK_FOR		= TK_END+1		; FOR token
-TK_NEXT		= TK_FOR+1		; NEXT token
-TK_DATA		= TK_NEXT+1		; DATA token
-TK_INPUT	= TK_DATA+1		; INPUT token
-TK_DIM		= TK_INPUT+1	; DIM token
-TK_READ		= TK_DIM+1		; READ token
-TK_LET		= TK_READ+1		; LET token
-TK_DEC		= TK_LET+1		; DEC token
-TK_GOTO		= TK_DEC+1		; GOTO token
-TK_RUN		= TK_GOTO+1		; RUN token
-TK_IF		= TK_RUN+1		; IF token
-TK_RESTORE	= TK_IF+1		; RESTORE token
-TK_GOSUB	= TK_RESTORE+1	; GOSUB token
-TK_RETIRQ	= TK_GOSUB+1	; RETIRQ token
-TK_RETNMI	= TK_RETIRQ+1	; RETNMI token
-TK_RETURN	= TK_RETNMI+1	; RETURN token
-TK_REM		= TK_RETURN+1	; REM token
-TK_STOP		= TK_REM+1		; STOP token
-TK_ON		= TK_STOP+1		; ON token
-TK_NULL		= TK_ON+1		; NULL token
-TK_INC		= TK_NULL+1		; INC token
-TK_WAIT		= TK_INC+1		; WAIT token
-TK_LOAD		= TK_WAIT+1		; LOAD token
-TK_SAVE		= TK_LOAD+1		; SAVE token
-TK_DEF		= TK_SAVE+1		; DEF token
-TK_POKE		= TK_DEF+1		; POKE token
-TK_DOKE		= TK_POKE+1		; DOKE token
-TK_CALL		= TK_DOKE+1		; CALL token
-TK_DO		= TK_CALL+1		; DO token
-TK_LOOP		= TK_DO+1		; LOOP token
-TK_PRINT	= TK_LOOP+1		; PRINT token
-TK_CONT		= TK_PRINT+1	; CONT token
-TK_LIST		= TK_CONT+1		; LIST token
-TK_CLEAR	= TK_LIST+1		; CLEAR token
-TK_NEW		= TK_CLEAR+1	; NEW token
-TK_WIDTH	= TK_NEW+1		; WIDTH token
-TK_GET		= TK_WIDTH+1	; GET token
-TK_SWAP		= TK_GET+1		; SWAP token
-TK_BITSET	= TK_SWAP+1		; BITSET token
-TK_BITCLR	= TK_BITSET+1	; BITCLR token
-TK_IRQ		= TK_BITCLR+1	; IRQ token
-TK_NMI		= TK_IRQ+1		; NMI token
-TK_BYE		= TK_NMI+1		; BYE token ##### added for minimOS as exit to shell #####
+TK_END		= $80			; END token $80
+TK_FOR		= TK_END+1		; FOR token $81
+TK_NEXT		= TK_FOR+1		; NEXT token $82
+TK_DATA		= TK_NEXT+1		; DATA token $83
+TK_INPUT	= TK_DATA+1		; INPUT token $84
+TK_DIM		= TK_INPUT+1	; DIM token $85
+TK_READ		= TK_DIM+1		; READ token $86
+TK_LET		= TK_READ+1		; LET token $87
+TK_DEC		= TK_LET+1		; DEC token $88
+TK_GOTO		= TK_DEC+1		; GOTO token $89
+TK_RUN		= TK_GOTO+1		; RUN token $8A
+TK_IF		= TK_RUN+1		; IF token $8B
+TK_RESTORE	= TK_IF+1		; RESTORE token $8C
+TK_GOSUB	= TK_RESTORE+1	; GOSUB token $8D
+TK_RETIRQ	= TK_GOSUB+1	; RETIRQ token $8E
+TK_RETNMI	= TK_RETIRQ+1	; RETNMI token $8F
+TK_RETURN	= TK_RETNMI+1	; RETURN token $90
+TK_REM		= TK_RETURN+1	; REM token $91
+TK_STOP		= TK_REM+1		; STOP token $92
+TK_ON		= TK_STOP+1		; ON token $93
+TK_NULL		= TK_ON+1		; NULL token $94
+TK_INC		= TK_NULL+1		; INC token $95
+TK_WAIT		= TK_INC+1		; WAIT token $96
+TK_LOAD		= TK_WAIT+1		; LOAD token $97
+TK_SAVE		= TK_LOAD+1		; SAVE token $98
+TK_DEF		= TK_SAVE+1		; DEF token $99
+TK_POKE		= TK_DEF+1		; POKE token $9A
+TK_DOKE		= TK_POKE+1		; DOKE token $9B
+TK_CALL		= TK_DOKE+1		; CALL token $9C
+TK_DO		= TK_CALL+1		; DO token $9D
+TK_LOOP		= TK_DO+1		; LOOP token $9E
+TK_PRINT	= TK_LOOP+1		; PRINT token $9F
+TK_CONT		= TK_PRINT+1	; CONT token $A0
+TK_LIST		= TK_CONT+1		; LIST token $A1
+TK_CLEAR	= TK_LIST+1		; CLEAR token $A2
+TK_NEW		= TK_CLEAR+1	; NEW token $A3
+TK_WIDTH	= TK_NEW+1		; WIDTH token $A4
+TK_GET		= TK_WIDTH+1	; GET token $A5
+TK_SWAP		= TK_GET+1		; SWAP token $A6
+TK_BITSET	= TK_SWAP+1		; BITSET token $A7
+TK_BITCLR	= TK_BITSET+1	; BITCLR token $A8
+TK_IRQ		= TK_BITCLR+1	; IRQ token $A9
+TK_NMI		= TK_IRQ+1		; NMI token $AA
+;TK_BYE		= TK_NMI+1		; BYE token ##### added for minimOS as exit to shell ##### NO LONGER NEEDED
+TK_CLS		= TK_NMI+1		; CLS		$AB	*** new tokens for Durango-X (CONIO support) ***
+TK_INK		= TK_CLS+1		; INK i		$AC
+TK_PAPER	= TK_INK+1		; PAPER p	$AD
+TK_LOCATE	= TK_PAPER+1	; LOCATE x,y	$AE
+TK_CURSOR	= TK_LOCATE+1	; CURSOR n		$AF
+TK_MODE		= TK_CURSOR+1	; MODE n	$B0	*** new tokens for Durango-X (video mode register)
+TK_SCREEN	= TK_MODE+1		; SCREEN n	$B1
+TK_PLOT		= TK_SCREEN+1	; PLOT x,y,c	$B2	*** new tokens for Durango-X (graphic primitives) maybe retrieve colour parameter from INK?
+TK_LINE		= TK_PLOT+1		; LINE x1,y1,x2,y2,c	$B3
+TK_CIRCLE	= TK_LINE+1		; CIRCLE x,y,r,c		$B4
+TK_RECT		= TK_CIRCLE+1	; RECT x1,y1,x2,y2,c	$B5 (filled)
+TK_BEEP		= TK_RECT+1		; BEEP d,n	$B6		*** new token for Durango-X (sound output)
+TK_PAUSE	= TK_BEEP+1		; PAUSE n	$B7
 
 ; secondary command tokens, cannot start a statement
 
-TK_TAB		= TK_BYE+1		; TAB token ##### SYS no longer used, minimOS needs BYE #####
-TK_ELSE		= TK_TAB+1		; ELSE token
-TK_TO		= TK_ELSE+1		; TO token
-TK_FN		= TK_TO+1		; FN token
-TK_SPC		= TK_FN+1		; SPC token
-TK_THEN		= TK_SPC+1		; THEN token
-TK_NOT		= TK_THEN+1		; NOT token
-TK_STEP		= TK_NOT+1		; STEP token
-TK_UNTIL	= TK_STEP+1		; UNTIL token
-TK_WHILE	= TK_UNTIL+1	; WHILE token
-TK_OFF		= TK_WHILE+1	; OFF token
+TK_TAB		= TK_PAUSE+1		; TAB token $B8 ##### SYS no longer used, minimOS needs BYE ##### replaced by BEEP so far
+TK_ELSE		= TK_TAB+1		; ELSE token $B9
+TK_TO		= TK_ELSE+1		; TO token $BA
+TK_FN		= TK_TO+1		; FN token $BB
+TK_SPC		= TK_FN+1		; SPC token $BC
+TK_THEN		= TK_SPC+1		; THEN token $BD
+TK_NOT		= TK_THEN+1		; NOT token $BE
+TK_STEP		= TK_NOT+1		; STEP token $BF
+TK_UNTIL	= TK_STEP+1		; UNTIL token $C0
+TK_WHILE	= TK_UNTIL+1	; WHILE token $C1
+TK_OFF		= TK_WHILE+1	; OFF token $C2
 
 ; operator tokens
 
-TK_PLUS		= TK_OFF+1		; + token
-TK_MINUS	= TK_PLUS+1		; - token
-TK_MUL		= TK_MINUS+1	; * token
-TK_DIV		= TK_MUL+1		; / token
-TK_POWER	= TK_DIV+1		; ^ token
-TK_AND		= TK_POWER+1	; AND token
-TK_EOR		= TK_AND+1		; EOR token
-TK_OR		= TK_EOR+1		; OR token
-TK_RSHIFT	= TK_OR+1		; RSHIFT token
-TK_LSHIFT	= TK_RSHIFT+1	; LSHIFT token
-TK_GT		= TK_LSHIFT+1	; > token
-TK_EQUAL	= TK_GT+1		; = token
-TK_LT		= TK_EQUAL+1	; < token
+TK_PLUS		= TK_OFF+1		; + token $C3
+TK_MINUS	= TK_PLUS+1		; - token $C4
+TK_MUL		= TK_MINUS+1	; * token $C5
+TK_DIV		= TK_MUL+1		; / token $C6
+TK_POWER	= TK_DIV+1		; ^ token $C7
+TK_AND		= TK_POWER+1	; AND token $C8
+TK_EOR		= TK_AND+1		; EOR token $C9
+TK_OR		= TK_EOR+1		; OR token $CA
+TK_RSHIFT	= TK_OR+1		; RSHIFT token $CB
+TK_LSHIFT	= TK_RSHIFT+1	; LSHIFT token $CC
+TK_GT		= TK_LSHIFT+1	; > token $CD
+TK_EQUAL	= TK_GT+1		; = token $CE
+TK_LT		= TK_EQUAL+1	; < token $CF
 
 ; functions tokens
 
-TK_SGN		= TK_LT+1		; SGN token
-TK_INT		= TK_SGN+1		; INT token
-TK_ABS		= TK_INT+1		; ABS token
-TK_USR		= TK_ABS+1		; USR token
-TK_FRE		= TK_USR+1		; FRE token
-TK_POS		= TK_FRE+1		; POS token
-TK_SQR		= TK_POS+1		; SQR token
-TK_RND		= TK_SQR+1		; RND token
-TK_LOG		= TK_RND+1		; LOG token
-TK_EXP		= TK_LOG+1		; EXP token
-TK_COS		= TK_EXP+1		; COS token
-TK_SIN		= TK_COS+1		; SIN token
-TK_TAN		= TK_SIN+1		; TAN token
-TK_ATN		= TK_TAN+1		; ATN token
-TK_PEEK		= TK_ATN+1		; PEEK token
-TK_DEEK		= TK_PEEK+1		; DEEK token
-TK_SADD		= TK_DEEK+1		; SADD token
-TK_LEN		= TK_SADD+1		; LEN token
-TK_STRS		= TK_LEN+1		; STR$ token
-TK_VAL		= TK_STRS+1		; VAL token
-TK_ASC		= TK_VAL+1		; ASC token
-TK_UCASES	= TK_ASC+1		; UCASE$ token
-TK_LCASES	= TK_UCASES+1	; LCASE$ token
-TK_CHRS		= TK_LCASES+1	; CHR$ token
-TK_HEXS		= TK_CHRS+1		; HEX$ token
-TK_BINS		= TK_HEXS+1		; BIN$ token
-TK_BITTST	= TK_BINS+1		; BITTST token
-TK_MAX		= TK_BITTST+1	; MAX token
-TK_MIN		= TK_MAX+1		; MIN token
-TK_PI		= TK_MIN+1		; PI token
-TK_TWOPI	= TK_PI+1		; TWOPI token
-TK_VPTR		= TK_TWOPI+1	; VARPTR token
-TK_LEFTS	= TK_VPTR+1		; LEFT$ token
-TK_RIGHTS	= TK_LEFTS+1	; RIGHT$ token
-TK_MIDS		= TK_RIGHTS+1	; MID$ token
+TK_SGN		= TK_LT+1		; SGN token $D0
+TK_INT		= TK_SGN+1		; INT token $D1
+TK_ABS		= TK_INT+1		; ABS token $D2
+TK_USR		= TK_ABS+1		; USR token $D3
+TK_FRE		= TK_USR+1		; FRE token $D4
+TK_POS		= TK_FRE+1		; POS token $D5
+TK_SQR		= TK_POS+1		; SQR token $D6
+TK_RND		= TK_SQR+1		; RND token $D7
+TK_LOG		= TK_RND+1		; LOG token $D8
+TK_EXP		= TK_LOG+1		; EXP token $D9
+TK_COS		= TK_EXP+1		; COS token $DA
+TK_SIN		= TK_COS+1		; SIN token $DB
+TK_TAN		= TK_SIN+1		; TAN token $DC
+TK_ATN		= TK_TAN+1		; ATN token $DD
+TK_PEEK		= TK_ATN+1		; PEEK token $DE
+TK_DEEK		= TK_PEEK+1		; DEEK token $DF
+TK_SADD		= TK_DEEK+1		; SADD token $E0
+TK_LEN		= TK_SADD+1		; LEN token $E1
+TK_STRS		= TK_LEN+1		; STR$ token $E2
+TK_VAL		= TK_STRS+1		; VAL token $E3
+TK_ASC		= TK_VAL+1		; ASC token $E4
+TK_UCASES	= TK_ASC+1		; UCASE$ token $E5
+TK_LCASES	= TK_UCASES+1	; LCASE$ token $E6
+TK_CHRS		= TK_LCASES+1	; CHR$ token $E7
+TK_HEXS		= TK_CHRS+1		; HEX$ token $E8
+TK_BINS		= TK_HEXS+1		; BIN$ token $E9
+TK_BITTST	= TK_BINS+1		; BITTST token $EA
+TK_MAX		= TK_BITTST+1	; MAX token $EB
+TK_MIN		= TK_MAX+1		; MIN token $EC
+TK_PI		= TK_MIN+1		; PI token $ED
+TK_TWOPI	= TK_PI+1		; TWOPI token $EE
+TK_VPTR		= TK_TWOPI+1	; VARPTR token $EF
+TK_LEFTS	= TK_VPTR+1		; LEFT$ token $F0
+TK_RIGHTS	= TK_LEFTS+1	; RIGHT$ token $F1
+TK_MIDS		= TK_RIGHTS+1	; MID$ token $F2
 
 ; offsets from a base of X or Y
 
@@ -473,7 +512,7 @@ LAB_STAK	= $0100		; stack bottom, no offset
 ; *** flushed stack address (minus 2) will be stored at emptsk in runtime ***
 
 ; *** EhBASIC definitions for Durango-X ***
-Ram_base	= $0400		; start of user RAM (set as needed, should be page aligned)
+Ram_base	= $0300		; start of user RAM (set as needed, should be page aligned)
 Ram_top		= $6000		; end of user RAM+1 (set as needed, should be page aligned) KEEP CLEAR Durango-X screen!
 
 ; ***************************
@@ -7500,7 +7539,7 @@ LAB_MAX
 	BEQ	LAB_MAX			; go do next (branch always)
 
 ; *** this is $DF75 if assembled on a 16K ROM, may skip I/O area ***
-	.dsb $E000-*, $FF	; skip I/O area!
+;	.dsb $E000-*, $FF	; skip I/O area!
 
 ; perform MIN()
 
@@ -7815,18 +7854,264 @@ V_SAVE					; save BASIC program *** not yet implemented ***
 	LDX #$20			; (Undefined Function) error
 	JMP LAB_XERR
 
-; perform BYE	##### minimOS #####
-LAB_EXIT
-	LDX	emptsk			; new stack pointer
-	INX
-	INX					; *** discard two extra bytes
-	TXS					; reset stack
+; perform BYE	##### minimOS ##### not needed
+;LAB_EXIT
+;	LDX	emptsk			; new stack pointer
+;	INX
+;	INX					; *** discard two extra bytes
+;	TXS					; reset stack
 ; no real memory management, so nothing to free
-;	PLA					; still has to discard some return address! EEEEEEEEEK
-;	PLA
-	RTS					; exit to shell!
+;;	PLA					; still has to discard some return address! EEEEEEEEEK
+;;	PLA
+;	RTS					; exit to shell!
+
+; ***********************************
+; *** Durango-X specific commands ***
+; ***********************************
+
+; perform CLS
+LAB_CLS
+	BNE LAB_CLSERR		; no more tokens should follow
+LAB_DOCLS
+	LDA #12
+	JMP V_OUTP			; send FF to CONIO and return
+LAB_CLSERR
+	RTS
+
+; perform INK i
+LAB_INK
+	JSR LAB_GTBY		; get argument 0...15
+	PHX
+	LDA #18				; INK control code
+LAB_SENDCOL
+	JSR V_OUTP			; send to CONIO
+	PLA					; retrieve colour
+	JMP V_OUTP			; send and return
+
+; perform PAPER p
+LAB_PAPER
+	JSR LAB_GTBY		; get argument 0...15
+	PHX
+	LDA #20				; PAPER control code
+	BNE LAB_SENDCOL		; continue with common code
+
+; perform LOCATE x,y
+LAB_LOCATE
+	JSR LAB_GTBY		; column
+	PHX
+	JSR LAB_SCGB		; next argument (row)
+	PHX
+	LDA #23				; ATYX control code EEEEEEEEEEEEEK
+	JSR V_OUTP			; send to CONIO
+	PLA					; retrieve row
+	JSR LAB_CONIO
+	PLA					; retrieve column
+LAB_CONIO
+	CLC
+	ADC #32				; make it printable for CONIO
+; should check boundaries
+	JMP V_OUTP			; send parameter and return
+
+; perform CURSOR n
+LAB_CURSOR
+	JSR LAB_GTBY		; get argument 0...15
+	TXA
+	LSR					; C is set for odd (on) values
+	LDA #17				; XON control code
+	BCS LAB_SENDCUR
+	ADC #2				; if C is clear from even (off) value, turn into 19 (XOFF control code)
+LAB_SENDCUR
+	JMP V_OUTP			; send to CONIO and return
+
+; perform MODE n
+LAB_MODE
+	JSR LAB_GTBY		; get argument 0...3 (may add 4,5 for greyscale)
+	TXA
+	CMP #4				; max. 3
+	BCS LAB_ARGERR		; error otherwise
+	ROR
+	ROR
+	ROR					; already at d7-d6
+	AND #%11000000
+	STA gr_tmp			; seems a safe place
+	LDA #%00110000		; keep selected screen...
+	JSR LAB_MODESET		; use common code
+	JMP LAB_DOCLS		; and clear screen (and return)
+LAB_ARGERR
+	JMP LAB_FCER		; function call error & return
+
+; perform SCREEN n
+LAB_SCREEN
+	JSR LAB_GTBY		; get argument 0...3
+	TXA
+	CMP #4				; max. 3
+	BCS LAB_ARGERR		; error otherwise
+	ASL
+	ASL
+	ASL
+	ASL					; now at d5-d4
+	AND #%00110000
+	STA gr_tmp			; seems a safe place
+	LDA #%11000000		; keep selected resolution...
+LAB_MODESET
+	AND IO8attr			; on current video mode
+	ORA #%00001000		; ...and RGB mode, if available (check)
+	ORA gr_tmp			; add selected mode
+	STA IO8attr			; set it!
+	RTS
+
+; perform PLOT x,y,c
+LAB_PLOT
+	JSR LAB_GTBY		; x coordinate
+	PHX
+	JSR LAB_SCGB		; y coordinate
+	PHX
+	JSR LAB_SCGB		; colour in A
+	TXA
+	PLY
+	PLX
+	JSR LAB_CKGR		; check coordinates and colour!
+	JMP dxplot_lib		; call graphic function and return!
+;	RTS
+
+; perform LINE x1,y1,x2,y2,c
+LAB_LINE
+	JSR LAB_GTBY		; x1 coordinate
+	PHX
+	JSR LAB_SCGB		; y1 coordinate
+	PHX
+	JSR LAB_SCGB		; x2 coordinate
+	PHX
+	JSR LAB_SCGB		; y2 coordinate
+	PHX
+	JSR LAB_SCGB		; colour in A
+	TXA
+	PLY
+	STY y2
+	PLX
+	STX x2
+	JSR LAB_CKGR		; check end point and colour
+	PLY
+	STY y1
+	PLX
+	STX x1
+	JSR LAB_CKXY		; check start point
+	JMP dxline_lib		; call graphic function and return!
+;	RTS
+
+; perform CIRCLE x,y,r,c
+LAB_CIRCLE
+	JSR LAB_GTBY		; x coordinate
+	PHX
+	JSR LAB_SCGB		; y coordinate
+	PHX
+	JSR LAB_SCGB		; radius
+	PHX
+	JSR LAB_SCGB		; colour in A
+	TXA
+	PLY
+	STY radius
+	PLY
+	STY y1
+	PLX
+	STX x1
+	JSR LAB_CKRD		; check coordinates, colour and radius!
+	JMP dxcircle_lib	; call graphic function and return!
+;	RTS
+
+; perform RECT x1,y1,x2,y2,c *** STILL BUGGY
+LAB_RECT
+	JSR LAB_GTBY		; x1 coordinate
+	PHX
+	JSR LAB_SCGB		; y1 coordinate
+	PHX
+	JSR LAB_SCGB		; x2 coordinate
+	PHX
+	JSR LAB_SCGB		; y2 coordinate
+	PHX
+	JSR LAB_SCGB		; colour in A
+	TXA
+	PLY
+;	STY
+	PLX
+;	STX
+	JSR LAB_CKGR		; check end point and colour
+	PLY
+	PLX
+	JSR LAB_CKXY		; check start point
+;	JMP dxrect_lib		; call graphic function and return!
+	RTS
+
+; perform BEEP d,n (len/25, note 0=F3 ~ 42=B6 (ZX Spectrum value+7))
+LAB_BEEP
+	JSR LAB_GTBY		; length
+	STX gr_tmp			; outside any register
+	JSR LAB_SCGB		; note
+	CPX #43				; less than four octaves
+	BCS LAB_BERR		; outside range!
+	LDY fr_Tab, X		; period
+	LDA cy_Tab, X		; base cycles
+	STA gr_tmp+1		; eeek
+	TYA					; save period...
+	SEI
+LAB_BRPT
+	LDX gr_tmp+1		; retrieve repetitions...
+LAB_BLNG
+	TAY					; ...and period
+LAB_BCYC
+	JSR LAB_BDLY		; waste 12 cyles...
+	NOP					; ...and another 2
+	DEY
+	BNE LAB_BCYC		; total 19t per iteration
+	DEX
+	STX IOBeep			; toggle speaker
+	BNE LAB_BLNG
+	DEC gr_tmp			; repeat until desired length
+	BNE LAB_BRPT
+	CLI					; restore interrupts!
+LAB_BDLY
+	RTS
+LAB_BERR
+	JMP LAB_FCER		; function call error & return
+
+; perform PAUSE n
+LAB_PAUSE
+	STZ $020A			; clear standard received key
+	JSR LAB_GTBY		; get length in ticks (0=infinite) *** maybe use 16-bit quantity
+	TXA
+	BEQ LAB_INFP		; just wait for any key
+	CLC
+	ADC $0206			; add current tick count
+LAB_PALP
+	LDX $020A			; check for keys
+	BNE LAB_PAEX		; something pressed, finish wait
+	CMP $0206
+	BNE LAB_PALP		; wait until specified jiffies
+	BEQ LAB_PAEX		; timeout, go away
+LAB_INFP
+	LDA $020A			; check for keys
+	BEQ LAB_INFP		; ...otherwise keep waiting
+LAB_PAEX
+	RTS
+
+; *** end of Durango-X specifics ***
 
 ; The rest are tables messages and code for RAM
+
+; *** Durango-X BEEP specific, table of notes and cycles ***
+fr_Tab:
+;			C	C#	D	D#	E	F	F#	G	G#	A	A#	B
+	.byt						232,219,206,195,184,173,164		; octave 3
+	.byt	155,146,138,130,123,116,109,103, 97, 92, 87, 82		; octave 4
+	.byt	 77, 73, 69, 65, 61, 58, 55, 52, 49, 46, 43, 41		; octave 5
+	.byt	 39, 36, 34, 32, 31, 29, 27, 26, 24, 23, 22, 20		; octave 6
+	
+cy_Tab:
+;			C	C#	D	D#	E	F	F#	G	G#	A	A#	B		repetitions for a normalised 20 ms length
+	.byt						  6,  8,  8,  8,  8, 10, 10		; octave 3
+	.byt	 10, 12, 12, 12, 14, 14, 14, 16, 16, 18, 18, 20		; octave 4
+	.byt	 20, 22, 24, 24, 26, 28, 30, 30, 32, 34, 38, 38		; octave 5
+	.byt	 40, 44, 46, 50, 52, 56, 58, 60, 66, 68, 72, 78		; octave 6
 
 ; the rest of the code is tables and BASIC start-up code
 
@@ -7900,7 +8185,8 @@ LAB_MSZM
 
 LAB_SMSG
 	.byte	" Bytes free",$0D,$0D
-	.byte	"Enhanced BASIC 2.22",$0D,$00	; *** do not know why this was $0A ***
+	.byte	"Enhanced BASIC 2.22",$0D
+	.byte	"for Durango·X",$0D,$00	; *** do not know why this was $0A ***
 
 ; numeric constants and series
 
@@ -8017,54 +8303,7 @@ LAB_2A9C = LAB_2A9B+1
 	.byte	$00,$00,$64		; 100
 	.byte	$FF,$FF,$F6		; -10
 	.byte	$00,$00,$01		; 1
-/*
-; NMOS jump table
-LAB_CTBL
-	.word	LAB_END-1		; END
-	.word	LAB_FOR-1		; FOR
-	.word	LAB_NEXT-1		; NEXT
-	.word	LAB_DATA-1		; DATA
-	.word	LAB_INPUT-1		; INPUT
-	.word	LAB_DIM-1		; DIM
-	.word	LAB_READ-1		; READ
-	.word	LAB_LET-1		; LET
-	.word	LAB_DEC-1		; DEC			new command
-	.word	LAB_GOTO-1		; GOTO
-	.word	LAB_RUN-1		; RUN
-	.word	LAB_IF-1		; IF
-	.word	LAB_RESTORE-1	; RESTORE		modified command
-	.word	LAB_GOSUB-1		; GOSUB
-	.word	LAB_RETIRQ-1	; RETIRQ		new command
-	.word	LAB_RETNMI-1	; RETNMI		new command
-	.word	LAB_RETURN-1	; RETURN
-	.word	LAB_REM-1		; RE	M
-	.word	LAB_STOP-1		; STOP
-	.word	LAB_ON-1		; ON			modified command
-	.word	LAB_NULL-1		; NULL		modified command
-	.word	LAB_INC-1		; INC			new command
-	.word	LAB_WAIT-1		; WAIT
-	.word	V_LOAD-1		; LOAD
-	.word	V_SAVE-1		; SAVE
-	.word	LAB_DEF-1		; DEF
-	.word	LAB_POKE-1		; POKE
-	.word	LAB_DOKE-1		; DOKE		new command
-	.word	LAB_CALL-1		; CALL		new command
-	.word	LAB_DO-1		; DO			new command
-	.word	LAB_LOOP-1		; LOOP		new command
-	.word	LAB_PRINT-1		; PRINT
-	.word	LAB_CONT-1		; CONT
-	.word	LAB_LIST-1		; LIST
-	.word	LAB_CLEAR-1		; CLEAR
-	.word	LAB_NEW-1		; NEW
-	.word	LAB_WDTH-1		; WIDTH		new command
-	.word	LAB_GET-1		; GET			new command
-	.word	LAB_SWAP-1		; SWAP		new command
-	.word	LAB_BITSET-1	; BITSET		new command
-	.word	LAB_BITCLR-1	; BITCLR		new command
-	.word	LAB_IRQ-1		; IRQ			new command
-	.word	LAB_NMI-1		; NMI			new command
-	.word   LAB_EXIT-1		; BYE		##### added for minimOS #####
-*/
+
 ; CMOS jump table
 LAB_CTBLC
 	.word	LAB_END			; END
@@ -8110,9 +8349,22 @@ LAB_CTBLC
 	.word	LAB_BITCLR		; BITCLR	new command
 	.word	LAB_IRQ			; IRQ		new command
 	.word	LAB_NMI			; NMI		new command
-	.word   LAB_EXIT		; BYE		##### added for minimOS #####
+;	.word   LAB_EXIT		; BYE		##### added for minimOS ##### no longer needed
+	.word	LAB_CLS			; CLS			*** new for Durango-X (CONIO support) ***
+	.word	LAB_INK			; INK i
+	.word	LAB_PAPER		; PAPER p
+	.word	LAB_LOCATE		; LOCATE x,y
+	.word	LAB_CURSOR		; CURSOR n
+	.word	LAB_MODE		; MODE n		*** new for Durango-X (video mode register)
+	.word	LAB_SCREEN		; SCREEN n		not sure
+	.word	LAB_PLOT		; PLOT x,y,c	*** new for Durango-X (graphic primitives) maybe retrieve colour parameter from INK?
+	.word	LAB_LINE		; LINE x1,y1,x2,y2,c
+	.word	LAB_CIRCLE		; CIRCLE x,y,r,c
+	.word	LAB_RECT		; RECT x1,y1,x2,y2,c
+	.word	LAB_BEEP		; BEEP d,n		*** new for Durango-X (sound)
+	.word	LAB_PAUSE		; PAUSE n
 
-; function pre process routine table
+; function pre process routine table (currently NMOS)
 
 LAB_FTPL
 LAB_FTPM	= LAB_FTPL+$01
@@ -8331,6 +8583,8 @@ LBB_ATN
 	.byte	"TN(",TK_ATN		; ATN(
 	.byte	$00
 TAB_ASCB
+LBB_BEEP
+	.byte	"EEP",TK_BEEP		; BEEP	*** Durango-X
 LBB_BINS
 	.byte	"IN$(",TK_BINS		; BIN$(
 LBB_BITCLR
@@ -8339,20 +8593,26 @@ LBB_BITSET
 	.byte	"ITSET",TK_BITSET	; BITSET
 LBB_BITTST
 	.byte	"ITTST(",TK_BITTST	; BITTST(
-LBB_BYE
-	.byte	"YE",TK_BYE			; BYE		##### for minimOS #####
+;LBB_BYE
+;	.byte	"YE",TK_BYE			; BYE		##### for minimOS ##### no longer needed
 	.byte	$00
 TAB_ASCC
 LBB_CALL
 	.byte	"ALL",TK_CALL		; CALL
 LBB_CHRS
 	.byte	"HR$(",TK_CHRS		; CHR$(
+LBB_CIRCLE
+	.byte	"IRCLE",TK_CIRCLE	; CIRCLE	*** Durango-X
 LBB_CLEAR
 	.byte	"LEAR",TK_CLEAR		; CLEAR
+LBB_CLS
+	.byte	"LS",TK_CLS			; CLS	*** Durango-X
 LBB_CONT
 	.byte	"ONT",TK_CONT		; CONT
 LBB_COS
 	.byte	"OS(",TK_COS		; COS(
+LBB_CURSOR
+	.byte	"URSOR",TK_CURSOR	; CURSOR	*** Durango-X
 	.byte	$00
 TAB_ASCD
 LBB_DATA
@@ -8405,6 +8665,8 @@ LBB_IF
 	.byte	"F",TK_IF			; IF
 LBB_INC
 	.byte	"NC",TK_INC			; INC
+LBB_INK
+	.byte	"NK",TK_INK			; INK	*** Durango-X
 LBB_INPUT
 	.byte	"NPUT",TK_INPUT		; INPUT
 LBB_INT
@@ -8421,10 +8683,14 @@ LBB_LEN
 	.byte	"EN(",TK_LEN		; LEN(
 LBB_LET
 	.byte	"ET",TK_LET			; LET
+LBB_LINE
+	.byte	"INE",TK_LINE		; LINE
 LBB_LIST
 	.byte	"IST",TK_LIST		; LIST
 LBB_LOAD
 	.byte	"OAD",TK_LOAD		; LOAD
+LBB_LOCATE
+	.byte	"OCATE",TK_LOCATE	; LOCATE	*** Durango-X
 LBB_LOG
 	.byte	"OG(",TK_LOG		; LOG(
 LBB_LOOP
@@ -8437,6 +8703,8 @@ LBB_MIDS
 	.byte	"ID$(",TK_MIDS		; MID$(
 LBB_MIN
 	.byte	"IN(",TK_MIN		; MIN(
+LBB_MODE
+	.byte	"ODE",TK_MODE		; MODE	*** Durango-X
 	.byte	$00
 TAB_ASCN
 LBB_NEW
@@ -8459,10 +8727,16 @@ LBB_OR
 	.byte	"R",TK_OR			; OR
 	.byte	$00
 TAB_ASCP
+LBB_PAPER
+	.byte	"APER",TK_PAPER		; PAPER	*** Durango-X
+LBB_PAUSE
+	.byte	"AUSE",TK_PAUSE		; PAUSE	*** Durango-X
 LBB_PEEK
 	.byte	"EEK(",TK_PEEK		; PEEK(
 LBB_PI
 	.byte	"I",TK_PI			; PI
+LBB_PLOT
+	.byte	"LOT",TK_PLOT		; PLOT	*** Durango-X
 LBB_POKE
 	.byte	"OKE",TK_POKE		; POKE
 LBB_POS
@@ -8473,6 +8747,8 @@ LBB_PRINT
 TAB_ASCR
 LBB_READ
 	.byte	"EAD",TK_READ		; READ
+LBB_RECT
+	.byte	"ECT",TK_RECT		; RECT	*** Durango-X
 LBB_REM
 	.byte	"EM",TK_REM			; REM
 LBB_RESTORE
@@ -8495,6 +8771,8 @@ LBB_SADD
 	.byte	"ADD(",TK_SADD		; SADD(
 LBB_SAVE
 	.byte	"AVE",TK_SAVE		; SAVE
+LBB_SCREEN
+	.byte	"CREEN",TK_SCREEN	; SCREEN	*** Durango-X
 LBB_SGN
 	.byte	"GN(",TK_SGN		; SGN(
 LBB_SIN
@@ -8643,8 +8921,34 @@ LAB_KEYT
 	.word	LBB_IRQ		; IRQ
 	.byte	3,"N"
 	.word	LBB_NMI		; NMI
-	.byte	3,"B"
-	.word	LBB_BYE		; BYE		##### minimOS #####
+;	.byte	3,"B"
+;	.word	LBB_BYE		; BYE		##### minimOS ##### no longer needed
+	.byte	3,"C"
+	.word	LBB_CLS		; CLS		*** Durango-X specifics ***
+	.byte	3,"I"
+	.word	LBB_INK		; INK
+	.byte	5,"P"
+	.word	LBB_PAPER	; PAPER
+	.byte	6,"L"
+	.word	LBB_LOCATE	; LOCATE
+	.byte	6,"C"
+	.word	LBB_CURSOR	; CURSOR
+	.byte	4,"M"
+	.word	LBB_MODE	; MODE
+	.byte	6,"S"
+	.word	LBB_SCREEN	; SCREEN
+	.byte	4,"P"
+	.word	LBB_PLOT	; PLOT
+	.byte	4,"L"
+	.word	LBB_LINE	; LINE
+	.byte	6,"C"
+	.word	LBB_CIRCLE	; CIRCLE
+	.byte	4,"R"
+	.word	LBB_RECT	; RECT
+	.byte	4,"B"
+	.word	LBB_BEEP	; BEEP
+	.byte	5,"P"
+	.word	LBB_PAUSE	; PAUSE
 
 
 ; secondary commands (cannot start a statement)
@@ -8838,8 +9142,82 @@ LAB_RMSG	.byte	$0D,"Ready",$0D,$00
 LAB_IMSG	.byte	" Extra ignored",$0D,$00
 LAB_REDO	.byte	" Redo from start",$0D,$00
 
+; *** *** ************************** *** ***
+; *** *** DURANGO-X GRAPHICS LIBRARY *** ***
+; *** *** ************************** *** ***
+LAB_CKRD			; *** check circle coordinates, including radius ***
+	PHA				; save colour for later
+	LDA x1
+	CMP radius		; r <= x1
+	BCC LAB_GERR
+	LDA y1
+	CMP radius		; r <= y1
+	BCC LAB_GERR
+	LDA x1			; x1+r < max.x EEEEEEEK
+	JSR LAB_PLRD	; check against screen limits
+	LDA y1
+	JSR LAB_PLRD
+	LDX x1			; load circle centre for standard function
+	LDY y1
+	PLA				; retrieve colour too
+LAB_CKGR			; *** check coordinates (X,Y) and colour (A) ***
+	BIT IO8attr		; check video mode
+	BPL LAB_4BPP	; in colour, just repeat low nybble
+	LSR				; odd value = white, eve value = black
+	LDA #$F			; white as default (most common)
+	BCS LAB_4BPP
+	LDA #0			; otherwise is black
+LAB_4BPP
+	AND #$0F		; keep low nybble
+	STA gr_tmp
+	ASL
+	ASL
+	ASL
+	ASL				; repeat into high nybble
+	ORA gr_tmp		; combine with previous low nybble
+	STA px_col		; actually the same place, but makes sense here
+LAB_CKXY			; *** this entry point just checks coordinates (X,Y) ***
+	BIT IO8attr		; check video mode again
+	BMI LAB_GROK	; hires accepts all byte-sized coordinates
+	CPX #128		; check within colour limits
+	BCS LAB_GERR
+	CPY #128
+	BCS LAB_GERR
+LAB_GROK
+	RTS
+LAB_GERR
+	JMP LAB_FCER	; generate error code and warm start
+LAB_PLRD			; check radius+coord against screen limit
+	CLC
+	ADC radius
+	BCS LAB_GERR	; over 255 is always bad
+	BIT IO8attr		; check video mode
+	BMI LAB_PLOK	; no further check in HIRES
+	TAX				; check for sign in colour mode
+	BMI LAB_GERR
+LAB_PLOK
+	RTS
+#define	USE_PLOT
+
+dxplot_lib:
+;	STA px_col		; colour was in A, but X and Y already loaded
+#include "../../OS/firmware/modules/durango-plot.s"
+
+dxline_lib:
+#include "../../OS/firmware/modules/durango-line.s"
+
+dxcircle_lib:
+#include "../../OS/firmware/modules/durango-circle.s"
+
+; *** *** *********************** *** ***
+; *** *** END OF GRAPHICS LIBRARY *** ***
+; *** *** *********************** *** ***
 AA_end_basic		; for easier size computation
 .)
+
+; *** *** *** ***** *** *** ***
+
+	.dsb	$E000-*, $FF	; just in case, skip IO
 
 ; *****************************
 ; *** include firmware here ***
@@ -8850,7 +9228,7 @@ reset:
 	CLD
 	LDX #$FF
 	TXS
-	STX IOAie				; ### enable Durango-X hardware interruptÂ ###
+	STX IOAie				; ### enable Durango-X hardware interrupt ###
 	STX fw_scur				; as bit 7 is on, activates cursor
 	LDA #$B8				; start in HIRES mode, if possible (note RGB bit set, just in case)
 	STA IO8attr
@@ -8868,18 +9246,20 @@ jf_res:
 	LDY #<std_nmi
 	STY fw_nmi
 	STX fw_nmi+1
-#ifdef	KBBYPAD
-	LDA #'@'				; initial character for key-by-pad
-	STA fw_knes
 ; init gamepad
 	STA IO9nes0				; latch pad status
 	LDX #8					; number of bits to read
 nes_init:
 		STA IO9nes1			; send clock pulse
 		DEX
-		BNE nes_init		; all bits read @Â IO9nes0
+		BNE nes_init		; all bits read @ IO9nes0
 	LDA IO9nes0				; get bits
+	LDX IO9nes1				; get bits for pad 2
 	STA GAMEPAD_MASK1		; * MUST have a standard address, and MUST be initialised! *
+	STX GAMEPAD_MASK2		; * MUST have a standard address, and MUST be initialised! *
+#ifdef	KBBYPAD
+	LDA #'@'				; initial character for key-by-pad
+	STA fw_knes
 #endif
 ; * check keyboard *
 	LDX #0					; default is PASK
@@ -8922,6 +9302,24 @@ irq_sup:
 	PHY						; needed for 5x8 matrix support
 ; *** interrupt support for matrix keyboard ***
 	JSR kbd_isr
+; * after reading keyboard, gamepads are read, may suppress this for slight performance improvement *
+#ifndef	KBBYPAD
+; keep gamepad input updated (already done for KBD emulation)
+	STA IO9nes0				; latch pad status
+	LDX #8					; number of bits to read
+nes_loop:
+		STA IO9nes1			; send clock pulse
+		DEX
+		BNE nes_loop		; all bits read @ IO9nes0/1
+; done, but check GAMEPAD_MASK1 & GAMEPAD_MASK2 after reading ports in BASIC!
+#endif
+	LDA IO9nes0
+	EOR GAMEPAD_MASK1
+	STA gamepad1			; corrected value at $226, or 550
+	LDA IO9nes1
+	EOR GAMEPAD_MASK2
+	STA gamepad2			; corrected value at $227, or 551
+; * end of gamepad code *
 ; min_mon code follows
 ;	PHA						; already saved
 	LDA IrqBase
@@ -8974,7 +9372,9 @@ drv_pask:
 	STA kb_asc				; store for software
 	RTS
 
-; BIOS
+; ********************
+; *** *** BIOS *** ***
+; ********************
 #include "../../OS/macros.h"
 ; EMPTY definition from abi.h
 #define	EMPTY	6
@@ -8992,7 +9392,9 @@ drv_pask:
 	.dsb	$FFD6-*, $FF
 	.asc	"DmOS"			; minimOS-compliant Durango-X cartridge signature
 	.dsb	$FFDE-*, $FF
-	.word	$FFFF			; Fletcher-16 checksum placeholder
+	.word	$FFFF			; Fletcher-16 checksum placeholder (not currently used)
+	SEI
+	JMP ($FFFC)				; devCart support @ $FFE1!
 
 	.dsb	$FFFA-*, $FF	; *** may place PANIC routine here ***
 
