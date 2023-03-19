@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230319-1951
+; last modified 20230319-2219
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 
@@ -41,6 +41,7 @@
 #define	FAIL_MSG	6
 #define	INVALID_SD	7
 #define	SEL_MSG		8
+#define	LOAD_MSG	9
 
 ; *** hardware definitions ***
 IO8attr	= $DF80
@@ -57,13 +58,13 @@ IOCart	= $DFC0
 
 ; *** memory usage ***
 crc		= $EF
-arg		= crc + 1	; $F0
-res		= arg + 4	; $F4
-mosi	= res + 5	; $F9
-miso	= mosi + 1	; $FA
-token	= miso + 1	; $FB
-ptr		= token + 1	; $FC
-;cnt	= ptr + 2	; $FE
+arg		= crc	+ 1	; $F0
+res		= arg	+ 4	; $F4
+mosi	= res	+ 5	; $F9
+miso	= mosi	+ 1	; $FA
+token	= miso	+ 1	; $FB
+ptr		= token	+ 1	; $FC
+;cnt	= ptr	+ 2	; $FE
 
 ; *** sector buffer and header pointers ***
 buffer	= $400
@@ -89,24 +90,24 @@ ticks		= $0206			; jiffy counter EEEEK
 ; make room for keyboard driver ($020A-$020F)
 ; CONIO specific variables
 fw_cbin		= $0210			; $210 integrated picoVDU/Durango-X specifics
-fw_fnt		= fw_cbin+1		; $211 (new, pointer to relocatable 2KB font file)
-fw_mask		= fw_fnt+2		; $213 (for inverse/emphasis mode)
-fw_chalf	= fw_mask+1		; $214 (remaining pages to write)
-fw_sind		= fw_chalf+1	; $215
-fw_ccol		= fw_sind+3		; $218 (no longer SPARSE array of two-pixel combos, will store ink & paper)
-fw_ctmp		= fw_ccol+4		; $21C
+fw_fnt		= fw_cbin	+1	; $211 (new, pointer to relocatable 2KB font file)
+fw_mask		= fw_fnt	+2	; $213 (for inverse/emphasis mode)
+fw_chalf	= fw_mask	+1	; $214 (remaining pages to write)
+fw_sind		= fw_chalf	+1	; $215
+fw_ccol		= fw_sind	+3	; $218 (no longer SPARSE array of two-pixel combos, will store ink & paper)
+fw_ctmp		= fw_ccol	+4	; $21C
 fw_cbyt		= fw_ctmp		; (temporary glyph storage) other tmp
 fw_ccnt		= fw_cbyt		; (bytes per raster counter, no longer X) actually the same tmp
-fw_ciop		= fw_ccnt+1		; $21D cursor position
-fw_vbot		= fw_ciop+2		; $21F page start of screen at current hardware setting (updated upon FF)
-fw_vtop		= fw_vbot+1		; $220 first non-VRAM page (new)
-fw_io9		= fw_vtop+1		; $221 received keypress
-fw_scur		= fw_io9+1		; $222 NEW, cursor control
-fw_knes		= fw_scur+1		; $223 NEW, NES-pad alternative keyboard *** different use here
-GAMEPAD_MASK1	= fw_knes+1	; $224 EEEEEEEEK
-GAMEPAD_MASK2	= GAMEPAD_MASK1+1		; $225 needed for standard gamepad support
-gamepad1	= GAMEPAD_MASK2+1			; "standard" read value at $226
-gamepad2	= gamepad1+1				; "standard" read value at $227
+fw_ciop		= fw_ccnt	+1	; $21D cursor position
+fw_vbot		= fw_ciop	+2	; $21F page start of screen at current hardware setting (updated upon FF)
+fw_vtop		= fw_vbot	+1	; $220 first non-VRAM page (new)
+fw_io9		= fw_vtop	+1	; $221 received keypress
+fw_scur		= fw_io9	+1	; $222 NEW, cursor control
+fw_knes		= fw_scur	+1	; $223 NEW, NES-pad alternative keyboard *** different use here
+GAMEPAD_MASK1	= fw_knes		+1		; $224 EEEEEEEEK
+GAMEPAD_MASK2	= GAMEPAD_MASK1	+1		; $225 needed for standard gamepad support
+gamepad1		= GAMEPAD_MASK2	+1		; "standard" read value at $226
+gamepad2		= gamepad1		+1		; "standard" read value at $227
 ; CONIO zeropage usage ($E4-$E7)
 cio_pt		= $E6
 cio_src		= $E4
@@ -244,13 +245,34 @@ skip_hd:
 		JSR sel_en			; wait for a valid entry...
 		JMP ls_page			; ...unless it returns, then show another page
 
+; *******************************************
 ; *** image is selected, now boot from it ***
+; *******************************************
 do_boot:
-
-; TO DO ***
-;		reload sector of selected entry into buffer
-;		check size, determine ptr towards end of 64K space
-
+; reload sector of selected entry into buffer
+	LDX #>buffer			; temporary load address
+	STX ptr+1
+	STZ ptr					; assume buffer is page-aligned
+	JSR ssec_rd				; read first 512-byte sector of the file (will be read again)
+; print loading message with filename
+	LDX #LOAD_MSG
+	JSR disp_code
+	LDX #0
+pr_load:
+		LDY fname, X		; get filename from buffered first sector
+	BEQ prl_ok
+		PHX
+		JSR conio			; print it
+		PLX
+		INX
+		BNE pr_load			; no need for BRA
+prl_ok:
+; check size, determine ptr towards end of 64K space
+	LDA #0
+	SEC
+	SBC fsize+1				; subtract number of pages
+	STA ptr+1
+	STZ ptr					; definitive pointer is ready, proceed with load!
 boot:
 		JSR ssec_rd			; read one 512-byte sector
 ; might do some error check here...
@@ -742,6 +764,8 @@ sd_inv:
 	.asc	" ", 14, "No ROM image found", 15, 7, 0
 sd_sel:
 	.asc	" is selected", 1, 0
+sd_load:
+	.asc	13, 14, "Loading ", 0
 ; offset table for the above messages
 msg_ix:
 	.byt	0
@@ -753,6 +777,7 @@ msg_ix:
 	.byt	sd_err-msg_sd	; FAIL with beep
 	.byt	sd_inv-msg_sd	; invalid contents
 	.byt	sd_sel-msg_sd	; display selected and return to line start
+	.byt	sd_load-msg_sd	; loading message
 .)
 end_sd:
 
