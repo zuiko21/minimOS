@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230319-1020
+; last modified 20230319-1326
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 
@@ -53,6 +53,21 @@ token	= miso + 1	; $FB
 ptr		= token + 1	; $FC
 ;cnt	= ptr + 2	; $FE
 
+; *** sector buffer and header pointers ***
+buffer	= $400
+magic1	= buffer+0			; must contain zero
+magic2	= buffer+7			; must contain CR (13)
+magic3	= buffer+255		; must contain zero (assume filesize < 16 MiB)
+bootsig	= buffer+1			; must contain 'dX' for bootable ROM images
+fname	= buffer+8
+ftime	= buffer+248		; time in MS-DOS format
+fdate	= buffer+250		; date in MS-DOS format
+fsize	= buffer+252		; file size INCLUDING 256-byte header
+
+; *** directory storage ***
+en_ix		= $EE
+en_tab		= $300
+
 ; *****************************************************
 ; *** firmware & hardware definitions for Durango-X ***
 ; *****************************************************
@@ -101,7 +116,8 @@ rom_start:
 	.byt	0				; second terminator for optional comment, just in case
 
 ; advance to end of header
-	.dsb	rom_start + $F8 - *
+	.dsb	rom_start + $F8 - *, $FF
+
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$5800			; time, 11.00
 	.word	$5673			; date, 2023/3/19
@@ -114,11 +130,93 @@ rom_start:
 ; **********************
 sd_main:
 .(
-	JSR sd_init
-
-
-
-
+	JSR sd_init				; check SD card
+	LDY #13
+	JSR conio				; newline
+; *** list SD contents ***
+; get ready to read first sector
+	LDX #>buffer			; temporary load address
+	STX ptr+1
+	STZ ptr					; assume buffer is page-aligned
+	STZ arg
+	STZ arg+1
+	STZ arg+2
+	STZ arg+3				; assume reading from the very first sector
+ls_page:
+	STZ en_ix				; reset index for this page
+ls_disp:
+		JSR ssec_rd			; read one 512-byte sector
+; might do some error check here...
+		LDA magic1			; check magic number one
+	BNE end_vol
+		LDA magic2			; check magic number two
+		CMP #13				; must be NEWL instead of zero
+	BNE end_vol
+		LDA magic3			; check magic number three
+	BNE end_vol
+; header is valid, check whether bootable or not
+		LDA bootsig			; check Durango-X bootable ROM image signature
+		CMP #'d'
+	BNE next_file
+		LDA bootsig+1
+		CMP #'X'
+	BNE next_file
+; bootable ROM image detected, register sector and display entry
+		LDA en_ix			; last registered entry
+		CMP #9				; already full?
+		BCC new_en
+; *** should display 'more' message...
+new_en:
+		ASL
+		ASL					; 4-byte entries
+		TAX
+		LDY #3				; max sector offset
+en_loop:
+			LDA arg, Y		; current sector (big endian)
+			STA en_tab, X	; store locally (little endian)
+			INX
+			DEY
+			BPL en_loop		; complete four bytes
+		INC en_ix
+; now print filename
+next_file:
+		LDY #14
+		JSR conio			; set inverse mode
+		LDA en_ix
+		CLC
+		ADC #'0'			; get entry (1-based now) as ASCII number
+		TAY
+		JSR conio
+		LDY #15
+		JSR conio			; standard video
+		LDY #' '
+		JSR conio			; space between number and filename
+		LDX #0				; string index
+name_loop:
+			LDY fname, X	; get char
+		BEQ name_end		; until terminator
+			PHX
+			JSR conio		; print char
+			PLX
+			INX
+; *** might check for maximum screen length...
+			BNE name_loop	; no need for BRA
+name_end:
+; *** might display some metadata here...
+		LDY #13
+		JSR conio			; next line
+; in any case, jump and read next header
+; compute next header sector
+;		LDA 
+end_vol:
+	LDA arg+3
+	ORA arg+2
+	ORA arg+1
+	ORA arg					; check if volume ended at first sector
+	BNE skip_hd
+		LDX #7				; invalid contents error
+		JMP sd_fail
+skip_hd:
 
 ; ** load 64 sectors from SD **
 	LDX #>$8000				; ROM start address
@@ -526,7 +624,9 @@ sd_m4:
 sd_ok:
 	.asc	" OK", 13, 0
 sd_err:
-	.asc	" ", 14, "FAIL!", 15, 7, 13, 0
+	.asc	" ", 14, "FAIL!", 15, 7, 0
+sd_inv:
+	.asc	" ", 14, "Invalid SD contents", 15, 7, 0
 
 ; offset table for the above messages
 msg_ix:
@@ -537,6 +637,7 @@ msg_ix:
 	.byt	sd_m4-msg_sd
 	.byt	sd_ok-msg_sd	; OK
 	.byt	sd_err-msg_sd	; FAIL with beep
+	.byt	sd_inv-msg_sd	; invalid contents
 .)
 end_sd:
 
