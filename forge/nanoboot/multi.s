@@ -239,8 +239,8 @@ sec_ok:
 end_vol:
 		LDA en_ix			; check if volume ended with no entries listed
 		BNE skip_hd
-			LDX #INVALID_SD	; invalid contents error
-			JMP sd_fail
+;			LDX #INVALID_SD	; invalid contents error
+;			JMP sd_fail
 skip_hd:
 		JSR sel_en			; wait for a valid entry...
 		JMP ls_page			; ...unless it returns, then show another page
