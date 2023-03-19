@@ -1,10 +1,11 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230319-1326
+; last modified 20230319-1951
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 
+; SD interface definitions
 #define	SD_CLK		%00000001
 #define	SD_MOSI		%00000010
 #define	SD_CS		%00000100
@@ -29,6 +30,17 @@
 #define	CMD17		17
 #define	CMD17_CRC	0
 #define	SD_MAX_READ_ATTEMPTS	203
+
+; error code messages
+#define	IDLE_ERR	0
+#define	SDIF_ERR	1
+#define	ECHO_ERR	2
+#define	INIT_ERR	3
+#define	READY_ERR	4
+#define	OK_MSG		5
+#define	FAIL_MSG	6
+#define	INVALID_SD	7
+#define	SEL_MSG		8
 
 ; *** hardware definitions ***
 IO8attr	= $DF80
@@ -102,7 +114,7 @@ cio_src		= $E4
 	* = $E000
 
 ; ***********************
-; *** standard header *** also to be found at ANY ROM image
+; *** standard header *** to be found before ANY ROM image
 ; ***********************
 rom_start:
 ; header ID
@@ -111,8 +123,8 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"multiboot", 0	; C-string with filename @ [8]
-;	.asc	"(comment)"		; optional C-string with comment after filename
+	.asc	"multiboot", 0	; C-string with filename @ [8], max 238 chars
+;	.asc	"(comment)"		; optional C-string with comment after filename, filename+comment up to 238 chars
 	.byt	0				; second terminator for optional comment, just in case
 
 ; advance to end of header
@@ -122,8 +134,8 @@ rom_start:
 	.word	$5800			; time, 11.00
 	.word	$5673			; date, 2023/3/19
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
-	.word	rom_end-rom_start			; filesize
-	.word	0							; 64K space does not use upper 16-bit, [255]=NUL may be third magic number
+	.word	rom_end-rom_start			; filesize (rom_end is actually $10000)
+	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
 
 ; **********************
 ; *** SD-card module ***
@@ -135,105 +147,125 @@ sd_main:
 	JSR conio				; newline
 ; *** list SD contents ***
 ; get ready to read first sector
-	LDX #>buffer			; temporary load address
-	STX ptr+1
-	STZ ptr					; assume buffer is page-aligned
 	STZ arg
 	STZ arg+1
 	STZ arg+2
 	STZ arg+3				; assume reading from the very first sector
 ls_page:
-	STZ en_ix				; reset index for this page
+		STZ en_ix			; reset index for this page
 ls_disp:
-		JSR ssec_rd			; read one 512-byte sector
+			LDX #>buffer	; temporary load address
+			STX ptr+1
+			STZ ptr			; assume buffer is page-aligned
+			JSR ssec_rd		; read one 512-byte sector
 ; might do some error check here...
-		LDA magic1			; check magic number one
-	BNE end_vol
-		LDA magic2			; check magic number two
-		CMP #13				; must be NEWL instead of zero
-	BNE end_vol
-		LDA magic3			; check magic number three
-	BNE end_vol
+			LDA magic1		; check magic number one
+		BNE end_vol
+			LDA magic2		; check magic number two
+			CMP #13			; must be NEWL instead of zero
+		BNE end_vol
+			LDA magic3		; check magic number three
+		BNE end_vol
 ; header is valid, check whether bootable or not
-		LDA bootsig			; check Durango-X bootable ROM image signature
-		CMP #'d'
-	BNE next_file
-		LDA bootsig+1
-		CMP #'X'
-	BNE next_file
+			LDA bootsig		; check Durango-X bootable ROM image signature
+			CMP #'d'
+		BNE next_file
+			LDA bootsig+1
+			CMP #'X'
+		BNE next_file
 ; bootable ROM image detected, register sector and display entry
-		LDA en_ix			; last registered entry
-		CMP #9				; already full?
-		BCC new_en
-; *** should display 'more' message...
-new_en:
-		ASL
-		ASL					; 4-byte entries
-		TAX
-		LDY #3				; max sector offset
+			LDA en_ix		; last registered entry
+			CMP #9			; already full?
+		BCS skip_hd
+			ASL
+			ASL				; 4-byte entries
+			TAX
+			LDY #3			; max sector offset
 en_loop:
-			LDA arg, Y		; current sector (big endian)
-			STA en_tab, X	; store locally (little endian)
-			INX
-			DEY
-			BPL en_loop		; complete four bytes
-		INC en_ix
+				LDA arg, Y				; current sector (big endian)
+				STA en_tab, X			; store locally (little endian)
+				INX
+				DEY
+				BPL en_loop				; complete four bytes
+			INC en_ix		; one entry has been detected
+; print entry number before filename
+			LDY #14
+			JSR conio		; set inverse mode
+			LDA en_ix
+			CLC
+			ADC #'0'		; get entry (1-based now) as ASCII number
+			TAY
+			JSR conio
+			LDY #15
+			JSR conio		; standard video
+			LDY #' '
+			JSR conio		; space between number and filename
 ; now print filename
-next_file:
-		LDY #14
-		JSR conio			; set inverse mode
-		LDA en_ix
-		CLC
-		ADC #'0'			; get entry (1-based now) as ASCII number
-		TAY
-		JSR conio
-		LDY #15
-		JSR conio			; standard video
-		LDY #' '
-		JSR conio			; space between number and filename
-		LDX #0				; string index
+			LDX #0			; string index
 name_loop:
-			LDY fname, X	; get char
-		BEQ name_end		; until terminator
-			PHX
-			JSR conio		; print char
-			PLX
-			INX
+				LDY fname, X			; get char
+			BEQ name_end				; until terminator
+				PHX
+				JSR conio				; print char
+				PLX
+				INX
 ; *** might check for maximum screen length...
-			BNE name_loop	; no need for BRA
+				BNE name_loop			; no need for BRA
 name_end:
 ; *** might display some metadata here...
-		LDY #13
-		JSR conio			; next line
+			LDY #13
+			JSR conio		; next line
 ; in any case, jump and read next header
+next_file:
 ; compute next header sector
-;		LDA 
+			LDA fsize+1		; number of pages
+			LDX fsize		; any padding used?
+			BEQ full_pg
+				INC			; if so, count as one more page
+full_pg:
+			LSR				; half the number of sectors...
+			ADC #0			; ...unless it was odd
+			ADC arg+3		; add to current sector, note big-endian!
+			STA arg+3
+			BCC sec_ok
+				INC arg+2	; and propagate carry, just in case
+			BNE sec_ok
+				INC arg+1
+			BNE sec_ok
+				INC arg
+sec_ok:
+			JMP ls_disp		; no need for BRA
 end_vol:
-	LDA arg+3
-	ORA arg+2
-	ORA arg+1
-	ORA arg					; check if volume ended at first sector
-	BNE skip_hd
-		LDX #7				; invalid contents error
-		JMP sd_fail
+		LDA en_ix			; check if volume ended with no entries listed
+		BNE skip_hd
+			LDX #INVALID_SD	; invalid contents error
+			JMP sd_fail
 skip_hd:
+		JSR sel_en			; wait for a valid entry...
+		JMP ls_page			; ...unless it returns, then show another page
 
-; ** load 64 sectors from SD **
-	LDX #>$8000				; ROM start address
-	STX ptr+1
-	STZ ptr					; assume ROM is page-aligned, of course
-	STZ arg
-	STZ arg+1
-	STZ arg+2
-	STZ arg+3				; assume reading from the very first sector
+; *** image is selected, now boot from it ***
+do_boot:
+
+; TO DO ***
+;		reload sector of selected entry into buffer
+;		check size, determine ptr towards end of 64K space
+
 boot:
 		JSR ssec_rd			; read one 512-byte sector
 ; might do some error check here...
 		LDX ptr+1			; current page (after switching)
-		LDA #$FF			; elongated white dots
+		LDA #$FF			; elongated white dots *** may change feedback
 		STA $7EFE, X
 		STA $7EFF, X		; display on screen (finished pages)
 		INC arg+3			; only 64 sectors, no need to check MSB... EEEEEEEEK endianness!
+		BNE no_wrap
+			INC arg+2		; now could have several images, may wrap...
+		BNE no_wrap
+			INC arg+1		; now could have several images, may wrap...
+		BNE no_wrap
+			INC arg			; now could have several images, may wrap...
+no_wrap:
 		TXA					; LDA ptr+1		; check current page
 		BNE boot			; until completion
 ; ** after image is loaded... **
@@ -379,10 +411,10 @@ set_idle:
 	BEQ is_idle				; while((res[0] = SD_goIdleState()) != 0x01)
 		DEX					; cmdAttempts++;
 		BNE set_idle
-	LDX #0					; *** ERROR 0 in red ***
+	LDX #IDLE_ERR			; *** ERROR 0 in red ***
 	JMP sd_fail				; if(cmdAttempts > 10)	return SD_ERROR;
 is_idle:
-	LDX #0					; eeeek
+	LDX #IDLE_ERR			; eeeek
 	JSR pass_x				; *** PASS 0 in white ***
 ; ** SD_sendIfCond is inlined here **
 	JSR cs_enable			; assert chip select
@@ -404,14 +436,14 @@ is_idle:
 	LDA res
 	CMP #1
 	BEQ sdic_ok
-		LDX #1				; *** ERROR 1 in red ***
+		LDX #SDIF_ERR		; *** ERROR 1 in red ***
 sdptec:
 		JMP sd_fail			; if(res[0] != 0x01) return SD_ERROR;
 sdic_ok:
-	LDX #1					; eeeeeek
+	LDX #SDIF_ERR			; eeeeeek
 	JSR pass_x				; *** PASS 1 in white ***
 ; check pattern echo
-	LDX #2					; *** ERROR 2 in red ***
+	LDX #ECHO_ERR			; *** ERROR 2 in red ***
 	LDA res+4
 	CMP #$AA
 		BNE sdptec			; if(res[4] != 0xAA) return SD_ERROR;
@@ -464,10 +496,10 @@ d10m:
 			BNE d10m		; delayMicroseconds(10000);
 		DEX					; cmdAttempts++;
 		BNE sd_ia
-	LDX #3					; *** ERROR 3 in red ***
+	LDX #INIT_ERR			; *** ERROR 3 in red ***
 	JMP sd_fail				; if(cmdAttempts > 100) return SD_ERROR;
 apc_rdy:
-	LDX #3
+	LDX #INIT_ERR
 	JSR pass_x				; *** PASS 3 in white ***
 ; read OCR
 ; ** SD_readOCR(res) is inlined here **
@@ -485,7 +517,7 @@ apc_rdy:
 	JSR cs_disable			; deassert chip select
 
 ; check whether card is ready
-	LDX #4					; *** ERROR 4 in red ***
+	LDX #READY_ERR			; *** ERROR 4 in red ***
 	LDA res+1				; eeeeeeeeek
 	BMI card_rdy			; eeeeeeeeek
 		JMP sd_fail			; if(!(res[1] & 0x80)) return SD_ERROR;
@@ -578,23 +610,104 @@ io_dsc:
 ; *** display pass code ***
 pass_x:
 	JSR disp_code			; display message
-	LDX #5					; OK message
+	LDX #OK_MSG				; OK message
 	JMP disp_code
 ;	RTS
 
 ; *** display code message ***
 disp_code:
-	LDY msg_ix, X			; reindex from X=error code
+	LDA msg_ix, X			; reindex from X=error code
+	TAX
 dc_loop:
-		LDA msg_sd, Y		; get char
+		LDY msg_sd, X		; get char
 	BEQ dc_end				; message ended
-		PHY
-		TAY
+		PHX
 		JSR conio			; display char
-		PLY
-		INY
+		PLX
+		INX
 		BNE dc_loop			; next char
 dc_end:
+	RTS
+
+; *** wait for user selection ***
+; 1...9 = entry index (may be selected with up/down)
+; 0     = next page   (may be selected with right or left)
+; when selected via game pad, use FIRE/SELECT/B/START to boot
+sel_en:
+	STZ fw_knes				; reset input-by-pad
+sel_loop:
+		LDY #0
+		JSR conio			; input char
+		LDA gamepad1		; check also pad input
+		ORA gamepad2
+		CPY #'0'			; next page?
+	BEQ exit_sel
+		BIT #%00000101		; check left or right
+	BEQ exit_sel			; also means next page
+		BIT #%00000010		; check down
+	BEQ no_down
+; try to advance selection
+		LDX fw_knes
+		CPX en_ix			; room for it?
+		BCS no_down
+			INX				; update value
+			JSR show_sel	; and display new selection
+no_down:
+		BIT #%00001000		; check up
+	BEQ no_up
+; try to decrement selection
+		LDX fw_knes
+		BEQ no_up			; no previous selection
+			DEX				; update value
+		BEQ no_up			; was first one, do nothing
+			JSR show_sel	; or display new selection
+no_up:
+		BIT #%11110000		; check any selection button
+	BNE pad_sel
+		TYA
+		CMP #'1'			; less than 1 is ignored
+	BCC sel_loop
+		CMP #'9'+1			; but 1...9 is accepted
+	BCC sel_loop
+		SEC
+		SBC #'0'			; convert to index 1...9
+		BNE launch			; no need for BRA
+pad_sel:
+		LDA fw_knes			; get selection
+		BEQ sel_loop		; nothing yet!
+launch:
+; arrived here with A = 1...9 selected entry, no return
+		DEC					; make A = 0...8
+; should check if within detected entries
+		CMP en_ix
+	BCS sel_loop
+		ASL
+		ASL					; times 4
+		TAX					; table index (little endian)
+		LDY #3				; max offset (big endian)
+lnch_l:
+			LDA en_tab, X
+			STA arg, Y		; copy entry byte, reversing endianness
+			INX
+			DEY
+			BPL lnch_l
+		JMP do_boot			; start booting from selected sector!
+exit_sel:
+	RTS						; if next page is requested, just return
+
+; *** display selected entry ***
+; X = new entry position (1...9)
+show_sel:
+	STX fw_knes				; must update this value
+	TXA
+	CLC
+	ADC #'0'				; to ASCII
+	TAY
+	JSR conio				; display number
+	LDX #SEL_MSG			; selection message
+	JSR disp_code
+	LDA gamepad1
+	ORA gamepad2			; restore gamepad config
 	RTS
 
 ; ***************************
@@ -602,7 +715,7 @@ dc_end:
 ; ***************************
 sd_fail:					; SD card failed
 	JSR disp_code			; display message
-	LDX #6					; FAIL message
+	LDX #FAIL_MSG			; FAIL message
 	JSR disp_code
 	BRK						; just lock with error LED
 
@@ -626,8 +739,9 @@ sd_ok:
 sd_err:
 	.asc	" ", 14, "FAIL!", 15, 7, 0
 sd_inv:
-	.asc	" ", 14, "Invalid SD contents", 15, 7, 0
-
+	.asc	" ", 14, "No ROM image found", 15, 7, 0
+sd_sel:
+	.asc	" is selected", 1, 0
 ; offset table for the above messages
 msg_ix:
 	.byt	0
@@ -638,6 +752,7 @@ msg_ix:
 	.byt	sd_ok-msg_sd	; OK
 	.byt	sd_err-msg_sd	; FAIL with beep
 	.byt	sd_inv-msg_sd	; invalid contents
+	.byt	sd_sel-msg_sd	; display selected and return to line start
 .)
 end_sd:
 
@@ -704,6 +819,7 @@ not_5x8:
 	LDY #12					; FF = clear screen
 	JSR conio
 
+	CLI						; must enable interrupts!
 	JMP sd_main				; start loader!
 
 ; **************************
@@ -727,7 +843,6 @@ irq_sup:
 ; *** interrupt support for matrix keyboard ***
 	JSR kbd_isr
 ; * after reading keyboard, gamepads are read, may suppress this for slight performance improvement *
-#ifndef	KBBYPAD
 ; keep gamepad input updated (already done for KBD emulation)
 	STA IO9nes0				; latch pad status
 	LDX #8					; number of bits to read
@@ -736,7 +851,6 @@ nes_loop:
 		DEX
 		BNE nes_loop		; all bits read @ IO9nes0/1
 ; done, but check GAMEPAD_MASK1 & GAMEPAD_MASK2 after reading ports in BASIC!
-#endif
 	LDA IO9nes0
 	EOR GAMEPAD_MASK1
 	STA gamepad1			; corrected value at $226, or 550
@@ -812,7 +926,7 @@ fw_end:
 switch:
 	LDA #%01100100			; ROM disabled, protected RAM, and SD disabled just in case
 do_sw:
-	STA $DFC0
+	STA IOCart
 ; * = $FFE1
 autoreset:
 	JMP ($FFFC)				; RESET on loaded image *** mandatory instruction on any ROM image ***
