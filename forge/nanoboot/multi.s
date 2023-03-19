@@ -690,7 +690,7 @@ no_up:
 		CMP #'1'			; less than 1 is ignored
 	BCC sel_loop
 		CMP #'9'+1			; but 1...9 is accepted
-	BCC sel_loop
+	BCS sel_loop
 		SEC
 		SBC #'0'			; convert to index 1...9
 		BNE launch			; no need for BRA
