@@ -1,6 +1,6 @@
 /* ROM signer with Fletcher-16 checksum *
- * (c) 2021-2022 Carlos J. Santisteban  *
- * last modified 20220324-1604          */
+ * (c) 2021-2023 Carlos J. Santisteban  *
+ * last modified 20230319-2241          */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
 	int sig_s, sig_c;			/* signature values at $FFDE-$FFDF (in 6502 space) */
 	int size;					/* ROM size         */
 	int skip;					/* I/O page to be skipped                          */
-	int offset;					/* position of signature (default $7FDE for 32K)   */
+	int offset;					/* position of signature (default $7FD4 for 32K)   */
 	int target;					/* preliminary sum */
 	int i, j;
 	FILE* f;
@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
 		printf("USAGE: %s file [skip [offset]]\n", argv[0]);
 		printf("\tfile   = filename (duh), max. 32 kiB\n");
 		printf("\tskip   = I/O page to skip (usually 223, $DF)\n");
-		printf("\toffset = negative position of signature (default: 34, $FFDE in 6502 space)\n");
+		printf("\toffset = negative position of signature (default: 44, $FFD4 in 6502 space)\n");
 		return -1;				/* did nothing */
 	}
 
@@ -47,8 +47,9 @@ int main(int argc, char* argv[]) {
 	}
 	if (argc>3) {
 		offset = size-atoi(argv[3]);
+		printf("Signature at $%04X on image\n", offset);
 	} else {
-		offset=size-34;			/* default offset  */
+		offset=size-44;			/* default offset  */
 		if (offset<0) {
 			printf("\n*** Won't allow default offset ***\n\n");
 			fclose(f);
