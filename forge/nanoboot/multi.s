@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230319-2219
+; last modified 20230320-1853
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 
@@ -152,8 +152,7 @@ sd_main:
 	STZ arg+1
 	STZ arg+2
 	STZ arg+3				; assume reading from the very first sector
-ls_page:
-		STZ en_ix			; reset index for this page
+	STZ en_ix				; reset index
 ls_disp:
 			LDX #>buffer	; temporary load address
 			STX ptr+1
@@ -175,6 +174,7 @@ ls_disp:
 			CMP #'X'
 		BNE next_file
 ; bootable ROM image detected, register sector and display entry
+ls_page:
 			LDA en_ix		; last registered entry
 			CMP #9			; already full?
 		BCS skip_hd
@@ -239,11 +239,12 @@ sec_ok:
 end_vol:
 		LDA en_ix			; check if volume ended with no entries listed
 		BNE skip_hd
-;			LDX #INVALID_SD	; invalid contents error
-;			JMP sd_fail
+			LDX #INVALID_SD	; invalid contents error
+			JSR disp_code;			JMP sd_fail
 skip_hd:
 		JSR sel_en			; wait for a valid entry...
-		JMP ls_page			; ...unless it returns, then show another page
+		STZ en_ix			; ...but if arrived here, skip to new page
+		JMP ls_page			; avoid re-reading the sector
 
 ; *******************************************
 ; *** image is selected, now boot from it ***
