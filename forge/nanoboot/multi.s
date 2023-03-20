@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230320-1853
+; last modified 20230320-1918
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 
@@ -144,6 +144,7 @@ rom_start:
 sd_main:
 .(
 	JSR sd_init				; check SD card
+ldy#'*':jsr conio
 	LDY #13
 	JSR conio				; newline
 ; *** list SD contents ***
@@ -160,11 +161,12 @@ ls_disp:
 			JSR ssec_rd		; read one 512-byte sector
 ; might do some error check here...
 			LDA magic1		; check magic number one
-		BNE end_vol
+		BNE end_vol_near
 			LDA magic2		; check magic number two
 			CMP #13			; must be NEWL instead of zero
 		BNE end_vol
 			LDA magic3		; check magic number three
+end_vol_near:
 		BNE end_vol
 ; header is valid, check whether bootable or not
 			LDA bootsig		; check Durango-X bootable ROM image signature
@@ -219,6 +221,7 @@ name_end:
 ; in any case, jump and read next header
 next_file:
 ; compute next header sector
+ldy#'f':jsr conio
 			LDA fsize+1		; number of pages
 			LDX fsize		; any padding used?
 			BEQ full_pg
@@ -237,12 +240,15 @@ full_pg:
 sec_ok:
 			JMP ls_disp		; no need for BRA
 end_vol:
+ldy#'e':jsr conio
 		LDA en_ix			; check if volume ended with no entries listed
 		BNE skip_hd
 			LDX #INVALID_SD	; invalid contents error
 			JSR disp_code;			JMP sd_fail
 skip_hd:
+ldy#'s':jsr conio
 		JSR sel_en			; wait for a valid entry...
+ldy#'z':jsr conio
 		STZ en_ix			; ...but if arrived here, skip to new page
 		JMP ls_page			; avoid re-reading the sector
 
@@ -251,6 +257,7 @@ skip_hd:
 ; *******************************************
 do_boot:
 ; reload sector of selected entry into buffer
+ldy#'d':jsr conio
 	LDX #>buffer			; temporary load address
 	STX ptr+1
 	STZ ptr					; assume buffer is page-aligned
@@ -634,7 +641,7 @@ io_dsc:
 pass_x:
 	JSR disp_code			; display message
 	LDX #OK_MSG				; OK message
-	JMP disp_code
+;	JMP disp_code
 ;	RTS
 
 ; *** display code message ***
@@ -657,16 +664,18 @@ dc_end:
 ; 0     = next page   (may be selected with right or left)
 ; when selected via game pad, use FIRE/SELECT/B/START to boot
 sel_en:
+ldy#'n':jsr conio
 	STZ fw_knes				; reset input-by-pad
 sel_loop:
 		LDY #0
-		JSR conio			; input char
+;		JSR conio			; input char
 		LDA gamepad1		; check also pad input
 		ORA gamepad2
-		CPY #'0'			; next page?
-	BEQ exit_sel
+;		CPY #'0'			; next page?
+;	BEQ exit_sel
 		BIT #%00000101		; check left or right
 	BEQ exit_sel			; also means next page
+;		PHY					; eeeek
 		BIT #%00000010		; check down
 	BEQ no_down
 ; try to advance selection
@@ -685,16 +694,17 @@ no_down:
 		BEQ no_up			; was first one, do nothing
 			JSR show_sel	; or display new selection
 no_up:
+;		PLY
 		BIT #%11110000		; check any selection button
-	BNE pad_sel
-		TYA
-		CMP #'1'			; less than 1 is ignored
-	BCC sel_loop
-		CMP #'9'+1			; but 1...9 is accepted
-	BCS sel_loop
-		SEC
-		SBC #'0'			; convert to index 1...9
-		BNE launch			; no need for BRA
+	BEQ sel_loop;	BNE pad_sel
+;		TYA
+;		CMP #'1'			; less than 1 is ignored
+;	BCC sel_loop
+;		CMP #'9'+1			; but 1...9 is accepted
+;	BCS sel_loop
+;		SEC
+;		SBC #'0'			; convert to index 1...9
+;		BRA launch
 pad_sel:
 		LDA fw_knes			; get selection
 		BEQ sel_loop		; nothing yet!
@@ -729,8 +739,10 @@ show_sel:
 	JSR conio				; display number
 	LDX #SEL_MSG			; selection message
 	JSR disp_code
-	LDA gamepad1
-	ORA gamepad2			; restore gamepad config
+rls_gp:
+		LDA gamepad1
+		ORA gamepad2		; check gamepads
+		BNE rls_gp			; wait until release
 	RTS
 
 ; ***************************
