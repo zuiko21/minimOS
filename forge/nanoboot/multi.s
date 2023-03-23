@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230320-1918
+; last modified 20230323-1638
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 
@@ -144,7 +144,6 @@ rom_start:
 sd_main:
 .(
 	JSR sd_init				; check SD card
-ldy#'*':jsr conio
 	LDY #13
 	JSR conio				; newline
 ; *** list SD contents ***
@@ -155,11 +154,13 @@ ldy#'*':jsr conio
 	STZ arg+3				; assume reading from the very first sector
 	STZ en_ix				; reset index
 ls_disp:
+; * load current sector *
 			LDX #>buffer	; temporary load address
 			STX ptr+1
 			STZ ptr			; assume buffer is page-aligned
 			JSR ssec_rd		; read one 512-byte sector
 ; might do some error check here...
+; * look for a valid header *
 			LDA magic1		; check magic number one
 		BNE end_vol_near
 			LDA magic2		; check magic number two
@@ -175,7 +176,7 @@ end_vol_near:
 			LDA bootsig+1
 			CMP #'X'
 		BNE next_file
-; bootable ROM image detected, register sector and display entry
+; * bootable ROM image detected, register sector and display entry *
 ls_page:
 			LDA en_ix		; last registered entry
 			CMP #9			; already full?
@@ -218,7 +219,7 @@ name_end:
 ; *** might display some metadata here...
 			LDY #13
 			JSR conio		; next line
-; in any case, jump and read next header
+; * in any case, jump and read next header *
 next_file:
 ; compute next header sector
 ldy#'f':jsr conio
@@ -240,7 +241,6 @@ full_pg:
 sec_ok:
 			JMP ls_disp		; no need for BRA
 end_vol:
-ldy#'e':jsr conio
 		LDA en_ix			; check if volume ended with no entries listed
 		BNE skip_hd
 			LDX #INVALID_SD	; invalid contents error
@@ -665,55 +665,56 @@ dc_end:
 ; when selected via game pad, use FIRE/SELECT/B/START to boot
 sel_en:
 ldy#'n':jsr conio
-	STZ fw_knes				; reset input-by-pad
+;	STZ fw_knes				; reset input-by-pad
 sel_loop:
 		LDY #0
-;		JSR conio			; input char
-		LDA gamepad1		; check also pad input
-		ORA gamepad2
-;		CPY #'0'			; next page?
-;	BEQ exit_sel
-		BIT #%00000101		; check left or right
-	BEQ exit_sel			; also means next page
+		JSR conio			; input char
+		BCS sel_loop		; wait for a key ** KEYBOARD ONLY
+;		LDA gamepad1		; check also pad input
+;		ORA gamepad2
+		CPY #'0'			; next page?
+	BEQ exit_sel
+;		BIT #%00000101		; check left or right
+;	BEQ exit_sel			; also means next page
 ;		PHY					; eeeek
-		BIT #%00000010		; check down
-	BEQ no_down
+;		BIT #%00000010		; check down
+;	BEQ no_down
 ; try to advance selection
-		LDX fw_knes
-		CPX en_ix			; room for it?
-		BCS no_down
-			INX				; update value
-			JSR show_sel	; and display new selection
+;		LDX fw_knes
+;		CPX en_ix			; room for it?
+;		BCS no_down
+;			INX				; update value
+;			JSR show_sel	; and display new selection
 no_down:
-		BIT #%00001000		; check up
-	BEQ no_up
+;		BIT #%00001000		; check up
+;	BEQ no_up
 ; try to decrement selection
-		LDX fw_knes
-		BEQ no_up			; no previous selection
-			DEX				; update value
-		BEQ no_up			; was first one, do nothing
-			JSR show_sel	; or display new selection
+;		LDX fw_knes
+;		BEQ no_up			; no previous selection
+;			DEX				; update value
+;		BEQ no_up			; was first one, do nothing
+;			JSR show_sel	; or display new selection
 no_up:
 ;		PLY
-		BIT #%11110000		; check any selection button
-	BEQ sel_loop;	BNE pad_sel
-;		TYA
-;		CMP #'1'			; less than 1 is ignored
-;	BCC sel_loop
+;		BIT #%11110000		; check any selection button
+;	BEQ sel_loop;	BNE pad_sel
+		TYA
+		CMP #'1'			; less than 1 is ignored
+	BCC sel_loop
 ;		CMP #'9'+1			; but 1...9 is accepted
 ;	BCS sel_loop
 ;		SEC
-;		SBC #'0'			; convert to index 1...9
+		SBC #'0'			; convert to index 1...9
 ;		BRA launch
 pad_sel:
-		LDA fw_knes			; get selection
-		BEQ sel_loop		; nothing yet!
+;		LDA fw_knes			; get selection
+;		BEQ sel_loop		; nothing yet!
 launch:
 ; arrived here with A = 1...9 selected entry, no return
 		DEC					; make A = 0...8
 ; should check if within detected entries
 		CMP en_ix
-	BCS sel_loop
+	BCS sel_err
 		ASL
 		ASL					; times 4
 		TAX					; table index (little endian)
@@ -725,7 +726,12 @@ lnch_l:
 			DEY
 			BPL lnch_l
 		JMP do_boot			; start booting from selected sector!
+sel_err:
+	LDY #7
+	JSR conio				; error beep
+	BRA sel_loop			; and try agin
 exit_sel:
+ldy#'x':jsr conio
 	RTS						; if next page is requested, just return
 
 ; *** display selected entry ***
@@ -781,16 +787,16 @@ sd_load:
 	.asc	13, 14, "Loading ", 0
 ; offset table for the above messages
 msg_ix:
-	.byt	0
-	.byt	sd_m1-msg_sd
-	.byt	sd_m2-msg_sd
-	.byt	sd_m3-msg_sd
-	.byt	sd_m4-msg_sd
-	.byt	sd_ok-msg_sd	; OK
-	.byt	sd_err-msg_sd	; FAIL with beep
-	.byt	sd_inv-msg_sd	; invalid contents
-	.byt	sd_sel-msg_sd	; display selected and return to line start
-	.byt	sd_load-msg_sd	; loading message
+	.byt	0				; IDLE_ERR
+	.byt	sd_m1-msg_sd	; SDIF_ERR
+	.byt	sd_m2-msg_sd	; ECHO_ERR
+	.byt	sd_m3-msg_sd	; INIT_ERR
+	.byt	sd_m4-msg_sd	; READY_ERR
+	.byt	sd_ok-msg_sd	; OK_MSG
+	.byt	sd_err-msg_sd	; FAIL_MSG	with beep
+	.byt	sd_inv-msg_sd	; INVALID_SD
+	.byt	sd_sel-msg_sd	; SEL_MSG	display selected and return to line start
+	.byt	sd_load-msg_sd	; LOAD_MSG	loading message
 .)
 end_sd:
 
