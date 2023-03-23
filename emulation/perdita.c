@@ -84,6 +84,7 @@
 	FILE *typed;				// keystroke file
 	long cont = 0;				// total elapsed cycles
 	long stopwatch = 0;			// cycles stopwatch
+    int dump_on_exit = 0;       // Generate dump after emulation
 
 /* global vdu variables */
 	// Screen width in pixels
@@ -131,6 +132,7 @@
 	void stat(void);		// display processor status
 	void stack_stat(void);	// display stack status
 	void dump(word dir);	// display 16 bytes of memory
+    void full_dump(void);    // Dump full memory space and registers to file
 	void run_emulation(int ready);	// Run emulator
 	int  exec(void);		// execute one opcode, returning number of cycles
 	void illegal(byte s, byte op);				// if in safe mode, abort on illegal opcodes
@@ -219,7 +221,7 @@ int main(int argc, char *argv[])
 
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "a:fvlksphrgm")) != -1)
+	while ((c = getopt (argc, argv, "a:fvlksphrgmd")) != -1)
 	switch (c) {
 		case 'a':
 			rom_addr = optarg;
@@ -254,6 +256,9 @@ int main(int argc, char *argv[])
 		case 'm':
 			emulate_minstrel = 0;
 			break;
+        case 'd':
+            dump_on_exit = 1;
+            break;
 		case '?':
 			fprintf (stderr, "Unknown option\n");
 			usage(argv[0]);
@@ -318,6 +323,7 @@ void usage(char name[]) {
 	printf("-r do NOT randomize memory at startup\n");
 	printf("-g emulate controllers\n");
 	printf("-m do NOT emulate Minstrel-type keyboard\n");
+    printf("-d Generate dump after emulation\n");
 }
 
 void run_emulation (int ready) {
@@ -337,7 +343,7 @@ void run_emulation (int ready) {
 	long skip = 0;			// total skipped frames
 
 	printf("[F1=STOP, F2=NMI, F3=IRQ, F4=RESET, F5=PAUSE, F6=DUMP, F7=STEP, F8=CONT, F9=LOAD]\n");
-	init_vdu();
+	if (graf)	init_vdu();
 	if(!ready) {
                 reset();				// ready to start!
         }
@@ -455,8 +461,12 @@ void run_emulation (int ready) {
 		printf("\nPress ENTER key to exit\n");
 		getchar();
 	}
+    
+    if(dump_on_exit) {
+        full_dump();
+    }
 
-	close_vdu();
+	if (graf)	close_vdu();
 }
 
 /* **************************** */
