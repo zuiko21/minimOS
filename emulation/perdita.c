@@ -343,7 +343,7 @@ void run_emulation (int ready) {
 	long skip = 0;			// total skipped frames
 
 	printf("[F1=STOP, F2=NMI, F3=IRQ, F4=RESET, F5=PAUSE, F6=DUMP, F7=STEP, F8=CONT, F9=LOAD]\n");
-	init_vdu();
+	if (graf)	init_vdu();
 	if(!ready) {
                 reset();				// ready to start!
         }
@@ -466,7 +466,7 @@ void run_emulation (int ready) {
         full_dump();
     }
 
-	close_vdu();
+	if (graf)	close_vdu();
 }
 
 /* **************************** */
