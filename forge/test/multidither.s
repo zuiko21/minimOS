@@ -14,8 +14,28 @@ src		= ptr+2
 
 
 ; *** code ***
-	*	= $8000				; needs whole 32K because of 24K worth of pictures!
+	*	= $9e00				; needs whole 32K because of 24K worth of pictures!
+rom_start:
+; *** *** *** header ID *** *** ***
+	.byt	0				; [0]=NUL, first magic number
+	.asc	"dX"			; bootable ROM for Durango-X devCart
+	.asc	"****"			; reserved
+	.byt	13				; [7]=NEWLINE, second magic number
+; filename
+	.asc	"multidither", 0	; C-string with filename @ [8], max 238 chars
+	.asc	"a picture of Draghica Laurent"		; optional C-string with comment after filename, filename+comment up to 238 chars
+	.byt	0				; second terminator for optional comment, just in case
 
+; advance to end of header
+	.dsb	rom_start + $F8 - *, $FF
+
+; date & time in MS-DOS format at byte 248 ($F8)
+	.word	$5800			; time, 11.00
+	.word	$5673			; date, 2023/3/19
+; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
+	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
+	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
+; ***************************
 reset:
 	SEI
 	CLD
@@ -51,6 +71,12 @@ loop_copy:
 			INY
 			BNE loop_copy
 		INC src+1
+		LDA src+1
+		CMP #$DF			; skip I/O
+		BNE not_io
+			INX
+			INC src+1
+not_io:
 		INX
 		BPL pg_copy			; negative is the end of screen 3
 ; display dots waiting for a key press...
@@ -92,15 +118,19 @@ rom_pics:
 	.bin	0, 0, "../../other/data/dl1.sv"
 	.bin	0, 0, "../../other/data/dl2.sv"
 	.bin	0, 0, "../../other/data/dl3.sv"
+end_pics:
 
 ; *** end of ROM stuff ***
 	.dsb	$FFD6-*, $FF	; filler
 
 	.asc	"DmOS"			; standard sigature
-	.dsb	$FFF9-*, $FF	; one byte before vectors
 null:
 	RTI						; null interrupt handler, just in case
 
+	.dsb	$FFE1-*, $FF
+	JMP ($FFFC)				; devCart support
+
+	.dsb	$FFFA-*, $FF
 	.word	reset			; NMI like reset
 	.word	reset
 	.word	null			; IRQ/BRK do nothing

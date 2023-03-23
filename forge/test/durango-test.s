@@ -1,6 +1,6 @@
 ; FULL test of Durango-X/S/R (ROMmable version, NMOS-savvy)
-; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20221127-0939
+; (c) 2021-2023 Carlos J. Santisteban
+; last modified 20230323-1820
 
 ; ****************************
 ; *** standard definitions ***
@@ -18,7 +18,30 @@
 ; ****************************
 
 #ifndef	MULTIBOOT
-* = $F000					; 4 KiB start address
+* = $F400					; 3 KiB start address
+; *** standard header ***
+rom_start:
+; header ID
+	.byt	0				; [0]=NUL, first magic number
+	.asc	"dX"			; bootable ROM for Durango-X devCart
+	.asc	"****"			; reserved
+	.byt	13				; [7]=NEWLINE, second magic number
+; filename
+	.asc	"Hardware test", 0	; C-string with filename @ [8], max 238 chars
+;	.asc	"(comment)"		; optional C-string with comment after filename, filename+comment up to 238 chars
+	.byt	0				; second terminator for optional comment, just in case
+
+; advance to end of header
+	.dsb	rom_start + $F8 - *, $FF
+
+; date & time in MS-DOS format at byte 248 ($F8)
+	.word	$B380			; time, 22.28
+	.word	$5673			; date, 2023/3/19
+; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
+	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
+	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
+
+; *** standard hardware test ***
 #endif
 
 ; ******************
@@ -292,7 +315,7 @@ ck_b:
 			DEX
 			BPL ck_b		; no offset!
 		LDA #%10100000		; *** bad ROM, LED code = %1 01011111 ***
-		JMP panic
+;		JMP panic
 
 rom_ok:
 ; show banner if ROM checked OK (worth using RLE?)
@@ -944,7 +967,10 @@ pic_end:
 	.word	$FFFF
 	.word	0				; this will hold checksum at $FFDE-$FFDF
 
-	.dsb	$FFFA-*, $FF
+	.byt	$FF
+	JMP ($FFFC)				; devCart support!
+
+	.dsb $FFFA-*, $FF
 
 	.word	nmi
 	.word	reset

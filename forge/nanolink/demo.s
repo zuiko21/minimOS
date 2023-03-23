@@ -1,6 +1,6 @@
 ; nanoLink demo game
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230116-1326
+; last modified 20230323-1709
 
 ; *** memory allocation ***
 posbuf		= $F0			; received coordinates (YYYYXXXX), 1-based
@@ -25,9 +25,33 @@ IOAie		= $DFA0
 ; *** code ***
 ; ************
 
-	* = $C000				; for 16K EPROM
-	.dsb	$FD00-*, $FF
-;	*	= $FD00				; 1K is enough!
+;	* = $C000				; for 16K EPROM
+;	.dsb	$FD00-*, $FF
+
+	*	= $FC00				; 1K is enough!
+
+; *** standard header ***
+rom_start:
+; header ID
+	.byt	0				; [0]=NUL, first magic number
+	.asc	"dX"			; bootable ROM for Durango-X devCart
+	.asc	"****"			; reserved
+	.byt	13				; [7]=NEWLINE, second magic number
+; filename
+	.asc	"network demo", 0	; C-string with filename @ [8], max 238 chars
+;	.asc	"(comment)"		; optional C-string with comment after filename, filename+comment up to 238 chars
+	.byt	0				; second terminator for optional comment, just in case
+
+; advance to end of header
+	.dsb	rom_start + $F8 - *, $FF
+
+; date & time in MS-DOS format at byte 248 ($F8)
+	.word	$5800			; time, 11.00
+	.word	$5673			; date, 2023/3/19
+; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
+	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
+	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
+; ***************************
 
 ; *** external stuff ***
 ; nanoLink send routine
@@ -285,6 +309,9 @@ code_end:
 
 	.dsb	$FFD6-*, $FF
 	.asc	"DmOS"			; minimOS-compliant signature
+	.dsb	$FFE1-*, $FF
+	
+	JMP ($FFFC)				; devCart support
 
 	.dsb	$FFFA-*, $FF
 
