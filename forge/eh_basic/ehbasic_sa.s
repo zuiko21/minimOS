@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230319-2251
+; last modified 20230324-1822
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -102,7 +102,7 @@ y2			= x2+1
 -IOAie		= $DFA0			; canonical interrupt enable address (d0)
 -IOBeep		= $DFB0			; canonical buzzer address (d0)
 
-.(
+.(/*
 rom_start:
 ; header ID
 	.byt	0				; [0]=NUL, first magic number
@@ -123,7 +123,7 @@ rom_start:
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
-
+*/
 ; ***********************
 ; *** zero page usage ***
 ; ***********************
@@ -9483,9 +9483,7 @@ drv_pask:
 
 	.dsb	$FFD6-*, $FF
 	.asc	"DmOS"			; minimOS-compliant Durango-X cartridge signature
-	.dsb	$FFDE-*, $FF
-	.word	$FFFF			; Fletcher-16 checksum placeholder (not currently used)
-	SEI
+	.dsb	$FFE1-*, $FF
 	JMP ($FFFC)				; devCart support @ $FFE1!
 
 	.dsb	$FFFA-*, $FF	; *** may place PANIC routine here ***
