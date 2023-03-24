@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230323-1638
+; last modified 20230324-1636
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 
@@ -222,7 +222,6 @@ name_end:
 ; * in any case, jump and read next header *
 next_file:
 ; compute next header sector
-ldy#'f':jsr conio
 			LDA fsize+1		; number of pages
 			LDX fsize		; any padding used?
 			BEQ full_pg
@@ -244,11 +243,9 @@ end_vol:
 		LDA en_ix			; check if volume ended with no entries listed
 		BNE skip_hd
 			LDX #INVALID_SD	; invalid contents error
-			JSR disp_code;			JMP sd_fail
+			JMP sd_fail
 skip_hd:
-ldy#'s':jsr conio
 		JSR sel_en			; wait for a valid entry...
-ldy#'z':jsr conio
 		STZ en_ix			; ...but if arrived here, skip to new page
 		JMP ls_page			; avoid re-reading the sector
 
@@ -257,7 +254,6 @@ ldy#'z':jsr conio
 ; *******************************************
 do_boot:
 ; reload sector of selected entry into buffer
-ldy#'d':jsr conio
 	LDX #>buffer			; temporary load address
 	STX ptr+1
 	STZ ptr					; assume buffer is page-aligned
@@ -664,7 +660,6 @@ dc_end:
 ; 0     = next page   (may be selected with right or left)
 ; when selected via game pad, use FIRE/SELECT/B/START to boot
 sel_en:
-ldy#'n':jsr conio
 ;	STZ fw_knes				; reset input-by-pad
 sel_loop:
 		LDY #0
@@ -731,7 +726,6 @@ sel_err:
 	JSR conio				; error beep
 	BRA sel_loop			; and try agin
 exit_sel:
-ldy#'x':jsr conio
 	RTS						; if next page is requested, just return
 
 ; *** display selected entry ***
