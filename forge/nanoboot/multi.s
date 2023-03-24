@@ -290,10 +290,11 @@ prl_ok:
 boot:
 		JSR ssec_rd			; read one 512-byte sector
 ; might do some error check here...
-		LDX ptr+1			; current page (after switching)
-		LDA #$FF			; elongated white dots *** may change feedback
-		STA $7EFE, X
-		STA $7EFF, X		; display on screen (finished pages)
+		JSR progress
+;		LDX ptr+1			; current page (after switching)
+;		LDA #$FF			; elongated white dots *** may change feedback
+;		STA $7EFE, X
+;		STA $7EFF, X		; display on screen (finished pages)
 		INC arg+3			; only 64 sectors, no need to check MSB... EEEEEEEEK endianness!
 		BNE no_wrap
 			INC arg+2		; now could have several images, may wrap...
@@ -302,7 +303,7 @@ boot:
 		BNE no_wrap
 			INC arg			; now could have several images, may wrap...
 no_wrap:
-		TXA					; LDA ptr+1		; check current page
+		LDA ptr+1			; check current page
 		BNE boot			; until completion
 ; ** after image is loaded... **
 	SEI						; might be important!
@@ -737,6 +738,9 @@ sel_err:
 	JSR conio				; error beep
 	BRA sel_loop			; and try agin
 exit_sel:
+	LDA en_ix
+	CMP #9					; does next page make any sense?
+		BNE sel_err
 	RTS						; if next page is requested, just return
 
 ; *** display selected entry ***
@@ -754,6 +758,25 @@ rls_gp:
 		LDA gamepad1
 		ORA gamepad2		; check gamepads
 		BNE rls_gp			; wait until release
+	RTS
+
+; *** new progress indicator ***
+progress:
+	LDA ptr+1				; check new page
+	DEC						; last completed page
+	TAY						; save!
+	LSR
+	LSR
+	LSR						; 256 pages into 32 bytes (HIRES)
+	TAX						; offset ready
+	TYA						; back
+	AND #7					; number of pixels set, after adding 1; expected EVEN
+	TAY						; as index
+	LDA prog_pat, Y			; proper bitmap
+	STA $7F80, X
+	STA $7FA0, X
+	STA $7FC0, X
+	STA $7FE0, X			; beautifully displayed
 	RTS
 
 ; ***************************
@@ -793,7 +816,7 @@ sd_load:
 sd_page:
 	.asc	13, 14, "0", 15, " next page...", 0
 sd_spcr:
-	.asc	13, "----------", 13, 0
+	.asc	13, "-----------", 13, 0
 
 ; offset table for the above messages
 msg_ix:
@@ -809,6 +832,9 @@ msg_ix:
 	.byt	sd_load-msg_sd	; LOAD_MSG	loading message
 	.byt	sd_page-msg_sd	; PAGE_MSG	ask for next page
 	.byt	sd_spcr-msg_sd	; SPCR_MSG	page separator
+
+prog_pat:
+	.byt	%10000000, %11000000, %11100000, %11110000, %11111000, %11111100, %11111110, %11111111
 .)
 end_sd:
 
