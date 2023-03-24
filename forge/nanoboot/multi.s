@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230324-1636
+; last modified 20230324-1649
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 
@@ -42,6 +42,8 @@
 #define	INVALID_SD	7
 #define	SEL_MSG		8
 #define	LOAD_MSG	9
+#define	PAGE_MSG	10
+#define	SPCR_MSG	11
 
 ; *** hardware definitions ***
 IO8attr	= $DF80
@@ -245,8 +247,12 @@ end_vol:
 			LDX #INVALID_SD	; invalid contents error
 			JMP sd_fail
 skip_hd:
+		LDX #PAGE_MSG
+		JSR disp_code		; add next page option
 		JSR sel_en			; wait for a valid entry...
 		STZ en_ix			; ...but if arrived here, skip to new page
+		LDX #SPCR_MSG
+		JSR disp_code		; clean up for next page
 		JMP ls_page			; avoid re-reading the sector
 
 ; *******************************************
@@ -295,6 +301,7 @@ no_wrap:
 		TXA					; LDA ptr+1		; check current page
 		BNE boot			; until completion
 ; ** after image is loaded... **
+	SEI						; might be important!
 	JMP switch				; start code loaded into cartidge RAM!
 
 ; ************************
@@ -779,6 +786,11 @@ sd_sel:
 	.asc	" is selected", 1, 0
 sd_load:
 	.asc	13, 14, "Loading ", 0
+sd_page:
+	.asc	13, 14, "0", 15, " next page...", 0
+sd_spcr:
+	.asc	13, "----------", 13, 0
+
 ; offset table for the above messages
 msg_ix:
 	.byt	0				; IDLE_ERR
@@ -791,6 +803,8 @@ msg_ix:
 	.byt	sd_inv-msg_sd	; INVALID_SD
 	.byt	sd_sel-msg_sd	; SEL_MSG	display selected and return to line start
 	.byt	sd_load-msg_sd	; LOAD_MSG	loading message
+	.byt	sd_page-msg_sd	; PAGE_MSG	ask for next page
+	.byt	sd_spcr-msg_sd	; SPCR_MSG	page separator
 .)
 end_sd:
 
