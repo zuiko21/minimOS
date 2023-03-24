@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230324-1836
+; last modified 20230324-1941
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
