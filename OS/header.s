@@ -1,6 +1,6 @@
 ; minimOS standard header (Durango-X version)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230326-1100
+; last modified 20230326-1138
 
 ; *** default parameters, if not set just before ***
 ; file name
@@ -20,20 +20,14 @@
 #define	VERSION		0
 #endif
 
-; git commit hash in case a library was used (optional) @ $F0, binary coded 8-char hex *** or ASCII @ $E6
-#ifndef	LIBCOMMIT1
-#define	LIBCOMMIT1	$FFFF
-#endif
-#ifndef	LIBCOMMIT2
-#define	LIBCOMMIT2	$FFFF
+; git commit hash in case a library was used (optional), now 8-char ASCII @ $E6
+#ifndef	LIBCOMMIT
+#define	LIBCOMMIT	"--------"
 #endif
 
-; git commit hash of main code (optional, but pretty helpful) @ $F4, binary coded 8-char hex *** or ASCII @ $F0
-#ifndef	COMMIT1
-#define	COMMIT1		$FFFF
-#endif
-#ifndef	COMMIT2
-#define	COMMIT2		$FFFF
+; git commit hash of main code (optional, but pretty helpful), now 8-char ASCII @ $F0
+#ifndef	COMMIT
+#define	COMMIT		"--------"
 #endif
 
 ; modification time in MS-DOS/FAT format (default is birth of complete Durango-X board, 19.44) @ $F8
@@ -62,16 +56,14 @@ rom_start:
 	.byt	0				; second terminator for optional comment, just in case
 
 ; advance to end of header
-	.dsb	rom_start + $EE - *, $FF
+	.dsb	rom_start + $E6 - *, $FF
 
+; library commit (new, optional)
+	.word	LIBCOMMIT
 ; version number (new)
 	.word	VERSION
-; library commit (new, optional) *** may consider these in ASCII
-	.word	LIBCOMMIT1
-	.word	LIBCOMMIT2
 ; main commit (new, helpful)
-	.word	COMMIT1
-	.word	COMMIT2
+	.word	COMMIT
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	H_TIME
 	.word	H_DATE
