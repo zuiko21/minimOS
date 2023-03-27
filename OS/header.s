@@ -1,6 +1,6 @@
 ; minimOS standard header (Durango-X version)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230326-1138
+; last modified 20230328-0016
 
 ; *** default parameters, if not set just before ***
 ; file name
@@ -20,14 +20,14 @@
 #define	VERSION		0
 #endif
 
-; git commit hash in case a library was used (optional), now 8-char ASCII @ $E6
-#ifndef	LIBCOMMIT
-#define	LIBCOMMIT	"--------"
+; user field 1, usually git commit hash of main code (optional, but pretty helpful), always 8-char ASCII @ $F0
+#ifndef	USERFIELD1
+#define	USERFIELD1		"--------"
 #endif
 
-; git commit hash of main code (optional, but pretty helpful), now 8-char ASCII @ $F0
-#ifndef	COMMIT
-#define	COMMIT		"--------"
+; user field 2, usually git commit hash in case a library was used (optional), always 8-char ASCII @ $E6
+#ifndef	USERFIELD2
+#define	USERFIELD2	"--------"
 #endif
 
 ; modification time in MS-DOS/FAT format (default is birth of complete Durango-X board, 19.44) @ $F8
@@ -36,8 +36,8 @@
 #endif
 
 ; modification date in MS-DOS/FAT format (default is birth of complete Durango-X board, 2022.12.23) @ $FA
-#ifndef	H_TIME
-#define H_TIME		$5597
+#ifndef	H_DATE
+#define H_DATE		$5597
 #endif
 
 ; ***********************
@@ -59,11 +59,13 @@ rom_start:
 	.dsb	rom_start + $E6 - *, $FF
 
 ; library commit (new, optional)
-	.word	LIBCOMMIT
+	.asc	USERFIELD2
+	.dsb	(rom_start + $EE - *) * (* < rom_start+$EE), $FF	; padding in case of string shorter than 8 chars!
 ; version number (new)
 	.word	VERSION
 ; main commit (new, helpful)
-	.word	COMMIT
+	.asc	USERFIELD1
+	.dsb	(rom_start + $F8 - *) * (* < rom_start+$F8), $FF	; padding in case of string shorter than 8 chars!
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	H_TIME
 	.word	H_DATE
