@@ -1,0 +1,245 @@
+EESchema Schematic File Version 4
+EELAYER 29 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title "Clock tester"
+Date "2023-03-28"
+Rev ""
+Comp "@zuiko21"
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L 4xxx:4040 U?
+U 1 1 6422F7C2
+P 3550 3275
+F 0 "U?" H 3550 4256 50  0000 C CNN
+F 1 "4040" H 3550 4165 50  0000 C CNN
+F 2 "" H 3550 3275 50  0001 C CNN
+F 3 "http://www.intersil.com/content/dam/Intersil/documents/cd40/cd4020bms-24bms-40bms.pdf" H 3550 3275 50  0001 C CNN
+	1    3550 3275
+	1    0    0    -1  
+$EndComp
+$Comp
+L 4xxx:4040 U?
+U 1 1 6422FE31
+P 5200 4075
+F 0 "U?" H 5200 5056 50  0000 C CNN
+F 1 "4040" H 5200 4965 50  0000 C CNN
+F 2 "" H 5200 4075 50  0001 C CNN
+F 3 "http://www.intersil.com/content/dam/Intersil/documents/cd40/cd4020bms-24bms-40bms.pdf" H 5200 4075 50  0001 C CNN
+	1    5200 4075
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:LED D1
+U 1 1 6423174A
+P 4425 6025
+F 0 "D1" V 4464 5908 50  0000 R CNN
+F 1 "LED" V 4373 5908 50  0000 R CNN
+F 2 "" H 4425 6025 50  0001 C CNN
+F 3 "~" H 4425 6025 50  0001 C CNN
+	1    4425 6025
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:LED D2
+U 1 1 64232939
+P 4875 6025
+F 0 "D2" V 4914 5908 50  0000 R CNN
+F 1 "LED" V 4823 5908 50  0000 R CNN
+F 2 "" H 4875 6025 50  0001 C CNN
+F 3 "~" H 4875 6025 50  0001 C CNN
+	1    4875 6025
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:LED D3
+U 1 1 64232C86
+P 5300 6000
+F 0 "D3" V 5339 5883 50  0000 R CNN
+F 1 "LED" V 5248 5883 50  0000 R CNN
+F 2 "" H 5300 6000 50  0001 C CNN
+F 3 "~" H 5300 6000 50  0001 C CNN
+	1    5300 6000
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:LED D4
+U 1 1 64232FCE
+P 6000 6000
+F 0 "D4" V 6039 5883 50  0000 R CNN
+F 1 "LED" V 5948 5883 50  0000 R CNN
+F 2 "" H 6000 6000 50  0001 C CNN
+F 3 "~" H 6000 6000 50  0001 C CNN
+	1    6000 6000
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:R R2
+U 1 1 64233AE3
+P 4425 5725
+F 0 "R2" H 4495 5771 50  0000 L CNN
+F 1 "R" V 4425 5700 50  0000 L CNN
+F 2 "" V 4355 5725 50  0001 C CNN
+F 3 "~" H 4425 5725 50  0001 C CNN
+	1    4425 5725
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R3
+U 1 1 64234940
+P 4875 5725
+F 0 "R3" H 4945 5771 50  0000 L CNN
+F 1 "R" V 4875 5700 50  0000 L CNN
+F 2 "" V 4805 5725 50  0001 C CNN
+F 3 "~" H 4875 5725 50  0001 C CNN
+	1    4875 5725
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R4
+U 1 1 64234CB8
+P 5300 5700
+F 0 "R4" H 5370 5746 50  0000 L CNN
+F 1 "R" V 5300 5675 50  0000 L CNN
+F 2 "" V 5230 5700 50  0001 C CNN
+F 3 "~" H 5300 5700 50  0001 C CNN
+	1    5300 5700
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R5
+U 1 1 64234E48
+P 6000 5700
+F 0 "R5" H 6070 5746 50  0000 L CNN
+F 1 "R" V 6000 5675 50  0000 L CNN
+F 2 "" V 5930 5700 50  0001 C CNN
+F 3 "~" H 6000 5700 50  0001 C CNN
+	1    6000 5700
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4050 3575 4700 3575
+Wire Wire Line
+	4700 4975 5200 4975
+Wire Wire Line
+	4700 3875 4700 4175
+Wire Wire Line
+	3550 4175 4700 4175
+Connection ~ 4700 4175
+Wire Wire Line
+	4700 4175 4700 4975
+$Comp
+L power:GND #PWR?
+U 1 1 6423AD3E
+P 4700 4975
+F 0 "#PWR?" H 4700 4725 50  0001 C CNN
+F 1 "GND" H 4705 4802 50  0000 C CNN
+F 2 "" H 4700 4975 50  0001 C CNN
+F 3 "" H 4700 4975 50  0001 C CNN
+	1    4700 4975
+	1    0    0    -1  
+$EndComp
+Connection ~ 4700 4975
+$Comp
+L power:PWR_FLAG #FLG?
+U 1 1 6423B27B
+P 3550 4175
+F 0 "#FLG?" H 3550 4250 50  0001 C CNN
+F 1 "PWR_FLAG" H 3550 4348 50  0000 C CNN
+F 2 "" H 3550 4175 50  0001 C CNN
+F 3 "~" H 3550 4175 50  0001 C CNN
+	1    3550 4175
+	-1   0    0    1   
+$EndComp
+Connection ~ 3550 4175
+Wire Wire Line
+	3550 2475 4250 2475
+Wire Wire Line
+	5200 2475 5200 3275
+$Comp
+L power:+5V #PWR?
+U 1 1 6423B97E
+P 4700 2475
+F 0 "#PWR?" H 4700 2325 50  0001 C CNN
+F 1 "+5V" H 4715 2648 50  0000 C CNN
+F 2 "" H 4700 2475 50  0001 C CNN
+F 3 "" H 4700 2475 50  0001 C CNN
+	1    4700 2475
+	1    0    0    -1  
+$EndComp
+Connection ~ 4700 2475
+Wire Wire Line
+	4700 2475 5200 2475
+$Comp
+L power:PWR_FLAG #FLG?
+U 1 1 6423BB59
+P 5200 2475
+F 0 "#FLG?" H 5200 2550 50  0001 C CNN
+F 1 "PWR_FLAG" H 5200 2648 50  0000 C CNN
+F 2 "" H 5200 2475 50  0001 C CNN
+F 3 "~" H 5200 2475 50  0001 C CNN
+	1    5200 2475
+	1    0    0    -1  
+$EndComp
+Connection ~ 5200 2475
+Wire Wire Line
+	3050 3075 3050 4175
+Wire Wire Line
+	3050 4175 3550 4175
+$Comp
+L Device:R R1
+U 1 1 6423C1AC
+P 3050 2925
+F 0 "R1" H 2900 2925 50  0000 L CNN
+F 1 "R" V 3050 2900 50  0000 L CNN
+F 2 "" V 2980 2925 50  0001 C CNN
+F 3 "~" H 3050 2925 50  0001 C CNN
+	1    3050 2925
+	1    0    0    -1  
+$EndComp
+Connection ~ 3050 3075
+$Comp
+L Connector_Generic:Conn_01x01 J1
+U 1 1 6423CFD9
+P 3050 2575
+F 0 "J1" V 3014 2487 50  0000 R CNN
+F 1 "Probe" V 3150 2675 50  0000 R CNN
+F 2 "" H 3050 2575 50  0001 C CNN
+F 3 "~" H 3050 2575 50  0001 C CNN
+	1    3050 2575
+	0    -1   -1   0   
+$EndComp
+Connection ~ 3050 2775
+$Comp
+L Connector_Generic:Conn_01x01 J2
+U 1 1 6423DE89
+P 4250 2275
+F 0 "J2" V 4214 2187 50  0000 R CNN
+F 1 "Power" V 4350 2375 50  0000 R CNN
+F 2 "" H 4250 2275 50  0001 C CNN
+F 3 "~" H 4250 2275 50  0001 C CNN
+	1    4250 2275
+	0    -1   -1   0   
+$EndComp
+Connection ~ 4250 2475
+Wire Wire Line
+	4250 2475 4700 2475
+$Comp
+L Connector_Generic:Conn_01x01 J3
+U 1 1 6423E8ED
+P 5200 5175
+F 0 "J3" V 5164 5087 50  0000 R CNN
+F 1 "GND" V 5300 5275 50  0000 R CNN
+F 2 "" H 5200 5175 50  0001 C CNN
+F 3 "~" H 5200 5175 50  0001 C CNN
+	1    5200 5175
+	0    1    1    0   
+$EndComp
+Connection ~ 5200 4975
+$EndSCHEMATC
