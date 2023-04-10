@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230324-1952
+; last modified 20230410-1431
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 
@@ -126,13 +126,18 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"multiboot", 0	; C-string with filename @ [8], max 238 chars
-;	.asc	"(comment)"		; optional C-string with comment after filename, filename+comment up to 238 chars
-	.byt	0				; second terminator for optional comment, just in case
+	.asc	"multiboot", 0	; C-string with filename @ [8], max 220 chars
+	.asc	"(previous commit in user field)", 0		; optional C-string with comment after filename, filename+comment up to 220 chars
 
 ; advance to end of header
-	.dsb	rom_start + $F8 - *, $FF
+	.dsb	rom_start + $E6 - *, $FF
 
+; NEW library commit (user field 2)
+	.dsb	8, '$'			; unused field
+; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
+	.asc	"929636da"
+; NEW coded version number
+	.word	$1003			; 1.0a3
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$5800			; time, 11.00
 	.word	$5673			; date, 2023/3/19
@@ -472,13 +477,14 @@ is_idle:
 	JSR cs_disable			; deassert chip select
 
 	LDA res
-	CMP #1
+	LDX #SDIF_ERR			; moved here
+	CMP #1					; check valid response
 	BEQ sdic_ok
-		LDX #SDIF_ERR		; *** ERROR 1 in red ***
+; ### if error, might be 1.x card, notify and skip to CMD58 or ACMD41 ###
+;		LDX #SDIF_ERR		; *** ERROR 1 in red ***
 sdptec:
 		JMP sd_fail			; if(res[0] != 0x01) return SD_ERROR;
 sdic_ok:
-	LDX #SDIF_ERR			; eeeeeek
 	JSR pass_x				; *** PASS 1 in white ***
 ; check pattern echo
 	LDX #ECHO_ERR			; *** ERROR 2 in red ***
@@ -486,6 +492,7 @@ sdic_ok:
 	CMP #$AA
 		BNE sdptec			; if(res[4] != 0xAA) return SD_ERROR;
 	JSR pass_x				; *** PASS 2 in white ***
+; ### jump here for 1.x cards ###
 ; attempt to initialize card
 	LDX #101				; cmdAttempts = 0;
 sd_ia:
@@ -556,10 +563,12 @@ apc_rdy:
 
 ; check whether card is ready
 	LDX #READY_ERR			; *** ERROR 4 in red ***
-	LDA res+1				; eeeeeeeeek
+	BIT res+1				; eeeeeeeeek ### will check CCS as well ###
 	BMI card_rdy			; eeeeeeeeek
 		JMP sd_fail			; if(!(res[1] & 0x80)) return SD_ERROR;
 card_rdy:					; * SD_init OK! *
+; ### but check whether standard or HC/XC, as the former needs asserting 512-byte block size ###
+; ### if V is set then notify and skip CMD16 ###
 	JMP pass_x				; *** PASS 4 in white ***
 	RTS
 
@@ -801,6 +810,8 @@ sd_m2:
 	.asc	"Pattern echo", 0
 sd_m3:
 	.asc	"Card Init", 0
+sd_hc:
+	.asc	"SD HC/XC ", 0		; ### special prefix if CCS=1 ###
 sd_m4:
 	.asc	"Card Ready", 0
 sd_ok:
