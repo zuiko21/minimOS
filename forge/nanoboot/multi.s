@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230410-1849
+; last modified 20230410-1909
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 
@@ -86,6 +86,7 @@ fsize	= buffer+252		; file size INCLUDING 256-byte header
 
 ; *** directory storage ***
 en_ix		= $EE
+sd_ver		= en_ix			; ### temporary ###
 en_tab		= $300
 
 ; *****************************************************
@@ -141,7 +142,7 @@ rom_start:
 ; NEW library commit (user field 2)
 	.dsb	8, '$'			; unused field
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
-	.asc	"7eff3689"
+	.asc	"588124ba"
 ; NEW coded version number
 	.word	$1003			; 1.0a3
 ; date & time in MS-DOS format at byte 248 ($F8)
@@ -482,12 +483,14 @@ is_idle:
 	JSR rd_r7				; SD_readRes7(res);
 	JSR cs_disable			; deassert chip select
 
+	STZ sd_ver				; ### default (0) is modern SD card ###
 	LDA res
 	LDX #SDIF_ERR			; moved here
 	CMP #1					; check valid response
 	BEQ sdic_ok
 ; ### if error, might be 1.x card, notify and skip to CMD58 or ACMD41 ###
 		LDX #OLD_SD			; ### message for older cards ###
+		STX sd_ver			; ### store as flag ###
 		JSR disp_code
 		LDY #13
 		JSR conio
@@ -557,6 +560,9 @@ d10m:
 apc_rdy:
 	LDX #INIT_ERR
 	JSR pass_x				; *** PASS 3 in white ***
+; ### old SD cards are always SC ###
+	LDA sd_ver
+	BNE sd_sc
 ; read OCR
 ; ** SD_readOCR(res) is inlined here **
 	JSR cs_enable			; assert chip select
@@ -582,6 +588,7 @@ card_rdy:					; * SD_init OK! *
 ; ### if V is set then notify and skip CMD16 ###
 	BVS hcxc
 ; ### set 512-byte block size ###
+sd_sc:
 		STZ arg
 		STZ arg+1
 		LDA #>CMD16_ARG
