@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230410-1941
+; last modified 20230410-1948
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 
@@ -142,7 +142,7 @@ rom_start:
 ; NEW library commit (user field 2)
 	.dsb	8, '$'			; unused field
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
-	.asc	"8127b9f5"
+	.asc	"8d9a9400"
 ; NEW coded version number
 	.word	$1003			; 1.0a3
 ; date & time in MS-DOS format at byte 248 ($F8)
@@ -601,6 +601,7 @@ sd_sc:
 		LDA #CMD16
 		JSR sd_cmd
 ; should I check errors?
+		JSR rd_r1
 		JSR cs_disable		; deassert chip select ###
 		LDX #READY_ERR		; ### display standard capacity message and finish ###
 		BRA card_ok
