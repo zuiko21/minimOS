@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230410-1431
+; last modified 20230410-1849
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 
@@ -17,6 +17,9 @@
 #define	CMD8		8
 #define	CMD8_ARG	$01AA
 #define	CMD8_CRC	$86
+#define	CMD16		16
+#define	CMD16_ARG	$0200
+#define	CMD16_CRC	0
 #define	ACMD41		41
 #define	ACMD41_ARG	$40
 #define	ACMD41_CRC	0
@@ -44,6 +47,8 @@
 #define	LOAD_MSG	9
 #define	PAGE_MSG	10
 #define	SPCR_MSG	11
+#define	OLD_SD		12
+#define	HC_XC		13
 
 ; *** hardware definitions ***
 IO8attr	= $DF80
@@ -127,15 +132,16 @@ rom_start:
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
 	.asc	"multiboot", 0	; C-string with filename @ [8], max 220 chars
-	.asc	"(previous commit in user field)", 0		; optional C-string with comment after filename, filename+comment up to 220 chars
+; optional C-string with comment after filename, filename+comment up to 220 chars
+	.asc	"(previous commit in user field)", 0
 
-; advance to end of header
+; advance to end of header *** NEW format
 	.dsb	rom_start + $E6 - *, $FF
 
 ; NEW library commit (user field 2)
 	.dsb	8, '$'			; unused field
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
-	.asc	"929636da"
+	.asc	"7eff3689"
 ; NEW coded version number
 	.word	$1003			; 1.0a3
 ; date & time in MS-DOS format at byte 248 ($F8)
@@ -481,7 +487,11 @@ is_idle:
 	CMP #1					; check valid response
 	BEQ sdic_ok
 ; ### if error, might be 1.x card, notify and skip to CMD58 or ACMD41 ###
-;		LDX #SDIF_ERR		; *** ERROR 1 in red ***
+		LDX #OLD_SD			; ### message for older cards ###
+		JSR disp_code
+		LDY #13
+		JSR conio
+		BRA not_cmd8
 sdptec:
 		JMP sd_fail			; if(res[0] != 0x01) return SD_ERROR;
 sdic_ok:
@@ -493,7 +503,8 @@ sdic_ok:
 		BNE sdptec			; if(res[4] != 0xAA) return SD_ERROR;
 	JSR pass_x				; *** PASS 2 in white ***
 ; ### jump here for 1.x cards ###
-; attempt to initialize card
+not_cmd8:
+; attempt to initialize card *** could add CMD58 for voltage check
 	LDX #101				; cmdAttempts = 0;
 sd_ia:
 ; send app cmd
@@ -569,8 +580,25 @@ apc_rdy:
 card_rdy:					; * SD_init OK! *
 ; ### but check whether standard or HC/XC, as the former needs asserting 512-byte block size ###
 ; ### if V is set then notify and skip CMD16 ###
+	BVS hcxc
+; ### set 512-byte block size ###
+		STZ arg
+		STZ arg+1
+		LDA #>CMD16_ARG
+		STA arg+2
+		LDA #<CMD16_ARG
+		STA arg+3
+		LDA #CMD16_CRC
+		STA crc
+		LDA #CMD16
+		JSR sd_cmd
+; should I check errors?
+		LDX #READY_ERR		; ### display standard capacity message and finish ###
+		BRA card_ok
+hcxc:
+	LDX #HC_XC				; ### notify this instead ###
+card_ok:
 	JMP pass_x				; *** PASS 4 in white ***
-	RTS
 
 ; *** read single sector ***
 ; ptr MUST be even, NOT starting at $DF00 and certainly (two) page-aligned
@@ -658,8 +686,7 @@ io_dsc:
 pass_x:
 	JSR disp_code			; display message
 	LDX #OK_MSG				; OK message
-;	JMP disp_code
-;	RTS
+;	JMP disp_code			; print and return
 
 ; *** display code message ***
 disp_code:
@@ -804,6 +831,8 @@ sd_fail:					; SD card failed
 ; messages for SD init, with offsets
 msg_sd:
 	.asc	"Set Idle", 0
+sd_old:
+	.asc	"1.x "			; ### special prefix for older v1.x cards ###
 sd_m1:
 	.asc	"SD Interface", 0
 sd_m2:
@@ -811,11 +840,11 @@ sd_m2:
 sd_m3:
 	.asc	"Card Init", 0
 sd_hc:
-	.asc	"SD HC/XC ", 0		; ### special prefix if CCS=1 ###
+	.asc	"SD HC/XC "		; ### special prefix if CCS=1 ###
 sd_m4:
 	.asc	"Card Ready", 0
 sd_ok:
-	.asc	" OK", 13, 0
+	.asc	" OK!", 13, 0
 sd_err:
 	.asc	" ", 14, "FAIL!", 15, 7, 0
 sd_inv:
@@ -843,6 +872,8 @@ msg_ix:
 	.byt	sd_load-msg_sd	; LOAD_MSG	loading message
 	.byt	sd_page-msg_sd	; PAGE_MSG	ask for next page
 	.byt	sd_spcr-msg_sd	; SPCR_MSG	page separator
+	.byt	sd_old-msg_sd	; OLD_SD	v1.x before SD Interface
+	.byt	sd_hc-msg_sd	; HC_XC		before Card Ready
 
 prog_pat:
 	.byt	%10000000, %11000000, %11100000, %11110000, %11111000, %11111100, %11111110, %11111111
