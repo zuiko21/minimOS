@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230410-1948
+; last modified 20230411-1055
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 
@@ -424,10 +424,10 @@ sd_init:
 ; ** SD_powerUpSeq is inlined here **
 	LDA #SD_CS				; CS bit
 	TSB IOCart				; CS_DISABLE();
-	LDX #36					; ** may substitute SD logo load for this delay **
+	LDX #220				; ** may substitute SD logo load for this delay **
 sdpu_dl:
 		NOP
-		INX
+		DEX
 		BNE sdpu_dl			; delayMicroseconds(1000);
 ; continue with powerup sequence
 	LDX #9					; for (u_int8_t i = 0; i < 10; i++)		; one less as cs_disable sends another byte
@@ -470,7 +470,7 @@ is_idle:
 	JSR cs_enable			; assert chip select
 ; send CMD8
 	STZ arg
-	STZ arg+1
+	STZ arg+1				; CMD8_ARG upper 16 bits are zero
 	LDA #>CMD8_ARG
 	STA arg+2
 	LDA #<CMD8_ARG
@@ -562,7 +562,7 @@ apc_rdy:
 	JSR pass_x				; *** PASS 3 in white ***
 ; ### old SD cards are always SC ###
 	LDA sd_ver
-	BNE sd_sc
+		BNE sd_sc
 ; read OCR
 ; ** SD_readOCR(res) is inlined here **
 	JSR cs_enable			; assert chip select
@@ -591,13 +591,13 @@ card_rdy:					; * SD_init OK! *
 sd_sc:
 		JSR cs_enable		; assert chip select ### eeeeeeeeek
 		STZ arg
-		STZ arg+1
-		LDA #>CMD16_ARG
+		STZ arg+1			; assume CMD16_ARG upper 16 bits are zero
+		LDA #>CMD16_ARG		; actually 2 for 512 bytes per sector
 		STA arg+2
-		LDA #<CMD16_ARG
-		STA arg+3
-		LDA #CMD16_CRC
-		STA crc
+;		LDA #<CMD16_ARG
+;		STA arg+3
+		STZ arg+3			; assume CMD16_ARG LSB is zero (512 mod 256)
+		STZ crc				; assume CMD16_CRC is zero
 		LDA #CMD16
 		JSR sd_cmd
 ; should I check errors?
@@ -842,7 +842,7 @@ sd_fail:					; SD card failed
 msg_sd:
 	.asc	"Set Idle", 0
 sd_old:
-	.asc	"1.x "			; ### special prefix for older v1.x cards ###
+	.asc	"v1.x "			; ### special prefix for older v1.x cards ###
 sd_m1:
 	.asc	"SD Interface", 0
 sd_m2:
@@ -850,11 +850,11 @@ sd_m2:
 sd_m3:
 	.asc	"Card Init", 0
 sd_hc:
-	.asc	"SD HC/XC "		; ### special prefix if CCS=1 ###
+	.asc	"HC/XC "		; ### special prefix if CCS=1 ###
 sd_m4:
 	.asc	"Card Ready", 0
 sd_ok:
-	.asc	" OK!", 13, 0
+	.asc	" OK", 13, 0
 sd_err:
 	.asc	" ", 14, "FAIL!", 15, 7, 0
 sd_inv:
