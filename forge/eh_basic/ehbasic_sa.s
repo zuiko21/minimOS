@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230412-1414
+; last modified 20230412-1434
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -9327,7 +9327,6 @@ reset:
 	LDX #$FF
 	TXS
 	STX IOAie				; ### enable Durango-X hardware interrupt ###
-	STX fw_scur				; as bit 7 is on, activates cursor
 	LDA #$B8				; start in HIRES mode, if possible (note RGB bit set, just in case)
 	STA IO8attr
 	INX						; X was $FF, now 0
@@ -9370,11 +9369,12 @@ nes_init:
 not_5x8:
 	STX kb_type				; set selected type
 ; * init CONIO *
-	STZ fw_cbin				; EEEEEEK
-	STZ fw_mask
-	STZ fw_io9
+;	STZ fw_cbin				; no longer needed as page 2 is fully cleared
+;	STZ fw_mask
+;	STZ fw_io9
 	LDA #$87				; yellow on blue intial colours (not for HIRES)
 	STA fw_ccol+1			; will reconstruct colours from this upon FF
+	STA fw_scur				; as bit 7 is on, activates cursor *** check if different colours ***
 	LDY #12					; FF = clear screen
 	JSR conio
 
