@@ -615,8 +615,8 @@ LAB_GMEM
 ; *** preset random seed based on Memory Size input time! ***
 	LDX ticks			; most frequently changed value
 	LDY ticks+1
-	STX RByte1			; set most significant seed bytes
-	STY RByte2
+	STX Rbyte1			; set most significant seed bytes
+	STY Rbyte2
 ; ***
 	JSR	LAB_GBYT		; get last byte back
 
@@ -8284,7 +8284,7 @@ LAB_MSZM
 LAB_SMSG
 	.byte	" Bytes free",$0D,$0D
 	.byte	"Enhanced BASIC 2.22",$0D
-	.byte	"for Durango·X",$0D,$00	; *** do not know why this was $0A ***
+	.byte	"for Durango-X",$0D,$00	; *** do not know why this was $0A ***
 
 ; numeric constants and series
 
