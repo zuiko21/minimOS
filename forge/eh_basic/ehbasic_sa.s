@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230324-1948
+; last modified 20230412-1414
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -564,8 +564,8 @@ Ram_top		= $6000		; end of user RAM+1 (set as needed, should be page aligned) KE
 ; new page 2 initialisation, copy block to ccflag on
 ; *** cannot use page 2 freely, now goes into a safe ZP/DP space ***
 LAB_COLD
-	STZ std_in
-	STZ stdout			; *** placeholder init while code below is revised ***
+;	STZ std_in
+;	STZ stdout			; *** placeholder init while code below is revised ***
 
 	LDX	#PG2_TABE-PG2_TABS-1
 						; *** uses X instead of Y to make it 816-DP-savvy ***
@@ -612,6 +612,12 @@ LAB_GMEM
 	JSR	LAB_INLN		; print "? " and get BASIC input
 	STX	Bpntrl			; set BASIC execute pointer low byte
 	STY	Bpntrh			; set BASIC execute pointer high byte
+; *** preset random seed based on Memory Size input time! ***
+	LDX ticks			; most frequently changed value
+	LDY ticks+1
+	STX RByte1			; set most significant seed bytes
+	STY RByte2
+; ***
 	JSR	LAB_GBYT		; get last byte back
 
 	BNE	LAB_2DAA		; branch if not null (user typed something)
@@ -8278,7 +8284,7 @@ LAB_MSZM
 LAB_SMSG
 	.byte	" Bytes free",$0D,$0D
 	.byte	"Enhanced BASIC 2.22",$0D
-	.byte	"for Durango·X",$0D,$00	; *** do not know why this was $0A ***
+	.byte	"for DurangoÂ·X",$0D,$00	; *** do not know why this was $0A ***
 
 ; numeric constants and series
 
@@ -9320,16 +9326,16 @@ reset:
 	CLD
 	LDX #$FF
 	TXS
-	STX IOAie				; ### enable Durango-X hardware interrupt ###
+	STX IOAie				; ### enable Durango-X hardware interruptÂ ###
 	STX fw_scur				; as bit 7 is on, activates cursor
 	LDA #$B8				; start in HIRES mode, if possible (note RGB bit set, just in case)
 	STA IO8attr
-	LDX #3					; max jiffy counter index
+	INX						; X was $FF, now 0
 jf_res:
-		STZ ticks, X		; reset all jiffy counter bytes
-		STZ kb_asc, X		; init all keyboard variables too, up to kb_scan (4 bytes)
-		DEX
-		BPL jf_res
+		STZ 0, X			; reset all zeropage, just in case (will do standard devices)
+		STZ $0200, X		; reset all page two as well, useful for drivers
+		INX
+		BNE jf_res
 	LDX #>std_irq
 	LDY #<std_irq
 	STY fw_irq				; set standard interrupt vectors
@@ -9344,7 +9350,7 @@ jf_res:
 nes_init:
 		STA IO9nes1			; send clock pulse
 		DEX
-		BNE nes_init		; all bits read @ IO9nes0
+		BNE nes_init		; all bits read @Â IO9nes0
 	LDA IO9nes0				; get bits
 	LDX IO9nes1				; get bits for pad 2
 	STA GAMEPAD_MASK1		; * MUST have a standard address, and MUST be initialised! *
@@ -9402,7 +9408,7 @@ irq_sup:
 nes_loop:
 		STA IO9nes1			; send clock pulse
 		DEX
-		BNE nes_loop		; all bits read @ IO9nes0/1
+		BNE nes_loop		; all bits read @Â IO9nes0/1
 ; done, but check GAMEPAD_MASK1 & GAMEPAD_MASK2 after reading ports in BASIC!
 #endif
 	LDA IO9nes0
