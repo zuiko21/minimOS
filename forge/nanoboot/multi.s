@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230411-1055
+; last modified 20230412-1305
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 
@@ -12,26 +12,18 @@
 #define	SD_MISO		%10000000
 
 #define	CMD0		0
-#define	CMD0_ARG	0
 #define	CMD0_CRC	$94
 #define	CMD8		8
 #define	CMD8_ARG	$01AA
 #define	CMD8_CRC	$86
 #define	CMD16		16
 #define	CMD16_ARG	$0200
-#define	CMD16_CRC	0
 #define	ACMD41		41
 #define	ACMD41_ARG	$40
-#define	ACMD41_CRC	0
 #define	CMD55		55
-#define	CMD55_ARG	0
-#define	CMD55_CRC	0
 #define	CMD58		58
-#define	CMD58_ARG	0
-#define	CMD58_CRC	0
 
 #define	CMD17		17
-#define	CMD17_CRC	0
 #define	SD_MAX_READ_ATTEMPTS	203
 
 ; error code messages
