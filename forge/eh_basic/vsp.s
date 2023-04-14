@@ -1,8 +1,8 @@
 ; Virtual Serial Port driver module for EhBASIC (under perdita)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230210-2252
+; last modified 20230414-1751
 
-#echo Using Virtual Serial Port for LOAD/SAVE, back to fixed name
+#echo Using Virtual Serial Port for LOAD/SAVE, interactive filename prompt
 
 #define	PSV_FOPEN	$11
 #define	PSV_FREAD	$12
@@ -39,16 +39,20 @@ do_aux_out:
 
 -aux_load:					; *** prepare things for LOAD, Carry if not possible ***
 	JSR set_name
-	LDA #PSV_FREAD
-	STA $DF94				; will use open file for reading
-	CLC
+	BCS auxl_end			; do nothing in case of error
+		LDA #PSV_FREAD
+		STA $DF94			; will use open file for reading
+		CLC
+auxl_end:
 	RTS
 
 -aux_save:					; *** prepare things for SAVE, Carry if not possible ***
 	JSR set_name
-	LDA #PSV_FWRITE
-	STA $DF94				; will use open file for writing
-	CLC						; all OK this far!
+	BCS auxs_end			; do nothing in case of error
+		LDA #PSV_FWRITE
+		STA $DF94			; will use open file for writing
+		CLC					; all OK this far!
+auxs_end:
 	RTS
 
 -aux_close:					; *** tidy up after SAVE ***
@@ -59,22 +63,35 @@ do_aux_out:
 set_name:
 	LDA #PSV_FOPEN
 	STA $DF94				; set VSP mode for setting filename
-;	JSR LAB_EVEZ			; check expression
-;	BIT Dtypef
-;	BPL name_ok				; not really a string
-;	JSR LAB_22B6
-;	TAX
-;	BEQ name_ok				; if empty string, perdita will give EOF all the time
+; ask for the filename, or $ for directory listing
+	LDX #0
+prompt_l:
+		LDY aux_prompt, X
+		BEQ ask_name
+		PHX
+		JSR conio			; display prompt string
+		PLX
+		INX
+		BNE prompt_l
+ask_name:
+	JSR LAB_INLN
+	STX ut1_pl
+	STY ut1_ph				; set indirect pointer
+; *** might check here for '$' of directory listing request
+
+; send filename to VSP
 	LDY #0
 name_l:
-		LDA filename, Y;LDA (ut1_pl), Y		; get char
+		LDA (ut1_pl), Y		; get char
 		BEQ name_ok			; until termination
 		STA $DF93			; send name character to VSP
 		INY					; eeeeeek
 		DEX
 		BNE name_l
 name_ok:
+	CLC						; name was OK
 	RTS
 
-filename:
-	.asc	"test.bas", 0
+aux_prompt:
+	.asc	"Filename", 0
+
