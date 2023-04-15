@@ -1,31 +1,32 @@
 /* Perdita 65C02 Durango-X emulator!
  * (c)2007-2023 Carlos J. Santisteban, Emilio López Berenguer
- * last modified 20230219-2128
+ * last modified 20230415-1700
  * */
 
 /* Gamepad buttons constants */
-#define BUTTON_A 0x80
-#define BUTTON_START 0x40
-#define BUTTON_B 0x20
-#define BUTTON_SELECT 0x10
-#define BUTTON_UP 0x08
-#define BUTTON_LEFT 0x04
-#define BUTTON_DOWN 0x02
-#define BUTTON_RIGHT 0x01
+#define BUTTON_A			0x80
+#define BUTTON_START		0x40
+#define BUTTON_B			0x20
+#define BUTTON_SELECT		0x10
+#define BUTTON_UP			0x08
+#define BUTTON_LEFT			0x04
+#define BUTTON_DOWN			0x02
+#define BUTTON_RIGHT		0x01
 /* PSV Constants */
-#define PSV_FOPEN 0x11
-#define PSV_FREAD 0x12
-#define PSV_FWRITE 0x13
-#define PSV_FCLOSE 0x1F
-#define PSV_HEX 0xF0
-#define PSV_ASCII 0xF1
-#define PSV_BINARY 0xF2
-#define PSV_DECIMAL 0xF3
-#define PSV_STOPWATCH_START 0xFB
-#define PSV_STOPWATCH_STOP 0xFC
-#define PSV_DUMP 0xFD
-#define PSV_STACK 0xFE
-#define PSV_STAT 0xFF
+#define	PSV_DISABLE			0
+#define PSV_FOPEN			0x11
+#define PSV_FREAD			0x12
+#define PSV_FWRITE			0x13
+#define PSV_FCLOSE			0x1F
+#define PSV_HEX				0xF0
+#define PSV_ASCII			0xF1
+#define PSV_BINARY			0xF2
+#define PSV_DECIMAL			0xF3
+#define PSV_STOPWATCH_START	0xFB
+#define PSV_STOPWATCH_STOP	0xFC
+#define PSV_DUMP			0xFD
+#define PSV_STACK			0xFE
+#define PSV_STAT			0xFF
 
 
 /* Binary conversion */
@@ -635,15 +636,20 @@ byte peek(word dir) {
 		} else if (dir<=0xDF8F) {		// sync flags
 			d = mem[0xDF88];
 		} else if (dir==0xDF93) {		// Read from VSP
-			if ((!feof(psv_file)) && (mem[0xDF94]==PSV_FREAD))	{
-				d = fgetc(psv_file);	// get char from input file
-				if (ver)	printf("(%d)", d);					// DEBUG transmitted char
-			} else {
-				d = 0;					// NULL means EOF
-				printf("WARNING: End of VSP file\n");
-			}
+			if (mem[0xDF94]==PSV_FREAD) {
+				if (!feof(psv_file)) {
+					d = fgetc(psv_file);				// get char from input file
+					if (ver)	printf("(%d)", d);		// DEBUG transmitted char
+				} else {
+					d = 0;				// NULL means EOF
+					printf(" Done reading file\n");
+					fclose(psv_file);	// eeeeek
+					psv_file = NULL;
+					mem[0xDF94] = PSV_DISABLE;			// no further actions
+				}
+			}							// cannot read anything if disabled, default d=0 means EOF anyway
 			mem[0xDF93] = d;			// cache value
-		} else if (dir==0xDF9B && emulate_minstrel) {			// Minstrel keyboard port EEEEEK
+		} else if (dir==0xDF9B && emulate_minstrel) {	// Minstrel keyboard port EEEEEK
 			switch(mem[0xDF9B]) {
 				case 1: return minstrel_keyboard[0];
 				case 2: return minstrel_keyboard[1];
@@ -798,10 +804,12 @@ void poke(word dir, byte v) {
 //				mem[0xDF93]=fgetc(psv_file);		// not done at config time, wait for actual read!
 			}
 			// PSV file close
-			if(v==PSV_FCLOSE) {
+			if(v==PSV_FCLOSE && psv_file!=NULL) {
 				// close file
 				if(fclose(psv_file)!=0) {
 					printf("WARNING: Error closing file %s\n", psv_filename);
+				} else {
+					printf(" Done with file!\n");
 				}
 				psv_file = NULL;
 			}
