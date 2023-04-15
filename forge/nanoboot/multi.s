@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230415-2357
+; last modified 20230416-0022
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 
@@ -134,7 +134,7 @@ rom_start:
 ; NEW library commit (user field 2)
 	.dsb	8, '$'			; unused field
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
-	.asc	"fa4e81fe"
+	.asc	"$$$$$$$$"
 ; NEW coded version number
 	.word	$1004			; 1.0a4
 ; date & time in MS-DOS format at byte 248 ($F8)
@@ -230,19 +230,21 @@ end_vol_near:
 ; * in any case, jump and read next header *
 next_file:
 ; compute next header sector
-			LDA fsize+1		; number of pages
+; first, convert size into number of sectors
 			LDX fsize		; any padding used?
 			BEQ full_pg
-				INC			; if so, count as one more page
-				BCC full_pg			; **
+				INC fsize+1			; if so, count as one more page
+				BNE full_pg			; ** eeeeeek
 					INC fsize+2		; ** now supporting up to 16M headers!
 full_pg:
 			LSR fsize+2		; **
-			ROR				; half the number of sectors...
-			ADC #0			; ...unless it was odd
-			BCC below64		; **
+			ROR fsize+1		; half the number of sectors...
+			BCC below64
+				INC fsize+1	; ...unless it was odd
+			BNE below64		; **
 				INC fsize+2	; **
 below64:
+			LDA fsize+1
 			ADC arg+3		; add to current sector, note big-endian!
 			STA arg+3
 			LDA fsize+2		; **
