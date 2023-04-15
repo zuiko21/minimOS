@@ -230,31 +230,7 @@ end_vol_near:
 ; * in any case, jump and read next header *
 next_file:
 ; compute next header sector
-; first, convert size into number of sectors
-			LDX fsize		; any padding used?
-			BEQ full_pg
-				INC fsize+1			; if so, count as one more page
-				BNE full_pg			; ** eeeeeek
-					INC fsize+2		; ** now supporting up to 16M headers!
-full_pg:
-			LSR fsize+2		; **
-			ROR fsize+1		; half the number of sectors...
-			BCC below64
-				INC fsize+1	; ...unless it was odd
-			BNE below64		; **
-				INC fsize+2	; **
-below64:
-			LDA fsize+1
-			ADC arg+3		; add to current sector, note big-endian!
-			STA arg+3
-			LDA fsize+2		; **
-			ADC arg+2
-			STA arg+2
-			BNE sec_ok
-				INC arg+1	; and propagate carry, just in case
-			BNE sec_ok
-				INC arg
-sec_ok:
+			JSR next_sector
 			JMP ls_disp		; no need for BRA
 end_vol:
 		LDA en_ix			; check if volume ended with no entries listed
@@ -694,6 +670,36 @@ io_dsc:
 		BNE io_dsc			; until the end of page
 	INC ptr+1				; continue from page $E0
 	BNE rd_crc				; current sector actually ended EEEEK
+
+; *** advance to next sector according to filesize ***
+next_sector:
+; first, convert size into number of sectors
+	LDX fsize		; any padding used?
+	BEQ full_pg
+		INC fsize+1			; if so, count as one more page
+		BNE full_pg			; ** eeeeeek
+			INC fsize+2		; ** now supporting up to 16M headers!
+full_pg:
+	LSR fsize+2		; **
+	ROR fsize+1		; half the number of sectors...
+	BCC below64
+		INC fsize+1	; ...unless it was odd
+	BNE below64		; **
+		INC fsize+2	; **
+below64:
+	LDA fsize+1
+	ADC arg+3		; add to current sector, note big-endian!
+	STA arg+3
+	LDA fsize+2		; **
+	ADC arg+2
+	STA arg+2
+	LDA fsize+3		; just in case...
+	ADC arg+1		; propagate carry, just in case
+	STA arg+1
+	BCC sec_ok
+		INC arg
+sec_ok:
+	RTS
 
 ; *** display pass code ***
 pass_x:
