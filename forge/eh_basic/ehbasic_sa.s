@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230412-1434
+; last modified 20230415-1724
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -564,9 +564,7 @@ Ram_top		= $6000		; end of user RAM+1 (set as needed, should be page aligned) KE
 ; new page 2 initialisation, copy block to ccflag on
 ; *** cannot use page 2 freely, now goes into a safe ZP/DP space ***
 LAB_COLD
-;	STZ std_in
-;	STZ stdout			; *** placeholder init while code below is revised ***
-
+; *** might reset IO devices here, if not done by firmware
 	LDX	#PG2_TABE-PG2_TABS-1
 						; *** uses X instead of Y to make it 816-DP-savvy ***
 						; byte count-1
@@ -880,7 +878,7 @@ LAB_1269
 
 ; BASIC warm start entry point
 ; wait for Basic command
-
+LAB_WARM
 LAB_1274
 						; clear ON IRQ/NMI bytes
 ;	LDA	#$00			; clear A
@@ -7918,8 +7916,6 @@ LAB_LDOK
 	ASL					; now is 4 (AUX device)
 	STA std_in			; redirect buffer input...
 	RTS					; ...and let input routine exit upon EOF!
-;	JMP LAB_127D
-;	JMP LAB_1274
 
 V_SAVE					; save BASIC program *** now implemented via aux_io.s ***
 	JSR aux_save		; get things ready
@@ -7940,7 +7936,7 @@ LAB_SVOK
 	JSR aux_close		; tidy up
 	STZ std_in
 	STZ stdout			; restore devices
-	RTS
+	JMP LAB_WARM		; avoid errors...
 
 ; perform BYE	##### minimOS ##### not needed
 ;LAB_EXIT
