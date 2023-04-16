@@ -1,6 +1,6 @@
 ; masked sprites demo for Durango-X
-; (c) 2022 Carlos J. Santisteban
-; last modified 20220715-1123
+; (c) 2022-2023 Carlos J. Santisteban
+; last modified 20230415-2327
 
 ; *** variables and pointers ***
 IO8attr	= $DF80				; video mode register
@@ -20,13 +20,39 @@ pos_s	= 14				; pointer to screen position (backup)
 pos_b	= 16				; pointer to background (backup)
 dir		= 18				; sprite X direction (0=right/-1=left)
 
-; *** ROM starts with binaries ***
-	* = $C000
+	* = $BE00
+rom_start:
+; header ID
+	.byt	0				; [0]=NUL, first magic number
+	.asc	"dX"			; bootable ROM for Durango-X devCart
+	.asc	"****"			; reserved
+	.byt	13				; [7]=NEWLINE, second magic number
+; filename
+	.asc	"Elvira sprite demo", 0	; C-string with filename @ [8], max 220 chars
+	.byt	0				; second terminator for optional comment, just in case
 
+; advance to end of header *** NEW format
+	.dsb	rom_start + $E6 - *, $FF
+
+; NEW library commit (user field 2)
+	.dsb	8, '$'			; unused field
+; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
+	.asc	"96bb41f7"
+; NEW coded version number
+	.word	$10C2			; 1.0f2
+; date & time in MS-DOS format at byte 248 ($F8)
+	.word	$BC80			; time, 23.36
+	.word	$568F			; date, 2023/4/15
+; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
+	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
+	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
+
+; *** ROM starts with binaries ***
 background:
-	.bin	0, 8192, "../../other/data/elvira.sv"	; background picture
+	.bin	0, 8192, "../../other/data/elvira.sv"	; background picture (now skipping I/O page)
 
 ; should be $E000
+	.dsb	$E000-*, $FF
 sprites:
 	.bin	0, 2240, "../../other/data/sprites.sv"	; sprite data (28*32, 448 bytes each)
 	.dsb	$E900-*, $FF							; ended at $E8C0, mask MUST be page-aligned!
@@ -233,8 +259,13 @@ left:
 done:
 		JMP anim
 
-	.dsb	$FFFA - *, $DB	; ROM filling
+; *** standard filling with DevCart support ***
+	.dsb	$FFD6 - *, $DB	; ROM filling
+	.asc	"DmOS"			; Durango-X signature
+	.dsb	$FFE1 - *, $FF
+	JMP ($FFFC)				; devCart support
 
-	.word demo
-	.word demo
-	.word demo
+	.dsb	$FFFA - *, $FF
+	.word demo				; unused NMI as reset
+	.word demo				; reset
+	.word demo				; unused IRQ as reset!

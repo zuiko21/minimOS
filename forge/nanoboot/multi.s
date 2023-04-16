@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230412-1305
+; last modified 20230416-0022
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 
@@ -134,12 +134,12 @@ rom_start:
 ; NEW library commit (user field 2)
 	.dsb	8, '$'			; unused field
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
-	.asc	"8d9a9400"
+	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1003			; 1.0a3
+	.word	$1004			; 1.0a4
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5800			; time, 11.00
-	.word	$5673			; date, 2023/3/19
+	.word	$BF20			; time, 23.57
+	.word	$568F			; date, 2023/4/15
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	rom_end-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -171,10 +171,9 @@ ls_disp:
 		BNE end_vol_near
 			LDA magic2		; check magic number two
 			CMP #13			; must be NEWL instead of zero
-		BNE end_vol
+		BNE end_vol_near
 			LDA magic3		; check magic number three
-end_vol_near:
-		BNE end_vol
+		BNE end_vol_near
 ; header is valid, check whether bootable or not
 			LDA bootsig		; check Durango-X bootable ROM image signature
 			CMP #'d'
@@ -225,25 +224,13 @@ name_end:
 ; *** might display some metadata here...
 			LDY #13
 			JSR conio		; next line
+			BRA next_file
+end_vol_near:
+		BRA end_vol
 ; * in any case, jump and read next header *
 next_file:
 ; compute next header sector
-			LDA fsize+1		; number of pages
-			LDX fsize		; any padding used?
-			BEQ full_pg
-				INC			; if so, count as one more page
-full_pg:
-			LSR				; half the number of sectors...
-			ADC #0			; ...unless it was odd
-			ADC arg+3		; add to current sector, note big-endian!
-			STA arg+3
-			BCC sec_ok
-				INC arg+2	; and propagate carry, just in case
-			BNE sec_ok
-				INC arg+1
-			BNE sec_ok
-				INC arg
-sec_ok:
+			JSR next_sector
 			JMP ls_disp		; no need for BRA
 end_vol:
 		LDA en_ix			; check if volume ended with no entries listed
@@ -683,6 +670,36 @@ io_dsc:
 		BNE io_dsc			; until the end of page
 	INC ptr+1				; continue from page $E0
 	BNE rd_crc				; current sector actually ended EEEEK
+
+; *** advance to next sector according to filesize ***
+next_sector:
+; first, convert size into number of sectors
+	LDX fsize		; any padding used?
+	BEQ full_pg
+		INC fsize+1			; if so, count as one more page
+		BNE full_pg			; ** eeeeeek
+			INC fsize+2		; ** now supporting up to 16M headers!
+full_pg:
+	LSR fsize+2		; **
+	ROR fsize+1		; half the number of sectors...
+	BCC below64
+		INC fsize+1	; ...unless it was odd
+	BNE below64		; **
+		INC fsize+2	; **
+below64:
+	LDA fsize+1
+	ADC arg+3		; add to current sector, note big-endian!
+	STA arg+3
+	LDA fsize+2		; **
+	ADC arg+2
+	STA arg+2
+	LDA fsize+3		; just in case...
+	ADC arg+1		; propagate carry, just in case
+	STA arg+1
+	BCC sec_ok
+		INC arg
+sec_ok:
+	RTS
 
 ; *** display pass code ***
 pass_x:
