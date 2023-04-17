@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230415-1724
+; last modified 20230416-1729
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -114,8 +114,15 @@ rom_start:
 	.asc	"Derived from EhBASIC v2.22 by Lee Davison", 13, "RIP"	; comment with IMPORTANT attribution
 	.byt	0				; second terminator for optional comment, just in case
 
-; advance to end of header
-	.dsb	rom_start + $F8 - *, $FF
+; advance to end of header *** NEW format
+	.dsb	rom_start + $E6 - *, $FF
+
+; NEW library commit (user field 2)
+	.dsb	8, '$'			; unused field
+; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
+	.asc	"$$$$$$$$"
+; NEW coded version number
+	.word	$22D2			; 2.22f2
 
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$5800			; time, 11.00
@@ -539,7 +546,7 @@ LAB_STAK	= $0100		; stack bottom, no offset
 ; *** flushed stack address (minus 2) will be stored at emptsk in runtime ***
 
 ; *** EhBASIC definitions for Durango-X ***
-Ram_base	= $0300		; start of user RAM (set as needed, should be page aligned)
+Ram_base	= $0500		; start of user RAM (set as needed, should be page aligned) keep CLEAR of SD-card sector, otherwise $0300 is OK
 Ram_top		= $6000		; end of user RAM+1 (set as needed, should be page aligned) KEEP CLEAR Durango-X screen!
 
 ; ***************************
