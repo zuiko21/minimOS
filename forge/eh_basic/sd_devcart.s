@@ -299,7 +299,7 @@ below64:
 	BCC sec_ok
 		INC arg
 sec_ok:
-	RTS
+	JMP ssec_rd		; eeeeeek! and return
 
 
 ; ***********************************
