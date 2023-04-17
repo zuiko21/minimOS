@@ -22,6 +22,7 @@
 #define PSV_ASCII			0xF1
 #define PSV_BINARY			0xF2
 #define PSV_DECIMAL			0xF3
+#define PSV_INT 			0xF4
 #define PSV_STOPWATCH_START	0xFB
 #define PSV_STOPWATCH_STOP	0xFC
 #define PSV_DUMP			0xFD
@@ -120,7 +121,7 @@
 /* Global PSV Variables */
 	// PSV filename
 	char psv_filename[100];
-	int psv_index;
+	int psv_index = 0;
 	FILE* psv_file;
 
 /* ******************* */
@@ -712,6 +713,17 @@ void poke(word dir, byte v) {
 			else if(mem[0xDF94]==PSV_DECIMAL) {
 				// Print decimal
 				printf("[%u]", mem[dir]);
+			}
+            // If int mode enabled
+			else if(mem[0xDF94]==PSV_INT) {
+				// Save value
+                psv_filename[psv_index++] = mem[dir];
+                // Display value
+                if(psv_index==2) {
+                    // Print decimal
+                    printf("[%02X %02X]", psv_filename[0], psv_filename[1]);	
+                    psv_index=0;
+                }
 			}
 			// If file open mode enabled
 			else if(mem[0xDF94]==PSV_FOPEN) {
