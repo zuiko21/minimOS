@@ -1,8 +1,8 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230418-0049
+; last modified 20230418-0110
 
-#echo Using devCart SD card for LOAD[/SAVE], interactive filename prompt
+#echo Using devCart SD card for LOAD, interactive filename prompt
 
 #define	CMD0		0
 #define	CMD0_CRC	$94
@@ -160,7 +160,7 @@ fnd_ok:
 		STZ f_cur
 		STZ f_cur+1			; reset file position
 		STZ ptr
-		LDA #1
+		LDA #>(buffer+256)	; eeeeeeeek
 		STA ptr+1			; skip header in buffer eeeeeeeek
 		LDX fsize+1			; eeeeeeeek
 		DEX					; minus header page
@@ -692,7 +692,7 @@ no_res:
 	LDA res
 ; * get all ready for buffer access *
 	LDX #>buffer
-	STX ptr				; wrap buffer pointer (assume page aligned)
+	STX ptr+1				; wrap buffer pointer (assume page aligned) eeeeek
 	RTS
 
 ; *** exit point in case of error *** X = error code
