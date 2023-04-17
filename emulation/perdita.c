@@ -678,7 +678,9 @@ byte peek(word dir) {
 
 /* write to memory or I/O */
 void poke(word dir, byte v) {
-	if (dir<=0x7FFF) {			// 32 KiB static RAM
+	word psv_int;
+    int psv_value;
+    if (dir<=0x7FFF) {			// 32 KiB static RAM
 		mem[dir] = v;
 		if ((dir & 0x6000) == screen) {			// VRAM area
 			scr_dirty = 1;		// screen access detected, thus window must be updated!
@@ -721,7 +723,14 @@ void poke(word dir, byte v) {
                 // Display value
                 if(psv_index==2) {
                     // Print decimal
-                    printf("[%02X %02X]", psv_filename[0], psv_filename[1]);	
+                    psv_int=psv_filename[0] | psv_filename[1]<<8;
+                    if(psv_int<=0x7FFF) {
+                        psv_value=psv_int;
+                    }
+                    else {
+                        psv_value=psv_int-65536;
+                    }
+                    printf("[%d]", psv_value);	
                     psv_index=0;
                 }
 			}
