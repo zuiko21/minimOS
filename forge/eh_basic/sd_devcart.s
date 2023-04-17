@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230417-1812
+; last modified 20230417-2306
 
 #echo Using devCart SD card for LOAD/SAVE, interactive filename prompt
 
@@ -107,7 +107,6 @@ rd_byte:
 	TAY						; exit value
 	CLC						; eeeeeeeek
 	RTS
-in_eof:
 
 ; *************************************************
 +aux_out:					; *** device output ***
@@ -215,10 +214,16 @@ dir_lst:
 		CMP #'d'
 		BNE skp_hd			; not valid, skip to next header
 ; --- comment these lines if all suitable headers (d*) are to be shown ---
-;			LDA bootsig+1
-;			CMP #'A'		; generic file
+			LDA bootsig+1
+			CMP #'A'		; generic file
 ;		BNE skp_hd			; * may try to recognise 'dL' as well *
+			BEQ name_prn
+				CMP #'X'	; executable header?
+			BNE skp_hd
+				LDY #'*'	; place asterisk before name
+				JSR conio
 ; --- header has passed filter, print filename
+name_prn:
 			LDX #0			; point to name in header
 lname_l:
 				LDY fname, X
@@ -236,7 +241,10 @@ skp_hd:
 		BRA dir_lst			; check and print name, if suitable
 end_lst:
 ; listing ended, abort without further errors
-jmp bad_name;temporary-------------
+		PLA
+		PLA
+		SEC					; do nothing after listing
+		RTS
 name_ok:
 ; look for file and return C if not found
 		LDA magic1			; check magic1
