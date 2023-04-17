@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230417-1320
+; last modified 20230417-1739
 
 #echo Using devCart SD card for LOAD/SAVE, interactive filename prompt
 
@@ -42,39 +42,41 @@ fsize	= buffer+252		; file size INCLUDING 256-byte header
 	BCC not_eof				; if below, no EOF
 		LDA f_cur
 		CMP f_eof+1
-		BCS in_eof
+	BCC not_eof
+		STZ std_in
+		STZ stdout			; restore devices!
+		LDA	#<LAB_RMSG		; point to "Ready" message low byte
+		LDY	#>LAB_RMSG		; point to "Ready" message high byte
+		JMP	LAB_18C3		; go do print string... and return
 not_eof:
 	LDA (ptr)				; get byte from current position
-	INC ptr
+	INC ptr					; advance into buffer
 	BNE adv_byte
 		INC ptr+1
 		LDX ptr+1			; check page
 		CMP #>Ram_base		; usually 5
 	BNE adv_byte
-		LDX #>buffer
-		STX ptr				; wrap buffer pointer
-; *** read next sector *** TBD TBD TBD
+; *** read next sector ***
+		INC arg+3			; advance sector number, note big endian
+		BNE load_next
+			INC arg+2
+		BNE load_next
+			INC arg+1
+		BNE load_next
+			INC arg
+load_next:
+		PHA
+		JSR ssec_rd			; actual sector read
+		PLA					; retrieve last byte read
 adv_byte:
-	INC f_cur				; another byte read
+	INC f_cur				; count another byte read
 	BNE rd_byte
 		INC f_cur+1
 rd_byte:
-	TAY
-	CPY #10					; NEWLINE?
-	BEQ make_cr
-	CPY #$FF				; EOF?
-	BNE do_in
-make_cr:
-		LDY #13				; convert UNIX newline to CONIO/minimOS
-do_in:
+	TAY						; exit value
 	CLC						; eeeeeeeek
 	RTS
 in_eof:
-	STZ std_in
-	STZ stdout				; restore devices!
-	LDA	#<LAB_RMSG			; point to "Ready" message low byte
-	LDY	#>LAB_RMSG			; point to "Ready" message high byte
-	JMP	LAB_18C3			; go do print string... and return
 
 ; *************************************************
 +aux_out:					; *** device output ***
@@ -115,9 +117,18 @@ wr_byte:
 +aux_load:					; *** prepare things for LOAD, Carry if not possible ***
 	JSR set_name
 	BCS auxl_end			; do nothing in case of error
-;------ [locate file], if not exists > error; else set pointers
-		LDA #PSV_FREAD
-		STA $DF94			; will use open file for reading
+		LDX #0
+fnd_file:
+			LDY fnd_msg, X
+		BEQ fnd_ok
+			PHX
+			JSR conio		; show 'Found!' message
+			PLX
+			INX
+			BNE fnd_file
+fnd_ok:
+		STZ f_cur
+		STZ f_cur+1			; reset file position
 		CLC
 auxl_end:
 	RTS
@@ -142,6 +153,7 @@ auxs_end:
 
 set_name:
 	JSR sd_init				; common for LOAD and SAVE, note stack depth in case of failure
+	JSR ssec_rd				; read first sector into buffer!
 ; ask for the filename, or $ for directory listing
 	LDX #0
 prompt_l:
@@ -164,10 +176,79 @@ ask_name:
 		LDA (ut1_pl), Y		; Y=1, thus check second character
 	BNE name_ok
 ; $ was entered, thus show directory listing and exit
-; get first header; repeat if 'dA' cmp name, if match > CLC; (if 'dL' print size;) next header, if valid loop else SEC 
+dir_lst:
+		LDA (ptr)			; check magic1
+	BNE end_lst				; no more valid headers
+		LDY #magic2
+		LDA (ptr), Y		; check magic2
+		CMP #13
+	BNE end_lst
+		LDY #magic3			; if file<16 MiB
+	BNE end_lst
+		LDY #bootsig
+		LDA (ptr), Y		; check signature
+		CMP #'d'
+		BNE skp_hd			; not valid, skip to next header
+; --- comment these lines if all suitable headers (d*) are to be shown ---
+;			INY
+;			LDA (ptr), Y
+;			CMP #'A'		; generic file
+;		BNE skp_hd			; * may try to recognise 'dL' as well *
+; --- header has passed filter, print filename
+			LDY #fname		; point to name in header
+lname_l:
+				LDA (ptr), Y
+			BEQ end_ln		; print full filename
+				PHY
+				TAY
+				JSR conio
+				PLY
+				INY
+				BNE lname_l	; no need for BRA
+			LDY #13
+			JSR conio
+skp_hd:
+		JSR nxt_head		; jump and load next header
+		BRA dir_lst			; check and print name, if suitable
+end_lst:
+; listing ended, abort without further errors
+jmp bad_name;temporary-------------
 name_ok:
-; *** look for file and return sector or error C if not found (aux_save will create if needed) [locate file here]
-
+; look for file and return C if not found
+		LDA (ptr)			; check magic1
+	BNE bad_name			; no more valid headers
+		LDY #magic2
+		LDA (ptr), Y		; check magic2
+		CMP #13
+	BNE bad_name
+		LDY #magic3			; if file<16 MiB
+	BNE bad_name
+		LDY #bootsig
+		LDA (ptr), Y		; check signature
+		CMP #'d'
+		BNE skp_fi			; not valid, skip to next header
+			INY
+			LDA (ptr), Y
+			CMP #'A'		; generic file
+		BNE skp_fi
+			LDX #fname		; offset to name in header
+			STX ptr			; eeeek! watch this, must reset <ptr every sector
+			LDY #0			; reset index
+cmp_name:
+				LDA (ptr), Y
+			BEQ cmp_end		; filename ended without any mismatch
+				CMP (ut1_pl), Y			; compare chars
+			BNE skp_fi		; different
+				INY
+				BNE cmp_name			; no need for BRA
+skp_fi:
+		JSR nxt_head		; jump and load next header
+		BRA name_ok			; check this new header
+bad_name:
+	SEC
+	RTS
+; if arrived here, we found the file!
+cmp_end:
 	CLC						; name was OK
 	RTS
 
@@ -469,8 +550,13 @@ card_ok:
 	RTS
 
 ; *** read single sector ***
-; ptr MUST be even, NOT reaching $DF00 and page-aligned (intended to read at $0300 anyway)
 ssec_rd:
+; * intended to read at $0300 *
+	LDA #>buffer
+;	LDY #<buffer			; expected to be page-aligned
+	STA ptr+1
+	STZ ptr					; or STY, if set
+; * standard sector read, assume arg set with sector number *
 ; set token to none
 	LDA #$FF
 	STA token
@@ -531,6 +617,9 @@ set_tk:
 no_res:
 	JSR cs_disable			; deassert chip select
 	LDA res
+; * get all ready for buffer access *
+	LDX #>buffer
+	STX ptr				; wrap buffer pointer (assume page aligned)
 	RTS
 
 ; *** exit point in case of error *** X = error code
@@ -566,4 +655,7 @@ aux_prompt:
 
 fail_msg:
 	.asc	"-error with SD card", 7, 13, 0
+
+fnd_msg:
+	.asc	"Found!", 13, 0
 .)
