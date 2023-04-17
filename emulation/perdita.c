@@ -22,6 +22,7 @@
 #define PSV_ASCII			0xF1
 #define PSV_BINARY			0xF2
 #define PSV_DECIMAL			0xF3
+#define PSV_INT 			0xF4
 #define PSV_STOPWATCH_START	0xFB
 #define PSV_STOPWATCH_STOP	0xFC
 #define PSV_DUMP			0xFD
@@ -120,7 +121,7 @@
 /* Global PSV Variables */
 	// PSV filename
 	char psv_filename[100];
-	int psv_index;
+	int psv_index = 0;
 	FILE* psv_file;
 
 /* ******************* */
@@ -677,7 +678,9 @@ byte peek(word dir) {
 
 /* write to memory or I/O */
 void poke(word dir, byte v) {
-	if (dir<=0x7FFF) {			// 32 KiB static RAM
+	word psv_int;
+    int psv_value;
+    if (dir<=0x7FFF) {			// 32 KiB static RAM
 		mem[dir] = v;
 		if ((dir & 0x6000) == screen) {			// VRAM area
 			scr_dirty = 1;		// screen access detected, thus window must be updated!
@@ -712,6 +715,24 @@ void poke(word dir, byte v) {
 			else if(mem[0xDF94]==PSV_DECIMAL) {
 				// Print decimal
 				printf("[%u]", mem[dir]);
+			}
+            // If int mode enabled
+			else if(mem[0xDF94]==PSV_INT) {
+				// Save value
+                psv_filename[psv_index++] = mem[dir];
+                // Display value
+                if(psv_index==2) {
+                    // Print decimal
+                    psv_int=psv_filename[0] | psv_filename[1]<<8;
+                    if(psv_int<=0x7FFF) {
+                        psv_value=psv_int;
+                    }
+                    else {
+                        psv_value=psv_int-65536;
+                    }
+                    printf("[%d]", psv_value);	
+                    psv_index=0;
+                }
 			}
 			// If file open mode enabled
 			else if(mem[0xDF94]==PSV_FOPEN) {
