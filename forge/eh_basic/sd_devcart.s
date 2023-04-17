@@ -1,8 +1,39 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230417-1739
+; last modified 20230417-1812
 
 #echo Using devCart SD card for LOAD/SAVE, interactive filename prompt
+
+#define	CMD0		0
+#define	CMD0_CRC	$94
+#define	CMD8		8
+#define	CMD8_ARG	$01AA
+#define	CMD8_CRC	$86
+#define	CMD16		16
+#define	CMD16_ARG	$0200
+#define	ACMD41		41
+#define	ACMD41_ARG	$40
+#define	CMD55		55
+#define	CMD58		58
+
+#define	CMD17		17
+#define	SD_MAX_READ_ATTEMPTS	203
+
+; error code messages
+#define	IDLE_ERR	0
+#define	SDIF_ERR	1
+#define	ECHO_ERR	2
+#define	INIT_ERR	3
+#define	READY_ERR	4
+#define	OK_MSG		5
+#define	FAIL_MSG	6
+#define	INVALID_SD	7
+#define	SEL_MSG		8
+#define	LOAD_MSG	9
+#define	PAGE_MSG	10
+#define	SPCR_MSG	11
+#define	OLD_SD		12
+#define	HC_XC		13
 
 -Ram_base	= $0500			; just in case
 
@@ -138,8 +169,6 @@ auxl_end:
 	JSR set_name
 	BCC auxs_end			; do nothing in case of error (file exists, $ should return to V_SAVE caller, not here)
 ;----------- [locate file], if exists > error, is it BCC?; else locate free, change name and reset pointers 
-		LDA #PSV_FWRITE
-		STA $DF94			; will use open file for writing
 		CLC					; all OK this far!
 auxs_end:
 	RTS
@@ -147,8 +176,6 @@ auxs_end:
 ; ******************************************************
 +aux_close:					; *** tidy up after SAVE ***
 ;---------- save current sector, reload header, keep size, set size to cursor+256, regenerate free after it of old size-actual
-	LDA #PSV_FCLOSE
-	STA $DF94				; tell VSP to close file
 	RTS						; nothing to do this far
 
 set_name:
@@ -177,34 +204,31 @@ ask_name:
 	BNE name_ok
 ; $ was entered, thus show directory listing and exit
 dir_lst:
-		LDA (ptr)			; check magic1
+		LDA magic1			; check magic1
 	BNE end_lst				; no more valid headers
-		LDY #magic2
-		LDA (ptr), Y		; check magic2
+		LDA magic2		; check magic2
 		CMP #13
 	BNE end_lst
-		LDY #magic3			; if file<16 MiB
+		LDA magic3			; if file<16 MiB
 	BNE end_lst
-		LDY #bootsig
-		LDA (ptr), Y		; check signature
+		LDA bootsig			; check signature
 		CMP #'d'
 		BNE skp_hd			; not valid, skip to next header
 ; --- comment these lines if all suitable headers (d*) are to be shown ---
-;			INY
-;			LDA (ptr), Y
+;			LDA bootsig+1
 ;			CMP #'A'		; generic file
 ;		BNE skp_hd			; * may try to recognise 'dL' as well *
 ; --- header has passed filter, print filename
-			LDY #fname		; point to name in header
+			LDX #0			; point to name in header
 lname_l:
-				LDA (ptr), Y
+				LDY fname, X
 			BEQ end_ln		; print full filename
-				PHY
-				TAY
+				PHX
 				JSR conio
-				PLY
-				INY
+				PLX
+				INX
 				BNE lname_l	; no need for BRA
+end_ln:
 			LDY #13
 			JSR conio
 skp_hd:
@@ -215,27 +239,22 @@ end_lst:
 jmp bad_name;temporary-------------
 name_ok:
 ; look for file and return C if not found
-		LDA (ptr)			; check magic1
+		LDA magic1			; check magic1
 	BNE bad_name			; no more valid headers
-		LDY #magic2
-		LDA (ptr), Y		; check magic2
+		LDA magic2			; check magic2
 		CMP #13
 	BNE bad_name
-		LDY #magic3			; if file<16 MiB
+		LDA magic3			; if file<16 MiB
 	BNE bad_name
-		LDY #bootsig
-		LDA (ptr), Y		; check signature
+		LDA bootsig			; check signature
 		CMP #'d'
 		BNE skp_fi			; not valid, skip to next header
-			INY
-			LDA (ptr), Y
+			LDA bootsig+1
 			CMP #'A'		; generic file
 		BNE skp_fi
-			LDX #fname		; offset to name in header
-			STX ptr			; eeeek! watch this, must reset <ptr every sector
 			LDY #0			; reset index
 cmp_name:
-				LDA (ptr), Y
+				LDA fname, Y
 			BEQ cmp_end		; filename ended without any mismatch
 				CMP (ut1_pl), Y			; compare chars
 			BNE skp_fi		; different
@@ -252,9 +271,47 @@ cmp_end:
 	CLC						; name was OK
 	RTS
 
+; *** advance to next header ***
+nxt_head:
+; first, convert size into number of sectors
+	LDX fsize		; any padding used?
+	BEQ full_pg
+		INC fsize+1			; if so, count as one more page
+		BNE full_pg			; ** eeeeeek
+			INC fsize+2		; ** now supporting up to 16M headers!
+full_pg:
+	LSR fsize+2		; **
+	ROR fsize+1		; half the number of sectors...
+	BCC below64
+		INC fsize+1	; ...unless it was odd
+	BNE below64		; **
+		INC fsize+2	; **
+below64:
+	LDA fsize+1
+	ADC arg+3		; add to current sector, note big-endian!
+	STA arg+3
+	LDA fsize+2		; **
+	ADC arg+2
+	STA arg+2
+	LDA fsize+3		; just in case...
+	ADC arg+1		; propagate carry, just in case
+	STA arg+1
+	BCC sec_ok
+		INC arg
+sec_ok:
+	RTS
+
+
 ; ***********************************
 ; *** hardware-specific SD driver ***
 ; ***********************************
+; SD interface definitions
+#define	SD_CLK		%00000001
+#define	SD_MOSI		%00000010
+#define	SD_CS		%00000100
+#define	SD_MISO		%10000000
+#define	IOCart		$DFC0
+
 ; *** send data in A, return received data in A *** nominally ~4.4 kiB/s
 spi_tr:
 	STA mosi
@@ -654,7 +711,7 @@ aux_prompt:
 	.asc	"Filename", 0
 
 fail_msg:
-	.asc	"-error with SD card", 7, 13, 0
+	.asc	") error with SD card", 7, 13, 0
 
 fnd_msg:
 	.asc	"Found!", 13, 0
