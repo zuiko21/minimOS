@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230416-1948
+; last modified 20230417-1320
 
 #echo Using devCart SD card for LOAD/SAVE, interactive filename prompt
 
@@ -82,13 +82,40 @@ in_eof:
 	BNE do_aux_out
 		LDY #10				; convert to UNIX LF
 do_aux_out:
-	STA (ptr)				; store
+;*********code from read***
+/*	LDA f_cur+1
+	CMP f_eof+1				; compare cursor to size
+	BCC not_eof				; if below, no EOF
+		LDA f_cur
+		CMP f_eof+1
+		BCS in_eof
+not_eof:
+	LDA (ptr)				; get byte from current position
+;*****end of code from read***** */
+	TYA						; eeeeeeek
+	STA (ptr)				; store into buffer
+	INC ptr					; next 
+	BNE adv_wbyte
+		INC ptr+1
+		LDX ptr+1			; check page
+		CMP #>Ram_base		; usually 5
+	BNE adv_wbyte
+		LDX #>buffer
+		STX ptr				; wrap buffer pointer
+; *** write current sector and point to next one *** TBD TBD TBD
+adv_wbyte:
+	INC f_cur				; another byte written
+	BNE wr_byte
+		INC f_cur+1
+wr_byte:
+; *********** ? ****************
+	RTS
 
 ; **********************************************************************************
 +aux_load:					; *** prepare things for LOAD, Carry if not possible ***
 	JSR set_name
 	BCS auxl_end			; do nothing in case of error
-;------
+;------ [locate file], if not exists > error; else set pointers
 		LDA #PSV_FREAD
 		STA $DF94			; will use open file for reading
 		CLC
@@ -98,8 +125,8 @@ auxl_end:
 ; **********************************************************************************
 +aux_save:					; *** prepare things for SAVE, Carry if not possible ***
 	JSR set_name
-	BCS auxs_end			; do nothing in case of error
-;-----------
+	BCC auxs_end			; do nothing in case of error (file exists, $ should return to V_SAVE caller, not here)
+;----------- [locate file], if exists > error, is it BCC?; else locate free, change name and reset pointers 
 		LDA #PSV_FWRITE
 		STA $DF94			; will use open file for writing
 		CLC					; all OK this far!
@@ -108,7 +135,7 @@ auxs_end:
 
 ; ******************************************************
 +aux_close:					; *** tidy up after SAVE ***
-;----------
+;---------- save current sector, reload header, keep size, set size to cursor+256, regenerate free after it of old size-actual
 	LDA #PSV_FCLOSE
 	STA $DF94				; tell VSP to close file
 	RTS						; nothing to do this far
@@ -137,9 +164,9 @@ ask_name:
 		LDA (ut1_pl), Y		; Y=1, thus check second character
 	BNE name_ok
 ; $ was entered, thus show directory listing and exit
-
+; get first header; repeat if 'dA' cmp name, if match > CLC; (if 'dL' print size;) next header, if valid loop else SEC 
 name_ok:
-; *** look for file and return sector or error if not found (aux_save will create if needed)
+; *** look for file and return sector or error C if not found (aux_save will create if needed) [locate file here]
 
 	CLC						; name was OK
 	RTS
