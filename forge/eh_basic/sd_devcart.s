@@ -1,8 +1,8 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230418-1645
+; last modified 20230418-1654
 
-#echo Using devCart SD card for LOAD, interactive filename prompt
+#echo Using devCart SD card for LOAD... interactive filename prompt
 
 #define	CMD0		0
 #define	CMD0_CRC	$94
@@ -70,17 +70,13 @@ fsize	= buffer+252		; file size INCLUDING 256-byte header
 +aux_in:					; *** device input (MUST restore devices upon EOF) ***
 	LDA f_cur+1
 	CMP f_eof+1				; compare cursor to size
-	BNE not_eof				; if below, no EOF (sequential only)
+	BCC not_eof				; if below, no EOF (sequential only)
 		LDA f_cur
 		CMP f_eof+1
-	BNE not_eof
-;ldy#'!':;jsr conio
+	BCC not_eof
 		STZ std_in
 		STZ stdout			; restore devices!
-;		LDA	#<LAB_RMSG		; point to "Ready" message low byte
-;		LDY	#>LAB_RMSG		; point to "Ready" message high byte
-;		JMP	LAB_18C3		; go do print string... and return
-		JMP LAB_WARM		; will this work?
+		JMP LAB_WARM		; will this work? yes!
 not_eof:
 	LDA (ptr)				; get byte from current position
 	INC ptr					; advance into buffer
@@ -90,7 +86,6 @@ not_eof:
 		CPX #>(buffer+512)	; usually 5 EEEEEK
 	BNE adv_byte
 ; *** read next sector ***
-;ldy#'.':;jsr conio
 		INC arg+3			; advance sector number, note big endian
 		BNE load_next
 			INC arg+2
@@ -148,7 +143,7 @@ wr_byte:
 
 ; **********************************************************************************
 +aux_load:					; *** prepare things for LOAD, Carry if not possible ***
-	JSR LAB_SNBS			; this should avoid losing the first line
+	JSR LAB_SNBS			; this should avoid losing the first line (no, it doesn't)
 	JSR set_name
 	BCS auxl_end			; do nothing in case of error
 		LDX #0
@@ -253,10 +248,7 @@ skp_hd:
 		BRA dir_lst			; check and print name, if suitable
 end_lst:
 ; listing ended, abort without further errors
-;		LDA	#<LAB_RMSG		; point to "Ready" message low byte
-;		LDY	#>LAB_RMSG		; point to "Ready" message high byte
-;		JMP	LAB_18C3		; go do print string... and return
-		JMP LAB_WARM		; will this work?
+		JMP LAB_WARM		; best way
 name_ok:
 ; look for file and return C if not found
 		LDA magic1			; check magic1
