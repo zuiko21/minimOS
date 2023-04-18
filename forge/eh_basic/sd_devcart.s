@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230418-0110
+; last modified 20230418-0934
 
 #echo Using devCart SD card for LOAD, interactive filename prompt
 
@@ -70,22 +70,23 @@ fsize	= buffer+252		; file size INCLUDING 256-byte header
 +aux_in:					; *** device input (MUST restore devices upon EOF) ***
 	LDA f_cur+1
 	CMP f_eof+1				; compare cursor to size
-	BCC not_eof				; if below, no EOF
+	BNE not_eof				; if below, no EOF (sequential only)
 		LDA f_cur
 		CMP f_eof+1
-	BCC not_eof
+	BNE not_eof
 		STZ std_in
 		STZ stdout			; restore devices!
-		LDA	#<LAB_RMSG		; point to "Ready" message low byte
-		LDY	#>LAB_RMSG		; point to "Ready" message high byte
-		JMP	LAB_18C3		; go do print string... and return
+;		LDA	#<LAB_RMSG		; point to "Ready" message low byte
+;		LDY	#>LAB_RMSG		; point to "Ready" message high byte
+;		JMP	LAB_18C3		; go do print string... and return
+		JMP LAB_WARM		; will this work?
 not_eof:
 	LDA (ptr)				; get byte from current position
 	INC ptr					; advance into buffer
 	BNE adv_byte
 		INC ptr+1
 		LDX ptr+1			; check page
-		CMP #>Ram_base		; usually 5
+		CMP #>(buffer+512)	; usually 5
 	BNE adv_byte
 ; *** read next sector ***
 		INC arg+3			; advance sector number, note big endian
@@ -145,6 +146,7 @@ wr_byte:
 
 ; **********************************************************************************
 +aux_load:					; *** prepare things for LOAD, Carry if not possible ***
+	JSR LAB_SNBS			; this should avoid losing the first line
 	JSR set_name
 	BCS auxl_end			; do nothing in case of error
 		LDX #0
@@ -158,12 +160,12 @@ fnd_file:
 			BNE fnd_file
 fnd_ok:
 		STZ f_cur
-		STZ f_cur+1			; reset file position
+		STZ f_cur+1			; reset file position *** may try setting both pointers at 256
 		STZ ptr
 		LDA #>(buffer+256)	; eeeeeeeek
 		STA ptr+1			; skip header in buffer eeeeeeeek
 		LDX fsize+1			; eeeeeeeek
-		DEX					; minus header page
+		DEX					; minus header page *** if absolute, do not decrement
 		LDY fsize
 		STY f_eof
 		STX f_eof+1
@@ -249,10 +251,10 @@ skp_hd:
 		BRA dir_lst			; check and print name, if suitable
 end_lst:
 ; listing ended, abort without further errors
-		PLA
-		PLA
-		SEC					; do nothing after listing
-		RTS
+;		LDA	#<LAB_RMSG		; point to "Ready" message low byte
+;		LDY	#>LAB_RMSG		; point to "Ready" message high byte
+;		JMP	LAB_18C3		; go do print string... and return
+		JMP LAB_WARM		; will this work?
 name_ok:
 ; look for file and return C if not found
 		LDA magic1			; check magic1
