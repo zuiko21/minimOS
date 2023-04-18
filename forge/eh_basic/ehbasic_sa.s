@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230416-1729
+; last modified 20230418-1745
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -7922,7 +7922,7 @@ LAB_LDOK
 	STA stdout			; disable echo for speed!
 	ASL					; now is 4 (AUX device)
 	STA std_in			; redirect buffer input...
-	RTS					; ...and let input routine exit upon EOF!
+	JMP LAB_WARM		; ...and let input routine exit upon EOF!
 
 V_SAVE					; save BASIC program *** now implemented via aux_io.s ***
 	JSR aux_save		; get things ready
