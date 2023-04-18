@@ -23,6 +23,7 @@
 #define PSV_BINARY			0xF2
 #define PSV_DECIMAL			0xF3
 #define PSV_INT 			0xF4
+#define PSV_HEX16			0xF5
 #define PSV_STOPWATCH_START	0xFB
 #define PSV_STOPWATCH_STOP	0xFC
 #define PSV_DUMP			0xFD
@@ -731,6 +732,17 @@ void poke(word dir, byte v) {
                         psv_value=psv_int-65536;
                     }
                     printf("[%d]", psv_value);	
+                    psv_index=0;
+                }
+			}
+            // If int mode enabled
+			else if(mem[0xDF94]==PSV_HEX16) {
+				// Save value
+                psv_filename[psv_index++] = mem[dir];
+                // Display value
+                if(psv_index==2) {
+                    // Print hex
+                    printf("[%02X%02X]", psv_filename[0], psv_filename[1]);	
                     psv_index=0;
                 }
 			}
