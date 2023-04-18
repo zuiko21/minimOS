@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230418-0934
+; last modified 20230418-1645
 
 #echo Using devCart SD card for LOAD, interactive filename prompt
 
@@ -74,6 +74,7 @@ fsize	= buffer+252		; file size INCLUDING 256-byte header
 		LDA f_cur
 		CMP f_eof+1
 	BNE not_eof
+;ldy#'!':;jsr conio
 		STZ std_in
 		STZ stdout			; restore devices!
 ;		LDA	#<LAB_RMSG		; point to "Ready" message low byte
@@ -86,9 +87,10 @@ not_eof:
 	BNE adv_byte
 		INC ptr+1
 		LDX ptr+1			; check page
-		CMP #>(buffer+512)	; usually 5
+		CPX #>(buffer+512)	; usually 5 EEEEEK
 	BNE adv_byte
 ; *** read next sector ***
+;ldy#'.':;jsr conio
 		INC arg+3			; advance sector number, note big endian
 		BNE load_next
 			INC arg+2
@@ -189,7 +191,7 @@ auxs_end:
 
 set_name:
 	JSR sd_init				; common for LOAD and SAVE, note stack depth in case of failure
-	JSR ssec_rd				; read first sector into buffer!
+	JSR ssec_rd				; read first volume sector into buffer!
 ; ask for the filename, or $ for directory listing
 	LDX #0
 prompt_l:
