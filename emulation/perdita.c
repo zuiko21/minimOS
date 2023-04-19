@@ -635,6 +635,7 @@ void displayInfoRom(const char name[]) {
     byte header[256];
 	int c, b = 0;
     char *title;
+    char * description;
 
 	f = fopen(name, "rb");
 	if (f != NULL) {
@@ -649,8 +650,10 @@ void displayInfoRom(const char name[]) {
             printf("DURANGO STANDARD ROM\n");
         
             title = (char*) header+0x0008;
+            description = (char*) title+strlen(title)+1;
         
             printf("Title: %s\n", title);
+            printf("Description: %s\n", description);
         }
 	}
 	else {
