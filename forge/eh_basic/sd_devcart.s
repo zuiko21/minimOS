@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230418-1654
+; last modified 20230419-0826
 
 #echo Using devCart SD card for LOAD... interactive filename prompt
 
@@ -597,12 +597,15 @@ sd_sc:
 		LDA #>CMD16_ARG		; actually 2 for 512 bytes per sector
 		STA arg+2
 		STZ arg+3			; assume CMD16_ARG LSB is zero (512 mod 256)
-		STZ crc				; assume CMD16_CRC is zero
+		LDA #$FF
+		STA crc				; assume CMD16_CRC is zero... or not? ***
 		LDA #CMD16
 		JSR sd_cmd
 ; should I check errors?
 		JSR rd_r1
 		JSR cs_disable		; deassert chip select ###
+		LDA res				; *** wait for zero response
+	BNE sd_sc				; *** maybe a timeout would be desired too
 ;		LDX #READY_ERR		; ### display standard capacity message and finish ###
 ;		BRA card_ok
 hcxc:
