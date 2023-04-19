@@ -104,6 +104,8 @@
 	SDL_DisplayMode sdl_display_mode;
 	// Game gamepads
 	SDL_Joystick *sdl_gamepads[2];
+    // Rom title from header
+    char romTitle[223];
 	// Minstrel keyboard
 	byte minstrel_keyboard[5];
 	// Do not close GUI after program end
@@ -131,6 +133,7 @@
 /* emulator control */
 	void load(const char name[], word adr);		// load firmware
 	int ROMload(const char name[]);			// load ROM at the end, calling load()
+    void displayInfoRom(const char name[]); // Display ROM header information
 	void usage(char name[]);// help with command line options
 	void stat(void);		// display processor status
 	void stack_stat(void);	// display stack status
@@ -615,6 +618,7 @@ int ROMload(const char name[]) {
 			return -1;
 		} else {
 			pos -= siz;
+            displayInfoRom(name);
 			printf("Loading %s... (%ld K ROM image)\n", name, siz>>10);
 			load(name, pos);	// get actual ROM image
 			return 0;
@@ -624,6 +628,43 @@ int ROMload(const char name[]) {
 		printf("*** Could not load ROM ***\n");
 		run = 0;
 		return -1;
+	}
+}
+
+/* Read ROM header and display information */
+void displayInfoRom(const char name[]) {
+	FILE *f;
+    byte header[256];
+	int c, b = 0;
+    char *title;
+    char * description;
+
+	f = fopen(name, "rb");
+	if (f != NULL) {
+		do {
+			c = fgetc(f);
+			header[b++] = c;	// load one byte
+		} while( b <= 255);
+
+		fclose(f);
+        
+        if(header[0]==0x0 && header[1]==0x64 && header[2]==0x58) {
+            printf("DURANGO STANDARD ROM\n");
+        
+            title = (char*) header+0x0008;
+            strcpy(romTitle, title);
+            description = (char*) title+strlen(title)+1;
+        
+            printf("Title: %s\n", title);
+            printf("Description: %s\n", description);
+        }
+        else {
+            strcpy(romTitle, "");
+        }
+	}
+	else {
+		printf("*** Error reading image ***\n");
+		run = 0;
 	}
 }
 
@@ -2358,7 +2399,14 @@ void randomize(void) {
 
 /* Initialize vdu display window */
 int init_vdu() {
-	//Initialize SDL
+	char windowTitle[300];
+    strcpy(windowTitle, "Durango-X ");
+    if(strlen(romTitle)>0) {
+        strcat(windowTitle, " - ");
+        strcat(windowTitle, romTitle);        
+    }
+    
+    //Initialize SDL
 	if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_AUDIO ) < 0 )
 	{
 		printf("SDL could not be initialized! SDL Error: %s\n", SDL_GetError());
@@ -2400,7 +2448,7 @@ int init_vdu() {
 	VDU_SCREEN_HEIGHT=VDU_SCREEN_WIDTH;
 
 	//Create window
-	sdl_window = SDL_CreateWindow("Durango-X", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, VDU_SCREEN_WIDTH, VDU_SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
+	sdl_window = SDL_CreateWindow(windowTitle, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, VDU_SCREEN_WIDTH, VDU_SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
 	if( sdl_window == NULL )
 	{
 		printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
