@@ -131,6 +131,7 @@
 /* emulator control */
 	void load(const char name[], word adr);		// load firmware
 	int ROMload(const char name[]);			// load ROM at the end, calling load()
+    void displayInfoRom(const char name[]); // Display ROM header information
 	void usage(char name[]);// help with command line options
 	void stat(void);		// display processor status
 	void stack_stat(void);	// display stack status
@@ -615,6 +616,7 @@ int ROMload(const char name[]) {
 			return -1;
 		} else {
 			pos -= siz;
+            displayInfoRom(name);
 			printf("Loading %s... (%ld K ROM image)\n", name, siz>>10);
 			load(name, pos);	// get actual ROM image
 			return 0;
@@ -624,6 +626,36 @@ int ROMload(const char name[]) {
 		printf("*** Could not load ROM ***\n");
 		run = 0;
 		return -1;
+	}
+}
+
+/* Read ROM header and display information */
+void displayInfoRom(const char name[]) {
+	FILE *f;
+    byte header[256];
+	int c, b = 0;
+    char *title;
+
+	f = fopen(name, "rb");
+	if (f != NULL) {
+		do {
+			c = fgetc(f);
+			header[b++] = c;	// load one byte
+		} while( b <= 255);
+
+		fclose(f);
+        
+        if(header[0]==0x0 && header[1]==0x64 && header[2]==0x58) {
+            printf("DURANGO STANDARD ROM\n");
+        
+            title = (char*) header+0x0008;
+        
+            printf("Title: %s\n", title);
+        }
+	}
+	else {
+		printf("*** Error reading image ***\n");
+		run = 0;
 	}
 }
 
