@@ -104,6 +104,8 @@
 	SDL_DisplayMode sdl_display_mode;
 	// Game gamepads
 	SDL_Joystick *sdl_gamepads[2];
+    // Rom title from header
+    char romTitle[223];
 	// Minstrel keyboard
 	byte minstrel_keyboard[5];
 	// Do not close GUI after program end
@@ -650,10 +652,14 @@ void displayInfoRom(const char name[]) {
             printf("DURANGO STANDARD ROM\n");
         
             title = (char*) header+0x0008;
+            strcpy(romTitle, title);
             description = (char*) title+strlen(title)+1;
         
             printf("Title: %s\n", title);
             printf("Description: %s\n", description);
+        }
+        else {
+            strcpy(romTitle, "");
         }
 	}
 	else {
@@ -2393,7 +2399,14 @@ void randomize(void) {
 
 /* Initialize vdu display window */
 int init_vdu() {
-	//Initialize SDL
+	char windowTitle[300];
+    strcpy(windowTitle, "Durango-X ");
+    if(strlen(romTitle)>0) {
+        strcat(windowTitle, " - ");
+        strcat(windowTitle, romTitle);        
+    }
+    
+    //Initialize SDL
 	if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_AUDIO ) < 0 )
 	{
 		printf("SDL could not be initialized! SDL Error: %s\n", SDL_GetError());
@@ -2435,7 +2448,7 @@ int init_vdu() {
 	VDU_SCREEN_HEIGHT=VDU_SCREEN_WIDTH;
 
 	//Create window
-	sdl_window = SDL_CreateWindow("Durango-X", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, VDU_SCREEN_WIDTH, VDU_SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
+	sdl_window = SDL_CreateWindow(windowTitle, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, VDU_SCREEN_WIDTH, VDU_SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
 	if( sdl_window == NULL )
 	{
 		printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
