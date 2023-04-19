@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230419-0909
+; last modified 20230419-1636
 
 #echo Using devCart SD card for LOAD... interactive filename prompt
 
@@ -225,12 +225,13 @@ dir_lst:
 			LDA bootsig+1
 			CMP #'A'		; generic file
 ;		BNE skp_hd			; * may try to recognise 'dL' as well *
-			BEQ name_prn
+			BEQ prn_name	; eeek
 				CMP #'X'	; executable header?
 			BNE skp_hd
 				LDY #'*'	; place asterisk before name
 				JSR conio
 ; --- header has passed filter, print filename
+prn_name:
 		JSR name_prn
 skp_hd:
 		JSR nxt_head		; jump and load next header
@@ -255,9 +256,9 @@ name_ok:
 		BNE skp_fi
 			LDY #0			; reset index
 cmp_name:
-				CMP (ut1_pl), Y			; start with typed name as a search term
+				LDA (ut1_pl), Y			; start with typed name as a search term
 			BEQ cmp_end		; search pattern ended without any mismatch
-				LDA fname, Y			; compare chars
+				CMP fname, Y			; compare chars
 			BNE skp_fi		; different
 				INY
 				BNE cmp_name			; no need for BRA
@@ -736,5 +737,5 @@ fail_msg:
 	.asc	") error with SD card", 7, 13, 0
 
 fnd_msg:
-	.asc	"Found !", 0
+	.asc	"Found ", 0
 .)
