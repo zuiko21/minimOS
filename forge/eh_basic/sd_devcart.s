@@ -1,8 +1,8 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230419-1636
+; last modified 20230419-1645
 
-#echo Using devCart SD card for LOAD... interactive filename prompt
+#echo Using devCart SD card for LOAD - interactive filename prompt
 
 #define	CMD0		0
 #define	CMD0_CRC	$94
@@ -143,7 +143,6 @@ wr_byte:
 
 ; **********************************************************************************
 +aux_load:					; *** prepare things for LOAD, Carry if not possible ***
-	JSR LAB_SNBS			; this should avoid losing the first line (no, it doesn't)
 	JSR set_name
 	BCS auxl_end			; do nothing in case of error
 		LDX #0
@@ -612,8 +611,9 @@ sd_sc:
 ; should I check errors?
 		JSR rd_r1
 		JSR cs_disable		; deassert chip select ###
-		LDA res				; *** wait for zero response
-	BNE sd_sc				; *** maybe a timeout would be desired too
+;		LDA res				; *** wait for zero response
+;	BNE sd_sc				; *** maybe a timeout would be desired too
+
 ;		LDX #READY_ERR		; ### display standard capacity message and finish ###
 ;		BRA card_ok
 hcxc:
@@ -719,12 +719,7 @@ fail_loop:
 		INX
 		BNE fail_loop		; no need for BRA
 fail_end:
-	PLA
-	PLA						; abort sd_init
-	PLA
-	PLA						; abort set_name
-	SEC						; notify error
-	RTS						; return to aux_load or aux_save
+	JMP LAB_WARM
 
 ; ********************
 ; *** diverse data ***
