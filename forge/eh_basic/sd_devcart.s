@@ -266,9 +266,9 @@ name_ok:
 		BNE skp_fi
 			LDY #0			; reset index
 cmp_name:
-				LDA fname, Y
-			BEQ cmp_end		; filename ended without any mismatch
-				CMP (ut1_pl), Y			; compare chars
+				CMP (ut1_pl), Y			; start with typed name as a search term
+			BEQ cmp_end		; search pattern ended without any mismatch
+				LDA fname, Y			; compare chars
 			BNE skp_fi		; different
 				INY
 				BNE cmp_name			; no need for BRA
@@ -278,8 +278,11 @@ skp_fi:
 bad_name:
 	SEC
 	RTS
-; if arrived here, we found the file!
+; if arrived here, we found the file... or something matching the search term
 cmp_end:
+; --- uncomment these for strict name matching ---
+;	LDA fname, Y			; check current position in filename
+;		BNE skip_fi			; if not a terminator, match is incomplete
 	CLC						; name was OK
 	RTS
 
