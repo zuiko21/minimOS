@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230419-0826
+; last modified 20230419-0909
 
 #echo Using devCart SD card for LOAD... interactive filename prompt
 
@@ -151,11 +151,12 @@ fnd_file:
 			LDY fnd_msg, X
 		BEQ fnd_ok
 			PHX
-			JSR conio		; show 'Found!' message
+			JSR conio		; show 'Found' message...
 			PLX
 			INX
 			BNE fnd_file
 fnd_ok:
+		JSR name_prn		; ...and add detected filename
 		STZ f_cur
 		STZ f_cur+1			; reset file position *** may try setting both pointers at 256
 		STZ ptr
@@ -230,19 +231,7 @@ dir_lst:
 				LDY #'*'	; place asterisk before name
 				JSR conio
 ; --- header has passed filter, print filename
-name_prn:
-			LDX #0			; point to name in header
-lname_l:
-				LDY fname, X
-			BEQ end_ln		; print full filename
-				PHX
-				JSR conio
-				PLX
-				INX
-				BNE lname_l	; no need for BRA
-end_ln:
-			LDY #13
-			JSR conio
+		JSR name_prn
 skp_hd:
 		JSR nxt_head		; jump and load next header
 		BRA dir_lst			; check and print name, if suitable
@@ -285,6 +274,21 @@ cmp_end:
 ;		BNE skip_fi			; if not a terminator, match is incomplete
 	CLC						; name was OK
 	RTS
+
+; *** print buffered filename ***
+name_prn:
+	LDX #0					; point to name in header
+lname_l:
+		LDY fname, X
+	BEQ end_ln				; print full filename
+		PHX
+		JSR conio
+		PLX
+		INX
+		BNE lname_l			; no need for BRA
+end_ln:
+	LDY #13
+	JMP conio				; print CR and return
 
 ; *** advance to next header ***
 nxt_head:
@@ -732,5 +736,5 @@ fail_msg:
 	.asc	") error with SD card", 7, 13, 0
 
 fnd_msg:
-	.asc	"Found!", 13, 0
+	.asc	"Found !", 0
 .)
