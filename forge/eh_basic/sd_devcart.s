@@ -1,8 +1,8 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230419-1645
+; last modified 20230420-1825
 
-#echo Using devCart SD card for LOAD - interactive filename prompt
+#echo Using devCart SD card for LOAD and SAVE! - interactive filename prompt
 
 #define	CMD0		0
 #define	CMD0_CRC	$94
@@ -39,8 +39,8 @@
 
 .(
 ; *** memory usage *** CHECK
-f_eof	= $EC				; current file size, max 64 KiB
-f_sig	= f_eof	+ 1			; $EE-$EF, filter by signature?
+f_eof	= $EC				; current file size, max 16 MiB
+f_sig	= f_eof	+ 2			; $EE-$EF, filter by signature?
 sd_ver	= f_sig				; $EE
 crc		= sd_ver+ 1			; $EF
 arg		= crc	+ 1			; $F0
@@ -49,7 +49,7 @@ mosi	= res	+ 5			; $F9
 miso	= mosi	+ 1			; $FA
 token	= miso	+ 1			; $FB
 ptr		= token	+ 1			; $FC, buffer pointer
-f_cur	= ptr	+ 2			; $FE, file cursor
+f_cur	= ptr	+ 2			; $FE, file cursor *** maybe 3 bytes
 
 ; *** sector buffer and header pointers ***
 
@@ -108,20 +108,6 @@ rd_byte:
 
 ; *************************************************
 +aux_out:					; *** device output ***
-	CPY #13					; check for CONIO/minimOS NEWLINE
-	BNE do_aux_out
-		LDY #10				; convert to UNIX LF
-do_aux_out:
-;*********code from read***
-/*	LDA f_cur+1
-	CMP f_eof+1				; compare cursor to size
-	BCC not_eof				; if below, no EOF
-		LDA f_cur
-		CMP f_eof+1
-		BCS in_eof
-not_eof:
-	LDA (ptr)				; get byte from current position
-;*****end of code from read***** */
 	TYA						; eeeeeeek
 	STA (ptr)				; store into buffer
 	INC ptr					; next 
@@ -130,16 +116,41 @@ not_eof:
 		LDX ptr+1			; check page
 		CMP #>Ram_base		; usually 5
 	BNE adv_wbyte
+		JSR sd_flush		; write current sector
 		LDX #>buffer
-		STX ptr				; wrap buffer pointer
-; *** write current sector and point to next one *** TBD TBD TBD
+		STX ptr				; wrap buffer pointer (assume page aligned)
+		INC arg+3			; advance to next sector
+	BNE adv_wbyte
+		INC arg+2
+	BNE adv_wbyte
+		INC arg+1
+	BNE adv_wbyte
+		INC arg
 adv_wbyte:
 	INC f_cur				; another byte written
 	BNE wr_byte
 		INC f_cur+1
 wr_byte:
-; *********** ? ****************
-	RTS
+	LDX f_cur+1
+	CPX f_eof+1				; compare against free space limit
+	BCC has_room
+		LDX f_cur
+		CPX f_eof
+	BCC has_room			; if ran out of space...
+		LDX #0
+oos_loop:
+			LDY oospace, X
+		BEQ oos_end
+			PHX
+			JSR conio
+			PLX
+			INX
+			BNE oos_loop
+oos_end:
+		STZ stdout			; redirect output to NULL!
+		SEC					; notify error, probably ignored
+has_room:
+	RTS						; if arrived from 
 
 ; **********************************************************************************
 +aux_load:					; *** prepare things for LOAD, Carry if not possible ***
@@ -173,10 +184,67 @@ auxl_end:
 ; **********************************************************************************
 +aux_save:					; *** prepare things for SAVE, Carry if not possible ***
 	JSR set_name
-	BCC auxs_end			; do nothing in case of error (file exists, $ should return to V_SAVE caller, not here)
-;----------- [locate file], if exists > error, is it BCC?; else locate free, change name and reset pointers 
-		CLC					; all OK this far!
+	BCC auxs_end			; do nothing in case of error (file exists)
+; locate free, change name and reset pointers 
+		STZ arg
+		STZ arg+1
+		STZ arg+2
+		STZ arg+3			; back to first sector, actually should return to cached volume start
+		LDA #>buffer
+		STA ptr+1
+		JSR ssec_rd			; read actual sector
+scan_free:
+			LDA magic1		; check magic1
+		BNE auxs_end		; no more valid headers
+			LDA magic2		; check magic2
+			CMP #13
+		BNE auxs_end
+			LDA magic3		; if file<16 MiB
+		BNE auxs_end
+			LDA bootsig		; check signature
+			CMP #'d'
+			BNE skp_free	; not valid, skip to next header
+				LDA bootsig+1
+				CMP #'L'	; looking for free space...
+		BEQ fnd_free		; found!
+skp_free:
+			JSR nxt_head	; jump and load next header
+			BRA scan_free	; check this new header
+fnd_free:
+; currently at free space header, to do = save size, modify name and type, return with C clear
+; save size *** TBD
+		LDY #0
+cpy_name:
+			LDA (ut1_pl), Y	; copy character
+			STA fname, Y
+		BEQ name_copied
+			INY
+			CPY #220		; maximum size!
+			BNE cpy_name
+		LDA #0				; in case of excessive length
+		STA fname, Y		; terminate string
+name_copied:
+		INY
+		STA fname, Y		; second terminator
+		LDA #'A'			; generic file signature
+		STA bootsig+1
+; won't be setting timestamp for now
+; set pointers *** TBD
+; maybe confirm it's saving
+		LDX #0
+is_svng:
+			LDY save_msg, X
+		BEQ save_rdy
+			PHX
+			JSR conio
+			PLX
+			INX
+			BNE is_svng
+save_rdy:
+		CLC					; allow actual SAVE
+		RTS
 auxs_end:
+	SEC						; file exists, thus do Function call error
 	RTS
 
 ; ******************************************************
@@ -184,6 +252,7 @@ auxs_end:
 ;---------- save current sector, reload header, keep size, set size to cursor+256, regenerate free after it of old size-actual
 	RTS						; nothing to do this far
 
+; *** ask for name, perhaps list directory, and return C if not found ***
 set_name:
 	JSR sd_init				; common for LOAD and SAVE, note stack depth in case of failure
 	JSR ssec_rd				; read first volume sector into buffer!
@@ -239,7 +308,10 @@ end_lst:
 ; listing ended, abort without further errors
 		JMP LAB_WARM		; best way
 name_ok:
-; look for file and return C if not found
+;	JMP chk_fn				; look for name, C set if not found, and return
+
+; *** look for file and return C if not found ***
+chk_fn:
 		LDA magic1			; check magic1
 	BNE bad_name			; no more valid headers
 		LDA magic2			; check magic2
@@ -256,14 +328,14 @@ name_ok:
 			LDY #0			; reset index
 cmp_name:
 				LDA (ut1_pl), Y			; start with typed name as a search term
-			BEQ cmp_end		; search pattern ended without any mismatch
+			BEQ cmp_end					; search pattern ended without any mismatch
 				CMP fname, Y			; compare chars
-			BNE skp_fi		; different
+			BNE skp_fi					; different
 				INY
 				BNE cmp_name			; no need for BRA
 skp_fi:
 		JSR nxt_head		; jump and load next header
-		BRA name_ok			; check this new header
+		BRA chk_fn			; check this new header
 bad_name:
 	SEC
 	RTS
@@ -320,6 +392,68 @@ below64:
 sec_ok:
 	JMP ssec_rd		; eeeeeek! and return
 
+; *** save current sector to SD, but do not advance anything ***
+flush_sd:
+; DEBUG version, display sector number (hex) in brackets
+	LDY #14
+	JSR conio
+	LDY #'['
+	JSR conio
+	LDA arg+1
+	JSR disphex
+	LDA arg+2
+	JSR disphex
+	LDA arg+3
+	JSR disphex
+	LDY #']'
+	JSR conio
+	LDY #15
+	JSR conio
+	LDY #13
+	JSR conio
+; DEBUG, display sector contents in ASCII
+	LDX #0					; 256 words = 512 bytes
+	STX ptr
+	LDA #>buffer
+	STA ptr+1
+fsd_loop:
+		LDA (ptr)			; first byte in word
+		TAY
+		PHX
+		JSR conio
+		INC ptr				; no wrap here
+		LDA (ptr)			; second byte in word
+		TAY
+		JSR conio
+		INC ptr
+		BNE fsd_nw
+			INC ptr+1
+fsd_nw:
+		PLX
+		INX
+		BNE fsd_loop		; repeat for every word
+	LDY #13
+	JMP conio				; newline and return
+
+; DEBUG support, display byte in hex
+disphex:
+	PHA						; save for later
+	LSR
+	LSR
+	LSR
+	LSR						; MSB first
+	JSR bin2hex
+	PLA
+	AND #15					; restore LSB
+bin2hex:
+	CLC
+	ADC #'0'				; convert to ASCII
+	CMP #':'				; 10 or more?
+	BCC no_let
+		ADC #6				; add 7 (C was set)
+no_let:
+	TAY
+	JMP conio				; display and return
 
 ; ***********************************
 ; *** hardware-specific SD driver ***
@@ -733,4 +867,10 @@ fail_msg:
 
 fnd_msg:
 	.asc	"Found ", 0
+
+save_msg:
+	.asc	"Saving...", 13, 0
+
+oospace:
+	.asc	"Out of space!", 7, 13, 0
 .)
