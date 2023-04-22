@@ -30,7 +30,7 @@ L Device:D_Schottky D1
 U 1 1 6440757F
 P 5350 2750
 F 0 "D1" H 5350 2850 50  0000 C CNN
-F 1 "D_Schottky" H 5425 2650 50  0000 C CNN
+F 1 "BAT43" H 5350 2650 50  0000 C CNN
 F 2 "Diode_THT:D_DO-35_SOD27_P10.16mm_Horizontal" H 5350 2750 50  0001 C CNN
 F 3 "~" H 5350 2750 50  0001 C CNN
 	1    5350 2750
@@ -263,16 +263,16 @@ Text Label 4100 3750 0    50   ~ 0
 A7
 Text Label 4100 5000 0    50   ~ 0
 A8
-Text Label 4550 4150 2    50   ~ 0
-A9
-Text Label 4600 3950 2    50   ~ 0
-A10
-Text Label 4600 3850 2    50   ~ 0
-A11
-Text Label 4600 4350 2    50   ~ 0
+Text Label 4600 4150 2    50   ~ 0
 A12
-Text Label 4600 4250 2    50   ~ 0
-A13
+Text Label 4600 3950 2    50   ~ 0
+A11
+Text Label 4600 3850 2    50   ~ 0
+A10
+Text Label 4550 4350 2    50   ~ 0
+A9
+Text Label 4550 4250 2    50   ~ 0
+A8
 Text Label 4600 4450 2    50   ~ 0
 A14
 Wire Wire Line
@@ -481,19 +481,19 @@ Wire Wire Line
 Text Label 5800 3050 0    50   ~ 0
 PD2
 Text Label 5800 3150 0    50   ~ 0
-PD1
-Text Label 5800 3250 0    50   ~ 0
-PD0
-Text Label 5800 3350 0    50   ~ 0
-PD3
-Text Label 5800 3450 0    50   ~ 0
 PD4
-Text Label 5800 3550 0    50   ~ 0
-PD5
-Text Label 5800 3650 0    50   ~ 0
+Text Label 5800 3250 0    50   ~ 0
 PD6
-Text Label 5800 3750 0    50   ~ 0
+Text Label 5800 3350 0    50   ~ 0
 PD7
+Text Label 5800 3450 0    50   ~ 0
+PD5
+Text Label 5800 3550 0    50   ~ 0
+PD3
+Text Label 5800 3650 0    50   ~ 0
+PD1
+Text Label 5800 3750 0    50   ~ 0
+PD0
 Text Label 4100 2500 0    50   ~ 0
 PD[0..7]
 $Comp
@@ -637,21 +637,21 @@ Wire Wire Line
 Wire Wire Line
 	4450 3750 4600 3750
 Text Label 4450 3050 0    50   ~ 0
-A0
-Text Label 4450 3150 0    50   ~ 0
-A1
-Text Label 4450 3250 0    50   ~ 0
-A2
-Text Label 4450 3350 0    50   ~ 0
-A3
-Text Label 4450 3450 0    50   ~ 0
-A4
-Text Label 4450 3550 0    50   ~ 0
-A5
-Text Label 4450 3650 0    50   ~ 0
-A6
-Text Label 4450 3750 0    50   ~ 0
 A7
+Text Label 4450 3150 0    50   ~ 0
+A6
+Text Label 4450 3250 0    50   ~ 0
+A5
+Text Label 4450 3350 0    50   ~ 0
+A4
+Text Label 4450 3450 0    50   ~ 0
+A3
+Text Label 4450 3550 0    50   ~ 0
+A2
+Text Label 4450 3650 0    50   ~ 0
+A1
+Text Label 4450 3750 0    50   ~ 0
+A0
 Entry Wire Line
 	4250 3050 4350 3150
 Entry Wire Line
@@ -687,7 +687,7 @@ Entry Wire Line
 Wire Wire Line
 	4450 3950 4600 3950
 Text Label 4450 4050 0    50   ~ 0
-A8
+A13
 Entry Wire Line
 	4350 3950 4450 3850
 Entry Wire Line
@@ -752,10 +752,32 @@ Wire Wire Line
 	1800 7300 1800 3450
 Wire Wire Line
 	1800 3450 2100 3450
+$Comp
+L Graphic:Logo_Open_Hardware_Small LOGO1
+U 1 1 644B7759
+P 7150 2650
+F 0 "LOGO1" H 7150 2925 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Small" H 7150 2425 50  0001 C CNN
+F 2 "durango:jaqueria" H 7150 2650 50  0001 C CNN
+F 3 "~" H 7150 2650 50  0001 C CNN
+	1    7150 2650
+	1    0    0    -1  
+$EndComp
 Wire Bus Line
 	6050 2500 6050 3650
 Wire Bus Line
 	2850 2500 2850 5500
 Wire Bus Line
 	4350 3150 4350 5500
+$Comp
+L Graphic:Logo_Open_Hardware_Large LOGO2
+U 1 1 644DA0AF
+P 7150 3500
+F 0 "LOGO2" H 7150 4000 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Large" H 7150 3100 50  0001 C CNN
+F 2 "Symbol:OSHW-Logo_19x20mm_SilkScreen" H 7150 3500 50  0001 C CNN
+F 3 "~" H 7150 3500 50  0001 C CNN
+	1    7150 3500
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
