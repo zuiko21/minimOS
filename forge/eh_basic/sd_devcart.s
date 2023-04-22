@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230420-1825
+; last modified 20230422-1716
 
 #echo Using devCart SD card for LOAD and SAVE! - interactive filename prompt
 
@@ -39,17 +39,16 @@
 
 .(
 ; *** memory usage *** CHECK
-f_eof	= $EC				; current file size, max 16 MiB
-f_sig	= f_eof	+ 2			; $EE-$EF, filter by signature?
-sd_ver	= f_sig				; $EE
-crc		= sd_ver+ 1			; $EF
-arg		= crc	+ 1			; $F0
+f_eof	= $EA				; $EA-$EC, current file size, max 16 MiB
+f_cur	= f_eof	+ 3			; $ED-$EF, file cursor
+arg		= f_cur	+ 3			; $F0, also current sector
 res		= arg	+ 4			; $F4
 mosi	= res	+ 5			; $F9
 miso	= mosi	+ 1			; $FA
 token	= miso	+ 1			; $FB
-ptr		= token	+ 1			; $FC, buffer pointer
-f_cur	= ptr	+ 2			; $FE, file cursor *** maybe 3 bytes
+ptr		= token	+ 1			; $FC-$FD, buffer pointer (wrapping every 512 bytes)
+sd_ver	= ptr	+ 2			; $FE
+crc		= sd_ver+ 1			; $FF
 
 ; *** sector buffer and header pointers ***
 
@@ -211,8 +210,14 @@ skp_free:
 			JSR nxt_head	; jump and load next header
 			BRA scan_free	; check this new header
 fnd_free:
-; currently at free space header, to do = save size, modify name and type, return with C clear
-; save size *** TBD
+; currently at free space header
+		LDA fsize+2			; get free block size
+		LDX fsize+1
+		LDY fsize			; likely to be zero
+		STY f_eof
+		STX f_eof+1
+		STA f_eof+2			; store a copy of size (under 16 MiB)
+; set new name
 		LDY #0
 cpy_name:
 			LDA (ut1_pl), Y	; copy character
@@ -226,11 +231,13 @@ cpy_name:
 name_copied:
 		INY
 		STA fname, Y		; second terminator
+; change signature from dL to dA
 		LDA #'A'			; generic file signature
 		STA bootsig+1
 ; won't be setting timestamp for now
-; set pointers *** TBD
-; maybe confirm it's saving
+; preset pointers
+
+; confirm it's saving
 		LDX #0
 is_svng:
 			LDY save_msg, X
@@ -250,7 +257,7 @@ auxs_end:
 ; ******************************************************
 +aux_close:					; *** tidy up after SAVE ***
 ;---------- save current sector, reload header, keep size, set size to cursor+256, regenerate free after it of old size-actual
-	RTS						; nothing to do this far
+	RTS
 
 ; *** ask for name, perhaps list directory, and return C if not found ***
 set_name:
@@ -413,15 +420,19 @@ flush_sd:
 	JSR conio
 ; DEBUG, display sector contents in ASCII
 	LDX #0					; 256 words = 512 bytes
-	STX ptr
+	STX ptr					; no need for STZ
 	LDA #>buffer
 	STA ptr+1
 fsd_loop:
+		PHX
+		LDY #16				; binary mode!
+		JSR conio
 		LDA (ptr)			; first byte in word
 		TAY
-		PHX
 		JSR conio
 		INC ptr				; no wrap here
+		LDY #16				; binary mode!
+		JSR conio
 		LDA (ptr)			; second byte in word
 		TAY
 		JSR conio
