@@ -1,8 +1,8 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230422-1802
+; last modified 20230422-1832
 
-#echo Using devCart SD card for LOAD and SAVE! - interactive filename prompt
+#echo Using devCart SD card for LOAD and SAVE (DEBUG) - interactive filename prompt
 
 #define	CMD0		0
 #define	CMD0_CRC	$94
@@ -67,12 +67,16 @@ fsize	= buffer+252		; file size INCLUDING 256-byte header
 ; **********************
 ; ********************************************************************************
 +aux_in:					; *** device input (MUST restore devices upon EOF) ***
+	LDA f_cur+2				; just in case
+	CMP f_eof+2
+	BCC not_eof
 	LDA f_cur+1
 	CMP f_eof+1				; compare cursor to size
 	BCC not_eof				; if below, no EOF (sequential only)
 		LDA f_cur
 		CMP f_eof+1
 	BCC not_eof
+; EOF is there, restore devices and we're done
 		STZ std_in
 		STZ stdout			; restore devices!
 		JMP LAB_WARM		; will this work? yes!
@@ -100,6 +104,8 @@ adv_byte:
 	INC f_cur				; count another byte read
 	BNE rd_byte
 		INC f_cur+1
+	BNE rd_byte
+		INC f_cur+2
 rd_byte:
 	TAY						; exit value
 	CLC						; eeeeeeeek
@@ -113,11 +119,11 @@ rd_byte:
 	BNE adv_wbyte
 		INC ptr+1
 		LDX ptr+1			; check page
-		CMP #>Ram_base		; usually 5
+		CPX #>(buffer+512)	; usually 5 EEEEEEEEK
 	BNE adv_wbyte
 		JSR flush_sd		; write current sector
 		LDX #>buffer
-		STX ptr				; wrap buffer pointer (assume page aligned)
+		STX ptr+1			; wrap buffer pointer (assume page aligned) EEEEEEEEK
 		INC arg+3			; advance to next sector
 	BNE adv_wbyte
 		INC arg+2
@@ -129,7 +135,12 @@ adv_wbyte:
 	INC f_cur				; another byte written
 	BNE wr_byte
 		INC f_cur+1
+	BNE wr_byte
+		INC f_cur+2
 wr_byte:
+	LDX f_cur+2				; just in case
+	CPX f_eof+2
+	BCC has_room
 	LDX f_cur+1
 	CPX f_eof+1				; compare against free space limit
 	BCC has_room
@@ -146,7 +157,8 @@ oos_loop:
 			INX
 			BNE oos_loop
 oos_end:
-		STZ stdout			; redirect output to NULL!
+		LDX #2				; device 2 is NULL eeeeeeek
+		STX stdout			; redirect output to NULL!
 		SEC					; notify error, probably ignored
 has_room:
 	RTS						; if arrived from 
@@ -239,7 +251,13 @@ name_copied:
 		STA bootsig+1
 ; won't be setting timestamp for now
 ; preset pointers
-
+		STZ f_cur
+		LDA #1				; starts at page 1 of file, skipping header!
+		STA f_cur+1
+		STZ f_cur
+		STZ ptr
+		LDA #>(buffer+256)
+		STA ptr+1
 ; confirm it's saving
 		LDX #0
 is_svng:
