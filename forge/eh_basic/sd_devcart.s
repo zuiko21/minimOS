@@ -116,7 +116,7 @@ rd_byte:
 		LDX ptr+1			; check page
 		CMP #>Ram_base		; usually 5
 	BNE adv_wbyte
-		JSR sd_flush		; write current sector
+		JSR flush_sd		; write current sector
 		LDX #>buffer
 		STX ptr				; wrap buffer pointer (assume page aligned)
 		INC arg+3			; advance to next sector
