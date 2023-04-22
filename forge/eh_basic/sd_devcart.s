@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230422-1716
+; last modified 20230422-1802
 
 #echo Using devCart SD card for LOAD and SAVE! - interactive filename prompt
 
@@ -167,15 +167,18 @@ fnd_file:
 fnd_ok:
 		JSR name_prn		; ...and add detected filename
 		STZ f_cur
-		STZ f_cur+1			; reset file position *** may try setting both pointers at 256
+		LDX #1				; actual read starts one page after the header
+		STX f_cur+1			; reset file position, must skip header for reading
+		STZ f_cur+2			; eeek
 		STZ ptr
 		LDA #>(buffer+256)	; eeeeeeeek
 		STA ptr+1			; skip header in buffer eeeeeeeek
+		LDA fsize+2			; now with 24-bit addressing
 		LDX fsize+1			; eeeeeeeek
-		DEX					; minus header page *** if absolute, do not decrement
 		LDY fsize
 		STY f_eof
 		STX f_eof+1
+		STA f_eof+2
 		CLC
 auxl_end:
 	RTS
