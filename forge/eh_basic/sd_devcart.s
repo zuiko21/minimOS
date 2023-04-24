@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230424-0950
+; last modified 20230424-1434
 
 #echo Using devCart SD card for LOAD and SAVE (DEBUG) - interactive filename prompt
 
@@ -52,7 +52,8 @@ crc		= sd_ver+ 1			; $FF
 
 ; *** sector buffer and header pointers ***
 
-hd_cache= $2FC				; current header position (big-endian)
+tmp_siz	= $2FA				; $2FA-$2FB top 16 bits of temporary size for remaining free block (max. 16M)
+hd_cache= tmp_siz+3			; $2FC-$2FF current header sector position (big-endian)
 buffer	= $300
 magic1	= buffer+0			; must contain zero
 magic2	= buffer+7			; must contain CR (13)
@@ -292,19 +293,36 @@ auxs_end:
 	BNE aux_closed
 		JSR flush_sd		; save current buffered sector
 ; the safest way is to generate the new free header after this sector (if there's room for it!),
-; then modify the current header (location cached somewhere!) to reflect actual size (and timestamp)
-	STZ magic1
-	STZ magic3
-	STZ fname				; free blocks have no name nor comment!
-	STZ fname+1
-	LDA #13
-	STA magic2				; recognisable header
-	LDA #'d'
-	STA bootsig
-	LDA #'L'				; free block signature
-	STA bootsig+1
-; compute remaining free space into fsize *** TBD
-; should skip the following if computed size is ZERO
+; compute remaining free space into fsize
+; round actual size into next 512-byte block
+	LDX f_cur+2				; get MSB just in case
+	LDA f_cur+1				; number of pages
+	LDY f_cur				; check whether last sector is full
+	BEQ cl_nofill
+		INC					; round up to next page
+		BNE cl_nofill		; always check carry
+			INX
+cl_nofill:
+	BIT #1					; if odd...
+	BEQ cl_fullsec
+		INC					; ...add one more page for full sector
+		BNE cl_fullsec
+			INX
+cl_fullsec:
+	STA tmp_siz				; store mid byte(LSB is always zero)
+	STX tmp_siz+1			; MSB may change
+; rounded-up size is at tmp_size, let's compute previous free (f_eof) minus rounded size for the newly created header
+	SEC
+	LDA f_eof+1				; LSB is always zero during writes, of course
+	SBC tmp_siz
+	STA tmp_siz
+	LDA f_eof+2				; MSB
+	SBC tmp_siz+1
+	STA tmp_siz+1			; computed value updated
+; should skip the following if computed remaining size is ZERO (MSB was into A)
+	ORA tmp_siz				; any remaining free space?
+	BEQ close_hd			; if not, just update file header
+; advance one sector for the new free block header
 		INC arg+3
 	BNE gen_free
 		INC arg+2
@@ -313,9 +331,25 @@ auxs_end:
 	BNE gen_free
 		INC arg
 gen_free:
+; compose next free block header
+		STZ magic1
+		STZ magic3
+		STZ fname			; free blocks have no name nor comment!
+		STZ fname+1
+		LDA #13
+		STA magic2			; recognisable header
+		LDA #'d'
+		STA bootsig
+		LDA #'L'			; free block signature
+		STA bootsig+1
+		LDX tmp_siz+1		; eeeeek
+		LDY tmp_siz
+		STX fsize+2
+		STY fsize+1
+		STZ fsize			; free blocks have always LSB = 0
 		JSR flush_sd		; write actual free block
 close_hd:
-; close actual file, modify current header
+; then modify the current header (location cached somewhere!) to reflect actual size (and timestamp)
 	LDX #3					; max sector offset
 back2hd:
 		LDA hd_cache, X
@@ -323,8 +357,18 @@ back2hd:
 		DEX
 		BPL back2hd			; copy cached sector number (big-endian!) into arg
 	JSR ssec_rd				; get header back
-; modify size accordingly *** TBD
-; modify timestamp *** TBD
+; modify size accordingly
+	LDX #2					; max size index <16M
+new_size:
+		LDA f_cur, X
+		STA fsize, X
+		DEX
+		BPL new_size
+; modify timestamp ---
+	STZ fdate
+	STZ fdate+1
+	STZ ftime
+	STZ ftime+1				; --- with no RTC this far, modify date will be midnight Jan-1 1980
 	JSR flush_sd			; update media
 ; CLC or something?
 aux_closed:
