@@ -1,8 +1,8 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230424-1434
+; last modified 20230424-1909
 
-#echo Using devCart SD card for LOAD and SAVE (DEBUG) - interactive filename prompt
+#echo Using devCart SD card for LOAD and SAVE (in DEBUG) - interactive filename prompt
 
 #define	CMD0		0
 #define	CMD0_CRC	$94
@@ -53,7 +53,7 @@ crc		= sd_ver+ 1			; $FF
 ; *** sector buffer and header pointers ***
 
 tmp_siz	= $2FA				; $2FA-$2FB top 16 bits of temporary size for remaining free block (max. 16M)
-hd_cache= tmp_siz+3			; $2FC-$2FF current header sector position (big-endian)
+hd_cache= tmp_siz+2			; $2FC-$2FF current header sector position (big-endian)
 buffer	= $300
 magic1	= buffer+0			; must contain zero
 magic2	= buffer+7			; must contain CR (13)
@@ -200,7 +200,9 @@ auxl_end:
 ; **********************************************************************************
 +aux_save:					; *** prepare things for SAVE, Carry if not possible ***
 	JSR set_name
-	BCC auxs_end			; do nothing in case of error (file exists)
+		BCS do_save
+	JMP auxs_end			; do nothing in case of error (file exists)
+do_save:
 ; locate free, change name and reset pointers 
 		STZ arg
 		STZ arg+1
@@ -290,7 +292,9 @@ auxs_end:
 ; flush current sector... unless it's beyond EOF!
 	LDA stdout				; check output device
 	CMP #4					; must be AUX! (never NULL, #2)
-	BNE aux_closed
+		BEQ do_close
+	JMP aux_closed
+do_close:
 		JSR flush_sd		; save current buffered sector
 ; the safest way is to generate the new free header after this sector (if there's room for it!),
 ; compute remaining free space into fsize
@@ -342,6 +346,12 @@ gen_free:
 		STA bootsig
 		LDA #'L'			; free block signature
 		STA bootsig+1
+		LDA #'*'
+		LDX #3				; max index from bootsig+2 (2...5)
+star_fill:
+			STA bootsig+2, X			; better fill the reserved field with stars
+			DEX
+			BPL star_fill
 		LDX tmp_siz+1		; eeeeek
 		LDY tmp_siz
 		STX fsize+2
