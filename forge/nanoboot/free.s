@@ -1,7 +1,11 @@
 ; free space header for minimOS filesystem
 ; also as Durango-X SD-card ROM images
 ; header ID
-#echo	64K free space header
+#ifndef	SIZE
+#define		SIZE	$10000
+#endif
+
+#echo	SIZE free space header
 free_start:
 	.byt	0				; [0]=NUL, first magic number
 	.asc	"dL"			; FREE space for Durango-X devCart SD
@@ -15,8 +19,9 @@ free_start:
 	.dsb	free_start + $FC - *, $FF
 
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
-	.word	0				; filesize (lower 16 bits)
-	.word	1				; 64K free space needs third byte; if less than 16M, [255]=NUL may be third magic number
+	.byt	0				; filesize (lower 8 bits always 0)
+	.word	 SIZE / 256		; 64K free space needs third byte
+	.byt	0				; if less than 16M, [255]=NUL may be third magic number
 
 ; now comes actual space
-	.dsb	$FF00, $FF		; 64K minus 256 bytes
+	.dsb	SIZE -256, $FF	; 64K minus 256 bytes
