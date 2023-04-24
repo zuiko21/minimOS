@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230422-1832
+; last modified 20230424-0950
 
 #echo Using devCart SD card for LOAD and SAVE (DEBUG) - interactive filename prompt
 
@@ -52,6 +52,7 @@ crc		= sd_ver+ 1			; $FF
 
 ; *** sector buffer and header pointers ***
 
+hd_cache= $2FC				; current header position (big-endian)
 buffer	= $300
 magic1	= buffer+0			; must contain zero
 magic2	= buffer+7			; must contain CR (13)
@@ -226,6 +227,13 @@ skp_free:
 			BRA scan_free	; check this new header
 fnd_free:
 ; currently at free space header
+; cache it position for closing!
+		LDX #3				; max offset
+hdcach_st:
+			LDA arg, X
+			STA hd_cache, X	; copy sector number into cache (big endian!)
+			DEX
+			BPL hdcach_st
 		LDA fsize+2			; get free block size
 		LDX fsize+1
 		LDY fsize			; likely to be zero
@@ -278,6 +286,48 @@ auxs_end:
 ; ******************************************************
 +aux_close:					; *** tidy up after SAVE ***
 ;---------- save current sector, reload header, keep size, set size to cursor+256, regenerate free after it of old size-actual
+; flush current sector... unless it's beyond EOF!
+	LDA stdout				; check output device
+	CMP #4					; must be AUX! (never NULL, #2)
+	BNE aux_closed
+		JSR flush_sd		; save current buffered sector
+; the safest way is to generate the new free header after this sector (if there's room for it!),
+; then modify the current header (location cached somewhere!) to reflect actual size (and timestamp)
+	STZ magic1
+	STZ magic3
+	STZ fname				; free blocks have no name nor comment!
+	STZ fname+1
+	LDA #13
+	STA magic2				; recognisable header
+	LDA #'d'
+	STA bootsig
+	LDA #'L'				; free block signature
+	STA bootsig+1
+; compute remaining free space into fsize *** TBD
+; should skip the following if computed size is ZERO
+		INC arg+3
+	BNE gen_free
+		INC arg+2
+	BNE gen_free
+		INC arg+1
+	BNE gen_free
+		INC arg
+gen_free:
+		JSR flush_sd		; write actual free block
+close_hd:
+; close actual file, modify current header
+	LDX #3					; max sector offset
+back2hd:
+		LDA hd_cache, X
+		STA arg, X
+		DEX
+		BPL back2hd			; copy cached sector number (big-endian!) into arg
+	JSR ssec_rd				; get header back
+; modify size accordingly *** TBD
+; modify timestamp *** TBD
+	JSR flush_sd			; update media
+; CLC or something?
+aux_closed:
 	RTS
 
 ; *** ask for name, perhaps list directory, and return C if not found ***
