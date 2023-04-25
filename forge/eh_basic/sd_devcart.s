@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230425-1854
+; last modified 20230425-2305
 
 ; uncomment DEBUG version below, does not actually write to the card, just display sector number and contents
 ;#define	DEBUG
@@ -24,7 +24,7 @@
 #define	CMD17		17
 #define	SD_MAX_READ_ATTEMPTS	203
 #define	CMD24		24
-#define	SD_MAX_WRITE_ATTEMPTS	203***
+#define	SD_MAX_WRITE_ATTEMPTS	203
 ; error code messages
 #define	IDLE_ERR	0
 #define	SDIF_ERR	1
@@ -1003,7 +1003,7 @@ no_let:
 		LDA #$FE
 		JSR spi_tr			; SPI_transfer(SD_START_TOKEN);
 ; write buffer to card		; for(uint16_t i = 0; i < SD_BLOCK_LEN; i++) SPI_transfer(buf[i]);
-block:
+wblock:
 			LDX #0			; 256-times loop reading 2-byte words => 512 bytes/sector
 byte_wr:
 				LDA (ptr)	; get one byte
@@ -1022,6 +1022,7 @@ bwr_nw:
 				INX
 				BNE byte_wr
 ; wait for a response token (timeout = 250ms)
+wr_done:
 		LDX #SD_MAX_WRITE_ATTEMPTS
 wr_tok:
 			DEX
@@ -1070,7 +1071,7 @@ io_dsc:
 		INC ptr
 		BNE io_dsc			; until the end of page
 	INC ptr+1				; continue from page $E0
-	BNE wr_crc				; current sector actually ended EEEEK
+	BNE wr_done				; current sector actually ended EEEEK
 #endif
 
 ; **************************************************
