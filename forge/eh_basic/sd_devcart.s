@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230425-2305
+; last modified 20230425-2333
 
 ; uncomment DEBUG version below, does not actually write to the card, just display sector number and contents
 ;#define	DEBUG
@@ -993,9 +993,9 @@ no_let:
 	STA token
 	JSR cs_enable			; assert chip select
 ; send CMD24 (sector already at arg.l)
-	STZ crc					; ** assume CMD17_CRC is 0 **
+	STZ crc					; ** assume CMD24_CRC is 0 **
 	LDA #CMD24
-	JSR sd_cmd				; SD_command(CMD17, sector, CMD17_CRC);
+	JSR sd_cmd				; SD_command(CMD24, sector, CMD24_CRC);
 ; read response
 	JSR rd_r1
 	BNE no_wres				; if(res[0]==SD_READY) {
@@ -1014,10 +1014,6 @@ byte_wr:
 				INC ptr
 				BNE bwr_nw
 					INC ptr+1
-; must skip I/O page! eeeeeek
-					LDA ptr+1
-					CMP #$DF			; already at I/O page?
-					BEQ io_skip
 bwr_nw:
 				INX
 				BNE byte_wr
@@ -1059,19 +1055,6 @@ no_wres:
 	LDX #>buffer
 	STX ptr+1				; wrap buffer pointer (assume page aligned) eeeeek
 	RTS
-; * special code for I/O page skipping *
-io_skip:
-		LDA (ptr)			; ptr originally pointing to $DF00
-		JSR spi_tr			; save one byte at $DF00-$DF7F, as per Emilio's request
-		INC ptr				; no page crossing in the first half
-		BPL io_skip			; this will fill the accesible area at page $DF (up to $DF7F)
-io_dsc:
-		LDA #$FF
-		JSR spi_tr			; discard one byte
-		INC ptr
-		BNE io_dsc			; until the end of page
-	INC ptr+1				; continue from page $E0
-	BNE wr_done				; current sector actually ended EEEEK
 #endif
 
 ; **************************************************
