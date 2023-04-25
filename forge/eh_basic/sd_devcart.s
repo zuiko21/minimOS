@@ -1,6 +1,11 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230424-1909
+; last modified 20230425-1854
+
+; uncomment DEBUG version below, does not actually write to the card, just display sector number and contents
+;#define	DEBUG
+; uncomment STRICT version below, will look for exact match in filenames for LOADing
+;#define	STRICT
 
 #echo Using devCart SD card for LOAD and SAVE (in DEBUG) - interactive filename prompt
 
@@ -18,7 +23,8 @@
 
 #define	CMD17		17
 #define	SD_MAX_READ_ATTEMPTS	203
-
+#define	CMD24		24
+#define	SD_MAX_WRITE_ATTEMPTS	203***
 ; error code messages
 #define	IDLE_ERR	0
 #define	SDIF_ERR	1
@@ -473,9 +479,11 @@ bad_name:
 	RTS
 ; if arrived here, we found the file... or something matching the search term
 cmp_end:
-; --- uncomment these for strict name matching ---
-;	LDA fname, Y			; check current position in filename
-;		BNE skip_fi			; if not a terminator, match is incomplete
+#ifdef	STRICT
+; --- uncomment these for strict name matching --- enabled with STRICT option
+	LDA fname, Y			; check current position in filename
+		BNE skip_fi			; if not a terminator, match is incomplete
+#endif
 	CLC						; name was OK
 	RTS
 
@@ -524,72 +532,6 @@ below64:
 sec_ok:
 	JMP ssec_rd		; eeeeeek! and return
 
-; *** save current sector to SD, but do not advance anything ***
-flush_sd:
-; DEBUG version, display sector number (hex) in brackets
-	LDY #14
-	JSR conio
-	LDY #'['
-	JSR conio
-	LDA arg+1
-	JSR disphex
-	LDA arg+2
-	JSR disphex
-	LDA arg+3
-	JSR disphex
-	LDY #']'
-	JSR conio
-	LDY #15
-	JSR conio
-	LDY #13
-	JSR conio
-; DEBUG, display sector contents in ASCII
-	LDX #0					; 256 words = 512 bytes
-	STX ptr					; no need for STZ
-	LDA #>buffer
-	STA ptr+1
-fsd_loop:
-		PHX
-		LDY #16				; binary mode!
-		JSR conio
-		LDA (ptr)			; first byte in word
-		TAY
-		JSR conio
-		INC ptr				; no wrap here
-		LDY #16				; binary mode!
-		JSR conio
-		LDA (ptr)			; second byte in word
-		TAY
-		JSR conio
-		INC ptr
-		BNE fsd_nw
-			INC ptr+1
-fsd_nw:
-		PLX
-		INX
-		BNE fsd_loop		; repeat for every word
-	LDY #13
-	JMP conio				; newline and return
-
-; DEBUG support, display byte in hex
-disphex:
-	PHA						; save for later
-	LSR
-	LSR
-	LSR
-	LSR						; MSB first
-	JSR bin2hex
-	PLA
-	AND #15					; restore LSB
-bin2hex:
-	CLC
-	ADC #'0'				; convert to ASCII
-	CMP #':'				; 10 or more?
-	BCC no_let
-		ADC #6				; add 7 (C was set)
-no_let:
-	TAY
-	JMP conio				; display and return
 
 ; ***********************************
 ; *** hardware-specific SD driver ***
@@ -972,6 +914,166 @@ no_res:
 	STX ptr+1				; wrap buffer pointer (assume page aligned) eeeeek
 	RTS
 
+; *** save current sector to SD, but do not advance anything ***
+flush_sd:
+#ifdef	DEBUG
+; DEBUG version, display sector number (hex) in brackets
+	LDY #14
+	JSR conio
+	LDY #'['
+	JSR conio
+	LDA arg+1
+	JSR disphex
+	LDA arg+2
+	JSR disphex
+	LDA arg+3
+	JSR disphex
+	LDY #']'
+	JSR conio
+	LDY #15
+	JSR conio
+	LDY #13
+	JSR conio
+; DEBUG, display sector contents in ASCII
+	LDX #0					; 256 words = 512 bytes
+	STX ptr					; no need for STZ
+	LDA #>buffer
+	STA ptr+1
+fsd_loop:
+		PHX
+		LDY #16				; binary mode!
+		JSR conio
+		LDA (ptr)			; first byte in word
+		TAY
+		JSR conio
+		INC ptr				; no wrap here
+		LDY #16				; binary mode!
+		JSR conio
+		LDA (ptr)			; second byte in word
+		TAY
+		JSR conio
+		INC ptr
+		BNE fsd_nw
+			INC ptr+1
+fsd_nw:
+		PLX
+		INX
+		BNE fsd_loop		; repeat for every word
+	LDY #13
+	JMP conio				; newline and return
+
+; DEBUG support, display byte in hex
+disphex:
+	PHA						; save for later
+	LSR
+	LSR
+	LSR
+	LSR						; MSB first
+	JSR bin2hex
+	PLA
+	AND #15					; restore LSB
+bin2hex:
+	CLC
+	ADC #'0'				; convert to ASCII
+	CMP #':'				; 10 or more?
+	BCC no_let
+		ADC #6				; add 7 (C was set)
+no_let:
+	TAY
+	JMP conio				; display and return
+#else
+; * intended to write from $0300 *
+	LDA #>buffer
+;	LDY #<buffer			; expected to be page-aligned
+	STA ptr+1
+	STZ ptr					; or STY, if set
+; * standard sector write, assume arg set with sector number *
+; set token to none
+	LDA #$FF
+	STA token
+	JSR cs_enable			; assert chip select
+; send CMD24 (sector already at arg.l)
+	STZ crc					; ** assume CMD17_CRC is 0 **
+	LDA #CMD24
+	JSR sd_cmd				; SD_command(CMD17, sector, CMD17_CRC);
+; read response
+	JSR rd_r1
+	BNE no_wres				; if(res[0]==SD_READY) {
+; send start token
+		LDA #$FE
+		JSR spi_tr			; SPI_transfer(SD_START_TOKEN);
+; write buffer to card		; for(uint16_t i = 0; i < SD_BLOCK_LEN; i++) SPI_transfer(buf[i]);
+block:
+			LDX #0			; 256-times loop reading 2-byte words => 512 bytes/sector
+byte_wr:
+				LDA (ptr)	; get one byte
+				JSR spi_tr
+				INC ptr		; won't do any page crossing here, as long as the base address is EVEN
+				LDA (ptr)	; get a second byte
+				JSR spi_tr
+				INC ptr
+				BNE bwr_nw
+					INC ptr+1
+; must skip I/O page! eeeeeek
+					LDA ptr+1
+					CMP #$DF			; already at I/O page?
+					BEQ io_skip
+bwr_nw:
+				INX
+				BNE byte_wr
+; wait for a response token (timeout = 250ms)
+		LDX #SD_MAX_WRITE_ATTEMPTS
+wr_tok:
+			DEX
+		BEQ chk_wtok		; this is done twice for a single-byte timeout loop
+			LDA #$FF
+			JSR spi_tr
+			CMP #$FF
+		BNE brk_wtok
+			LDA #$FF
+			JSR spi_tr
+			CMP #$FF
+			BEQ wr_tok		; if((read = SPI_transfer(0xFF)) != 0xFF)
+brk_wtok:
+		LDY #$FF
+		STY token			; { *token = 0xFF; break; }
+chk_wtok:
+		AND #$1F
+		CMP #5				; if((read & 0x1F) == 0x05)
+		BNE no_wres
+			STA token		; *token = 0x05
+; wait for write to finish (timeout = 250ms)
+			LDX #SD_MAX_WRITE_ATTEMPTS
+wr_end:
+				LDA #$FF
+				JSR spi_tr
+			BNE no_wres
+				DEX
+				BNE wr_end
+			STZ token
+no_wres:
+	JSR cs_disable			; deassert chip select
+	LDA res
+; * restore buffer access for convenience *
+	LDX #>buffer
+	STX ptr+1				; wrap buffer pointer (assume page aligned) eeeeek
+	RTS
+; * special code for I/O page skipping *
+io_skip:
+		LDA (ptr)			; ptr originally pointing to $DF00
+		JSR spi_tr			; save one byte at $DF00-$DF7F, as per Emilio's request
+		INC ptr				; no page crossing in the first half
+		BPL io_skip			; this will fill the accesible area at page $DF (up to $DF7F)
+io_dsc:
+		LDA #$FF
+		JSR spi_tr			; discard one byte
+		INC ptr
+		BNE io_dsc			; until the end of page
+	INC ptr+1				; continue from page $E0
+	BNE wr_crc				; current sector actually ended EEEEK
+#endif
+
+; **************************************************
 ; *** exit point in case of error *** X = error code
 sd_fail:
 	TXA
