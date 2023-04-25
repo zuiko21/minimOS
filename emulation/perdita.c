@@ -18,6 +18,11 @@
 #define PSV_FREAD			0x12
 #define PSV_FWRITE			0x13
 #define PSV_FCLOSE			0x1F
+#define PSV_RAW_INIT        0x20
+#define PSV_RAW_SEEK        0x21
+#define PSV_RAW_READ        0x22
+#define PSV_RAW_WRITE       0x23
+#define PSV_RAW_CLOSE       0x24
 #define PSV_HEX				0xF0
 #define PSV_ASCII			0xF1
 #define PSV_BINARY			0xF2
@@ -146,6 +151,7 @@
 	void emulate_gamepad1(SDL_Event *e);
 	void emulate_gamepad2(SDL_Event *e);
 	void emulation_minstrel(SDL_Event *e);
+    void vps_config(word dir, byte v);
 
 /* memory management */
 	byte peek(word dir);			// read memory or I/O
@@ -805,90 +811,7 @@ void poke(word dir, byte v) {
 			// flush stdout
 			fflush(stdout);
 		} else if (dir==0xDF94) { // virtual serial port config at $df94
-			// If stat print mode
-			if(v==PSV_STAT) {
-				// Print stat
-				stat();
-			}
-			// If stack print mode
-			else if(v==PSV_STACK) {
-				stack_stat();
-			}
-			// If memory dump mode
-			else if(v==PSV_DUMP) {
-				full_dump();
-			}
-			// If stop stopwatch
-			else if(v==PSV_STOPWATCH_STOP) {
-				printf("t=%ld cycles\n", cont-stopwatch);
-			}
-			// If start stopwatch
-			else if(v==PSV_STOPWATCH_START) {
-				stopwatch = cont;
-			}
-			// Cache value
-			else {
-				mem[dir]=v;
-			}
-			// PSV file open
-			if(v==PSV_FOPEN) {
-				psv_index = 0;
-				if (psv_file != NULL) {
-					fclose(psv_file);	// there was something open
-					psv_file = NULL;
-					printf("WARNING: there was another open file\n");
-				}
-//				psv_filename[psv_index++]='p';
-//				psv_filename[psv_index++]='s';
-//				psv_filename[psv_index++]='v';
-//				psv_filename[psv_index++]='_';
-			}
-			// PSV file write
-			if(v==PSV_FWRITE) {
-				psv_filename[psv_index] = '\0';
-				// actual file opening
-				if(psv_file == NULL) {
-					psv_file =fopen(psv_filename,"wb");
-					if (psv_file == NULL) {	// we want a brand new file
-						printf("[%d] ERROR: can't write to file %s\n", psv_index, psv_filename);
-						mem[0xDF94] = 0;								// disable VSP
-					} else {
-						printf("Opening file %s for writing...\n", psv_filename);
-					}
-				} else {
-					printf("ERROR: file already open\n");
-					mem[0xDF94] = 0;									// disable VSP
-				}
-			}
-			// PSV file read
-			if(v==PSV_FREAD) {
-				psv_filename[psv_index] = '\0';		// I believe this is needed
-				if(psv_file == NULL) {
-					psv_file =fopen(psv_filename,"rb");
-					if (psv_file == NULL) {	// we want a brand new file
-						printf("[%d] ERROR: can't open file %s\n", psv_index, psv_filename);
-						mem[0xDF94] = 0;			// disable VSP
-					} else {
-						printf("Opening file %s for reading...\n", psv_filename);
-					}
-				} else {
-					printf("ERROR: file already open\n");
-					mem[0xDF94] = 0;									// disable VSP
-				}
-//				mem[0xDF93]=fgetc(psv_file);		// not done at config time, wait for actual read!
-			}
-			// PSV file close
-			if(v==PSV_FCLOSE && psv_file!=NULL) {
-				// close file
-				if(fclose(psv_file)!=0) {
-					printf("WARNING: Error closing file %s\n", psv_filename);
-				} else {
-					printf(" Done with file!\n");
-				}
-				psv_file = NULL;
-			}
-			// flush stdout
-			fflush(stdout);
+			vps_config(dir, v);
 		} else if (dir==0xDF9C) { // gamepad 1 at $df9c
 			if (ver>2)	printf("Latch gamepads\n");
 			gamepads_latch[0] = gamepads[0];
@@ -3519,6 +3442,93 @@ void vdu_read_keyboard() {
 			process_keyboard(&e);
 		}
 	}
+}
+
+void vps_config(word dir, byte v) {
+    // If stat print mode
+    if(v==PSV_STAT) {
+        // Print stat
+        stat();
+    }
+    // If stack print mode
+    else if(v==PSV_STACK) {
+        stack_stat();
+    }
+    // If memory dump mode
+    else if(v==PSV_DUMP) {
+        full_dump();
+    }
+    // If stop stopwatch
+    else if(v==PSV_STOPWATCH_STOP) {
+        printf("t=%ld cycles\n", cont-stopwatch);
+    }
+    // If start stopwatch
+    else if(v==PSV_STOPWATCH_START) {
+        stopwatch = cont;
+    }
+    // Cache value
+    else {
+        mem[dir]=v;
+    }
+    // PSV file open
+    if(v==PSV_FOPEN) {
+        psv_index = 0;
+        if (psv_file != NULL) {
+            fclose(psv_file);	// there was something open
+            psv_file = NULL;
+            printf("WARNING: there was another open file\n");
+        }
+//				psv_filename[psv_index++]='p';
+//				psv_filename[psv_index++]='s';
+//				psv_filename[psv_index++]='v';
+//				psv_filename[psv_index++]='_';
+    }
+    // PSV file write
+    if(v==PSV_FWRITE) {
+        psv_filename[psv_index] = '\0';
+        // actual file opening
+        if(psv_file == NULL) {
+            psv_file =fopen(psv_filename,"wb");
+            if (psv_file == NULL) {	// we want a brand new file
+                printf("[%d] ERROR: can't write to file %s\n", psv_index, psv_filename);
+                mem[0xDF94] = 0;								// disable VSP
+            } else {
+                printf("Opening file %s for writing...\n", psv_filename);
+            }
+        } else {
+            printf("ERROR: file already open\n");
+            mem[0xDF94] = 0;									// disable VSP
+        }
+    }
+    // PSV file read
+    if(v==PSV_FREAD) {
+        psv_filename[psv_index] = '\0';		// I believe this is needed
+        if(psv_file == NULL) {
+            psv_file =fopen(psv_filename,"rb");
+            if (psv_file == NULL) {	// we want a brand new file
+                printf("[%d] ERROR: can't open file %s\n", psv_index, psv_filename);
+                mem[0xDF94] = 0;			// disable VSP
+            } else {
+                printf("Opening file %s for reading...\n", psv_filename);
+            }
+        } else {
+            printf("ERROR: file already open\n");
+            mem[0xDF94] = 0;									// disable VSP
+        }
+//				mem[0xDF93]=fgetc(psv_file);		// not done at config time, wait for actual read!
+    }
+    // PSV file close
+    if(v==PSV_FCLOSE && psv_file!=NULL) {
+        // close file
+        if(fclose(psv_file)!=0) {
+            printf("WARNING: Error closing file %s\n", psv_filename);
+        } else {
+            printf(" Done with file!\n");
+        }
+        psv_file = NULL;
+    }
+    // flush stdout
+    fflush(stdout);
 }
 
 /* Aux procedure to draw circles using SDL */
