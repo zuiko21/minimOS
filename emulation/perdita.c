@@ -131,6 +131,8 @@
 	char psv_filename[100];
 	int psv_index = 0;
 	FILE* psv_file;
+    long psv_raw_block;
+    int psv_raw_buffer;
 
 /* ******************* */
 /* function prototypes */
@@ -3455,6 +3457,52 @@ void vps_config(word dir, byte v) {
         }
         psv_file = NULL;
     }
+    // PSV raw file init
+    if(v==PSV_RAW_INIT) {
+        // file opening
+        if(psv_file == NULL) {
+            psv_file =fopen("durango.av","rb+");
+            if (psv_file == NULL) {
+                psv_file =fopen("durango.av","wb+");
+                if (psv_file == NULL) {
+                    printf("[%d] ERROR: can't write to file %s\n", psv_index, psv_filename);
+                    mem[0xDF94] = 0;
+                }
+            } else {
+                printf("Opening file durango.av for raw read/write...\n");
+            }
+        } else {
+            printf("ERROR: file already open\n");
+            mem[0xDF94] = 0;									// disable VSP
+        }
+    }
+    // PSV raw seek
+    if(v==PSV_RAW_SEEK) {
+        psv_index=0;
+    }    
+    // PSV raw file write
+    if(v==PSV_RAW_WRITE) {
+        fseek(psv_file, psv_raw_block*512, SEEK_SET);
+        fwrite(&(mem[psv_raw_buffer]) , sizeof(char), 512, psv_file);
+        printf("\nPSV raw write\n");
+    }
+    // If PSV raw file read
+    if(v==PSV_RAW_READ) {
+        fseek(psv_file, psv_raw_block*512, SEEK_SET);
+        fread(&(mem[psv_raw_buffer]) , sizeof(char), 512, psv_file);
+        printf("\nPSV raw read\n");
+    }
+    // PSV raw file init
+    if(v==PSV_RAW_CLOSE && psv_file!=NULL) {
+        // close file
+        if(fclose(psv_file)!=0) {
+            printf("WARNING: Error closing file durango.av\n");
+        } else {
+            printf(" Done with file!\n");
+        }
+        psv_file = NULL;
+    }
+    
     // flush stdout
     fflush(stdout);
 }
@@ -3529,6 +3577,20 @@ void vps_run(word dir, byte v) {
         // write to file
         fputc(mem[dir], psv_file);
     }
+    // If PSV raw file write mode enabled
+    else if(mem[0xDF94]==PSV_RAW_SEEK) {
+        // Save value
+        psv_filename[psv_index++] = mem[dir];
+        // Display value
+        if(psv_index==6) {
+            psv_raw_buffer=psv_filename[0] | psv_filename[1]<<8;
+            psv_raw_block=psv_filename[5] | psv_filename[4]<<8 | psv_filename[3]<<16 | psv_filename[2]<<24;
+            printf("\nPSV raw file seek. Buffer addr: [%02X%02X] (%d)", psv_filename[0], psv_filename[1], psv_raw_buffer);	
+            printf("\nPSV raw file seek. File addr: [%02X%02X%02X%02X] (%ld)\n", psv_filename[2], psv_filename[3], psv_filename[4], psv_filename[5], psv_raw_block);	
+            psv_index=0;
+        }
+    }
+    
     // flush stdout
     fflush(stdout);
 }
