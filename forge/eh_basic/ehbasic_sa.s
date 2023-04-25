@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230418-1745
+; last modified 20230425-1855
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -110,7 +110,11 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
+#ifndef	DEBUG
 	.asc	"EhBASIC", 0	; C-string with filename @ [8], max 238 chars
+#else
+	.asc	"EhBASIC (DEBUG version)", 0	; C-string with filename @ [8], max 238 chars
+#endif
 	.asc	"Derived from EhBASIC v2.22 by Lee Davison", 13, "RIP"	; comment with IMPORTANT attribution
 	.byt	0				; second terminator for optional comment, just in case
 
