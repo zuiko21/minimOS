@@ -151,7 +151,8 @@
 	void emulate_gamepad1(SDL_Event *e);
 	void emulate_gamepad2(SDL_Event *e);
 	void emulation_minstrel(SDL_Event *e);
-    void vps_config(word dir, byte v);
+    void vps_config(word dir, byte v);      // VPS configuration port emulation
+    void vps_run(word dir, byte v);         // VPS actual port emulation
 
 /* memory management */
 	byte peek(word dir);			// read memory or I/O
@@ -726,9 +727,7 @@ byte peek(word dir) {
 
 /* write to memory or I/O */
 void poke(word dir, byte v) {
-	word psv_int;
-    int psv_value;
-    if (dir<=0x7FFF) {			// 32 KiB static RAM
+	if (dir<=0x7FFF) {			// 32 KiB static RAM
 		mem[dir] = v;
 		if ((dir & 0x6000) == screen) {			// VRAM area
 			scr_dirty = 1;		// screen access detected, thus window must be updated!
@@ -742,74 +741,7 @@ void poke(word dir, byte v) {
 			if (ver)	printf("\n*** Writing to Read-only ports at $%04X ***\n", pc);
 			if (safe)	run = 0;
 		} else if (dir==0xDF93) { // virtual serial port at $df93
-			// Cache value
-			mem[dir]=v;
-			// If hex mode enabled
-			if(mem[0xDF94]==PSV_HEX) {
-				// Print hex value
-				printf("[%02X]", mem[dir]);	
-			}
-			// If ascii mode enabled
-			else if(mem[0xDF94]==PSV_ASCII) {
-				// Print ascii
-				printf("%c", mem[dir]);
-			}
-			// If binary mode enabled
-			else if(mem[0xDF94]==PSV_BINARY) {
-				// Print binary
-				printf(BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(mem[dir]));
-			}
-			// If decimal mode enabled
-			else if(mem[0xDF94]==PSV_DECIMAL) {
-				// Print decimal
-				printf("[%u]", mem[dir]);
-			}
-            // If int mode enabled
-			else if(mem[0xDF94]==PSV_INT) {
-				// Save value
-                psv_filename[psv_index++] = mem[dir];
-                // Display value
-                if(psv_index==2) {
-                    // Print decimal
-                    psv_int=psv_filename[0] | psv_filename[1]<<8;
-                    if(psv_int<=0x7FFF) {
-                        psv_value=psv_int;
-                    }
-                    else {
-                        psv_value=psv_int-65536;
-                    }
-                    printf("[%d]", psv_value);	
-                    psv_index=0;
-                }
-			}
-            // If int mode enabled
-			else if(mem[0xDF94]==PSV_HEX16) {
-				// Save value
-                psv_filename[psv_index++] = mem[dir];
-                // Display value
-                if(psv_index==2) {
-                    // Print hex
-                    printf("[%02X%02X]", psv_filename[0], psv_filename[1]);	
-                    psv_index=0;
-                }
-			}
-			// If file open mode enabled
-			else if(mem[0xDF94]==PSV_FOPEN) {
-				// Filter filename
-				if(mem[dir] >= ' ') {
-				// Save filename
-					psv_filename[psv_index++] = mem[dir];
-				} else {
-					psv_filename[psv_index++] = '_';
-				}
-			}
-			// If file write mode enabled
-			else if(mem[0xDF94]==PSV_FWRITE) {
-				// write to file
-				fputc(mem[dir], psv_file);
-			}
-			// flush stdout
-			fflush(stdout);
+			vps_run(dir, v);
 		} else if (dir==0xDF94) { // virtual serial port config at $df94
 			vps_config(dir, v);
 		} else if (dir==0xDF9C) { // gamepad 1 at $df9c
@@ -3478,10 +3410,6 @@ void vps_config(word dir, byte v) {
             psv_file = NULL;
             printf("WARNING: there was another open file\n");
         }
-//				psv_filename[psv_index++]='p';
-//				psv_filename[psv_index++]='s';
-//				psv_filename[psv_index++]='v';
-//				psv_filename[psv_index++]='_';
     }
     // PSV file write
     if(v==PSV_FWRITE) {
@@ -3526,6 +3454,80 @@ void vps_config(word dir, byte v) {
             printf(" Done with file!\n");
         }
         psv_file = NULL;
+    }
+    // flush stdout
+    fflush(stdout);
+}
+
+void vps_run(word dir, byte v) {
+    word psv_int;
+    int psv_value;
+    
+    // Cache value
+    mem[dir]=v;
+    // If hex mode enabled
+    if(mem[0xDF94]==PSV_HEX) {
+        // Print hex value
+        printf("[%02X]", mem[dir]);	
+    }
+    // If ascii mode enabled
+    else if(mem[0xDF94]==PSV_ASCII) {
+        // Print ascii
+        printf("%c", mem[dir]);
+    }
+    // If binary mode enabled
+    else if(mem[0xDF94]==PSV_BINARY) {
+        // Print binary
+        printf(BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(mem[dir]));
+    }
+    // If decimal mode enabled
+    else if(mem[0xDF94]==PSV_DECIMAL) {
+        // Print decimal
+        printf("[%u]", mem[dir]);
+    }
+    // If int mode enabled
+    else if(mem[0xDF94]==PSV_INT) {
+        // Save value
+        psv_filename[psv_index++] = mem[dir];
+        // Display value
+        if(psv_index==2) {
+            // Print decimal
+            psv_int=psv_filename[0] | psv_filename[1]<<8;
+            if(psv_int<=0x7FFF) {
+                psv_value=psv_int;
+            }
+            else {
+                psv_value=psv_int-65536;
+            }
+            printf("[%d]", psv_value);	
+            psv_index=0;
+        }
+    }
+    // If int mode enabled
+    else if(mem[0xDF94]==PSV_HEX16) {
+        // Save value
+        psv_filename[psv_index++] = mem[dir];
+        // Display value
+        if(psv_index==2) {
+            // Print hex
+            printf("[%02X%02X]", psv_filename[0], psv_filename[1]);	
+            psv_index=0;
+        }
+    }
+    // If file open mode enabled
+    else if(mem[0xDF94]==PSV_FOPEN) {
+        // Filter filename
+        if(mem[dir] >= ' ') {
+        // Save filename
+            psv_filename[psv_index++] = mem[dir];
+        } else {
+            psv_filename[psv_index++] = '_';
+        }
+    }
+    // If file write mode enabled
+    else if(mem[0xDF94]==PSV_FWRITE) {
+        // write to file
+        fputc(mem[dir], psv_file);
     }
     // flush stdout
     fflush(stdout);
