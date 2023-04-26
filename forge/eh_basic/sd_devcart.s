@@ -24,7 +24,7 @@
 #define	CMD17		17
 #define	SD_MAX_READ_ATTEMPTS	203
 #define	CMD24		24
-#define	SD_MAX_WRITE_ATTEMPTS	251
+#define	SD_MAX_WRITE_ATTEMPTS	254
 ; error code messages
 #define	IDLE_ERR	0
 #define	SDIF_ERR	1
