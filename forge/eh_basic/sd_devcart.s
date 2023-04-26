@@ -1,13 +1,16 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230426-0904
+; last modified 20230426-1825
 
 ; uncomment DEBUG version below, does not actually write to the card, just display sector number and contents
 ;#define	DEBUG
 ; uncomment STRICT version below, will look for exact match in filenames for LOADing
 ;#define	STRICT
 
-#echo Using devCart SD card for LOAD and SAVE (in DEBUG) - interactive filename prompt
+#echo Using devCart SD card for LOAD and SAVE - interactive filename prompt
+#ifdef	DEBUG
+#echo Debugging version (no actual writes)
+#endif
 
 #define	CMD0		0
 #define	CMD0_CRC	$94
