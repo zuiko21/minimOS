@@ -27,8 +27,9 @@
 #define PSV_ASCII			0xF1
 #define PSV_BINARY			0xF2
 #define PSV_DECIMAL			0xF3
-#define PSV_INT 			0xF4
+#define PSV_INT16 			0xF4
 #define PSV_HEX16			0xF5
+#define PSV_INT8 			0xF6
 #define PSV_STOPWATCH_START	0xFB
 #define PSV_STOPWATCH_STOP	0xFC
 #define PSV_DUMP			0xFD
@@ -3520,8 +3521,20 @@ void vps_run(word dir, byte v) {
         // Print decimal
         printf("[%u]", mem[dir]);
     }
+    // If int8 mode enabled
+    else if(mem[0xDF94]==PSV_INT8) {
+        psv_int=mem[dir];
+        if(psv_int<=0x7F) {
+            psv_value=psv_int;
+        }
+        else {
+            psv_value=psv_int-256;
+        }
+        printf("[%d]", psv_value);	
+        psv_index=0;
+    }
     // If int mode enabled
-    else if(mem[0xDF94]==PSV_INT) {
+    else if(mem[0xDF94]==PSV_INT16) {
         // Save value
         psv_filename[psv_index++] = mem[dir];
         // Display value
