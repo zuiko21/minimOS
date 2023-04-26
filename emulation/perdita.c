@@ -155,6 +155,8 @@
 	void emulation_minstrel(SDL_Event *e);
     void vps_config(word dir, byte v);      // VPS configuration port emulation
     void vps_run(word dir, byte v);         // VPS actual port emulation
+    void open_psv_raw_file(void);
+    void close_psv_raw_file(void);
 
 /* memory management */
 	byte peek(word dir);			// read memory or I/O
@@ -3459,22 +3461,8 @@ void vps_config(word dir, byte v) {
     }
     // PSV raw file init
     if(v==PSV_RAW_INIT) {
-        // file opening
-        if(psv_file == NULL) {
-            psv_file =fopen("durango.av","rb+");
-            if (psv_file == NULL) {
-                psv_file =fopen("durango.av","wb+");
-                if (psv_file == NULL) {
-                    printf("[%d] ERROR: can't write to file %s\n", psv_index, psv_filename);
-                    mem[0xDF94] = 0;
-                }
-            } else {
-                printf("Opening file durango.av for raw read/write...\n");
-            }
-        } else {
-            printf("ERROR: file already open\n");
-            mem[0xDF94] = 0;									// disable VSP
-        }
+        printf("PSV RAW INIT\n");
+        open_psv_raw_file();
     }
     // PSV raw seek
     if(v==PSV_RAW_SEEK) {
@@ -3482,25 +3470,24 @@ void vps_config(word dir, byte v) {
     }    
     // PSV raw file write
     if(v==PSV_RAW_WRITE) {
+        open_psv_raw_file();
         fseek(psv_file, psv_raw_block*512, SEEK_SET);
         fwrite(&(mem[psv_raw_buffer]) , sizeof(char), 512, psv_file);
-        printf("\nPSV raw write\n");
+        printf("PSV RAW WRITE\n");
+        close_psv_raw_file();
     }
     // If PSV raw file read
     if(v==PSV_RAW_READ) {
+        open_psv_raw_file();
         fseek(psv_file, psv_raw_block*512, SEEK_SET);
         fread(&(mem[psv_raw_buffer]) , sizeof(char), 512, psv_file);
-        printf("\nPSV raw read\n");
+        printf("PSV RAW READ\n");
+        close_psv_raw_file();
     }
     // PSV raw file init
-    if(v==PSV_RAW_CLOSE && psv_file!=NULL) {
-        // close file
-        if(fclose(psv_file)!=0) {
-            printf("WARNING: Error closing file durango.av\n");
-        } else {
-            printf(" Done with file!\n");
-        }
-        psv_file = NULL;
+    if(v==PSV_RAW_CLOSE) {
+        printf("PSV RAW CLOSE\n");
+        close_psv_raw_file();
     }
     
     // flush stdout
@@ -3585,14 +3572,37 @@ void vps_run(word dir, byte v) {
         if(psv_index==6) {
             psv_raw_buffer=psv_filename[0] | psv_filename[1]<<8;
             psv_raw_block=psv_filename[5] | psv_filename[4]<<8 | psv_filename[3]<<16 | psv_filename[2]<<24;
-            printf("\nPSV raw file seek. Buffer addr: [%02X%02X] (%d)", psv_filename[0], psv_filename[1], psv_raw_buffer);	
-            printf("\nPSV raw file seek. File addr: [%02X%02X%02X%02X] (%ld)\n", psv_filename[2], psv_filename[3], psv_filename[4], psv_filename[5], psv_raw_block);	
+            printf("PSV raw file seek. Buffer addr: [%02X%02X] (%d)\n", psv_filename[0], psv_filename[1], psv_raw_buffer);	
+            printf("PSV raw file seek. File addr: [%02X%02X%02X%02X] (%ld)\n", psv_filename[2], psv_filename[3], psv_filename[4], psv_filename[5], psv_raw_block);	
             psv_index=0;
         }
     }
     
     // flush stdout
     fflush(stdout);
+}
+
+void open_psv_raw_file() {
+    // file opening
+    if(psv_file == NULL) {
+        psv_file =fopen("durango.av","rb+");
+        if (psv_file == NULL) {
+            psv_file =fopen("durango.av","wb+");
+            if (psv_file == NULL) {
+                printf("[%d] ERROR: can't write to file %s\n", psv_index, psv_filename);
+                mem[0xDF94] = 0;
+            }
+        }
+    }
+}
+void close_psv_raw_file() {
+    if(psv_file!=NULL) {
+        // close file
+        if(fclose(psv_file)!=0) {
+            printf("WARNING: Error closing file durango.av\n");
+        }
+        psv_file = NULL;
+    }
 }
 
 /* Aux procedure to draw circles using SDL */
