@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230425-2333
+; last modified 20230426-0904
 
 ; uncomment DEBUG version below, does not actually write to the card, just display sector number and contents
 ;#define	DEBUG
@@ -24,7 +24,7 @@
 #define	CMD17		17
 #define	SD_MAX_READ_ATTEMPTS	203
 #define	CMD24		24
-#define	SD_MAX_WRITE_ATTEMPTS	203
+#define	SD_MAX_WRITE_ATTEMPTS	254
 ; error code messages
 #define	IDLE_ERR	0
 #define	SDIF_ERR	1
@@ -998,6 +998,7 @@ no_let:
 	JSR sd_cmd				; SD_command(CMD24, sector, CMD24_CRC);
 ; read response
 	JSR rd_r1
+	LDA res					; EEEEEEEEEEEK
 	BNE no_wres				; if(res[0]==SD_READY) {
 ; send start token
 		LDA #$FE
@@ -1022,7 +1023,15 @@ wr_done:
 		LDX #SD_MAX_WRITE_ATTEMPTS
 wr_tok:
 			DEX
-		BEQ chk_wtok		; this is done twice for a single-byte timeout loop
+		BEQ chk_wtok		; this is done FOUR times for a single-byte timeout loop, each iteration ~1 ms
+			LDA #$FF
+			JSR spi_tr
+			CMP #$FF
+		BNE brk_wtok
+			LDA #$FF
+			JSR spi_tr
+			CMP #$FF
+		BNE brk_wtok
 			LDA #$FF
 			JSR spi_tr
 			CMP #$FF
@@ -1042,6 +1051,15 @@ chk_wtok:
 ; wait for write to finish (timeout = 250ms)
 			LDX #SD_MAX_WRITE_ATTEMPTS
 wr_end:
+				LDA #$FF
+				JSR spi_tr	; again, this is done FOUR times for ~1 ms iteration time
+			BNE no_wres
+				LDA #$FF
+				JSR spi_tr
+			BNE no_wres
+				LDA #$FF
+				JSR spi_tr
+			BNE no_wres
 				LDA #$FF
 				JSR spi_tr
 			BNE no_wres
