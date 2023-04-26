@@ -3461,7 +3461,7 @@ void vps_config(word dir, byte v) {
     }
     // PSV raw file init
     if(v==PSV_RAW_INIT) {
-        printf("PSV RAW INIT");
+        printf("PSV RAW INIT\n");
         open_psv_raw_file();
     }
     // PSV raw seek
@@ -3473,7 +3473,7 @@ void vps_config(word dir, byte v) {
         open_psv_raw_file();
         fseek(psv_file, psv_raw_block*512, SEEK_SET);
         fwrite(&(mem[psv_raw_buffer]) , sizeof(char), 512, psv_file);
-        printf("\nPSV RAW WRITE\n");
+        printf("PSV RAW WRITE\n");
         close_psv_raw_file();
     }
     // If PSV raw file read
@@ -3481,12 +3481,12 @@ void vps_config(word dir, byte v) {
         open_psv_raw_file();
         fseek(psv_file, psv_raw_block*512, SEEK_SET);
         fread(&(mem[psv_raw_buffer]) , sizeof(char), 512, psv_file);
-        printf("\nPSV RAW READ\n");
+        printf("PSV RAW READ\n");
         close_psv_raw_file();
     }
     // PSV raw file init
     if(v==PSV_RAW_CLOSE) {
-        printf("PSV RAW CLOSE");
+        printf("PSV RAW CLOSE\n");
         close_psv_raw_file();
     }
     
@@ -3572,8 +3572,8 @@ void vps_run(word dir, byte v) {
         if(psv_index==6) {
             psv_raw_buffer=psv_filename[0] | psv_filename[1]<<8;
             psv_raw_block=psv_filename[5] | psv_filename[4]<<8 | psv_filename[3]<<16 | psv_filename[2]<<24;
-            printf("\nPSV raw file seek. Buffer addr: [%02X%02X] (%d)", psv_filename[0], psv_filename[1], psv_raw_buffer);	
-            printf("\nPSV raw file seek. File addr: [%02X%02X%02X%02X] (%ld)\n", psv_filename[2], psv_filename[3], psv_filename[4], psv_filename[5], psv_raw_block);	
+            printf("PSV raw file seek. Buffer addr: [%02X%02X] (%d)\n", psv_filename[0], psv_filename[1], psv_raw_buffer);	
+            printf("PSV raw file seek. File addr: [%02X%02X%02X%02X] (%ld)\n", psv_filename[2], psv_filename[3], psv_filename[4], psv_filename[5], psv_raw_block);	
             psv_index=0;
         }
     }
@@ -3592,12 +3592,7 @@ void open_psv_raw_file() {
                 printf("[%d] ERROR: can't write to file %s\n", psv_index, psv_filename);
                 mem[0xDF94] = 0;
             }
-        } else {
-            printf("Opening file durango.av for raw read/write...\n");
         }
-    } else {
-        printf("WARNING: durango.av file already open\n");
-        mem[0xDF94] = 0;									// disable VSP
     }
 }
 void close_psv_raw_file() {
@@ -3605,8 +3600,6 @@ void close_psv_raw_file() {
         // close file
         if(fclose(psv_file)!=0) {
             printf("WARNING: Error closing file durango.av\n");
-        } else {
-            printf("Closing file durango.av\n");
         }
         psv_file = NULL;
     }
