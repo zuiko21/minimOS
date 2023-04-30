@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230430-1743
+; last modified 20230430-1918
 
 ; uncomment DEBUG version below, does actually write to the card, but also display sector number and contents
 ;#define	DEBUG
@@ -9,7 +9,7 @@
 
 #echo Using devCart SD card for LOAD and SAVE - interactive filename prompt
 #ifdef	DEBUG
-#echo Debugging version (no actual writes)
+#echo Debugging version (displaying sizes?)
 #endif
 
 #define	CMD0		0
@@ -85,7 +85,7 @@ fsize	= buffer+252		; file size INCLUDING 256-byte header
 	CMP f_eof+1				; compare cursor to size
 	BCC not_eof				; if below, no EOF (sequential only)
 		LDA f_cur
-		CMP f_eof+1
+		CMP f_eof			; EEEEEEEEEEK
 	BCC not_eof
 ; EOF is there, restore devices and we're done
 		STZ std_in
@@ -274,7 +274,7 @@ name_copied:
 		STZ f_cur
 		LDA #1				; starts at page 1 of file, skipping header!
 		STA f_cur+1
-		STZ f_cur
+		STZ f_cur+2			; eeek
 		STZ ptr
 		LDA #>(buffer+256)
 		STA ptr+1
@@ -440,16 +440,6 @@ dir_lst:
 				BNE mark_exe
 					LDY #'@'			; NEW free space indicator
 					JSR conio			; display it...
-#ifdef	DEBUG
-					LDY #0				; always in binary mode
-					JSR conio
-					LDY fsize+1			; page LSB
-					JSR conio
-					LDY #0
-					JSR conio
-					LDY fsize+2			; page MSB
-					JST conio
-#endif
 				BRA prn_name			; ...but no more to show (name is empty and I need the CR anyway)
 mark_exe:
 ; * end of free block display *
@@ -520,6 +510,20 @@ lname_l:
 		INX
 		BNE lname_l			; no need for BRA
 end_ln:
+#ifdef	DEBUG
+	LDY #'['
+	JSR conio
+	LDY #'$'
+	JSR conio
+	LDA fsize+2				; page MSB
+	JSR disphex
+	LDA fsize+1
+	JSR disphex
+	LDA fsize
+	JSR disphex
+	LDY #']'
+	JSR conio
+#endif
 	LDY #13
 	JMP conio				; print CR and return
 
@@ -539,13 +543,15 @@ full_pg:
 	BNE below64		; **
 		INC fsize+2	; **
 below64:
+	CLC				; eeeeeeeek (could come from BNE, not always BCC)
 	LDA fsize+1
 	ADC arg+3		; add to current sector, note big-endian!
 	STA arg+3
 	LDA fsize+2		; **
 	ADC arg+2
 	STA arg+2
-	LDA fsize+3		; just in case...
+;	LDA fsize+3		; just in case...
+	LDA #0			; eeeeeek
 	ADC arg+1		; propagate carry, just in case
 	STA arg+1
 	BCC sec_ok
