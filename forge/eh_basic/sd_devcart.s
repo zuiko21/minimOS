@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230430-1724
+; last modified 20230430-1743
 
 ; uncomment DEBUG version below, does actually write to the card, but also display sector number and contents
 ;#define	DEBUG
@@ -435,6 +435,24 @@ dir_lst:
 			CMP #'A'		; generic file
 ;		BNE skp_hd			; * may try to recognise 'dL' as well *
 			BEQ prn_name	; eeek
+; * new, display free blocks! *
+				CMP #'L'	; free space?
+				BNE mark_exe
+					LDY #'@'			; NEW free space indicator
+					JSR conio			; display it...
+#ifdef	DEBUG
+					LDY #0				; always in binary mode
+					JSR conio
+					LDY fsize+1			; page LSB
+					JSR conio
+					LDY #0
+					JSR conio
+					LDY fsize+2			; page MSB
+					JST conio
+#endif
+				BRA prn_name			; ...but no more to show (name is empty and I need the CR anyway)
+mark_exe:
+; * end of free block display *
 				CMP #'X'	; executable header?
 			BNE skp_hd
 				LDY #'*'	; place asterisk before name
