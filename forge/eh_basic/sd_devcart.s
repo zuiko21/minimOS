@@ -1,8 +1,8 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230426-1825
+; last modified 20230430-1724
 
-; uncomment DEBUG version below, does not actually write to the card, just display sector number and contents
+; uncomment DEBUG version below, does actually write to the card, but also display sector number and contents
 ;#define	DEBUG
 ; uncomment STRICT version below, will look for exact match in filenames for LOADing
 ;#define	STRICT
@@ -644,6 +644,7 @@ r7loop:
 r7end:
 	RTS
 
+; ******************************** generic interface
 ; *** init SD card in SPI mode ***
 sd_init:
 ; ** SD_powerUpSeq is inlined here **
@@ -844,6 +845,7 @@ card_ok:
 	STZ arg+3				; assume reading from the very first sector
 	RTS
 
+; **************************
 ; *** read single sector ***
 ssec_rd:
 ; * intended to read at $0300 *
@@ -917,7 +919,8 @@ no_res:
 	STX ptr+1				; wrap buffer pointer (assume page aligned) eeeeek
 	RTS
 
-; *** save current sector to SD, but do not advance anything ***
+; *********************************
+; *** save current sector to SD ***
 flush_sd:
 #ifdef	DEBUG
 ; DEBUG version, display sector number (hex) in brackets
@@ -963,28 +966,8 @@ fsd_nw:
 		INX
 		BNE fsd_loop		; repeat for every word
 	LDY #13
-	JMP conio				; newline and return
-
-; DEBUG support, display byte in hex
-disphex:
-	PHA						; save for later
-	LSR
-	LSR
-	LSR
-	LSR						; MSB first
-	JSR bin2hex
-	PLA
-	AND #15					; restore LSB
-bin2hex:
-	CLC
-	ADC #'0'				; convert to ASCII
-	CMP #':'				; 10 or more?
-	BCC no_let
-		ADC #6				; add 7 (C was set)
-no_let:
-	TAY
-	JMP conio				; display and return
-#else
+	JSR conio				; newline and... continue
+#endif
 ; * intended to write from $0300 *
 	LDA #>buffer
 ;	LDY #<buffer			; expected to be page-aligned
@@ -1076,6 +1059,28 @@ no_wres:
 	LDX #>buffer
 	STX ptr+1				; wrap buffer pointer (assume page aligned) eeeeek
 	RTS
+;#endif
+
+#ifdef	DEBUG
+; DEBUG support, display byte in hex
+disphex:
+	PHA						; save for later
+	LSR
+	LSR
+	LSR
+	LSR						; MSB first
+	JSR bin2hex
+	PLA
+	AND #15					; restore LSB
+bin2hex:
+	CLC
+	ADC #'0'				; convert to ASCII
+	CMP #':'				; 10 or more?
+	BCC no_let
+		ADC #6				; add 7 (C was set)
+no_let:
+	TAY
+	JMP conio				; display and return
 #endif
 
 ; **************************************************
