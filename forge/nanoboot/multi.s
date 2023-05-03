@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230503-1406
+; last modified 20230503-1412
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -248,6 +248,7 @@ en_loop:
 				LDY #12		; paper glyph
 				JSR conio
 not_ss:
+#endif
 			LDY #' '
 			JSR conio		; space between number and filename
 ; now print filename
