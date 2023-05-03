@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230503-1343
+; last modified 20230503-1406
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -132,7 +132,7 @@ rom_start:
 	.asc	" & image browser"
 #endif
 #ifdef	DEBUG
-	.asc	"(D", "EBUG version)"
+	.asc	" (D", "EBUG version)"
 #endif
 ; note terminator below
 ; optional C-string with comment after filename, filename+comment up to 220 chars
@@ -171,6 +171,15 @@ sd_main:
 	STZ en_ix				; reset index
 ls_disp:
 ; * load current sector *
+#ifdef	DEBUG
+			LDX #0
+			TXA				; this will clear the read buffer, just in case
+canary:
+				STA buffer, X
+				STA buffer+256, X
+				INX
+				BNE canary	
+#endif
 			LDX #>buffer	; temporary load address
 			STX ptr+1
 			STZ ptr			; assume buffer is page-aligned
