@@ -1,9 +1,10 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230416-0022
+; last modified 20230503-0830
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
+; add -DSCREEN for screenshots display capability
 
 ; SD interface definitions
 #define	SD_CLK		%00000001
@@ -80,6 +81,7 @@ fsize	= buffer+252		; file size INCLUDING 256-byte header
 en_ix		= $EE
 sd_ver		= en_ix			; ### temporary ###
 en_tab		= $300
+sig_tab		= $2F0			; NEW, store signature (X=executable, S=16-colour screen, R=HIRES screen)
 
 ; *****************************************************
 ; *** firmware & hardware definitions for Durango-X ***
@@ -180,12 +182,23 @@ ls_disp:
 		BNE next_file
 			LDA bootsig+1
 			CMP #'X'
+#ifdef	SCREEN
+		BEQ ls_page			; it is bootable, but check for screenshots too
+			CMP #'S'		; 16-colour mode
+		BEQ ls_page
+			CMP #'R'		; HIRES mode
+#endif
 		BNE next_file
+
 ; * bootable ROM image detected, register sector and display entry *
 ls_page:
-			LDA en_ix		; last registered entry
-			CMP #9			; already full?
+			LDX en_ix		; last registered entry
+			CPX #9			; already full?
 		BCS skip_hd
+#ifdef	SCREEN
+			STA sig_tab, X	; store accepted type NEW
+#endif
+			TXA
 			ASL
 			ASL				; 4-byte entries
 			TAX
@@ -205,8 +218,19 @@ en_loop:
 			ADC #'0'		; get entry (1-based now) as ASCII number
 			TAY
 			JSR conio
+#endif
 			LDY #15
 			JSR conio		; standard video
+#ifdef	SCREEN
+			LDX en_ix
+			LDA sig_tab, X
+			CMP #'X'		; is it a screenshot? (non-executable)
+			BNE not_ss
+				LDY #16		; DLE
+				JSR conio
+				LDY #12		; paper glyph
+				JSR conio
+not_ss:
 			LDY #' '
 			JSR conio		; space between number and filename
 ; now print filename
@@ -272,10 +296,20 @@ pr_load:
 		INX
 		BNE pr_load			; no need for BRA
 prl_ok:
-; check size, determine ptr towards end of 64K space
+; check size, determine ptr towards end of 64K space (or select screen address right now)
+#ifdef	SCREEN
+	LDX en_ix
+	LDA sig_tab, X
+	CMP #'X'				; if not executable, it's a screenshot
+	BEQ rom_siz
+		LDA #$60
+	BNE set_ptr				; always screen address
+rom_siz:
+#endif
 	LDA #0
 	SEC
 	SBC fsize+1				; subtract number of pages
+set_ptr:
 	STA ptr+1
 	STZ ptr					; definitive pointer is ready, proceed with load!
 boot:
@@ -297,6 +331,19 @@ no_wrap:
 		LDA ptr+1			; check current page
 		BNE boot			; until completion
 ; ** after image is loaded... **
+#ifdef	SCREEN
+	LDX en_ix
+	LDA sig_tab, X			; signature of selected file
+	CMP #'X'				; if executable, go run it!
+	BEQ launch_rom			; otherwise it's a screenshot, S clears HIRES bit, R sets it
+		CMP #'S'			; C set if ='S', clear if 'R', just the opposite we need
+		LDA #%01110000		; shifted left 1, non-inverse, screen3, RGB, Emilio's LED off
+		ROR					; now it's %C0111000, C clear
+		EOR #%10000000		; invert operation, as desired
+		STA IO8attr			; set proper video mode
+		BRK
+launch_rom:
+#endif
 	SEI						; might be important!
 	JMP switch				; start code loaded into cartidge RAM!
 
@@ -817,6 +864,12 @@ rls_gp:
 
 ; *** new progress indicator ***
 progress:
+#ifdef	SCREEN
+	LDX en_ix
+	LDA sig_tab, X
+	CMP #'X'
+		BNE no_bar			; if it's a screenshot, do not display progress
+#endif
 	LDA ptr+1				; check new page
 	DEC						; last completed page
 	TAY						; save!
@@ -832,6 +885,7 @@ progress:
 	STA $7FA0, X
 	STA $7FC0, X
 	STA $7FE0, X			; beautifully displayed
+no_bar:
 	RTS
 
 ; ***************************
