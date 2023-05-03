@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230503-1412
+; last modified 20230503-1737
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -187,7 +187,9 @@ canary:
 ; might do some error check here...
 ; * look for a valid header *
 			LDA magic1		; check magic number one
-		BNE end_vol_near
+			BEQ magic1_ok 
+		JMP end_vol
+magic1_ok:
 			LDA magic2		; check magic number two
 			CMP #13			; must be NEWL instead of zero
 		BNE end_vol_near
@@ -235,14 +237,15 @@ en_loop:
 			ADC #'0'		; get entry (1-based now) as ASCII number
 			TAY
 			JSR conio
-#endif
 			LDY #15
 			JSR conio		; standard video
 #ifdef	SCREEN
-			LDX en_ix
-			LDA sig_tab, X
-			CMP #'X'		; is it a screenshot? (non-executable)
-			BNE not_ss
+			LDA bootsig+1
+			CMP #'S'		; is it a screenshot? (non-executable)
+		BEQ is_ss
+			CMP #'R'
+		BNE not_ss
+is_ss:
 				LDY #16		; DLE
 				JSR conio
 				LDY #12		; paper glyph
@@ -319,11 +322,12 @@ pr_load:
 prl_ok:
 ; check size, determine ptr towards end of 64K space (or select screen address right now)
 #ifdef	SCREEN
-	LDX en_ix
-	LDA sig_tab, X
+	LDA bootsig+1
 	CMP #'X'				; if not executable, it's a screenshot
 	BEQ rom_siz
-		LDA #$60
+		LDX #$80
+		STX fsize+3			; tweak this indicator with end page!
+		LDA #$5E			; will load header sector off-screen!
 	BNE set_ptr				; always screen address
 rom_siz:
 #endif
@@ -350,11 +354,11 @@ boot:
 			INC arg			; now could have several images, may wrap...
 no_wrap:
 		LDA ptr+1			; check current page
+		CMP fsize+3			; this is usually zero... unless it's a screenshot!
 		BNE boot			; until completion
 ; ** after image is loaded... **
 #ifdef	SCREEN
-	LDX en_ix
-	LDA sig_tab, X			; signature of selected file
+	LDA bootsig+1			; signature of selected file
 	CMP #'X'				; if executable, go run it!
 	BEQ launch_rom			; otherwise it's a screenshot, S clears HIRES bit, R sets it
 		CMP #'S'			; C set if ='S', clear if 'R', just the opposite we need
@@ -886,8 +890,7 @@ rls_gp:
 ; *** new progress indicator ***
 progress:
 #ifdef	SCREEN
-	LDX en_ix
-	LDA sig_tab, X
+	LDA bootsig+1
 	CMP #'X'
 		BNE no_bar			; if it's a screenshot, do not display progress
 #endif
