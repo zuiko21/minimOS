@@ -937,6 +937,37 @@ fsd_nw:
 		PLX
 		INX
 		BNE fsd_loop		; repeat for every word
+
+	ldy#13
+	jsr conio
+	inc arg+2	; WTF
+	jsr ssec_rd
+	LDX #0					; 256 words = 512 bytes
+	DEC ptr+1
+	DEC ptr+1				; 512 bytes back
+ffsd_loop:
+		PHX
+		LDY #16				; binary mode!
+		JSR conio
+		LDA (ptr)			; first byte in word
+		TAY
+		JSR conio
+		INC ptr				; no wrap here
+		LDY #16				; binary mode!
+		JSR conio
+		LDA (ptr)			; second byte in word
+		TAY
+		JSR conio
+		INC ptr
+		BNE ffsd_nw
+			INC ptr+1
+ffsd_nw:
+		PLX
+		INX
+		BNE ffsd_loop		; repeat for every word	
+
+	dec arg+2		; WTF
+
 	LDY #13
 	JMP conio				; newline and... return
 #endif
