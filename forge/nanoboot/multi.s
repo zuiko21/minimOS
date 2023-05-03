@@ -1,10 +1,11 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230503-0830
+; last modified 20230503-1343
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
+; add -DDEBUG
 
 ; SD interface definitions
 #define	SD_CLK		%00000001
@@ -81,7 +82,7 @@ fsize	= buffer+252		; file size INCLUDING 256-byte header
 en_ix		= $EE
 sd_ver		= en_ix			; ### temporary ###
 en_tab		= $300
-sig_tab		= $2F0			; NEW, store signature (X=executable, S=16-colour screen, R=HIRES screen)
+sig_tab		= $2F0			; NEW, store signature ('X'=executable, 'S'=16-colour screen, 'R'=HIRES screen)
 
 ; *****************************************************
 ; *** firmware & hardware definitions for Durango-X ***
@@ -126,9 +127,16 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"multiboot", 0	; C-string with filename @ [8], max 220 chars
+	.asc	"multiboot"		; C-string with filename @ [8], max 220 chars
+#ifdef	SCREEN
+	.asc	" & image browser"
+#endif
+#ifdef	DEBUG
+	.asc	"(D", "EBUG version)"
+#endif
+; note terminator below
 ; optional C-string with comment after filename, filename+comment up to 220 chars
-	.asc	"(previous commit in user field)", 0
+	.asc	0, 0
 
 ; advance to end of header *** NEW format
 	.dsb	rom_start + $E6 - *, $FF
@@ -140,10 +148,10 @@ rom_start:
 ; NEW coded version number
 	.word	$1004			; 1.0a4
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$BF20			; time, 23.57
-	.word	$568F			; date, 2023/4/15
+	.word	$6A00			; time, 13.16		%0110 1-010 000-0 0000
+	.word	$5CA3			; date, 2023/5/3	%0101 110-0 101-0 0011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
-	.word	rom_end-rom_start			; filesize (rom_end is actually $10000)
+	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
 
 ; **********************
@@ -248,6 +256,9 @@ name_end:
 ; *** might display some metadata here...
 			LDY #13
 			JSR conio		; next line
+#ifdef	DEBUG
+			JSR show_sector
+#endif
 			BRA next_file
 end_vol_near:
 		BRA end_vol
@@ -887,6 +898,35 @@ progress:
 	STA $7FE0, X			; beautifully displayed
 no_bar:
 	RTS
+
+#ifdef	DEBUG
+show_sector:
+	LDX #0					; 256 words = 512 bytes
+	DEC ptr+1
+	DEC ptr+1				; 512 bytes back
+fsd_loop:
+		PHX
+		LDY #16				; binary mode!
+		JSR conio
+		LDA (ptr)			; first byte in word
+		TAY
+		JSR conio
+		INC ptr				; no wrap here
+		LDY #16				; binary mode!
+		JSR conio
+		LDA (ptr)			; second byte in word
+		TAY
+		JSR conio
+		INC ptr
+		BNE fsd_nw
+			INC ptr+1
+fsd_nw:
+		PLX
+		INX
+		BNE fsd_loop		; repeat for every word
+	LDY #13
+	JMP conio				; newline and... return
+#endif
 
 ; ***************************
 ; *** standard exit point ***
