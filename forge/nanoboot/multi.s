@@ -1,7 +1,7 @@
 ; Durango-X devcart SD multi-boot loader
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230503-1737
+; last modified 20230504-1436
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -58,14 +58,16 @@ IOCart	= $DFC0
 #define	KBDMAT
 
 ; *** memory usage ***
-crc		= $EF
-arg		= crc	+ 1	; $F0
+crc		= $ED
+sd_ver	= crc	+ 1 ; $EE ### not so temporary ###
+arg		= sd_ver+ 1	; $F0
 res		= arg	+ 4	; $F4
 mosi	= res	+ 5	; $F9
 miso	= mosi	+ 1	; $FA
 token	= miso	+ 1	; $FB
 ptr		= token	+ 1	; $FC
-;cnt	= ptr	+ 2	; $FE
+cnt		= ptr	+ 2	; $FE
+tmpba	= cnt	- 1	; actually $FE-$FF, as $FD will NOT be used
 
 ; *** sector buffer and header pointers ***
 buffer	= $400
@@ -80,7 +82,6 @@ fsize	= buffer+252		; file size INCLUDING 256-byte header
 
 ; *** directory storage ***
 en_ix		= $EE
-sd_ver		= en_ix			; ### temporary ###
 en_tab		= $300
 sig_tab		= $2F0			; NEW, store signature ('X'=executable, 'S'=16-colour screen, 'R'=HIRES screen)
 
@@ -436,6 +437,35 @@ sd_cmd:
 	ORA #1
 	JMP spi_tr				; SPI_transfer(crc|0x01); ...and return
 
+; *** *** special version of the above, in case SDSC is byte-addressed, CMD17 and CMD24 only *** ***
+ba_cmd:
+; send command header
+	ORA #$40
+	JSR spi_tr				; SPI_transfer(cmd|0x40);
+; precompute byte-addressed sector
+	LDA arg+3
+	ASL
+	STA tmpba+2				; only two bytes actually used (+1...+2)
+	LDA arg+2
+	ROL
+	STA tmpba+1
+	LDA arg+1
+	ROL
+;	STA tmpba
+; send argument
+;	LDA tmpba
+	JSR spi_tr
+	LDA tmpba+1
+	JSR spi_tr
+	LDA tmpba+2
+	JSR spi_tr
+	LDA #0					; always zero as 512 bytes/sector
+	JSR spi_tr
+; send CRC
+	LDA crc
+	ORA #1
+	JMP spi_tr				; SPI_transfer(crc|0x01); ...and return
+
 ; *** read R1 response *** return result in res and A
 rd_r1:
 	PHX						; eeeeeeeek
@@ -640,6 +670,8 @@ card_rdy:					; * SD_init OK! *
 	BVS hcxc
 ; ### set 512-byte block size ###
 sd_sc:
+		SEC
+		ROR sd_ver			; *** attempt of marking D7 for SDSC cards, byte-addressed!
 		JSR cs_enable		; assert chip select ### eeeeeeeeek
 		STZ arg
 		STZ arg+1			; assume CMD16_ARG upper 16 bits are zero
@@ -671,7 +703,13 @@ ssec_rd:
 ; send CMD17 (sector already at arg.l)
 	STZ crc					; ** assume CMD17_CRC is 0 **
 	LDA #CMD17
-	JSR sd_cmd				; SD_command(CMD17, sector, CMD17_CRC);
+	BIT sd_ver				; *** check whether SC or HC/XC
+	BPL is_hcxc
+		JSR ba_cmd			; SD_command(CMD17, sector, CMD17_CRC); *** a special version for SDSC cards is needed
+		BRA cmd_ok
+is_hcxc:
+	JSR sd_cmd				; SD_command(CMD17, sector, CMD17_CRC); *** regular block-addressed version
+cmd_ok:
 ; read response
 	JSR rd_r1				; res1 = SD_readRes1();
 	CMP #$FF
@@ -941,6 +979,7 @@ fsd_nw:
 	ldy#13
 	jsr conio
 	inc arg+2	; WTF
+	inc arg+2	; WTFeeeeeeeeeeeek
 	jsr ssec_rd
 	LDX #0					; 256 words = 512 bytes
 	DEC ptr+1
@@ -967,6 +1006,7 @@ ffsd_nw:
 		BNE ffsd_loop		; repeat for every word	
 
 	dec arg+2		; WTF
+	dec arg+2		; WTFeeeeeeeeeeek
 
 	LDY #13
 	JMP conio				; newline and... return
