@@ -58,14 +58,15 @@ IOCart	= $DFC0
 #define	KBDMAT
 
 ; *** memory usage ***
-crc		= $ED
-sd_ver	= crc	+ 1 ; $EE ### not so temporary ###
-arg		= sd_ver+ 1	; $F0
-res		= arg	+ 4	; $F4
+crc		= $EC
+en_ix	= crc	+ 1	; $ED ### directory storage ###
+sd_ver	= en_ix	+ 1 ; $EE ### not so temporary ###
+arg		= sd_ver+ 1	; $F0-$F3
+res		= arg	+ 4	; $F4-$F8
 mosi	= res	+ 5	; $F9
 miso	= mosi	+ 1	; $FA
 token	= miso	+ 1	; $FB
-ptr		= token	+ 1	; $FC
+ptr		= token	+ 1	; $FC-$FD
 cnt		= ptr	+ 2	; $FE
 tmpba	= cnt	- 1	; actually $FE-$FF, as $FD will NOT be used
 
@@ -81,7 +82,6 @@ fdate	= buffer+250		; date in MS-DOS format
 fsize	= buffer+252		; file size INCLUDING 256-byte header
 
 ; *** directory storage ***
-en_ix		= $EE
 en_tab		= $300
 sig_tab		= $2F0			; NEW, store signature ('X'=executable, 'S'=16-colour screen, 'R'=HIRES screen)
 
