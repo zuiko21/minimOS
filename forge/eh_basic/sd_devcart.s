@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230430-1918
+; last modified 20230504-1748
 
 ; uncomment DEBUG version below, does actually write to the card, but also display sector number and contents
 ;#define	DEBUG
@@ -48,6 +48,7 @@
 
 .(
 ; *** memory usage *** CHECK
+tmpba	= $E8				; $E8-$E9, no offset unlike multiboot
 f_eof	= $EA				; $EA-$EC, current file size, max 16 MiB
 f_cur	= f_eof	+ 3			; $ED-$EF, file cursor
 arg		= f_cur	+ 3			; $F0, also current sector
@@ -634,6 +635,33 @@ sd_cmd:
 	ORA #1
 	JMP spi_tr				; SPI_transfer(crc|0x01); ...and return
 
+; *** *** special version of the above, in case SDSC is byte-addressed, CMD17 and CMD24 only *** ***
+ba_cmd:
+; send command header
+	ORA #$40
+	JSR spi_tr				; SPI_transfer(cmd|0x40);
+; precompute byte-addressed sector
+	LDA arg+3
+	ASL
+	STA tmpba+1
+	LDA arg+2
+	ROL
+	STA tmpba
+	LDA arg+1
+	ROL						; A holds MSB
+; send argument
+	JSR spi_tr
+	LDA tmpba
+	JSR spi_tr
+	LDA tmpba+1
+	JSR spi_tr
+	LDA #0					; always zero as 512 bytes/sector
+	JSR spi_tr
+; send CRC
+	LDA crc
+	ORA #1
+	JMP spi_tr				; SPI_transfer(crc|0x01); ...and return
+
 ; *** read R1 response *** return result in res and A
 rd_r1:
 	PHX						; eeeeeeeek
@@ -838,6 +866,8 @@ card_rdy:					; * SD_init OK! *
 	BVS hcxc
 ; ### set 512-byte block size ###
 sd_sc:
+		SEC
+		ROR sd_ver			; *** attempt of marking D7 for SDSC cards, byte-addressed!
 		JSR cs_enable		; assert chip select ### eeeeeeeeek
 		STZ arg
 		STZ arg+1			; assume CMD16_ARG upper 16 bits are zero
@@ -885,7 +915,13 @@ ssec_rd:
 ; send CMD17 (sector already at arg.l)
 	STZ crc					; ** assume CMD17_CRC is 0 **
 	LDA #CMD17
-	JSR sd_cmd				; SD_command(CMD17, sector, CMD17_CRC);
+	BIT sd_ver				; *** check whether SC or HC/XC
+	BPL is_hcxc
+		JSR ba_cmd			; SD_command(CMD17, sector, CMD17_CRC); *** a special version for SDSC cards is needed
+		BRA cmd_ok
+is_hcxc:
+	JSR sd_cmd				; SD_command(CMD17, sector, CMD17_CRC); *** regular block-addressed version
+cmd_ok:
 ; read response
 	JSR rd_r1
 	CMP #$FF
@@ -1005,7 +1041,13 @@ fsd_nw:
 ; send CMD24 (sector already at arg.l)
 	STZ crc					; ** assume CMD24_CRC is 0 **
 	LDA #CMD24
-	JSR sd_cmd				; SD_command(CMD24, sector, CMD24_CRC);
+	BIT sd_ver				; *** check whether SC or HC/XC
+	BPL sv_hcxc
+		JSR ba_cmd			; SD_command(CMD24, sector, CMD24_CRC); *** a special version for SDSC cards is needed
+		BRA svcmd_ok
+sv_hcxc:
+	JSR sd_cmd				; SD_command(CMD24, sector, CMD24_CRC); *** regular block-addressed version
+svcmd_ok:
 ; read response
 	JSR rd_r1
 	LDA res					; EEEEEEEEEEEK
