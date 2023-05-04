@@ -1,7 +1,9 @@
 ; Durango-X 5x8 keyboard driver
 ; v1.0b5
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230504-1351
+; last modified 20230504-1849
+
+#echo 5x8 keyboard support
 
 ; usual definitions
 #ifndef	KEYBDRV
@@ -116,10 +118,10 @@ ctl_key:
 	LDA ctl_map-8, X		; get ASCII from CONTROL-mode layout, note offset
 		BEQ no_key			; invalid ASCII, this will stay into CTRL mode
 	STA kb_ctl				; otherwise clear d7, no longer in CTRL mode (works as none of control codes is over 127)
-	STX kb_scan				; try this less dodgy alternative ***
+;	STX kb_scan				; try this less dodgy alternative ***
 rls_ctl:
-;		LDY IO9m5x8			; wait until column from detected key is clear *** KLUDGE, see alternative above
-;		BNE rls_ctl
+		LDY IO9m5x8			; wait until column from detected key is clear *** KLUDGE, see alternative above
+		BNE rls_ctl
 	BEQ set_key				; and send that control code (no need for BRA)
 
 ; *******************
