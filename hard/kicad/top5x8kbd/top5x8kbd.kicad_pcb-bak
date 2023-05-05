@@ -4814,7 +4814,7 @@
   (gr_text @zuiko21 (at 148.59 139.7) (layer F.SilkS)
     (effects (font (size 2.54 2.54) (thickness 0.45)))
   )
-  (gr_text "Keyboard/Gamepad interface v1 (2022·11)" (at 57.15 139.7) (layer F.SilkS)
+  (gr_text "Keyboard/Gamepad interface v1.1 (2022·12)" (at 57.15 139.7) (layer F.SilkS)
     (effects (font (size 1.8 1.5) (thickness 0.2)))
   )
   (gr_text www.durangoretro.com (at 107.95 139.7) (layer F.SilkS)
