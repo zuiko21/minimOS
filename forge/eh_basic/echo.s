@@ -1,6 +1,6 @@
 ; *** echo server test for CONIO ***
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230508-1318
+; last modified 20230508-1806
 ; **********************************
 
 ; try to assemble from here with
@@ -221,8 +221,8 @@ echo_end:					; for size computation
 
 	.dsb	$FFD6-*, $FF
 	.asc	"DmOS"			; minimOS-compliant Durango-X cartridge signature
-	.dsb	$FFDE-*, $FF
-	.word	$FFFF			; Fletcher-16 checksum placeholder
+	.dsb	$FFE1-*, $FF
+	JMP ($FFFC)				; devCart support!
 
 	.dsb	$FFFA-*, $FF	; *** may place PANIC routine here ***
 
