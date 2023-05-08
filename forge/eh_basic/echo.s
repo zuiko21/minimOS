@@ -1,9 +1,7 @@
 ; *** echo server test for CONIO ***
-; (c) 2022 Carlos J. Santisteban
-; last modified 20221213-1750
+; (c) 2022-2023 Carlos J. Santisteban
+; last modified 20230508-1318
 ; **********************************
-
-	* = $F000
 
 ; try to assemble from here with
 ; xa echo.s -I ../../OS/firmware -l labels 
@@ -12,6 +10,36 @@
 
 ;#define	KBBYPAD
 #define		KBDMAT
+
+	* = $F000
+
+rom_start:
+; *** standard header for SD, still ROM-compatible ***
+; header ID
+	.byt	0				; [0]=NUL, first magic number
+	.asc	"dX"			; bootable ROM for Durango-X devCart
+	.asc	"****"			; reserved
+	.byt	13				; [7]=NEWLINE, second magic number
+; filename
+	.asc	"CONIO echo server", 0		; C-string with filename @ [8], max 238 chars
+	.byt	0				; second terminator for optional comment, just in case
+
+; advance to end of header *** NEW format
+	.dsb	rom_start + $E6 - *, $FF
+
+; NEW library commit (user field 2)
+	.dsb	8, '$'			; unused field
+; NEW main commit (user field 1)
+	.dsb	8, '$'			; unused field
+; NEW coded version number
+	.word	$10C2			; 1.0f2
+
+; date & time in MS-DOS format at byte 248 ($F8)
+	.word	$6AA0			; time, 13.21		%0110 1-010 101-0 0000
+	.word	$5CA8			; date, 2023/5/8	%0101 110-0 101-0 1000
+; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
+	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
+	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
 
 ; *****************************************************
 ; *** firmware & hardware definitions for Durango-X ***
