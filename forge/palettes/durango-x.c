@@ -2,6 +2,8 @@
  * *** (c) 2023 Carlos J. Santisteban       ***
  * *** last modified 20230508-1332          *** */
 
+#include <stdio.h>
+
 int main(void) {
 	FILE* arch;
 	int r,g,b,h,l,i=0;
