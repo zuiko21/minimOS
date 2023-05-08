@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; Durango-X firmware console 0.9.6b10
+; Durango-X firmware console 0.9.6b11
 ; 16x16 text 16 colour _or_ 32x32 text b&w
-; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20221213-1747
+; (c) 2021-2023 Carlos J. Santisteban
+; last modified 20230508-1757
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -106,7 +106,10 @@
 	LDX fw_cbin				; check whether in binary/multibyte mode
 	BEQ cio_cmd				; if not, check whether command (including INPUT) or glyph
 		CPX #BM_DLE			; just receiving what has to be printed?
-			BEQ cio_gl		; print the glyph!
+	BEQ cio_gl				; print the glyph!
+; *** beware, multibyte commands CANNOT receive 0, keep mode but jump to input routine instead ***
+		TYA					; * check parameter again
+	BEQ cio_cmd				; * no zero for multibyte, just process as usual (will go into input)
 		_JMPX(cio_mbm-2)	; otherwise process following byte as expected, note offset
 cio_cmd:
 	CMP #32					; printable anyway?
