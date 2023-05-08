@@ -13,8 +13,7 @@ int main(void) {
 	int RB[2]={0,255};
 
 /* open output file */
-//	arch=fopen("durango-x.gpl","w");
-	arch=fopen(stdout,"w");
+	arch=fopen("durango-x.gpl","w");
 
 	if (arch==NULL) {
 		printf("*** CANNOT WRITE ***\n");
