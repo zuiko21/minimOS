@@ -14,7 +14,7 @@ int main(void) {
 
 /* open output file */
 //	arch=fopen("durango-x.gpl","w");
-	arch=fopen("stdout","w");
+	arch=fopen(stdout,"w");
 
 	if (arch==NULL) {
 		printf("*** CANNOT WRITE ***\n");
@@ -23,10 +23,10 @@ int main(void) {
 /* GIMP palette header */
 	fprintf(arch,"GIMP Palette\nName: Durango-X\nColumns: 16\n#\n");
 /* create system colours */
-	for (h=0;h<2;h++) {
-		for (r=0;r<2;r++) {
-			for (l=0;l<2;l++) {
-				for (b=0;b<2;b++) {
+	for (b=0;b<2;b++) {
+		for (l=0;l<2;l++) {
+			for (r=0;r<2;r++) {
+				for (h=0;h<2;h++) {
 					g=(h<<1)|l;
 					fprintf(arch,"%d %d %d\tIndex %d\n",RB[r],G[g],RB[b],i++);
 				}
@@ -34,13 +34,7 @@ int main(void) {
 		}
 	}
 	printf("Created %d system colours\n",i);
-/* create system greyscale */
-	for (g=15;g<255;g+=15) {
-		fprintf(arch,"%d %d %d\tIndex %d\n",g,g,g,i++);
-	}
-
 	fclose(arch);
-	printf("Added system greyscale (total %d entries)\n",i);
 
 	return 0;
 }
