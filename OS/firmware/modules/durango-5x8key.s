@@ -1,7 +1,7 @@
 ; Durango-X 5x8 keyboard driver
-; v1.0b5
+; v1.0b6
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230504-1849
+; last modified 20230508-1153
 
 #echo 5x8 keyboard support
 
@@ -35,7 +35,7 @@ kbd_drv:
 	.word	drv_pask
 	.word	drv_5x8
 
-; *** generic PASK driver ***
+; *** generic PASK driver *** not compatible with Durango SRAM card
 drv_pask:
 	LDA IO9pask				; PASK peripheral address
 	STA kb_asc				; store for software
@@ -114,15 +114,16 @@ diff_k:
 			JMP no_key		; no ASCII for now
 ; if arrived here, a key was pressed while in CONTROL mode (will not repeat)
 ctl_key:
-	TAX						; use scancode (without modifiers) as index
-	LDA ctl_map-8, X		; get ASCII from CONTROL-mode layout, note offset
+;	ORA kb_mod				; scancode is complete in A (currently no shifted keys in CONTROL mode)
+; look for new or repeated key
+	CMP kb_scan				; same as before?
+	BEQ no_key				; nope, just generate new keystroke
+		STA kb_scan			; in any case, update last scancode as new keystroke
+		TAX					; use scancode (without modifiers) as index
+		LDA ctl_map-8, X	; get ASCII from CONTROL-mode layout, note offset
 		BEQ no_key			; invalid ASCII, this will stay into CTRL mode
-	STA kb_ctl				; otherwise clear d7, no longer in CTRL mode (works as none of control codes is over 127)
-;	STX kb_scan				; try this less dodgy alternative ***
-rls_ctl:
-		LDY IO9m5x8			; wait until column from detected key is clear *** KLUDGE, see alternative above
-		BNE rls_ctl
-	BEQ set_key				; and send that control code (no need for BRA)
+		STA kb_ctl			; otherwise clear d7, no longer in CTRL mode (works as none of control codes is over 127)
+	BNE set_key				; and send that control code (no need for BRA)
 
 ; *******************
 ; *** data tables ***
