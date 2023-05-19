@@ -1,8 +1,8 @@
 ; firmware module for minimOS
-; Durango-X firmware console 0.9.6b11
+; Durango-X firmware console 0.9.6b12
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2023 Carlos J. Santisteban
-; last modified 20230508-1757
+; last modified 20230519-1229
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -287,10 +287,11 @@ cn_cr:
 	BNE cn_begin
 
 cur_l:
-; cursor left, no big deal, but do not wrap if at leftmost column
+; cursor left, no big deal, but now wraps if at leftmost column
 ; colour mode subtracts 4, but only 1 if in hires
 ; only if LSB is not zero, assuming non-corrupted scanline bits
 ; could use N flag after subtraction, as clear scanline bits guarantee its value
+; but check for wrapping otherwise
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_cur_l
 		JSR draw_cur		; ...must delete previous one
@@ -304,8 +305,27 @@ cl_hr:
 	SEC
 	LDA fw_ciop
 	SBC cio_src				; subtract to pointer, but...
-	BMI cl_end				; ...ignore operation if went negative
-		STA fw_ciop			; update pointer
+; *** older, non-wrapping code as reference ***
+;	BMI cl_end				; ...ignore operation if went negative
+;		STA fw_ciop			; update pointer
+; *** new wrap-around code ***
+	BPL cl_ok				; positive after subtraction means no wrapping
+; otherwise must get up to previous row, not just its bottom scanline
+; just clear LSB for HIRES... in colour, clear d0 on MSB as well > actually subtract 2
+		LDX fw_ciop+1		; update row into MSB
+		DEX
+		LDA #$1F			; will reset LSB to rightmost column afterwards (for HIRES)
+		BIT IO8attr
+		BMI cl_hires		; but in colour there are twice the bytes per raster
+			DEX				; and two pages per row
+			LDA #$3F
+cl_hires:
+		CPX fw_vbot			; check if at top of screen... which is bottom of memory
+	BCC cl_end				; do nothing if already there
+		STX fw_ciop+1		; update MSB as it changed!
+cl_ok:
+		STA fw_ciop			; update pointer (usually just LSB)
+; *** standard code follows ***
 cl_end:
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_cle
