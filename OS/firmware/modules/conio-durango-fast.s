@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b12
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2023 Carlos J. Santisteban
-; last modified 20230519-1229
+; last modified 20230519-1317
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -124,6 +124,7 @@ cio_prn:
 ; ***********************************
 ; *** output character (now in A) ***
 ; ***********************************
+; *** should check here for procrastinated scroll!
 	ASL						; times eight scanlines
 	ROL cio_src+1			; M=???????7, A=6543210·
 	ASL
@@ -375,12 +376,14 @@ cn_lf:
 	BPL do_lf
 		JSR draw_cur		; ...must delete previous one
 do_lf:
+; *** LF must check for procrastinated scroll as well
 	INC fw_ciop+1			; increment MSB accordingly, this is OK for hires
 	BIT IO8attr			; was it in hires mode?
 	BMI cn_hmok
 		INC fw_ciop+1		; once again if in colour mode... 
 cn_hmok:
 ; must check for possible scrolling!!! simply check sign ;-) ...or compare against dynamic limit
+; *** no longer here, but cannot be inlined
 	LDA fw_ciop+1			; EEEEEK
 	CMP fw_vtop
 	BNE cn_ok				; below limit means no scroll
@@ -418,6 +421,7 @@ sc_loop:
 	LDA fw_ciop+1			; cursor MSB
 	SBC #1					; with C set (hires) this subtracts 1, but 2 if C is clear! (colour)
 	STA fw_ciop+1
+; *** end of actual scrolling routine
 cn_ok:
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_cnok
