@@ -3,7 +3,7 @@
 
 	*	= $FC00				; 1 Kbyte space should suffice
 
-#echo always 26t
+#echo always 15t
 
 rom_start:
 ; header ID
@@ -80,12 +80,12 @@ cl_loop:
 	SEC						; allow full extintion
 lev_loop:
 		LDA pwm, X			; get pattern
-		BRA pwm_fast
+;		BRA pwm_fast
 pwm_loop:
-			STA ptr+1
-			STA ptr+1
-			STA ptr+1		; (9)
-			NOP				; (+2 = 11)
+;			STA ptr+1
+;			STA ptr+1
+;			STA ptr+1		; (9)
+;			NOP				; (+2 = 11)
 pwm_fast:
 			STA $DFA0
 			STA $DFB0		; apply PWM to both LED and speaker (8)
