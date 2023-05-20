@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b12
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2023 Carlos J. Santisteban
-; last modified 20230520-1101
+; last modified 20230520-1141
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -349,6 +349,7 @@ cn_begin:
 		JSR draw_cur		; ...must delete previous one
 		PLY
 do_cr:
+;	JSR chk_scrl			; *** is this OK? seems to do NOTHING
 ; note address format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
 ; actually is a good idea to clear scanline bits, just in case
 	_STZA fw_ciop			; all must clear! helps in case of tab wrapping too (eeeeeeeeek...)
@@ -369,7 +370,7 @@ cn_lmok:
 #endif
 ; check whether LF is to be done
 	DEY						; LF needed?
-	BEQ cn_ok				; not if Y was 1 (use BMI if Y was zeroed for LF)
+	BEQ cn_old				; not if Y was 1 (use BMI if Y was zeroed for LF) eeeek new label
 ; *** will do LF if Y was >1 ONLY ***
 	BNE do_lf				; [NEW]
 cn_lf:
@@ -383,11 +384,13 @@ do_lf:
 ; *** LF must check for procrastinated scroll as well
 	JSR chk_scrl			; *** is this OK?
 	INC fw_ciop+1			; increment MSB accordingly, this is OK for hires
-	BIT IO8attr			; was it in hires mode?
+	BIT IO8attr				; was it in hires mode?
 	BMI cn_hmok
 		INC fw_ciop+1		; once again if in colour mode... 
 cn_hmok:
 ; *** scroll check was here...
+;	JSR chk_scrl			; *** is this OK?
+cn_old:
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_cnok
 		JSR draw_cur		; ...must draw new one
@@ -399,7 +402,7 @@ chk_scrl:
 ; must check for possible scrolling!!! simply check sign ;-) ...or compare against dynamic limit
 	LDA fw_ciop+1			; EEEEEK
 	CMP fw_vtop
-	BNE cn_ok				; below limit means no scroll
+	BCC cn_ok				; below limit means no scroll, safer?
 ; ** scroll routine **
 ; rows are 256 bytes apart in hires mode, but 512 in colour mode
 	LDY #<0					; LSB *must* be zero, anyway
