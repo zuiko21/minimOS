@@ -36,14 +36,20 @@ rom_start:
 
 ; *** PWM table *** page-aligned
 pwm:
-	.dsb	32, %11111111	; level 0, all off
-	.dsb	32, %01111111	; level 1, hope it sounds OK!
-	.dsb	32, %01110111	; level 2
-	.dsb	32, %01101101	; level 3
-	.dsb	32, %01010101	; level 4, near 50%
-	.dsb	32, %10010010	; level 5
-	.dsb	32, %10001000	; level 6
-	.dsb	32, %00000000	; level 7 (actually 8)
+	.dsb	20, %11111111	; level 0, all off
+	.dsb	18, %01111111	; level 1, hope it sounds OK!
+	.dsb	18, %01110111	; level 2
+	.dsb	18, %01101101	; level 3
+	.dsb	18, %01010101	; level 4, near 50%
+	.dsb	18, %10010010	; level 5
+	.dsb	18, %10001000	; level 6
+	.dsb	20, %00000000	; level 7 (actually 8)
+	.dsb	18, %10001000	; level 6
+	.dsb	18, %10010010	; level 5
+	.dsb	18, %01010101	; level 4, near 50%
+	.dsb	18, %01101101	; level 3
+	.dsb	18, %01110111	; level 2
+	.dsb	18, %01111111	; level 1, hope it sounds OK!
 
 ; init code
 reset:
@@ -71,7 +77,6 @@ cl_loop:
 
 	SEC						; allow full extintion
 lev_loop:
-		LDX ptr+1			; table index
 		LDA pwm, X			; get pattern
 pwm_loop:
 			STA $DFA0
