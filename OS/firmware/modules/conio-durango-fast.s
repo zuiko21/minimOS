@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b12
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2023 Carlos J. Santisteban
-; last modified 20230519-1317
+; last modified 20230520
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -319,7 +319,7 @@ cl_hr:
 		BIT IO8attr
 		BMI cl_hires		; but in colour there are twice the bytes per raster
 			DEX				; and two pages per row
-			LDA #$3F
+			LDA #$3C		; eeeeek
 cl_hires:
 		CPX fw_vbot			; check if at top of screen... which is bottom of memory
 	BCC cl_end				; do nothing if already there
