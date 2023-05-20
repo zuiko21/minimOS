@@ -82,10 +82,15 @@ pwm_loop:
 			STA $DFA0
 			STA $DFB0		; apply PWM to both LED and speaker (8)
 			ROR				; keep rotating the pattern (2)
-			INC ptr			; (5)
-			BNE pwm_loop	; (usually 3, total 18)
+			JSR delay		; (12)
+			INY				; (2)
+			BNE pwm_loop	; (usually 3, total 15+12)
 		INX
 		BRA lev_loop
+
+delay:
+	RTS
+
 return:
 	RTI						; just to disable interrupts
 
