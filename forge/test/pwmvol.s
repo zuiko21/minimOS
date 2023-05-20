@@ -3,6 +3,8 @@
 
 	*	= $FC00				; 1 Kbyte space should suffice
 
+#echo always 26t
+
 rom_start:
 ; header ID
 	.byt	0				; [0]=NUL, first magic number
@@ -78,13 +80,18 @@ cl_loop:
 	SEC						; allow full extintion
 lev_loop:
 		LDA pwm, X			; get pattern
+		BRA pwm_fast
 pwm_loop:
+			STA ptr+1
+			STA ptr+1
+			STA ptr+1		; (9)
+			NOP				; (+2 = 11)
+pwm_fast:
 			STA $DFA0
 			STA $DFB0		; apply PWM to both LED and speaker (8)
 			ROR				; keep rotating the pattern (2)
-			JSR delay		; (12)
 			INY				; (2)
-			BNE pwm_loop	; (usually 3, total 15+12)
+			BNE pwm_loop	; (usually 3, total 15+11)
 		INX
 		BRA lev_loop
 
