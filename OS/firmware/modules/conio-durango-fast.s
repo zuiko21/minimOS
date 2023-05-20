@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b12
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2023 Carlos J. Santisteban
-; last modified 20230520
+; last modified 20230520-1101
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -124,7 +124,11 @@ cio_prn:
 ; ***********************************
 ; *** output character (now in A) ***
 ; ***********************************
-; *** should check here for procrastinated scroll!
+; should check here for procrastinated scroll!
+	PHA
+	JSR chk_scrl
+	PLA
+; actual glyph printing procedure
 	ASL						; times eight scanlines
 	ROL cio_src+1			; M=???????7, A=6543210·
 	ASL
@@ -377,13 +381,22 @@ cn_lf:
 		JSR draw_cur		; ...must delete previous one
 do_lf:
 ; *** LF must check for procrastinated scroll as well
+	JSR chk_scrl			; *** is this OK?
 	INC fw_ciop+1			; increment MSB accordingly, this is OK for hires
 	BIT IO8attr			; was it in hires mode?
 	BMI cn_hmok
 		INC fw_ciop+1		; once again if in colour mode... 
 cn_hmok:
+; *** scroll check was here...
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_cnok
+		JSR draw_cur		; ...must draw new one
+do_cnok:
+	_DR_OK					; note that some code might set C
+
+; *** *** new scroll check *** ***
+chk_scrl:
 ; must check for possible scrolling!!! simply check sign ;-) ...or compare against dynamic limit
-; *** no longer here, but cannot be inlined
 	LDA fw_ciop+1			; EEEEEK
 	CMP fw_vtop
 	BNE cn_ok				; below limit means no scroll
@@ -412,7 +425,6 @@ sc_loop:
 	STX cio_src+1			; ...but only source will enter high-32K at the end
 	CPX fw_vtop				; ...or whatever the current limit is
 		BNE sc_loop
-
 ; data has been transferred, now should clear the last line
 	JSR cio_clear			; cannot be inlined! Y is 0
 ; important, cursor pointer must get back one row up! that means subtracting one (or two) from MSB
@@ -423,11 +435,7 @@ sc_loop:
 	STA fw_ciop+1
 ; *** end of actual scrolling routine
 cn_ok:
-	BIT fw_scur				; if cursor is on... [NEW]
-	BPL do_cnok
-		JSR draw_cur		; ...must draw new one
-do_cnok:
-	_DR_OK					; note that some code might set C
+	RTS
 
 cn_tab:
 ; advance column to the next 8x position (all modes)
