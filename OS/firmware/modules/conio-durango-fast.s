@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b12
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2023 Carlos J. Santisteban
-; last modified 20230520-1141
+; last modified 20230522-1805
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -33,7 +33,8 @@
 ;		23	= set cursor position**
 ;		31	= back to text mode (simply IGNORED)
 ; commands marked * will take a second char as parameter
-; command marked ** takes two subsequent bytes as parameters
+; command marked ** takes two subsequent bytes as parameters (codes < 32 reserved for fine position, not yet implemented)
+; any subsequent zero byte is ignored as parameter and issued as input
 ; *** NOT YET supported (will show glyph like after DLE) ***
 ;		3	= TERM (?)
 ;		4	= end of screen
@@ -344,12 +345,13 @@ cn_newl:
 cn_begin:
 ; do CR... but keep Y
 	BIT fw_scur				; if cursor is on... [NEW]
-	BPL do_cr
+	BPL do_crws
 		PHY					; CMOS only eeeeeek
 		JSR draw_cur		; ...must delete previous one
 		PLY
+do_crws:
+	JSR chk_scrl			; *** is this OK?
 do_cr:
-;	JSR chk_scrl			; *** is this OK? seems to do NOTHING
 ; note address format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
 ; actually is a good idea to clear scanline bits, just in case
 	_STZA fw_ciop			; all must clear! helps in case of tab wrapping too (eeeeeeeeek...)
@@ -405,37 +407,37 @@ chk_scrl:
 	BCC cn_ok				; below limit means no scroll, safer?
 ; ** scroll routine **
 ; rows are 256 bytes apart in hires mode, but 512 in colour mode
-	LDY #<0					; LSB *must* be zero, anyway
+		LDY #<0				; LSB *must* be zero, anyway
 ; MSB is actually OK for destination, but take from current value
-	LDX fw_vbot
-	STY cio_pt				; set both LSBs
-	STY cio_src
-	STX cio_pt+1			; destination is set
-	INX						; note trick for NMOS-savvyness
-	BIT IO8attr			; check mode anyway
-	BMI sc_hr				; +256 is OK for hires
-		INX					; make it +512 for colour
+		LDX fw_vbot
+		STY cio_pt			; set both LSBs
+		STY cio_src
+		STX cio_pt+1		; destination is set
+		INX					; note trick for NMOS-savvyness
+		BIT IO8attr			; check mode anyway
+		BMI sc_hr			; +256 is OK for hires
+			INX				; make it +512 for colour
 sc_hr:
-	STX cio_src+1			; we're set, worth keep incrementing this
+		STX cio_src+1		; we're set, worth keep incrementing this
 ;	LDY #0					; in case pvdu is not page-aligned!
 sc_loop:
-		LDA (cio_src), Y	; move screen data ASAP
-		STA (cio_pt), Y
-		INY					; do a whole page
-		BNE sc_loop
-	INC cio_pt+1			; both MSBs are incremented at once...
-	INX
-	STX cio_src+1			; ...but only source will enter high-32K at the end
-	CPX fw_vtop				; ...or whatever the current limit is
-		BNE sc_loop
+			LDA (cio_src), Y	; move screen data ASAP
+			STA (cio_pt), Y
+			INY				; do a whole page
+			BNE sc_loop
+		INC cio_pt+1		; both MSBs are incremented at once...
+		INX
+		STX cio_src+1		; ...but only source will enter high-32K at the end
+		CPX fw_vtop			; ...or whatever the current limit is
+			BNE sc_loop
 ; data has been transferred, now should clear the last line
-	JSR cio_clear			; cannot be inlined! Y is 0
+		JSR cio_clear		; cannot be inlined! Y is 0
 ; important, cursor pointer must get back one row up! that means subtracting one (or two) from MSB
-	LDA IO8attr				; eeeeeek
-	ASL						; now C is set for hires
-	LDA fw_ciop+1			; cursor MSB
-	SBC #1					; with C set (hires) this subtracts 1, but 2 if C is clear! (colour)
-	STA fw_ciop+1
+		LDA IO8attr			; eeeeeek
+		ASL					; now C is set for hires
+		LDA fw_ciop+1		; cursor MSB
+		SBC #1				; with C set (hires) this subtracts 1, but 2 if C is clear! (colour)
+		STA fw_ciop+1
 ; *** end of actual scrolling routine
 cn_ok:
 	RTS
