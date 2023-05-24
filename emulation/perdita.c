@@ -400,7 +400,7 @@ void run_emulation (int ready) {
 						usleep(sleep_time);		// should be accurate enough
 					} else {
 						skip++;
-						if (!ver) {
+						if (ver) {
 							printf("!");		// not enough CPU power!
 						}
 					}
