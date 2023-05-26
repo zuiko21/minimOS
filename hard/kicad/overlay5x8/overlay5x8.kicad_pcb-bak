@@ -2,7 +2,7 @@
 
   (general
     (thickness 1.6)
-    (drawings 439)
+    (drawings 438)
     (tracks 0)
     (zones 0)
     (modules 4)
@@ -286,9 +286,6 @@
   (gr_line (start 123.698 118.364) (end 131.318 118.364) (layer F.SilkS) (width 0.25) (tstamp 646FBEDD))
   (gr_text "K  +" (at 138.938 115.57) (layer F.SilkS) (tstamp 646FBF00)
     (effects (font (size 3 2.54) (thickness 0.5)))
-  )
-  (gr_text º (at 142.494 109.982) (layer F.SilkS) (tstamp 646FBE4C)
-    (effects (font (size 1.5 1.5) (thickness 0.2)))
   )
   (gr_arc (start 135.128 117.094) (end 133.858 117.094) (angle -90) (layer F.SilkS) (width 0.25) (tstamp 646FBE4B))
   (gr_arc (start 142.748 109.474) (end 144.018 109.474) (angle -90) (layer F.SilkS) (width 0.25) (tstamp 646FBE4A))
