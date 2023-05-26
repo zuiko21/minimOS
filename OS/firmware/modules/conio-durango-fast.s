@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b12
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2023 Carlos J. Santisteban
-; last modified 20230522-1840
+; last modified 20230520
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -33,8 +33,7 @@
 ;		23	= set cursor position**
 ;		31	= back to text mode (simply IGNORED)
 ; commands marked * will take a second char as parameter
-; command marked ** takes two subsequent bytes as parameters (codes < 32 reserved for fine position, not yet implemented)
-; any subsequent zero byte is ignored as parameter and issued as input
+; command marked ** takes two subsequent bytes as parameters
 ; *** NOT YET supported (will show glyph like after DLE) ***
 ;		3	= TERM (?)
 ;		4	= end of screen
@@ -125,11 +124,7 @@ cio_prn:
 ; ***********************************
 ; *** output character (now in A) ***
 ; ***********************************
-; should check here for procrastinated scroll!
-	PHA
-	JSR chk_scrl
-	PLA
-; actual glyph printing procedure
+; *** should check here for procrastinated scroll!
 	ASL						; times eight scanlines
 	ROL cio_src+1			; M=???????7, A=6543210·
 	ASL
@@ -341,20 +336,15 @@ do_cle:
 
 cn_newl:
 ; CR, but will do LF afterwards by setting Y appropriately
-	TAY						; Y=26>1, thus allows full newline
+		TAY					; Y=26>1, thus allows full newline
 cn_begin:
 ; do CR... but keep Y
 	BIT fw_scur				; if cursor is on... [NEW]
-	BPL do_crws
-		PHY
+	BPL do_cr
+		PHY					; CMOS only eeeeeek
 		JSR draw_cur		; ...must delete previous one
 		PLY
-do_crws:
 do_cr:
-#echo try new check location, but commented
-	PHY
-;	JSR chk_scrl			; *** this one seems to be needed
-	PLY
 ; note address format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
 ; actually is a good idea to clear scanline bits, just in case
 	_STZA fw_ciop			; all must clear! helps in case of tab wrapping too (eeeeeeeeek...)
@@ -375,79 +365,69 @@ cn_lmok:
 #endif
 ; check whether LF is to be done
 	DEY						; LF needed?
-		BEQ cn_old			; not if Y was 1 (use BMI if Y was zeroed for LF) eeeek new label
+	BEQ cn_ok				; not if Y was 1 (use BMI if Y was zeroed for LF)
 ; *** will do LF if Y was >1 ONLY ***
-#echo lf instead of lfcs
-	BNE do_lf				; [NEW] eeeek
+	BNE do_lf				; [NEW]
 cn_lf:
 ; do LF, adds 1 (hires) or 2 (colour) to MSB
 ; even simpler, INCrement MSB once... or two if in colour mode
 ; hopefully highest scan bit is intact!!!
 	BIT fw_scur				; if cursor is on... [NEW]
-	BPL do_lfcs
+	BPL do_lf
 		JSR draw_cur		; ...must delete previous one
-do_lfcs:
-; *** LF must check for procrastinated scroll as well
-#echo remove this lf check again
-;	JSR chk_scrl			; *** is this OK? seems to do nothing
 do_lf:
+; *** LF must check for procrastinated scroll as well
 	INC fw_ciop+1			; increment MSB accordingly, this is OK for hires
-	BIT IO8attr				; was it in hires mode?
+	BIT IO8attr			; was it in hires mode?
 	BMI cn_hmok
 		INC fw_ciop+1		; once again if in colour mode... 
 cn_hmok:
-; *** scroll check was here...
-#echo recheck LF scroll, seems needed
-	JSR chk_scrl			; *** is this OK?
-cn_old:
+; must check for possible scrolling!!! simply check sign ;-) ...or compare against dynamic limit
+; *** no longer here, but cannot be inlined
+	LDA fw_ciop+1			; EEEEEK
+	CMP fw_vtop
+	BNE cn_ok				; below limit means no scroll
+; ** scroll routine **
+; rows are 256 bytes apart in hires mode, but 512 in colour mode
+	LDY #<0					; LSB *must* be zero, anyway
+; MSB is actually OK for destination, but take from current value
+	LDX fw_vbot
+	STY cio_pt				; set both LSBs
+	STY cio_src
+	STX cio_pt+1			; destination is set
+	INX						; note trick for NMOS-savvyness
+	BIT IO8attr			; check mode anyway
+	BMI sc_hr				; +256 is OK for hires
+		INX					; make it +512 for colour
+sc_hr:
+	STX cio_src+1			; we're set, worth keep incrementing this
+;	LDY #0					; in case pvdu is not page-aligned!
+sc_loop:
+		LDA (cio_src), Y	; move screen data ASAP
+		STA (cio_pt), Y
+		INY					; do a whole page
+		BNE sc_loop
+	INC cio_pt+1			; both MSBs are incremented at once...
+	INX
+	STX cio_src+1			; ...but only source will enter high-32K at the end
+	CPX fw_vtop				; ...or whatever the current limit is
+		BNE sc_loop
+
+; data has been transferred, now should clear the last line
+	JSR cio_clear			; cannot be inlined! Y is 0
+; important, cursor pointer must get back one row up! that means subtracting one (or two) from MSB
+	LDA IO8attr				; eeeeeek
+	ASL						; now C is set for hires
+	LDA fw_ciop+1			; cursor MSB
+	SBC #1					; with C set (hires) this subtracts 1, but 2 if C is clear! (colour)
+	STA fw_ciop+1
+; *** end of actual scrolling routine
+cn_ok:
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_cnok
 		JSR draw_cur		; ...must draw new one
 do_cnok:
 	_DR_OK					; note that some code might set C
-
-; *** *** new scroll check *** ***
-chk_scrl:
-; must check for possible scrolling!!! simply check sign ;-) ...or compare against dynamic limit
-	LDA fw_ciop+1			; EEEEEK
-	CMP fw_vtop
-	BCC cn_ok				; below limit means no scroll, safer?
-; ** scroll routine **
-; rows are 256 bytes apart in hires mode, but 512 in colour mode
-		LDY #<0				; LSB *must* be zero, anyway
-; MSB is actually OK for destination, but take from current value
-		LDX fw_vbot
-		STY cio_pt			; set both LSBs
-		STY cio_src
-		STX cio_pt+1		; destination is set
-		INX					; note trick for NMOS-savvyness
-		BIT IO8attr			; check mode anyway
-		BMI sc_hr			; +256 is OK for hires
-			INX				; make it +512 for colour
-sc_hr:
-		STX cio_src+1		; we're set, worth keep incrementing this
-;	LDY #0					; in case pvdu is not page-aligned!
-sc_loop:
-			LDA (cio_src), Y	; move screen data ASAP
-			STA (cio_pt), Y
-			INY				; do a whole page
-			BNE sc_loop
-		INC cio_pt+1		; both MSBs are incremented at once...
-		INX
-		STX cio_src+1		; ...but only source will enter high-32K at the end
-		CPX fw_vtop			; ...or whatever the current limit is
-			BNE sc_loop
-; data has been transferred, now should clear the last line
-		JSR cio_clear		; cannot be inlined! Y is 0
-; important, cursor pointer must get back one row up! that means subtracting one (or two) from MSB
-		LDA IO8attr			; eeeeeek
-		ASL					; now C is set for hires
-		LDA fw_ciop+1		; cursor MSB
-		SBC #1				; with C set (hires) this subtracts 1, but 2 if C is clear! (colour)
-		STA fw_ciop+1
-; *** end of actual scrolling routine
-cn_ok:
-	RTS
 
 cn_tab:
 ; advance column to the next 8x position (all modes)
