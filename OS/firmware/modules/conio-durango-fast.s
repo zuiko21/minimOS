@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b12
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2023 Carlos J. Santisteban
-; last modified 20230526-1911
+; last modified 20230528-1322
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -171,7 +171,7 @@ cph_nw:
 			TAY				; offset ready (2)
 			BNE cph_loop	; offset will just wrap at the end EEEEEEEK (3)
 ; ...but should NOT delete (XOR) previous cursor, as has disappeared while printing
-		BEQ do_cur_r		; advance cursor without clearing previous
+		JMP do_cur_r		; advance cursor without clearing previous
 ; colour version, 85b, typically 975t (77b, 924t in ZP)
 ; new FAST version, but no longer with sparse array
 cpc_col:
@@ -324,60 +324,6 @@ cn_ok:
 ; ************************
 ; *** control routines ***
 ; ************************
-cur_r:
-; * * cursor advance * *
-	BIT fw_scur				; if cursor is on... [NEW]
-	BPL do_cur_r
-		JSR draw_cur		; ...must delete previous one
-do_cur_r:
-	JSR cio_inx				; advance to next char
-	JSR ck_wrap				; check for line wrap...
-	JMP chk_scrl			; ...but scroll if needed, and return
-
-cur_l:
-; * * cursor left * * no big deal, but now wraps if at leftmost column
-; colour mode subtracts 4, but only 1 if in hires
-; only if LSB is not zero, assuming non-corrupted scanline bits
-; could use N flag after subtraction, as clear scanline bits guarantee its value
-; but check for wrapping otherwise
-	BIT fw_scur				; if cursor is on... [NEW]
-	BPL do_cur_l
-		JSR draw_cur		; ...must delete previous one
-do_cur_l:
-	LDA #1					; hires decrement (these 9 bytes are the same as cur_r)
-	BIT IO8attr
-	BMI cl_hr				; right mode for the decrement EEEEEK
-		LDA #4				; otherwise use colour value
-cl_hr:
-	STA cio_src				; EEEEEEEEEEEK
-	SEC
-	LDA fw_ciop
-	SBC cio_src				; subtract to pointer, but...
-; *** new wrap-around code ***
-	BPL cl_ok				; positive after subtraction means no wrapping
-; otherwise must get up to previous row, not just its bottom scanline
-; just clear LSB for HIRES... in colour, clear d0 on MSB as well > actually subtract 2
-		LDX fw_ciop+1		; update row into MSB
-		DEX
-		LDA #$1F			; will reset LSB to rightmost column afterwards (for HIRES)
-		BIT IO8attr
-		BMI cl_hires		; but in colour there are twice the bytes per raster
-			DEX				; and two pages per row
-			LDA #$3C		; eeeeek
-cl_hires:
-		CPX fw_vbot			; check if at top of screen... which is bottom of memory
-	BCC cl_end				; do nothing if already there
-		STX fw_ciop+1		; update MSB as it changed!
-cl_ok:
-		STA fw_ciop			; update pointer (usually just LSB)
-; *** standard code follows ***
-cl_end:
-	BIT fw_scur				; if cursor is on... [NEW]
-	BPL do_cle
-		JSR draw_cur		; ...must draw new one
-do_cle:
-	_DR_OK					; C known to be set, though
-
 cn_newl:
 ; * * CR, but will do LF afterwards by setting Y appropriately * *
 	TAY						; Y=26>1, thus allows full newline
@@ -445,6 +391,60 @@ cn_hmok:
 		JSR draw_cur		; ...must draw new one
 do_cnok:
 	_DR_OK					; note that some code might set C
+
+cur_r:
+; * * cursor advance * *
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_cur_r
+		JSR draw_cur		; ...must delete previous one
+do_cur_r:
+	JSR cio_inx				; advance to next char
+	JSR ck_wrap				; check for line wrap...
+	JMP chk_scrl			; ...but scroll if needed, and return
+
+cur_l:
+; * * cursor left * * no big deal, but now wraps if at leftmost column
+; colour mode subtracts 4, but only 1 if in hires
+; only if LSB is not zero, assuming non-corrupted scanline bits
+; could use N flag after subtraction, as clear scanline bits guarantee its value
+; but check for wrapping otherwise
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_cur_l
+		JSR draw_cur		; ...must delete previous one
+do_cur_l:
+	LDA #1					; hires decrement (these 9 bytes are the same as cur_r)
+	BIT IO8attr
+	BMI cl_hr				; right mode for the decrement EEEEEK
+		LDA #4				; otherwise use colour value
+cl_hr:
+	STA cio_src				; EEEEEEEEEEEK
+	SEC
+	LDA fw_ciop
+	SBC cio_src				; subtract to pointer, but...
+; *** new wrap-around code ***
+	BPL cl_ok				; positive after subtraction means no wrapping
+; otherwise must get up to previous row, not just its bottom scanline
+; just clear LSB for HIRES... in colour, clear d0 on MSB as well > actually subtract 2
+		LDX fw_ciop+1		; update row into MSB
+		DEX
+		LDA #$1F			; will reset LSB to rightmost column afterwards (for HIRES)
+		BIT IO8attr
+		BMI cl_hires		; but in colour there are twice the bytes per raster
+			DEX				; and two pages per row
+			LDA #$3C		; eeeeek
+cl_hires:
+		CPX fw_vbot			; check if at top of screen... which is bottom of memory
+	BCC cl_end				; do nothing if already there
+		STX fw_ciop+1		; update MSB as it changed!
+cl_ok:
+		STA fw_ciop			; update pointer (usually just LSB)
+; *** standard code follows ***
+cl_end:
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_cle
+		JSR draw_cur		; ...must draw new one
+do_cle:
+	_DR_OK					; C known to be set, though
 
 cn_tab:
 ; * * advance column to the next 8x position * * (all modes)
