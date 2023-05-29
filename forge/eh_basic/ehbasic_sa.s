@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230425-1855
+; last modified 20230529-1401
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -7980,7 +7980,8 @@ LAB_INK
 	LDA #18				; INK control code
 LAB_SENDCOL
 	JSR V_OUTP			; send to CONIO
-	PLA					; retrieve colour
+	PLA					; retrieve colour -- worth using the stack
+	ORA #32				; *** is this safer?
 	JMP V_OUTP			; send and return
 
 ; perform PAPER p
@@ -7990,7 +7991,7 @@ LAB_PAPER
 	LDA #20				; PAPER control code
 	BNE LAB_SENDCOL		; continue with common code
 
-; perform LOCATE x,y
+; perform LOCATE x,y -- worth using the stack
 LAB_LOCATE
 	JSR LAB_GTBY		; column
 	PHX
@@ -8055,7 +8056,7 @@ LAB_MODESET
 	STA IO8attr			; set it!
 	RTS
 
-; perform PLOT x,y,c
+; perform PLOT x,y,c -- worth using the stack
 LAB_PLOT
 	JSR LAB_GTBY		; x coordinate
 	PHX
@@ -8069,47 +8070,39 @@ LAB_PLOT
 	JMP dxplot_lib		; call graphic function and return!
 ;	RTS
 
-; perform LINE x1,y1,x2,y2,c
+; perform LINE x1,y1,x2,y2,c -- now stack-free, same size but faster
 LAB_LINE
 	JSR LAB_GTBY		; x1 coordinate
-	PHX
+	STX x1
 	JSR LAB_SCGB		; y1 coordinate
-	PHX
+	STX y1
 	JSR LAB_SCGB		; x2 coordinate
-	PHX
+	STX x2
 	JSR LAB_SCGB		; y2 coordinate
-	PHX
+	STX y2
 	JSR LAB_SCGB		; colour in A
 	TXA
-	PLY
-	STY y2
-	PLX
-	STX x2
+	LDY y2
+	LDX x2
 	JSR LAB_CKGR		; check end point and colour
-	PLY
-	STY y1
-	PLX
-	STX x1
+	LDY y1
+	LDX x1
 	JSR LAB_CKXY		; check start point
 	JMP dxline_lib		; call graphic function and return!
 ;	RTS
 
-; perform CIRCLE x,y,r,c
+; perform CIRCLE x,y,r,c -- now stack-less, same size but much faster
 LAB_CIRCLE
 	JSR LAB_GTBY		; x coordinate
-	PHX
+	STX x1
 	JSR LAB_SCGB		; y coordinate
-	PHX
+	STX y1
 	JSR LAB_SCGB		; radius
-	PHX
+	STX radius
 	JSR LAB_SCGB		; colour in A
 	TXA
-	PLY
-	STY radius
-	PLY
-	STY y1
-	PLX
-	STX x1
+	LDY y1
+	LDX x1
 	JSR LAB_CKRD		; check coordinates, colour and radius!
 	JMP dxcircle_lib	; call graphic function and return!
 ;	RTS
