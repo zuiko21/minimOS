@@ -265,13 +265,13 @@ ck_wrap:
 #ifdef	SAFE
 		LDA fw_ciop+1		; check MSB
 		LSR					; just check d0, should clear C
-			BCS do_cr;cn_begin	; strange scanline, thus time for the NEWLINE (Y>1)
+			BCS do_cr		; was cn_begin	; strange scanline, thus time for the NEWLINE (Y>1)
 #endif
 		LDY #%11000000		; in any case, get proper mask for colour mode
 wr_hr:
 	TYA						; prepare mask and guarantee Y>1 for auto LF
 	AND fw_ciop				; are scanline bits clear?
-		BNE do_cr;cn_begin		; nope, do NEWLINE
+		BNE do_cr			; was cn_begin		; nope, do NEWLINE
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_ckw
 		JSR draw_cur		; ...must draw new one
