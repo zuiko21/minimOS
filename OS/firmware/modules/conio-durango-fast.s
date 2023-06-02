@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b12
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2023 Carlos J. Santisteban
-; last modified 20230528-1322
+; last modified 20230602-1657
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -298,17 +298,16 @@ chk_scrl:
 			INX				; make it +512 for colour
 sc_hr:
 		STX cio_src+1		; we're set, worth keep incrementing this
-;	LDY #0					; in case pvdu is not page-aligned!
+;		LDY #0				; in case pvdu is not page-aligned!
 sc_loop:
 			LDA (cio_src), Y	; move screen data ASAP
 			STA (cio_pt), Y
 			INY				; do a whole page
 			BNE sc_loop
 		INC cio_pt+1		; both MSBs are incremented at once...
-		INX
-		STX cio_src+1		; ...but only source will enter high-32K at the end
+		INX					; ...but only source will enter high-32K at the end
 		CPX fw_vtop			; ...or whatever the current limit is
-			BNE sc_loop
+			BNE sc_hr
 ; data has been transferred, now should clear the last line
 		JSR cio_clear		; cannot be inlined! Y is 0
 ; important, cursor pointer must get back one row up! that means subtracting one (or two) from MSB
