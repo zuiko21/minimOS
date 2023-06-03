@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b12
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2023 Carlos J. Santisteban
-; last modified 20230603-1159
+; last modified 20230603-1212
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -330,6 +330,9 @@ sc_loop:
 		SBC #1				; with C set (hires) this subtracts 1, but 2 if C is clear! (colour)
 		STA fw_ciop+1
 ; *** end of actual scrolling routine
+		BIT fw_scur				; if cursor is on... [NEW]
+		BPL cn_ok
+			JSR draw_cur		; ...must draw new one
 cn_ok:
 	RTS
 
