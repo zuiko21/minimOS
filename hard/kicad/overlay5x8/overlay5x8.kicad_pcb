@@ -544,7 +544,7 @@
   (gr_arc (start 141.478 94.234) (end 140.208 94.234) (angle -90) (layer F.SilkS) (width 0.25) (tstamp 646FB1BD))
   (gr_arc (start 149.098 94.234) (end 149.098 95.504) (angle -90) (layer F.SilkS) (width 0.25) (tstamp 646FB1BC))
   (gr_text CONTROL (at 145.288 87.122) (layer F.SilkS) (tstamp 646FB1BB)
-    (effects (font (size 2 1.4) (thickness 0.2) italic))
+    (effects (font (size 2 1.4) (thickness 0.35) italic))
   )
   (gr_line (start 130.048 95.504) (end 137.668 95.504) (layer F.SilkS) (width 0.25) (tstamp 646FB143))
   (gr_line (start 138.938 94.234) (end 138.938 86.614) (layer F.SilkS) (width 0.25) (tstamp 646FB142))

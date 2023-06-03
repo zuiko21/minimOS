@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b12
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2023 Carlos J. Santisteban
-; last modified 20230520
+; last modified 20230603-1212
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -102,6 +102,11 @@
 -fw_knes= $0224				; safe address after CONIO needed variables, incl. matrix keyboard driver
 #endif
 
+#ifdef	DEBUG
+#echo	VSP enabled!
+	LDA #$F1				; VSP in ASCII mode
+	STA $DF94
+#endif
 	TYA						; is going to be needed here anyway
 	LDX fw_cbin				; check whether in binary/multibyte mode
 	BEQ cio_cmd				; if not, check whether command (including INPUT) or glyph
@@ -125,6 +130,10 @@ cio_prn:
 ; *** output character (now in A) ***
 ; ***********************************
 ; *** should check here for procrastinated scroll!
+	PHA
+	JSR chk_scrl
+	PLA
+; actual glyph printing procedure
 	ASL						; times eight scanlines
 	ROL cio_src+1			; M=???????7, A=6543210·
 	ASL
@@ -167,7 +176,7 @@ cph_nw:
 			TAY				; offset ready (2)
 			BNE cph_loop	; offset will just wrap at the end EEEEEEEK (3)
 ; ...but should NOT delete (XOR) previous cursor, as has disappeared while printing
-		BEQ do_cur_r		; advance cursor without clearing previous
+		BEQ cio_inx			; advance cursor without clearing previous
 ; colour version, 85b, typically 975t (77b, 924t in ZP)
 ; new FAST version, but no longer with sparse array
 cpc_col:
@@ -229,18 +238,19 @@ cpc_rend:					; end segment has not changed, takes 6x11 + 2x24 - 1, 113t (66+46-
 			INC cio_pt+1	; next page for the last 4 raster (5)
 			DEC fw_chalf	; only one half done? go for next and last (*6+3)
 		BNE cpc_do
-; advance screen pointer before exit, no need for jump if cursor-right is just here...
-; ...but should NOT delete (XOR) previous cursor, as has disappeared while printing
-	BEQ do_cur_r			; advance cursor without clearing previous
+; advance screen pointer before exit but should NOT delete (XOR) previous cursor, as has disappeared while printing
+;	JSR cio_inx				; advance to next char...
+;	JMP ck_wrap				; ...and just check for line wrap and return
 
-; **********************
-; *** cursor advance *** placed here for convenience of printing routine
-; **********************
-cur_r:
-	BIT fw_scur				; if cursor is on... [NEW]
-	BPL do_cur_r
-		JSR draw_cur		; ...must delete previous one
-do_cur_r:
+; ************************
+; *** support routines ***
+; ************************
+cio_inx:
+; *** advance one character position ***
+#ifdef	DEBUG
+	LDA #'i'
+	STA $DF93
+#endif
 	LDA #1					; base character width (in bytes) for hires mode
 	BIT IO8attr				; check mode
 	BMI rcu_hr				; already OK if hires
@@ -251,13 +261,11 @@ rcu_hr:
 	STA fw_ciop				; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 	BCC rcu_nw				; check possible carry
 		INC fw_ciop+1
-rcu_nw:						; will return, no need for jump if routine is placed below
+rcu_nw:						; will return
+;	RTS
 
-; ************************
-; *** support routines ***
-; ************************
 ck_wrap:
-; check for line wrap
+; *** check for line wrap ***
 ; address format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
 ; thus appropriate masks are %11100000 for hires and %11000000 in colour... but it's safer to check MSB's d0 too!
 	LDY #%11100000			; hires mask
@@ -266,33 +274,187 @@ ck_wrap:
 #ifdef	SAFE
 		LDA fw_ciop+1		; check MSB
 		LSR					; just check d0, should clear C
-			BCS do_cr;cn_begin	; strange scanline, thus time for the NEWLINE (Y>1)
+			BCS do_cr		; was cn_begin	; strange scanline, thus time for the NEWLINE (Y>1)
 #endif
 		LDY #%11000000		; in any case, get proper mask for colour mode
 wr_hr:
 	TYA						; prepare mask and guarantee Y>1 for auto LF
 	AND fw_ciop				; are scanline bits clear?
-		BNE do_cr;cn_begin		; nope, do NEWLINE
+		BNE do_cr			; was cn_begin		; nope, do NEWLINE
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_ckw
 		JSR draw_cur		; ...must draw new one
 do_ckw:
 	_DR_OK					; continue normally otherwise (better clear C)
 
+chk_scrl:
+; *** *** new scroll check *** ***
+; simply compare against dynamic limit
+#ifdef	DEBUG
+	LDA #'s'
+	STA $DF93
+#endif
+	LDA fw_ciop+1			; EEEEEK
+	CMP fw_vtop
+	BCC cn_ok				; below limit means no scroll, safer?
+; ** scroll routine **
+; rows are 256 bytes apart in hires mode, but 512 in colour mode
+		LDY #<0				; LSB *must* be zero, anyway
+; MSB is actually OK for destination, but take from current value
+		LDX fw_vbot
+		STY cio_pt			; set both LSBs
+		STY cio_src
+		STX cio_pt+1		; destination is set
+		INX					; note trick for NMOS-savvyness
+		BIT IO8attr			; check mode anyway
+		BMI sc_hr			; +256 is OK for hires
+			INX				; make it +512 for colour
+sc_hr:
+		STX cio_src+1		; we're set, worth keep incrementing this
+;		LDY #0				; in case pvdu is not page-aligned!
+sc_loop:
+			LDA (cio_src), Y	; move screen data ASAP
+			STA (cio_pt), Y
+			INY				; do a whole page
+			BNE sc_loop
+		INC cio_pt+1		; both MSBs are incremented at once...
+		INX					; ...but only source will enter high-32K at the end
+		CPX fw_vtop			; ...or whatever the current limit is
+			BNE sc_hr
+; data has been transferred, now should clear the last line
+		JSR cio_clear		; cannot be inlined! Y is 0
+; important, cursor pointer must get back one row up! that means subtracting one (or two) from MSB
+		LDA IO8attr			; eeeeeek
+		ASL					; now C is set for hires
+		LDA fw_ciop+1		; cursor MSB
+		SBC #1				; with C set (hires) this subtracts 1, but 2 if C is clear! (colour)
+		STA fw_ciop+1
+; *** end of actual scrolling routine
+		BIT fw_scur				; if cursor is on... [NEW]
+		BPL cn_ok
+			JSR draw_cur		; ...must draw new one
+cn_ok:
+	RTS
+
 ; ************************
 ; *** control routines ***
 ; ************************
+cn_newl:
+; * * CR, but will do LF afterwards by setting Y appropriately * *
+#ifdef	DEBUG
+	LDY #'N'
+	STY $DF93
+#endif
+	TAY						; Y=26>1, thus allows full newline
+	JSR cn_begin			; do CR+LF and actually scroll if needed
+	JMP chk_scrl			; will return
+
+cn_lf:
+; * * do LF * *, adds 1 (hires) or 2 (colour) to MSB
+#ifdef	DEBUG
+	LDA #'L'
+	STA $DF93
+#endif
+	JSR cur_lf				; do actual LF...
+	JMP chk_scrl			; ...check and return
+
 cn_cr:
-; this is the CR without LF
+; * * this is the CR without LF * *
+#ifdef	DEBUG
+	LDY #'C'
+	STY $DF93
+#endif
 	LDY #1					; will skip LF routine
-	BNE cn_begin
+;	BNE cn_begin
+
+cn_begin:
+; *** do CR... but keep Y ***
+#ifdef	DEBUG
+	LDA #'b'
+	STA $DF93
+#endif
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_cr
+		PHY					; CMOS only eeeeeek
+		JSR draw_cur		; ...must delete previous one
+		PLY
+do_cr:
+; note address format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
+; actually is a good idea to clear scanline bits, just in case
+	_STZA fw_ciop			; all must clear! helps in case of tab wrapping too (eeeeeeeeek...)
+; in colour mode, the highest scanline bit is in MSB, usually (TABs, wrap) not worth clearing
+; ...but might help with unexpected mode change
+#ifdef	DEBUG
+	LDA #'c'
+	STA $DF93
+#endif
+#ifdef	SAFE
+	BIT IO8attr				; was it in hires mode?
+	BMI cn_lmok
+#ifdef	NMOS
+		LDA fw_ciop+1		; clear MSB lowest bit (8b/10t)
+		AND #254
+		STA fw_ciop+1
+#else
+		LDA #1				; bit to be cleared (5b/7t)
+		TRB fw_ciop+1		; nice...
+#endif
+cn_lmok:
+#endif
+; check whether LF is to be done
+	DEY						; LF needed?
+		BEQ cn_hmok			; not if Y was 1 (use BMI if Y was zeroed for LF)
+; *** will do LF if Y was >1 ONLY ***
+	BNE do_lf				; [NEW]
+; actual LF done here
+cur_lf:
+; even simpler, INCrement MSB once... or two if in colour mode
+; hopefully highest scan bit is intact!!!
+		BIT fw_scur			; if cursor is on... [NEW]
+		BPL do_lf
+			JSR draw_cur	; ...must delete previous one
+do_lf:
+#ifdef	DEBUG
+	LDA #'l'
+	STA $DF93
+#endif
+; *** LF must check for procrastinated scroll as well
+	INC fw_ciop+1			; increment MSB accordingly, this is OK for hires
+	BIT IO8attr				; was it in hires mode?
+	BMI cn_hmok
+		INC fw_ciop+1		; once again if in colour mode... 
+cn_hmok:
+; *** scroll no longer here
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_cnok
+		JSR draw_cur		; ...must draw new one
+do_cnok:
+	_DR_OK					; note that some code might set C
+
+cur_r:
+; * * cursor advance * *
+#ifdef	DEBUG
+	LDA #'R'
+	STA $DF93
+#endif
+	BIT fw_scur				; if cursor is on... [NEW]
+	BPL do_cur_r
+		JSR draw_cur		; ...must delete previous one
+do_cur_r:
+	JSR cio_inx				; advance to next char
+;	JSR ck_wrap				; check for line wrap...
+	JMP chk_scrl			; ...but scroll if needed, and return
 
 cur_l:
-; cursor left, no big deal, but now wraps if at leftmost column
+; * * cursor left * * no big deal, but now wraps if at leftmost column
 ; colour mode subtracts 4, but only 1 if in hires
 ; only if LSB is not zero, assuming non-corrupted scanline bits
 ; could use N flag after subtraction, as clear scanline bits guarantee its value
 ; but check for wrapping otherwise
+#ifdef	DEBUG
+	LDA #'B'
+	STA $DF93
+#endif
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_cur_l
 		JSR draw_cur		; ...must delete previous one
@@ -306,9 +468,6 @@ cl_hr:
 	SEC
 	LDA fw_ciop
 	SBC cio_src				; subtract to pointer, but...
-; *** older, non-wrapping code as reference ***
-;	BMI cl_end				; ...ignore operation if went negative
-;		STA fw_ciop			; update pointer
 ; *** new wrap-around code ***
 	BPL cl_ok				; positive after subtraction means no wrapping
 ; otherwise must get up to previous row, not just its bottom scanline
@@ -334,109 +493,15 @@ cl_end:
 do_cle:
 	_DR_OK					; C known to be set, though
 
-cn_newl:
-; CR, but will do LF afterwards by setting Y appropriately
-		TAY					; Y=26>1, thus allows full newline
-cn_begin:
-; do CR... but keep Y
-	BIT fw_scur				; if cursor is on... [NEW]
-	BPL do_cr
-		PHY					; CMOS only eeeeeek
-		JSR draw_cur		; ...must delete previous one
-		PLY
-do_cr:
-; note address format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
-; actually is a good idea to clear scanline bits, just in case
-	_STZA fw_ciop			; all must clear! helps in case of tab wrapping too (eeeeeeeeek...)
-; in colour mode, the highest scanline bit is in MSB, usually (TABs, wrap) not worth clearing
-; ...but might help with unexpected mode change
-#ifdef	SAFE
-	BIT IO8attr			; was it in hires mode?
-	BMI cn_lmok
-#ifdef	NMOS
-		LDA fw_ciop+1		; clear MSB lowest bit (8b/10t)
-		AND #254
-		STA fw_ciop+1
-#else
-		LDA #1				; bit to be cleared (5b/7t)
-		TRB fw_ciop+1		; nice...
-#endif
-cn_lmok:
-#endif
-; check whether LF is to be done
-	DEY						; LF needed?
-	BEQ cn_ok				; not if Y was 1 (use BMI if Y was zeroed for LF)
-; *** will do LF if Y was >1 ONLY ***
-	BNE do_lf				; [NEW]
-cn_lf:
-; do LF, adds 1 (hires) or 2 (colour) to MSB
-; even simpler, INCrement MSB once... or two if in colour mode
-; hopefully highest scan bit is intact!!!
-	BIT fw_scur				; if cursor is on... [NEW]
-	BPL do_lf
-		JSR draw_cur		; ...must delete previous one
-do_lf:
-; *** LF must check for procrastinated scroll as well
-	INC fw_ciop+1			; increment MSB accordingly, this is OK for hires
-	BIT IO8attr			; was it in hires mode?
-	BMI cn_hmok
-		INC fw_ciop+1		; once again if in colour mode... 
-cn_hmok:
-; must check for possible scrolling!!! simply check sign ;-) ...or compare against dynamic limit
-; *** no longer here, but cannot be inlined
-	LDA fw_ciop+1			; EEEEEK
-	CMP fw_vtop
-	BNE cn_ok				; below limit means no scroll
-; ** scroll routine **
-; rows are 256 bytes apart in hires mode, but 512 in colour mode
-	LDY #<0					; LSB *must* be zero, anyway
-; MSB is actually OK for destination, but take from current value
-	LDX fw_vbot
-	STY cio_pt				; set both LSBs
-	STY cio_src
-	STX cio_pt+1			; destination is set
-	INX						; note trick for NMOS-savvyness
-	BIT IO8attr			; check mode anyway
-	BMI sc_hr				; +256 is OK for hires
-		INX					; make it +512 for colour
-sc_hr:
-	STX cio_src+1			; we're set, worth keep incrementing this
-;	LDY #0					; in case pvdu is not page-aligned!
-sc_loop:
-		LDA (cio_src), Y	; move screen data ASAP
-		STA (cio_pt), Y
-		INY					; do a whole page
-		BNE sc_loop
-	INC cio_pt+1			; both MSBs are incremented at once...
-	INX
-	STX cio_src+1			; ...but only source will enter high-32K at the end
-	CPX fw_vtop				; ...or whatever the current limit is
-		BNE sc_loop
-
-; data has been transferred, now should clear the last line
-	JSR cio_clear			; cannot be inlined! Y is 0
-; important, cursor pointer must get back one row up! that means subtracting one (or two) from MSB
-	LDA IO8attr				; eeeeeek
-	ASL						; now C is set for hires
-	LDA fw_ciop+1			; cursor MSB
-	SBC #1					; with C set (hires) this subtracts 1, but 2 if C is clear! (colour)
-	STA fw_ciop+1
-; *** end of actual scrolling routine
-cn_ok:
-	BIT fw_scur				; if cursor is on... [NEW]
-	BPL do_cnok
-		JSR draw_cur		; ...must draw new one
-do_cnok:
-	_DR_OK					; note that some code might set C
-
 cn_tab:
-; advance column to the next 8x position (all modes)
+; * * advance column to the next 8x position * * (all modes)
 ; this means adding 8 to LSB in hires mode, or 32 in colour mode
 ; remember format is 011yyyys-ssxxxxpp (colour), 011yyyyy-sssxxxxx (hires)
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_tab
 		JSR draw_cur		; ...must delete previous one
 do_tab:
+	JSR chk_scrl			; check whether procrastinated!
 	LDA #%11111000			; hires mask first
 	STA fw_ctmp				; store temporarily
 	LDA #8					; lesser value in hires mode
@@ -454,7 +519,7 @@ hr_tab:
 	JMP ck_wrap				; will return in any case
 
 cio_bel:
-; BEL, make a beep!
+; * * BEL, make a beep! * *
 ; 40ms @ 1 kHz is 40 cycles
 ; the 500µs halfperiod is about 325t
 	_CRITIC					; let's make things the right way
@@ -471,7 +536,7 @@ cbp_del:
 	RTS
 
 cio_bs:
-; BACKSPACE, go back one char and clear cursor position
+; * * BACKSPACE * * go back one char and clear cursor position
 	JSR cur_l				; back one char, if possible, then clear cursor position
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_bs
@@ -520,7 +585,7 @@ end_bs:
 	_DR_OK					; should be done
 
 cio_up:
-; cursor up, no big deal, will stop at top row (NMOS savvy, always 23b and 39t)
+; * * cursor up * * no big deal, will stop at top row (NMOS savvy, always 23b and 39t)
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_cup
 		JSR draw_cur		; ...must delete previous one
@@ -544,8 +609,8 @@ cu_end:
 do_cu_end:
 	_DR_OK					; ending this with C set is a minor nitpick, must reset anyway
 
-; FF, clear screen AND intialise values!
 cio_ff:
+; * * FF, clear screen AND intialise values! * *
 ; note that firmware must set IO8attr hardware register appropriately at boot!
 ; we don't want a single CLS to switch modes, although a font reset is acceptable, set it again afterwards if needed
 ; * things to be initialised... *
@@ -604,26 +669,26 @@ sc_clr:
 do_ff:
 	RTS
 
-; SO, set inverse mode
 cn_so:
+; * * SO, set inverse mode * *
 	LDA #$FF				; OK for all modes?
 	STA fw_mask				; set value to be EORed
 	RTS
 
-; SI, set normal mode
 cn_si:
+; * * SI, set normal mode * *
 	_STZA fw_mask			; clear value to be EORed
 	RTS
 
 md_dle:
-; DLE, set binary mode
+; * * DLE, set binary mode * *
 ;	LDX #BM_DLE				; X already set if 32
 	STX fw_cbin				; set binary mode and we are done
 ignore:
 	RTS						; *** note generic exit ***
 
 cio_cur:
-; XON, we now have cursor! [NEW]
+; * * XON, we now have cursor! * *
 	LDA #128				; flag for cursor on
 #ifndef	NMOS
 	TSB fw_scur				; check previous flag (and set it now)
@@ -638,7 +703,7 @@ cio_cur:
 		JMP draw_cur		; go and return
 
 cio_curoff:
-; XOFF, disable cursor [NEW]
+; * * XOFF, disable cursor * *
 #ifndef	NMOS
 	LDA #128				; flag for cursor on
 	TRB fw_scur				; check previous flag (and clear it now)
