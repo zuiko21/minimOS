@@ -103,6 +103,7 @@
 #endif
 
 #ifdef	DEBUG
+#echo	VSP enabled!
 	LDA #$F1				; VSP in ASCII mode
 	STA $DF94
 #endif
