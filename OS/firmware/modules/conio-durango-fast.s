@@ -2,7 +2,7 @@
 ; Durango-X firmware console 0.9.6b12
 ; 16x16 text 16 colour _or_ 32x32 text b&w
 ; (c) 2021-2023 Carlos J. Santisteban
-; last modified 20230602-1657
+; last modified 20230603-1159
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -102,6 +102,10 @@
 -fw_knes= $0224				; safe address after CONIO needed variables, incl. matrix keyboard driver
 #endif
 
+#ifdef	DEBUG
+	LDA #$F1				; VSP in ASCII mode
+	STA $DF94
+#endif
 	TYA						; is going to be needed here anyway
 	LDX fw_cbin				; check whether in binary/multibyte mode
 	BEQ cio_cmd				; if not, check whether command (including INPUT) or glyph
@@ -171,7 +175,7 @@ cph_nw:
 			TAY				; offset ready (2)
 			BNE cph_loop	; offset will just wrap at the end EEEEEEEK (3)
 ; ...but should NOT delete (XOR) previous cursor, as has disappeared while printing
-		JMP do_cur_r		; advance cursor without clearing previous
+		BEQ cio_inx			; advance cursor without clearing previous
 ; colour version, 85b, typically 975t (77b, 924t in ZP)
 ; new FAST version, but no longer with sparse array
 cpc_col:
@@ -234,14 +238,18 @@ cpc_rend:					; end segment has not changed, takes 6x11 + 2x24 - 1, 113t (66+46-
 			DEC fw_chalf	; only one half done? go for next and last (*6+3)
 		BNE cpc_do
 ; advance screen pointer before exit but should NOT delete (XOR) previous cursor, as has disappeared while printing
-	JSR cio_inx				; advance to next char...
-	JMP ck_wrap				; ...and just check for line wrap and return
+;	JSR cio_inx				; advance to next char...
+;	JMP ck_wrap				; ...and just check for line wrap and return
 
 ; ************************
 ; *** support routines ***
 ; ************************
 cio_inx:
-; *** advance one character position *** (no longer checking wrap!)
+; *** advance one character position ***
+#ifdef	DEBUG
+	LDA #'i'
+	STA $DF93
+#endif
 	LDA #1					; base character width (in bytes) for hires mode
 	BIT IO8attr				; check mode
 	BMI rcu_hr				; already OK if hires
@@ -253,7 +261,7 @@ rcu_hr:
 	BCC rcu_nw				; check possible carry
 		INC fw_ciop+1
 rcu_nw:						; will return
-	RTS
+;	RTS
 
 ck_wrap:
 ; *** check for line wrap ***
@@ -281,6 +289,10 @@ do_ckw:
 chk_scrl:
 ; *** *** new scroll check *** ***
 ; simply compare against dynamic limit
+#ifdef	DEBUG
+	LDA #'s'
+	STA $DF93
+#endif
 	LDA fw_ciop+1			; EEEEEK
 	CMP fw_vtop
 	BCC cn_ok				; below limit means no scroll, safer?
@@ -325,22 +337,38 @@ cn_ok:
 ; ************************
 cn_newl:
 ; * * CR, but will do LF afterwards by setting Y appropriately * *
+#ifdef	DEBUG
+	LDY #'N'
+	STY $DF93
+#endif
 	TAY						; Y=26>1, thus allows full newline
 	JSR cn_begin			; do CR+LF and actually scroll if needed
 	JMP chk_scrl			; will return
 
 cn_lf:
 ; * * do LF * *, adds 1 (hires) or 2 (colour) to MSB
+#ifdef	DEBUG
+	LDA #'L'
+	STA $DF93
+#endif
 	JSR cur_lf				; do actual LF...
 	JMP chk_scrl			; ...check and return
 
 cn_cr:
 ; * * this is the CR without LF * *
+#ifdef	DEBUG
+	LDY #'C'
+	STY $DF93
+#endif
 	LDY #1					; will skip LF routine
 ;	BNE cn_begin
 
 cn_begin:
 ; *** do CR... but keep Y ***
+#ifdef	DEBUG
+	LDA #'b'
+	STA $DF93
+#endif
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_cr
 		PHY					; CMOS only eeeeeek
@@ -352,6 +380,10 @@ do_cr:
 	_STZA fw_ciop			; all must clear! helps in case of tab wrapping too (eeeeeeeeek...)
 ; in colour mode, the highest scanline bit is in MSB, usually (TABs, wrap) not worth clearing
 ; ...but might help with unexpected mode change
+#ifdef	DEBUG
+	LDA #'c'
+	STA $DF93
+#endif
 #ifdef	SAFE
 	BIT IO8attr				; was it in hires mode?
 	BMI cn_lmok
@@ -378,6 +410,10 @@ cur_lf:
 		BPL do_lf
 			JSR draw_cur	; ...must delete previous one
 do_lf:
+#ifdef	DEBUG
+	LDA #'l'
+	STA $DF93
+#endif
 ; *** LF must check for procrastinated scroll as well
 	INC fw_ciop+1			; increment MSB accordingly, this is OK for hires
 	BIT IO8attr				; was it in hires mode?
@@ -393,12 +429,16 @@ do_cnok:
 
 cur_r:
 ; * * cursor advance * *
+#ifdef	DEBUG
+	LDA #'R'
+	STA $DF93
+#endif
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_cur_r
 		JSR draw_cur		; ...must delete previous one
 do_cur_r:
 	JSR cio_inx				; advance to next char
-	JSR ck_wrap				; check for line wrap...
+;	JSR ck_wrap				; check for line wrap...
 	JMP chk_scrl			; ...but scroll if needed, and return
 
 cur_l:
@@ -407,6 +447,10 @@ cur_l:
 ; only if LSB is not zero, assuming non-corrupted scanline bits
 ; could use N flag after subtraction, as clear scanline bits guarantee its value
 ; but check for wrapping otherwise
+#ifdef	DEBUG
+	LDA #'B'
+	STA $DF93
+#endif
 	BIT fw_scur				; if cursor is on... [NEW]
 	BPL do_cur_l
 		JSR draw_cur		; ...must delete previous one
