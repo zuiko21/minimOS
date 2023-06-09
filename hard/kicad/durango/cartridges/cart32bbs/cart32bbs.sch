@@ -1,4 +1,5 @@
 EESchema Schematic File Version 4
+LIBS:cart32bbs-cache
 EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
@@ -581,4 +582,15 @@ Wire Bus Line
 	4750 950  4750 2750
 Wire Bus Line
 	1600 950  1600 4100
+$Comp
+L Graphic:Logo_Open_Hardware_Small LOGO1
+U 1 1 6483E578
+P 6900 1650
+F 0 "LOGO1" H 6900 1925 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Small" H 6900 1425 50  0001 C CNN
+F 2 "durango:jaqueria" H 6900 1650 50  0001 C CNN
+F 3 "~" H 6900 1650 50  0001 C CNN
+	1    6900 1650
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
