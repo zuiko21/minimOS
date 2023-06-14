@@ -276,11 +276,11 @@ X A1 9 -400 800 100 R 50 50 1 1 I
 ENDDRAW
 ENDDEF
 #
-# edge_conn_Durango_ROM
+# devcart32k-rescue_Durango_ROM-edge_conn
 #
-DEF edge_conn_Durango_ROM J? 0 40 Y Y 1 F N
+DEF devcart32k-rescue_Durango_ROM-edge_conn J? 0 40 Y Y 1 F N
 F0 "J?" 100 1050 50 H V C CNN
-F1 "edge_conn_Durango_ROM" -350 1050 50 H V C CNN
+F1 "devcart32k-rescue_Durango_ROM-edge_conn" -350 1050 50 H V C CNN
 F2 "" -300 -1000 50 H I C CNN
 F3 "" -300 -1000 50 H I C CNN
 DRAW

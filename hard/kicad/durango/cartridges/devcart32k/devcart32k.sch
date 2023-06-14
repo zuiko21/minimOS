@@ -1,6 +1,5 @@
 EESchema Schematic File Version 4
-LIBS:devcart32k-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -52,7 +51,7 @@ L Device:C C1
 U 1 1 62636C82
 P 5000 1150
 F 0 "C1" V 4900 1050 50  0000 C CNN
-F 1 "100n" V 4900 1300 50  0000 C CNN
+F 1 "22n" V 4900 1300 50  0000 C CNN
 F 2 "Capacitor_THT:C_Rect_L7.0mm_W3.5mm_P5.00mm" H 5038 1000 50  0001 C CNN
 F 3 "~" H 5000 1150 50  0001 C CNN
 	1    5000 1150
@@ -70,7 +69,7 @@ F 3 "" H 5150 1150 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L edge_conn:Durango_ROM J1
+L devcart32k-rescue:Durango_ROM-edge_conn J1
 U 1 1 629256A2
 P 1550 2225
 F 0 "J1" H 1725 3300 50  0000 C CNN
@@ -743,7 +742,7 @@ Wire Wire Line
 	1950 3025 2350 3025
 Wire Wire Line
 	2350 3025 2350 3975
-Text Label 2825 6725 2    50   ~ 0
+Text Label 2825 7450 2    50   ~ 0
 ~IOC
 Wire Wire Line
 	4450 4450 4450 4550
@@ -826,9 +825,7 @@ Text Label 4425 6525 0    50   ~ 0
 Wire Wire Line
 	2350 3975 2825 3975
 Wire Wire Line
-	2825 3975 2825 6725
-Wire Wire Line
-	2825 6725 3050 6725
+	2825 3975 2825 7450
 $Comp
 L 74xx:74LS139 U5
 U 1 1 63C54FD8
@@ -856,8 +853,6 @@ F 3 "" H 4450 4450 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 Connection ~ 4450 4450
-Wire Wire Line
-	1650 5750 3050 5750
 $Comp
 L 74xx:74LS139 U7
 U 1 1 63E2DFD0
@@ -934,11 +929,6 @@ Text Label 4150 5575 0    50   ~ 0
 RAM~OE
 Text Label 3850 5150 0    50   ~ 0
 ROM~OE
-Wire Wire Line
-	3050 6425 3050 5750
-Connection ~ 3050 5750
-Wire Wire Line
-	3050 5750 4950 5750
 $Comp
 L 74xx:74LS139 U7
 U 3 1 63EE4A54
@@ -991,20 +981,9 @@ Wire Wire Line
 Connection ~ 2575 3725
 Wire Wire Line
 	2575 3725 1650 3725
-NoConn ~ 4050 7150
 NoConn ~ 4050 7250
 NoConn ~ 4050 7350
 NoConn ~ 4050 7450
-Wire Wire Line
-	3050 7450 3050 7250
-Connection ~ 3050 7250
-Wire Wire Line
-	3050 7250 3050 7150
-Wire Wire Line
-	2575 5375 2575 7250
-Wire Wire Line
-	2575 7250 3050 7250
-Connection ~ 2575 5375
 Wire Wire Line
 	5950 5750 6700 5750
 Wire Wire Line
@@ -1090,6 +1069,16 @@ F 3 "~" H 10600 2400 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 NoConn ~ 4050 6625
+Wire Wire Line
+	2825 7450 3050 7450
+Wire Wire Line
+	1650 5750 4950 5750
+Wire Wire Line
+	3050 6725 3050 6925
+Wire Wire Line
+	3050 6925 4050 6925
+Wire Wire Line
+	4050 6925 4050 7150
 Wire Bus Line
 	3550 875  3550 2075
 Wire Bus Line
@@ -1100,4 +1089,16 @@ Wire Bus Line
 	3975 775  3975 2750
 Wire Bus Line
 	5700 875  5700 4750
+Text Label 3050 6425 2    50   ~ 0
+A3
+Text Label 3050 7150 2    50   ~ 0
+A5
+Text Label 3050 7250 2    50   ~ 0
+A4
+Text Label 4050 7050 0    50   ~ 0
+~BL0
+Text Notes 5950 2875 0    200  ~ 40
+32 KiB RAM DevCart + SD\n$DFC0-$DFC7
+Text Notes 6700 4725 0    100  ~ 20
+D0 = MCLK\nD1 = MOSI\nD2 = ~SSEL\nD5 = ~WRITEN\nD6 = ~ROMEN\nD7 = MISO
 $EndSCHEMATC
