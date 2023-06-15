@@ -742,7 +742,7 @@ Wire Wire Line
 	1950 3025 2350 3025
 Wire Wire Line
 	2350 3025 2350 3975
-Text Label 2825 7450 2    50   ~ 0
+Text Label 2825 6725 2    50   ~ 0
 ~IOC
 Wire Wire Line
 	4450 4450 4450 4550
@@ -824,8 +824,6 @@ Text Label 4425 6525 0    50   ~ 0
 ~STATUS
 Wire Wire Line
 	2350 3975 2825 3975
-Wire Wire Line
-	2825 3975 2825 7450
 $Comp
 L 74xx:74LS139 U5
 U 1 1 63C54FD8
@@ -1070,26 +1068,12 @@ F 3 "~" H 10600 2400 50  0001 C CNN
 $EndComp
 NoConn ~ 4050 6625
 Wire Wire Line
-	2825 7450 3050 7450
-Wire Wire Line
 	1650 5750 4950 5750
 Wire Wire Line
-	3050 6725 3050 6925
-Wire Wire Line
-	3050 6925 4050 6925
+	3000 6925 4050 6925
 Wire Wire Line
 	4050 6925 4050 7150
-Wire Bus Line
-	3550 875  3550 2075
-Wire Bus Line
-	2225 775  2225 2775
-Wire Bus Line
-	900  875  900  4850
-Wire Bus Line
-	3975 775  3975 2750
-Wire Bus Line
-	5700 875  5700 4750
-Text Label 3050 6425 2    50   ~ 0
+Text Label 3050 7450 2    50   ~ 0
 A3
 Text Label 3050 7150 2    50   ~ 0
 A5
@@ -1101,4 +1085,22 @@ Text Notes 5950 2875 0    200  ~ 40
 32 KiB RAM DevCart + SD\n$DFC0-$DFC7
 Text Notes 6700 4725 0    100  ~ 20
 D0 = MCLK\nD1 = MOSI\nD2 = ~SSEL\nD5 = ~WRITEN\nD6 = ~ROMEN\nD7 = MISO
+Wire Wire Line
+	3000 6925 3000 6425
+Wire Wire Line
+	3000 6425 3050 6425
+Wire Wire Line
+	3050 6725 2825 6725
+Wire Wire Line
+	2825 3975 2825 6725
+Wire Bus Line
+	3550 875  3550 2075
+Wire Bus Line
+	2225 775  2225 2775
+Wire Bus Line
+	900  875  900  4850
+Wire Bus Line
+	3975 775  3975 2750
+Wire Bus Line
+	5700 875  5700 4750
 $EndSCHEMATC
