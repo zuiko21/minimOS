@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230319-2258
+; last modified 20230618-1859
 
 ; ****************************
 ; *** hardware definitions ***
@@ -10,6 +10,7 @@
 screen3	= $6000
 IO8attr	= $DF80
 IO8blk	= $DF88
+IO9kbd	= $DF9B
 IO9nes0	= $DF9C
 IO9nlat	= IO9nes0
 IO9nes1	= $DF9D
@@ -88,6 +89,7 @@ ptr		= src+2				; $FE
 irq_ptr	= ptr+2				; $0200 is standard minimOS, may save a few bytes putting these on ZP
 ticks	= irq_ptr+2			; $0206 but no NMI or BRK in use, and only 8-bit!!
 ticks_h	= ticks+1
+kbd_ok	= ticks_h+1			; if non-zero, supported keyboard has been detected
 ; player 2 data for convenience
 status2	= 192				; player status [0=game over, 1=level select, 2=playing, 3=flashing?]
 speed2	= status2+1			; 7-bit value between events (127 at level 0, halving after that, but never under 5?)
@@ -150,7 +152,6 @@ reset:
 ; show splash screen
 	INX						; was $FF, now 0 is the index of compressed file entry
 	JSR dispic				; decompress!
-; TODO * may check here for supported keyboard presence (col 6 = $2C) * TODO
 ; * init game stuff * actually whole ZP
 	LDX #0
 ;	TXA
@@ -167,6 +168,14 @@ rst_loop:
 	STX pad0mask			; ...and store them
 	STY pad1mask
 	JSR read_pad			; just for clearing the values
+; check here for supported keyboard presence (col 6 = $2C)
+	LDA #%00100000			; sixth column (set PD5)
+	STA IO9kbd
+	LDA IO9kbd				; check ID value
+	CMP #$2C				; standard 5x8 kbd
+	BNE no_kbd				; if present...
+		STA kbd_ok			; ...enable for ISR (otherwise was zero)
+no_kbd:
 ; setup interrupt system
 	LDY #<isr
 	LDX #>isr				; ISR address
@@ -203,7 +212,7 @@ chk_stat:
 ;	CMP #STAT_OVER
 	BNE not_st0
 		TYA					; get this player controller status
-		BIT #PAD_FIRE|PAD_SEL|PAD_STRT	; start new game
+		BIT #PAD_FIRE|PAD_B|PAD_SEL|PAD_STRT	; start new game
 			BEQ not_st0		; not if not pressed...
 		CMP padlast, X
 			BEQ not_st0		; ...or not just released
@@ -244,7 +253,7 @@ not_s1d:
 				STA s_level, X
 				BRA s1_nw	; common ending
 not_s1u:
-		BIT #PAD_FIRE|PAD_SEL|PAD_STRT	; select current level
+		BIT #PAD_FIRE|PAD_B|PAD_SEL|PAD_STRT	; select current level
 		BEQ not_st1
 ; level is selected, set initial score and display
 			CMP padlast, X	; still pressing?
@@ -315,7 +324,7 @@ not_s2r:
 			LDY #MOV_DOWN	; otherwise, y is one more
 			BRA s2end
 not_s2d:
-		BIT #PAD_FIRE		; flip?
+		BIT #PAD_FIRE|PAD_B	; flip?
 		BEQ not_s2f			; not if not pressed
 			CMP padlast, X	; still pressing?
 		BEQ not_st2			; ignore either!
@@ -832,7 +841,7 @@ pad_rdl:
 ; affects all registers
 continue:
 	LDX #0					; default player number 1
-	LDA #PAD_STRT|PAD_SEL|PAD_FIRE		; look for start, select or fire
+	LDA #PAD_STRT|PAD_SEL|PAD_FIRE|PAD_B		; look for start, select or fire
 wait_s:
 		INY					; just for random seed setting
 		BIT pad0val
@@ -1152,8 +1161,21 @@ isr:
 		INC ticks
 tk_nw:
 	JSR read_pad
+; read keyboard as emulated gamepads (assume standard 5x8 keyboard is used)
+	LDA kbd_ok				; is keyboard enabled?
+	BEQ isr_fin:
+; check for suitable keys and emulate gamepad input
+; player 1 -- W=up, ASD>ldr, XC=fire, ShiftZ=start
+; player 2 -- I=up, JKL>ldr, AltSpace=fire,  NM=start
+;	col1 > Sp Cr Sh P  0  A  Q  1	> f2· s1· · L1· ·
+;	col2 > Al L  Z  O  9  S  W  2	> f2R2s1· · D1U1·
+;	col3 > M  K  X  I  8  D  E  3	> s2D2f1U2· R1· ·
+;	col4 > N  J  C  U  7  F  R  4	> s2L2f1· · · · ·
+;	col5 never used (BHVY6GT5)
+; with a nice trick these can be index of a 64-byte table per player
+; d7d6d5d4d3d2d1d0 > 0 0 d7 d6 d5 d4 C  d2 (C = d1 on column 2) via LSR, LSR, BCC*, ORA#2, *
+isr_fin:
 	PLA
-; TODO * read keyboard too? * TODO * as keypad emulation
 isr_end:					; common interrupt exit
 	RTI
 
