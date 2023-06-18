@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230618-2236
+; last modified 20230619-0025
 
 ; ****************************
 ; *** hardware definitions ***
@@ -1185,24 +1185,22 @@ tk_nw:
 ; whereas the entries are in the usual AtBeULDR format
 		PHX					; eeeeek
 		PHY
-		LDY #4				; column 4 and below
+		LDY #3				; column 4 and below
 col_loop:
-			LDA pow_col, Y	; get current column bit
+			LDA pow_col, Y	; get current column bit, note offset EEEEEK
 			STA IO9kbd		; select from keyboard
 			LDA IO9kbd		; get row
 ;			LSR				; convert into 64-byte index
 ;			LSR
-			BIT #2			; * possible CMOS optimisation, one byte more but two cycles faster
+			BIT #2			; * possible CMOS optimisation, four cycles faster
 			BEQ no_d1		; * instead of BCC
 				ORA #8		; * instead of #2
 no_d1:
 ;			ASL				; times four for interlacing!
 ;			ASL
 			AND #%11111100	; * clear lowest bits for interlacing
-			CLC				; * not needed in the older version
-			ADC id_table, Y	; add interlaced offset (note Y+1)
+			ORA id_table, Y	; add interlaced offset
 			TAX
-			DEX				; interlaced offset is now 0...3
 			LDA kbd2pad0, X	; get equivalent pad bits
 			ORA pad0val
 			STA pad0val		; add to actual pad bits
@@ -1210,7 +1208,7 @@ no_d1:
 			ORA pad1val
 			STA pad1val
 			DEY
-			BNE col_loop	; finish all columns
+			BPL col_loop	; finish all columns
 		PLY
 		PLX
 isr_fin:
