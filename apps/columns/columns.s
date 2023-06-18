@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230618-1859
+; last modified 20230618-2236
 
 ; ****************************
 ; *** hardware definitions ***
@@ -21,6 +21,7 @@ IOBeep	= $DFB0
 ; ****************************
 ; *** constant definitions ***
 ; ****************************
+#define	PAD_BUTTONS
 #define	PAD_FIRE	%10000000
 #define	PAD_STRT	%01000000
 #define	PAD_B		%00100000
@@ -90,6 +91,7 @@ irq_ptr	= ptr+2				; $0200 is standard minimOS, may save a few bytes putting the
 ticks	= irq_ptr+2			; $0206 but no NMI or BRK in use, and only 8-bit!!
 ticks_h	= ticks+1
 kbd_ok	= ticks_h+1			; if non-zero, supported keyboard has been detected
+col_sel	= kbd_ok			; keyboard column counter
 ; player 2 data for convenience
 status2	= 192				; player status [0=game over, 1=level select, 2=playing, 3=flashing?]
 speed2	= status2+1			; 7-bit value between events (127 at level 0, halving after that, but never under 5?)
@@ -1163,7 +1165,7 @@ tk_nw:
 	JSR read_pad
 ; read keyboard as emulated gamepads (assume standard 5x8 keyboard is used)
 	LDA kbd_ok				; is keyboard enabled?
-	BEQ isr_fin:
+	BEQ isr_fin
 ; check for suitable keys and emulate gamepad input
 ; player 1 -- W=up, ASD>ldr, XC=fire, ShiftZ=start
 ; player 2 -- I=up, JKL>ldr, AltSpace=fire,  NM=start
@@ -1174,6 +1176,37 @@ tk_nw:
 ;	col5 never used (BHVY6GT5)
 ; with a nice trick these can be index of a 64-byte table per player
 ; d7d6d5d4d3d2d1d0 > 0 0 d7 d6 d5 d4 C  d2 (C = d1 on column 2) via LSR, LSR, BCC*, ORA#2, *
+; generic tables (may be interlaced, as only 4 columns are used) should look like...
+;				player 1			player 2
+;	col 1	>	· · t · · L		>	A · · · · ·
+;	col 2	>	· · e · U D		>	B R · · · ·
+;	col 3	>	· · B · · R		>	e D · U · ·
+;	col 4	>	· · A · · ·		>	t L · · · ·
+; whereas the entries are in the usual AtBeULDR
+		LDY #4				; column 4 and below
+col_loop:
+			LDA pow_col, Y	; get current column bit
+			STA IO9kbd		; select from keyboard
+			LDA IO9kbd		; get row
+			LSR				; convert into 64-byte index
+			LSR
+			BCC no_d1
+				ORA #2
+no_d1:
+			ASL				; times four for interlacing!
+			ASL
+;			CLC
+			ADC id_table, Y	; add interlaced offset (note Y+1)
+			TAX
+			DEX				; interlaced offset is now 0...3
+			LDA kbd2pad0, X	; get equivalent pad bits
+			ORA pad0val
+			STA pad0val		; add to actual pad bits
+			LDA kbd2pad1, X	; ditto for player 2
+			ORA pad1val
+			STA pad1val
+			DEY
+			BNE col_loop	; finish all columns
 isr_fin:
 	PLA
 isr_end:					; common interrupt exit
@@ -1201,7 +1234,7 @@ data_end:
 ; *** tables ***
 ; **************
 
-	.dsb	$FD00-*, $FF	; padding to avoid cross-page speed penalty
+	.dsb	$FB00-*, $FF	; padding to avoid cross-page speed penalty
 
 ; *** data for player 1 *** (player 2 uses 128-byte offset)
 id_table:
@@ -1259,7 +1292,7 @@ magic_colour:
 	.byt	$FF, $22, $33, $77, $55, $99, $AA, $FF	; six jewel colours [1..6], note first and last entries void
 
 
-	.dsb	$FD80-*, $FF	; *** padding to avoid cross-page speed penalty ***
+	.dsb	$FB80-*, $FF	; *** padding to avoid cross-page speed penalty ***
 
 ; *** data for player 2 *** (labels for convenience, always +128)
 
@@ -1289,9 +1322,16 @@ poff9_2:
 psum36_2:
 	.byt	38				; 36-byte offset, player 2
 
+; *** keyboard data ***
+pow_col:
+	.byt	1, 2, 4, 8		; read up to 4 columns
+
 ; any more?
 
-	.dsb	$FE00-*, $FF	; padding to avoid cross-page speed penalty
+	.dsb	$FC00-*, $FF	; padding to avoid cross-page speed penalty
+
+; *** 2x256-byte keyboard to pad tables ***
+	.bin	0, 0, "kbd2pad.s"
 
 ; this table preferably goes in another full page
 jwl_ix:						; convert random byte into reasonable tile index [1...6] with a few magic tiles [7]
