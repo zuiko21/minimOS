@@ -1182,20 +1182,24 @@ tk_nw:
 ;	col 2	>	· · e · U D		>	B R · · · ·
 ;	col 3	>	· · B · · R		>	e D · U · ·
 ;	col 4	>	· · A · · ·		>	t L · · · ·
-; whereas the entries are in the usual AtBeULDR
+; whereas the entries are in the usual AtBeULDR format
+		PHX					; eeeeek
+		PHY
 		LDY #4				; column 4 and below
 col_loop:
 			LDA pow_col, Y	; get current column bit
 			STA IO9kbd		; select from keyboard
 			LDA IO9kbd		; get row
-			LSR				; convert into 64-byte index
-			LSR
-			BCC no_d1
-				ORA #2
+;			LSR				; convert into 64-byte index
+;			LSR
+			BIT #2			; * possible CMOS optimisation, one byte more but two cycles faster
+			BEQ no_d1		; * instead of BCC
+				ORA #8		; * instead of #2
 no_d1:
-			ASL				; times four for interlacing!
-			ASL
-;			CLC
+;			ASL				; times four for interlacing!
+;			ASL
+			AND #%11111100	; * clear lowest bits for interlacing
+			CLC				; * not needed in the older version
 			ADC id_table, Y	; add interlaced offset (note Y+1)
 			TAX
 			DEX				; interlaced offset is now 0...3
@@ -1207,6 +1211,8 @@ no_d1:
 			STA pad1val
 			DEY
 			BNE col_loop	; finish all columns
+		PLY
+		PLX
 isr_fin:
 	PLA
 isr_end:					; common interrupt exit
