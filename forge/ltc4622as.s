@@ -6,7 +6,7 @@
 ; NO access to pin 1 on LEDs (leading "1" cathode, NOT currently used)
 ; bitmap format is now abc*defg, simplifying both hard and soft
 ; (c) 2020-2023 Carlos J. Santisteban
-; last modified 20230622-2342
+; last modified 20230622-2346
 
 	.zero
 
@@ -19,7 +19,10 @@ count	.dsb	1			; *** delay counter for testing ***
 
 	.text
 
-	* = $FF00
+	* = $C000				; 16K ready
+	.dsb	$FE00-*, $FF
+
+	* = $FE00
 ; *****************
 ; *** test code ***
 
