@@ -5,8 +5,8 @@
 ; port bits 0...3 = pins 9...6 on LEDs (anodes) -- NOTE ORDER!
 ; NO access to pin 1 on LEDs (leading "1" cathode, NOT currently used)
 ; bitmap format is now abc*defg, simplifying both hard and soft
-; (c) 2020-2022 Carlos J. Santisteban
-; last modified 20201225-2031
+; (c) 2020-2023 Carlos J. Santisteban
+; last modified 20230622-2342
 
 	.zero
 
@@ -25,7 +25,7 @@ count	.dsb	1			; *** delay counter for testing ***
 
 ; *** text string ***
 texto:
-	.asc	"Hijoputa...      "	; 16+1-byte padded string *** MUST start at page boundary ***
+	.asc	"  ADIOS,  MUNDO  CRUEL...  :-(   "	; 32+1-byte padded string *** MUST start at page boundary ***
 
 ; *** bitmap ***
 ; being cathodes, 0 means ON
@@ -139,7 +139,7 @@ start:
 	STX c_ptr+1				; set indirect pointer
 	STY c_ptr
 char:
-		LDA #200			; 1 sec delay
+		LDA #140			; 0.7 sec delay
 		STA count
 loop:
 			JSR display		; show pointed substring
@@ -147,7 +147,7 @@ loop:
 			BNE loop
 		LDA c_ptr
 		CLC:ADC #1			; next position
-		AND #%00001111		; modulo-16 EEEEEEEEEEEEEK
+		AND #%00011111		; modulo-32 EEEEEEEEEEEEEK
 		STA c_ptr
 		JMP char			; repeat forever
 ; *** end of test code ***
