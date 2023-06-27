@@ -1,4 +1,5 @@
 EESchema Schematic File Version 4
+LIBS:816to02-cache
 EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
@@ -404,7 +405,7 @@ Text Label 2350 4350 0    50   ~ 0
 Text Label 2350 4250 0    50   ~ 0
 R~W
 NoConn ~ 3650 3450
-Text Label 3650 2350 2    50   ~ 0
+Text Label 3200 3050 0    50   ~ 0
 PHI0
 Wire Wire Line
 	2050 2450 3650 2450
@@ -413,11 +414,9 @@ Wire Wire Line
 Wire Wire Line
 	2050 2650 2700 2650
 Wire Wire Line
-	2700 2650 2700 2600
+	2700 2650 2700 2700
 Wire Wire Line
-	2700 2600 3000 2600
-Wire Wire Line
-	3000 2600 3000 2650
+	3000 2700 3000 2650
 Wire Wire Line
 	3000 2650 3650 2650
 Wire Wire Line
@@ -464,7 +463,7 @@ Wire Wire Line
 Wire Wire Line
 	2050 2350 2100 2350
 Wire Wire Line
-	2100 2350 2100 4500
+	2100 2350 2100 3050
 Wire Wire Line
 	2100 4500 1550 4500
 Wire Wire Line
@@ -536,7 +535,7 @@ Wire Wire Line
 	4150 1050 4150 1150
 Connection ~ 2850 1050
 Wire Wire Line
-	2850 1050 4150 1050
+	2850 1050 3600 1050
 $Comp
 L power:+5V #PWR0103
 U 1 1 64AB1C87
@@ -570,8 +569,53 @@ F 3 "" H 950 7050 50  0001 C CNN
 	1    950  7050
 	1    0    0    -1  
 $EndComp
+Wire Wire Line
+	2700 2700 3000 2700
+Wire Wire Line
+	2100 3050 3400 3050
+Wire Wire Line
+	3400 3050 3400 2350
+Wire Wire Line
+	3400 2350 3650 2350
+Connection ~ 2100 3050
+Wire Wire Line
+	2100 3050 2100 4500
+Wire Wire Line
+	3650 2250 3600 2250
+Wire Wire Line
+	3600 2250 3600 1050
+Connection ~ 3600 1050
+Wire Wire Line
+	3600 1050 4150 1050
+$Comp
+L Device:R R1
+U 1 1 649BA6B6
+P 3500 3550
+F 0 "R1" V 3600 3550 50  0000 C CNN
+F 1 "12K" V 3500 3550 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" V 3430 3550 50  0001 C CNN
+F 3 "~" H 3500 3550 50  0001 C CNN
+	1    3500 3550
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:LED D1
+U 1 1 649BBBF1
+P 3350 3400
+F 0 "D1" V 3400 3250 50  0000 L CNN
+F 1 "BLUE" V 3300 3150 50  0000 L CNN
+F 2 "LED_THT:LED_D3.0mm_Horizontal_O6.35mm_Z2.0mm" H 3350 3400 50  0001 C CNN
+F 3 "~" H 3350 3400 50  0001 C CNN
+	1    3350 3400
+	0    1    -1   0   
+$EndComp
+Wire Wire Line
+	3350 3250 3600 3250
+Wire Wire Line
+	3600 3250 3600 2250
 Wire Bus Line
 	4900 600  4900 2750
 Wire Bus Line
 	800  600  800  2750
+Connection ~ 3600 2250
 $EndSCHEMATC
