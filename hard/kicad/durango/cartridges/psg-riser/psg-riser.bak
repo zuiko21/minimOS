@@ -160,38 +160,6 @@ Wire Wire Line
 Wire Wire Line
 	2200 1300 3300 1300
 Wire Wire Line
-	2600 1600 2800 1600
-Wire Wire Line
-	2600 1700 2800 1700
-Wire Wire Line
-	2600 1800 2800 1800
-Wire Wire Line
-	2600 1900 2800 1900
-Wire Wire Line
-	2600 2000 2800 2000
-Wire Wire Line
-	2600 2100 2800 2100
-Wire Wire Line
-	2600 2200 2800 2200
-Wire Wire Line
-	2600 2300 2800 2300
-Text Label 2650 1600 0    50   ~ 0
-LD0
-Text Label 2650 1700 0    50   ~ 0
-LD1
-Text Label 2650 1800 0    50   ~ 0
-LD2
-Text Label 2650 1900 0    50   ~ 0
-LD3
-Text Label 2650 2000 0    50   ~ 0
-LD4
-Text Label 2650 2100 0    50   ~ 0
-LD5
-Text Label 2650 2200 0    50   ~ 0
-LD6
-Text Label 2650 2300 0    50   ~ 0
-LD7
-Wire Wire Line
 	1250 1300 1700 1300
 Connection ~ 2200 1300
 Wire Wire Line
@@ -202,49 +170,49 @@ Connection ~ 2200 2900
 Wire Wire Line
 	3800 1600 4000 1600
 Text Label 3850 1600 0    50   ~ 0
-D0
+D7
 Entry Wire Line
 	4000 1600 4100 1500
 Wire Wire Line
 	3800 1700 4000 1700
 Text Label 3850 1700 0    50   ~ 0
-D1
+D6
 Entry Wire Line
 	4000 1700 4100 1600
 Wire Wire Line
 	3800 1800 4000 1800
 Text Label 3850 1800 0    50   ~ 0
-D2
+D5
 Entry Wire Line
 	4000 1800 4100 1700
 Wire Wire Line
 	3800 1900 4000 1900
 Text Label 3850 1900 0    50   ~ 0
-D3
+D4
 Entry Wire Line
 	4000 1900 4100 1800
 Wire Wire Line
 	3800 2000 4000 2000
 Text Label 3850 2000 0    50   ~ 0
-D4
+D3
 Entry Wire Line
 	4000 2000 4100 1900
 Wire Wire Line
 	3800 2100 4000 2100
 Text Label 3850 2100 0    50   ~ 0
-D5
+D2
 Entry Wire Line
 	4000 2100 4100 2000
 Wire Wire Line
 	3800 2200 4000 2200
 Text Label 3850 2200 0    50   ~ 0
-D6
+D1
 Entry Wire Line
 	4000 2200 4100 2100
 Wire Wire Line
 	3800 2300 4000 2300
 Text Label 3850 2300 0    50   ~ 0
-D7
+D0
 Entry Wire Line
 	4000 2300 4100 2200
 Wire Wire Line
@@ -722,9 +690,9 @@ Text Label 8000 2700 2    50   ~ 0
 ~WE
 Text Label 8000 2600 2    50   ~ 0
 ~IOC
-Text Label 8000 2100 2    50   ~ 0
-A2
 Text Label 8000 2200 2    50   ~ 0
+A2
+Text Label 8000 2100 2    50   ~ 0
 A5
 Wire Wire Line
 	7200 1900 7000 1900
@@ -736,7 +704,7 @@ Text Label 7150 1900 2    50   ~ 0
 A1
 Wire Wire Line
 	7200 2100 7000 2100
-Text Label 7150 2200 2    50   ~ 0
+Text Label 7150 2300 2    50   ~ 0
 A2
 Entry Wire Line
 	7000 2100 6900 2200
@@ -750,7 +718,7 @@ Entry Wire Line
 	7000 2300 6900 2400
 Wire Wire Line
 	7200 2400 7000 2400
-Text Label 7150 2300 2    50   ~ 0
+Text Label 7150 2200 2    50   ~ 0
 A5
 Entry Wire Line
 	7000 2400 6900 2500
@@ -900,6 +868,40 @@ Text Label 3650 4050 0    50   ~ 0
 ~PSG
 Text Label 1700 3850 0    50   ~ 0
 RDY
+Wire Wire Line
+	2600 1600 2800 1600
+Wire Wire Line
+	2600 1700 2800 1700
+Wire Wire Line
+	2600 1800 2800 1800
+Wire Wire Line
+	2600 1900 2800 1900
+Wire Wire Line
+	2600 2000 2800 2000
+Wire Wire Line
+	2600 2100 2800 2100
+Wire Wire Line
+	2600 2200 2800 2200
+Wire Wire Line
+	2600 2300 2800 2300
+Text Label 2650 1600 0    50   ~ 0
+B7
+Text Label 2650 1700 0    50   ~ 0
+B6
+Text Label 2650 1800 0    50   ~ 0
+B5
+Text Label 2650 1900 0    50   ~ 0
+B4
+Text Label 2650 2000 0    50   ~ 0
+B3
+Text Label 2650 2100 0    50   ~ 0
+B2
+Text Label 2650 2200 0    50   ~ 0
+B1
+Text Label 2650 2300 0    50   ~ 0
+B0
+Text Notes 3850 1450 0    200  ~ 40
+!
 Wire Bus Line
 	6900 900  6900 1700
 Wire Bus Line
@@ -910,4 +912,15 @@ Wire Bus Line
 	4100 900  4100 2200
 Wire Bus Line
 	5500 1700 5500 3350
+$Comp
+L Graphic:Logo_Open_Hardware_Small LOGO1
+U 1 1 64A95D0C
+P 8350 6050
+F 0 "LOGO1" H 8350 6325 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Small" H 8350 5825 50  0001 C CNN
+F 2 "durango:jaqueria" H 8350 6050 50  0001 C CNN
+F 3 "~" H 8350 6050 50  0001 C CNN
+	1    8350 6050
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
