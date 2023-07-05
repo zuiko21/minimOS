@@ -1,6 +1,6 @@
 ; interrupt-driven music player for PSG card in Durango-X!
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230704-1039
+; last modified 20230705-1008
 
 ; *** constants definition ***
 
@@ -41,18 +41,25 @@ chan_l:
 		DEC rem_len, X		; still playing?
 	BNE env_ctl
 ; actual stuff, new note for this channel!
-; *** cursor is not valid, must update some ZP pointers instead ***
 		LDY c_index, X		; cursor for this channel
-		LDA length, Y		; ***note length
+		LDA len_pg, Y		; get length list page
+		STA ptr+1
+;		STZ ptr				; assume LSB is always zero!
+		LDA (ptr), Y		; note length
 		BNE no_wrap
 			STA c_index, X	; back to beginning of this channel
 no_wrap:
-; ***
 		STA rem_len, X		; store into counter
-		LDA volume, Y		; *** get volume (currently attenuation)
+		LDA vol_pg, Y		; get volume list page
+		STA ptr+1
+;		STZ ptr				; assume LSB is always zero!
+		LDA (ptr), Y		; get volume
 		STA set_vol, X
 		STA cur_vol, X		; sustain and decay start at this value...
-		LDA envelope, Y		; *** get envelope type (-1 attack, 0 sustain, 1 decay)****
+		LDA env_pg, Y		; get envelope list page
+		STA ptr+1
+;		STZ ptr				; assume LSB is always zero!
+		LDA (ptr), Y		; get envelope type (-1 attack, 0 sustain, 1 decay)****
 		STA e_type, X		; store it
 		BMI not_attack
 		BEQ not_attack
@@ -62,8 +69,12 @@ not_attack:
 		EOR #MAX_ATT		; convert into attenuation value, as used by PSG
 		ORA cmd_svol, X
 		STA IO_PSG
+		LDA note_pg, Y		; get note list page
+		STA ptr+1
+;		STZ ptr				; assume LSB is always zero!
+		LDA (ptr), Y		; note index
 		PHX
-		LDX note, Y			; *** note index
+		TAX					; use as frequency index
 		LDA freq_l, X		; 4LS bits
 		LDY freq_h, X		; 6MS bits
 		PLX
@@ -72,7 +83,7 @@ not_attack:
 ; make sure there are at least 32 cycles between writes
 		INC c_index, X		; advance cursor (7)
 		JSR delay
-		JSR delay			; (12+12, plus 4 of store is OK)
+		JSR delay			; (12+12, plus 4 of store should be OK)
 		STY IO_PSG			; frequency is set
 		BRA task_exit		; prepare envelope counter and finish this channel
 env_ctl:
