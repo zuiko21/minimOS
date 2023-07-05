@@ -9,7 +9,7 @@
 
 ; *** hardware definitions ***
 
-IO_PSG	= $DFDB				; standard mono/central PSG address
+IO_PSG	= $DF98;DFDB				; standard mono/central PSG address
 
 ; *** zeropage definitions ***
 ptr		= $FC				; shall be reloaded with current channel desired list
@@ -64,7 +64,7 @@ chan_l:
 		LDY c_index, X		; cursor for this channel
 		LDA len_pg, X		; get length list page eeeek
 		STA ptr+1
-;		STZ ptr				; assume LSB is always zero!
+		STZ ptr				; assume LSB is always zero!
 		LDA (ptr), Y		; note length
 		BNE no_wrap
 			TAY				; eeeeeek

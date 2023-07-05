@@ -55,14 +55,14 @@ reset:
 	LDX #$FF
 	TXS
 	STX IOAen				; turn interrupts on
-	LDY #<isr				; for DevCart compatibility
-	LDX #>isr
-	STY $0200
-	STX $0201
-	LDY #<nmi
-	LDX #>nmi
-	STY $0202
-	STX $0203
+;	LDY #<isr				; for DevCart compatibility
+;	LDX #>isr
+;	STY $0200
+;	STX $0201
+;	LDY #<nmi
+;	LDX #>nmi
+;	STY $0202
+;	STX $0203
 	JSR psg_init			; clear stuff!
 
 ; init screen
@@ -104,7 +104,7 @@ sc_loop:
 no_wrap:
 		TAX
 		LDA dest
-		CLC
+;		CLC
 		ADC #32				; advance to next raster
 		STA dest
 		BCC raster
