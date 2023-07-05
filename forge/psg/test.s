@@ -21,6 +21,7 @@ dest	= $F8				; memory filling
 ; *****************
 ; *** TEST code ***
 ; *****************
+reset:
 	SEI						; standard stuff
 	CLD
 	LDX #$FF
@@ -35,14 +36,33 @@ dest	= $F8				; memory filling
 	STY $0202
 	STX $0203
 	JSR psg_init			; clear stuff!
+
 ; init screen
 	LDA #%10110000			; HIRES mode
 	STA IO8attr
-	LDX #>screen3
+	LDX #1					; initial pattern
+	JSR diagonal
+; now should enable playback and start scrolling the screen
+	LDA #3					; three channels this far
+	STA pb_flag				; *** label from player.s ***
+	CLI
+; keep scrolling
+	LDA #2
+lock:
+		TAX
+		JSR diagonal
+		TXA
+		ASL
+	BCC lock
+		ROL
+	BRA lock
+
+; diagonal lines routine
+diagonal:
+	LDA #>screen3
 ;	LDY #<screen3			; actually zero
 	STZ dest
-	STX dest+1
-	LDX #1					; initial pattern
+	STA dest+1
 raster:
 		TXA
 		LDY #31
@@ -62,20 +82,7 @@ no_wrap:
 		BCC raster
 			INC dest+1		; next page
 		BPL raster
-; now should enable playback and start scrolling the screen
-	LDA #3					; three channels this far
-	STA pb_flag				; *** label from player.s ***
-	CLI
-; keep scrolling
-	LDA #2
-lock:
-		TAX
-		JSR diagonal
-		TXA
-		ASL
-	BCC lock
-		ROL
-	BRA lock
+	RTS
 
 ; **************************
 ; *** interrupt handlers ***
@@ -113,36 +120,36 @@ music:
 	.byt	  1,   0, 255,   0, 255,   0,   0
 
 
-	.dsb	$E000-*, $FF
+	.dsb	$E400-*, $FF
 ; ch2 notes
 	.byt	  0,  16,  16,  16,  36,  36,  36,   0
 
-	.dsb	$E100-*, $FF
+	.dsb	$E500-*, $FF
 ; ch2 lengths [0=end]
 	.byt	125, 250, 125, 250, 250, 250, 250,   0
 
-	.dsb	$E200-*, $FF
+	.dsb	$E600-*, $FF
 ; ch2 volume
 	.byt	  0,  15,  15,  15,  15,  15,   0,   0
 
-	.dsb	$E300-*, $FF
+	.dsb	$E700-*, $FF
 ; ch2 envelope
 	.byt	  0,   1,   0, 255,   1, 255,   0,   0
 
 
-	.dsb	$E000-*, $FF
+	.dsb	$E800-*, $FF
 ; ch3 notes
 	.byt	  0,  19,  19,  48,  48,   0,   0
 
-	.dsb	$E100-*, $FF
+	.dsb	$E900-*, $FF
 ; ch3 lengths [0=end]
 	.byt	250, 250, 250, 250, 250, 250,   0
 
-	.dsb	$E200-*, $FF
+	.dsb	$EA00-*, $FF
 ; ch3 volume
 	.byt	  0,  15,  15,  15,  15,   0,   0
 
-	.dsb	$E300-*, $FF
+	.dsb	$EB00-*, $FF
 ; ch3 envelope
 	.byt	  0,   1, 255,   1, 255,   0,   0
 

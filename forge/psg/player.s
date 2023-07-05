@@ -17,10 +17,11 @@ ptr		= $FC				; shall be reloaded with current channel desired list
 ; *** memory usage ***
 pb_flag	= $280				; playback channel enable flag *** apparently safe address
 rem_len	= pb_flag + 1		; remaining length in ticks *** init to 1!
-c_index	= rem_lgt + 4		; cursor index (currently up to 256 notes, alas)
+c_index	= rem_len + 4		; cursor index (currently up to 256 notes, alas)
 set_vol	= c_index + 4		; desired volume (0=SILENT, 15=max)
 cur_vol	= set_vol + 4		; current volume for envelopes
 e_type	= cur_vol + 4		; envelope type (-1=decay, 0=sustain, 1=attack)
+irq_cnt	= e_type + 4		; interrupt count for envelopes
 
 ;SCORE	= $50				; initial page for score data (may be ROMmable)
 
@@ -132,11 +133,12 @@ step_env:
 			EOR #MAX_ATT				; convert into attenuation value, as used by PSG
 			STA IO_PSG					; * don't think I need to wait until 32 cycles passed *
 task_exit:
-			LDA #ENVCYC
+			LDA #ENV_CYC
 			STA irq_cnt, X	; refresh counter for next
 next_ch:
 		DEX
-		BPL chan_l			; down to zero, included
+	BMI delay
+		JMP chan_l			; down to zero, included
 delay:
 	RTS						; back to ISR handler
 
