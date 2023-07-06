@@ -30,10 +30,9 @@ irq_cnt	= e_type + 4		; interrupt count for envelopes
 ; *****************
 psg_init:
 	STZ pb_flag				; no channels at startup!
-	LDA #1					; remaining length initial value!
 	LDX #3
 linl:
-		STA rem_len, X		; fill 'em all
+		STZ rem_len, X		; fill 'em all
 		STZ c_index, X		; also reset cursors
 		DEX
 		BPL linl
