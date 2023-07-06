@@ -99,9 +99,9 @@ sc_loop:
 			DEY
 			BPL sc_loop
 		ASL
-		BCC no_wrap			; after bit 7, back to bit 0
+		BCC carry			; after bit 7, back to bit 0
 			ROL
-no_wrap:
+carry:
 		TAX
 		LDA dest
 ;		CLC

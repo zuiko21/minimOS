@@ -42,6 +42,8 @@ quiet:
 	LDA	#%10011111			; set ch1 volume to zero (max. att.)
 qt_loop:
 		STA IO_PSG
+		JSR delay			; eeeek
+		JSR delay
 		ADC #32				; next channel
 		BMI qt_loop
 	RTS
@@ -50,7 +52,7 @@ qt_loop:
 ; *** interrupt task ***
 ; **********************
 psg_isr:
-.(
+
 	LDX pb_flag				; max authorised channel index, should noise be treated differently?
 	BEQ quiet				; actually exit (and mute!) if all disabled
 		DEX
@@ -176,5 +178,3 @@ freq_l:
 	.byt	 7, 13,  3, 10,  2,  9,  2, 10,  4, 13,  7,  1	; octave 4
 	.byt	12,  7,  2, 13,  9,  5,  1, 13, 10,  7,  3,  1	; octave 5
 	.byt	14, 11,  9,  7,  4,  2,  0, 15, 13, 11, 10,  8	; octave 6
-
-.)
