@@ -1,6 +1,6 @@
 ; interrupt-driven music player for PSG card in Durango-X!
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230705-1632
+; last modified 20230706-1037
 
 ; *** constants definition ***
 
@@ -61,15 +61,17 @@ chan_l:
 		LDA rem_len, X		; still playing?
 	BNE env_ctl
 ; actual stuff, new note for this channel!
+new_note:
 		LDY c_index, X		; cursor for this channel
 		LDA len_pg, X		; get length list page eeeek
 		STA ptr+1
 		STZ ptr				; assume LSB is always zero!
 		LDA (ptr), Y		; note length
 		BNE no_wrap
-			TAY				; eeeeeek
 			STA c_index, X	; back to beginning of this channel
+			BEQ new_note	; and try again
 no_wrap:
+		DEC					; always total length minus one!
 		STA rem_len, X		; store into counter
 		LDA vol_pg, X		; get volume list page eeeeeek
 		STA ptr+1
@@ -94,18 +96,15 @@ not_attack:
 		STA ptr+1
 ;		STZ ptr				; assume LSB is always zero!
 		LDA (ptr), Y		; note index
-		PHX
-		TAX					; use as frequency index
-		LDA freq_l, X		; 4LS bits
-		LDY freq_h, X		; 6MS bits
-		PLX
+		TAY					; use as frequency index
+		LDA freq_l, Y		; 4LS bits
 		ORA cmd_snote, X	; convert into command
 		STA IO_PSG
 ; make sure there are at least 32 cycles between writes
 		INC c_index, X		; advance cursor (7)
-		JSR delay
-		JSR delay			; (12+12, plus 4 of store should be OK)
-		STY IO_PSG			; frequency is set
+		JSR delay			; should suffice (12+5)
+		LDA freq_h, Y		; 6MS bits (4)
+		STA IO_PSG			; frequency is set (4)
 		BRA task_exit		; prepare envelope counter and finish this channel
 env_ctl:
 ; try updating envelope
@@ -127,19 +126,22 @@ is_attack:
 				TYA
 step_env:
 			ADC cur_vol, X
-			AND #MAX_ATT				; eeeeeek
-			STA cur_vol, X				; otherwise update current volume
-			ORA cmd_svol, X				; convert into PSG command
-			EOR #MAX_ATT				; convert into attenuation value, as used by PSG
-			STA IO_PSG					; * don't think I need to wait until 32 cycles passed *
+			AND #MAX_ATT	; eeeeeek
+			STA cur_vol, X	; otherwise update current volume
+			ORA cmd_svol, X	; convert into PSG command
+			EOR #MAX_ATT	; convert into attenuation value, as used by PSG
+			STA IO_PSG		; * don't think I need to wait until 32 cycles passed *
+		BRA next_ch			; eeeeeeek
 task_exit:
 			LDA #ENV_CYC
 			STA irq_cnt, X	; refresh counter for next
 next_ch:
 		DEX
-	BMI delay
+	BMI finish
 		JMP chan_l			; down to zero, included
 delay:
+	INC ptr+1				; add 5 missing clocks
+finish:
 	RTS						; back to ISR handler
 
 
