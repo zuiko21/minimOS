@@ -1,6 +1,6 @@
 ; interrupt-driven music player for PSG card in Durango-X!
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230706-1037
+; last modified 20230706-1754
 
 ; *** constants definition ***
 
@@ -44,6 +44,8 @@ qt_loop:
 		STA IO_PSG
 		JSR delay			; eeeek
 		JSR delay
+JSR delay	; just in case for 1 MHz
+jsr finish
 		ADC #32				; next channel
 		BMI qt_loop
 	RTS
@@ -93,6 +95,10 @@ not_attack:
 		EOR #MAX_ATT		; convert into attenuation value, as used by PSG
 		ORA cmd_svol, X
 		STA IO_PSG
+JSR finish
+JSR finish
+jsr finish
+jsr finish
 		LDA note_pg, X		; get note list page eeeeek
 		STA ptr+1
 ;		STZ ptr				; assume LSB is always zero!
@@ -104,6 +110,8 @@ not_attack:
 ; make sure there are at least 32 cycles between writes
 		INC c_index, X		; advance cursor (7)
 		JSR delay			; should suffice (12+5)
+JSR delay	; needed at 1 MHz
+jsr finish
 		LDA freq_h, Y		; 6MS bits (4)
 		STA IO_PSG			; frequency is set (4)
 		BRA task_exit		; prepare envelope counter and finish this channel
@@ -132,6 +140,9 @@ step_env:
 			ORA cmd_svol, X	; convert into PSG command
 			EOR #MAX_ATT	; convert into attenuation value, as used by PSG
 			STA IO_PSG		; * don't think I need to wait until 32 cycles passed *
+jsr finish ; just in case
+jsr finish
+jsr finish
 		BRA next_ch			; eeeeeeek
 task_exit:
 			LDA #ENV_CYC
