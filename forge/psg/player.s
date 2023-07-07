@@ -1,6 +1,6 @@
 ; interrupt-driven music player for PSG card in Durango-X!
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230707-1803
+; last modified 20230707-1833
 
 ; *** constants definition ***
 
@@ -129,10 +129,6 @@ is_attack:
 				CMP set_vol, X
 			BEQ task_exit	; if so, do nothing
 step_env:
-cpy#1
-bne novu
-jsr hhh
-novu:
 			TYA				; recover envelope step as must be added to volume
 			LDY irq_cnt, X	; is it time for it?
 		BNE count_irq
@@ -161,57 +157,6 @@ delay:
 finish:
 	RTS						; back to ISR handler
 
-ccc:
-php
-cmp #$ff
-bne noff
-.byt $cb
-noff:
-plp
-rts
-
-hhh:
-pha
-phy
-ldy irq_cnt, x
-beq hcl
-lda#$ff
-hffl:
-sta $6000,y
-dey
-bne hffl
-hcl:
-lda#0
-ldy irq_cnt,x
-bra hcck
-hcll:
-iny
-sta $6000,y
-hcck:
-cpy#10
-bne hcll
-
-ldy cur_vol, x
-beq vcl
-lda#$ff
-vffl:
-sta $6100,y
-dey
-bne vffl
-vcl:
-lda#0
-ldy cur_vol,x
-bra vcck
-vcll:
-iny
-sta $6100,y
-vcck:
-cpy#15
-bne vcll
-
-ply
-pla
-rts
 ; *******************
 ; *** data tables ***
 ; *******************
