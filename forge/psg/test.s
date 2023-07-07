@@ -1,6 +1,6 @@
 ; interrupt-driven music player for PSG card in Durango-X! TEST CODE
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230707-1642
+; last modified 20230707-1807
 
 ; *** hardware definitions ***
 IO8attr	= $DF80
@@ -77,7 +77,7 @@ reset:
 	LDA #2
 lock:
 		TAX
-;		JSR diagonal
+		JSR diagonal
 		TXA
 		ASL
 	BCC lock
@@ -151,54 +151,54 @@ nmi:
 	.dsb	$E000-*, $FF
 music:
 ; ch1 notes
-;	.byt	 12,  12,  12,  24,  24,   0,   0
-.byt 0,19,0,0,0
+	.byt	 12,  12,  12,  24,  24,   0,   0
+;.byt 0,19,0,0,0
 	.dsb	$E100-*, $FF
 ; ch1 lengths [0=end]
-;	.byt	250, 250, 250, 250, 250, 250,   0
-.byt 125,250,250,250,0
+	.byt	250, 250, 250, 250, 250, 250,   0
+;.byt 125,250,250,250,0
 	.dsb	$E200-*, $FF
 ; ch1 volume
-;	.byt	 15,  15,  15,  15,  15,   0,   0
-.byt 0,15,0,0,0
+	.byt	 15,  15,  15,  15,  15,   0,   0
+;.byt 0,15,0,0,0
 	.dsb	$E300-*, $FF
 ; ch1 envelope
-;	.byt	  1,   0, 255,   0, 255,   0,   0
-.byt 0,255,0,0,0
+	.byt	  1,   0, 255,   0, 255,   0,   0
+;.byt 0,255,0,0,0
 
 	.dsb	$E400-*, $FF
 ; ch2 notes
-;	.byt	  0,  16,  16,  16,  36,  36,  36,   0
-.byt 0,0,23,0,0
+	.byt	  0,  16,  16,  16,  36,  36,  36,   0
+;.byt 0,0,23,0,0
 	.dsb	$E500-*, $FF
 ; ch2 lengths [0=end]
-;	.byt	125, 250, 125, 250, 250, 250, 250,   0
-.byt 125,250,250,250,0
+	.byt	125, 250, 125, 250, 250, 250, 250,   0
+;.byt 125,250,250,250,0
 	.dsb	$E600-*, $FF
 ; ch2 volume
-;	.byt	  0,  15,  15,  15,  15,  15,   0,   0
-.byt 0,0,15,0,0
+	.byt	  0,  15,  15,  15,  15,  15,   0,   0
+;.byt 0,0,15,0,0
 	.dsb	$E700-*, $FF
 ; ch2 envelope
-;	.byt	  0,   1,   0, 255,   1, 255,   0,   0
-.byt 0,0,255,0,0
+	.byt	  0,   1,   0, 255,   1, 255,   0,   0
+;.byt 0,0,255,0,0
 
 	.dsb	$E800-*, $FF
 ; ch3 notes
-;	.byt	  0,  19,  19,  48,  48,   0,   0
-.byt 0,0,0,26,0
+	.byt	  0,  19,  19,  48,  48,   0,   0
+;.byt 0,0,0,26,0
 	.dsb	$E900-*, $FF
 ; ch3 lengths [0=end]
-;	.byt	250, 250, 250, 250, 250, 250,   0
-.byt 125,250,250,250,0
+	.byt	250, 250, 250, 250, 250, 250,   0
+;.byt 125,250,250,250,0
 	.dsb	$EA00-*, $FF
 ; ch3 volume
-;	.byt	  0,  15,  15,  15,  15,   0,   0
-.byt 0,0,0,15,0
+	.byt	  0,  15,  15,  15,  15,   0,   0
+;.byt 0,0,0,15,0
 	.dsb	$EB00-*, $FF
 ; ch3 envelope
-;	.byt	  0,   1, 255,   1, 255,   0,   0
-.byt 0,0,0,255,0
+	.byt	  0,   1, 255,   1, 255,   0,   0
+;.byt 0,0,0,255,0
 ; ***************
 ; *** ROM end ***
 ; ***************

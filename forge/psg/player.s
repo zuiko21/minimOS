@@ -127,9 +127,12 @@ env_ctl:
 is_attack:
 				LDA cur_vol, X			; already at set volume?
 				CMP set_vol, X
-			BEQ next_ch		; if so, do nothing
+			BEQ task_exit	; if so, do nothing
 step_env:
+cpy#1
+bne novu
 jsr hhh
+novu:
 			TYA				; recover envelope step as must be added to volume
 			LDY irq_cnt, X	; is it time for it?
 		BNE count_irq
@@ -169,6 +172,7 @@ rts
 
 hhh:
 pha
+phy
 ldy irq_cnt, x
 beq hcl
 lda#$ff
@@ -205,6 +209,7 @@ vcck:
 cpy#15
 bne vcll
 
+ply
 pla
 rts
 ; *******************
