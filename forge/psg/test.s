@@ -1,7 +1,6 @@
 ; interrupt-driven music player for PSG card in Durango-X! TEST CODE
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230705-2024
-
+; last modified 20230707-1642
 
 ; *** hardware definitions ***
 IO8attr	= $DF80
@@ -78,7 +77,7 @@ reset:
 	LDA #2
 lock:
 		TAX
-		JSR diagonal
+;		JSR diagonal
 		TXA
 		ASL
 	BCC lock
@@ -92,6 +91,15 @@ diagonal:
 	STZ dest
 	STA dest+1
 raster:
+; *** extra code for clearing interraster ***
+		LDA #0
+		LDY #63
+clr_l:
+			STA (dest), Y
+			DEY
+			CPY #31
+			BNE clr_l
+; *******************************************
 		TXA
 		LDY #31
 sc_loop:
@@ -99,13 +107,17 @@ sc_loop:
 			DEY
 			BPL sc_loop
 		ASL
+		BCC carry1			; after bit 7, back to bit 0
+			ROL
+carry1:
+		ROL					; *** double shift
 		BCC carry			; after bit 7, back to bit 0
 			ROL
 carry:
 		TAX
 		LDA dest
 ;		CLC
-		ADC #32				; advance to next raster
+		ADC #64				; advance to next raster
 		STA dest
 		BCC raster
 			INC dest+1		; next page

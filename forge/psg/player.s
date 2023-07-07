@@ -1,6 +1,6 @@
 ; interrupt-driven music player for PSG card in Durango-X!
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230706-1754
+; last modified 20230707-1803
 
 ; *** constants definition ***
 
@@ -45,7 +45,7 @@ qt_loop:
 		JSR delay			; eeeek
 		JSR delay
 JSR delay	; just in case for 1 MHz
-jsr finish
+jsr delay
 		ADC #32				; next channel
 		BMI qt_loop
 	RTS
@@ -54,7 +54,6 @@ jsr finish
 ; *** interrupt task ***
 ; **********************
 psg_isr:
-
 	LDX pb_flag				; max authorised channel index, should noise be treated differently?
 	BEQ quiet				; actually exit (and mute!) if all disabled
 		DEX
@@ -95,10 +94,10 @@ not_attack:
 		EOR #MAX_ATT		; convert into attenuation value, as used by PSG
 		ORA cmd_svol, X
 		STA IO_PSG
-JSR finish
-JSR finish
-jsr finish
-jsr finish
+JSR delay
+JSR delay
+jsr delay
+jsr delay
 		LDA note_pg, X		; get note list page eeeeek
 		STA ptr+1
 ;		STZ ptr				; assume LSB is always zero!
@@ -111,52 +110,103 @@ jsr finish
 		INC c_index, X		; advance cursor (7)
 		JSR delay			; should suffice (12+5)
 JSR delay	; needed at 1 MHz
-jsr finish
+jsr delay
+jsr delay
 		LDA freq_h, Y		; 6MS bits (4)
 		STA IO_PSG			; frequency is set (4)
 		BRA task_exit		; prepare envelope counter and finish this channel
 env_ctl:
 ; try updating envelope
 		DEC rem_len, X		; advance timer for this channel, as it's playing
-		DEC irq_cnt, X		; is it time for it?
-		BNE next_ch
-			CLC
-			LDA e_type, X	; 1 for Attack, -1 for Decay, 0 for sustain
-			BEQ next_ch		; sustain uses no envelope *** maybe step_env enables clean restart
+		LDY e_type, X		; 1 for Attack, -1 for Decay, 0 for sustain
+		BEQ next_ch			; sustain uses no envelope *** maybe step_env enables clean restart
 			BPL is_attack
-				LDY cur_vol, X			; if decay, check current volume
-			BEQ next_ch		; already off, do nothing
-		BNE step_env
+				LDA cur_vol, X			; if decay, check current volume
+		BEQ next_ch			; already off, do nothing
+			BNE step_env
 is_attack:
-				TAY
 				LDA cur_vol, X			; already at set volume?
 				CMP set_vol, X
 			BEQ next_ch		; if so, do nothing
-				TYA
 step_env:
+jsr hhh
+			TYA				; recover envelope step as must be added to volume
+			LDY irq_cnt, X	; is it time for it?
+		BNE count_irq
+			CLC
 			ADC cur_vol, X
 			AND #MAX_ATT	; eeeeeek
 			STA cur_vol, X	; otherwise update current volume
 			ORA cmd_svol, X	; convert into PSG command
 			EOR #MAX_ATT	; convert into attenuation value, as used by PSG
 			STA IO_PSG		; * don't think I need to wait until 32 cycles passed *
-jsr finish ; just in case
-jsr finish
-jsr finish
-		BRA next_ch			; eeeeeeek
+jsr delay ; just in case
+jsr delay
+jsr delay
+;			BRA next_ch		; eeeeeeek
 task_exit:
-			LDA #ENV_CYC
-			STA irq_cnt, X	; refresh counter for next
+		LDA #ENV_CYC
+		STA irq_cnt, X		; refresh counter for next
+		BNE next_ch
+count_irq:
+		DEC irq_cnt, X		; update for next
 next_ch:
 		DEX
 	BMI finish
 		JMP chan_l			; down to zero, included
 delay:
-	INC ptr+1				; add 5 missing clocks
 finish:
 	RTS						; back to ISR handler
 
+ccc:
+php
+cmp #$ff
+bne noff
+.byt $cb
+noff:
+plp
+rts
 
+hhh:
+pha
+ldy irq_cnt, x
+beq hcl
+lda#$ff
+hffl:
+sta $6000,y
+dey
+bne hffl
+hcl:
+lda#0
+ldy irq_cnt,x
+bra hcck
+hcll:
+iny
+sta $6000,y
+hcck:
+cpy#10
+bne hcll
+
+ldy cur_vol, x
+beq vcl
+lda#$ff
+vffl:
+sta $6100,y
+dey
+bne vffl
+vcl:
+lda#0
+ldy cur_vol,x
+bra vcck
+vcll:
+iny
+sta $6100,y
+vcck:
+cpy#15
+bne vcll
+
+pla
+rts
 ; *******************
 ; *** data tables ***
 ; *******************
