@@ -62,22 +62,22 @@ $Comp
 L Device:R R1
 U 1 1 6489FDF3
 P 1250 1450
-F 0 "R1" H 1100 1450 50  0000 L CNN
+F 0 "R1" H 1300 1450 50  0000 L CNN
 F 1 "3K3" V 1250 1450 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 1180 1450 50  0001 C CNN
 F 3 "~" H 1250 1450 50  0001 C CNN
 	1    1250 1450
-	1    0    0    -1  
+	-1   0    0    1   
 $EndComp
 $Comp
 L Device:R R2
 U 1 1 648A02DA
-P 1250 1850
-F 0 "R2" H 1100 1850 50  0000 L CNN
-F 1 "4K7" V 1250 1850 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 1180 1850 50  0001 C CNN
-F 3 "~" H 1250 1850 50  0001 C CNN
-	1    1250 1850
+P 1250 2500
+F 0 "R2" H 1100 2500 50  0000 L CNN
+F 1 "4K7" V 1250 2500 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 1180 2500 50  0001 C CNN
+F 3 "~" H 1250 2500 50  0001 C CNN
+	1    1250 2500
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -159,13 +159,11 @@ Wire Wire Line
 	2200 1400 2200 1300
 Wire Wire Line
 	2200 1300 3300 1300
-Wire Wire Line
-	1250 1300 1700 1300
 Connection ~ 2200 1300
 Wire Wire Line
-	1250 2000 1250 2900
+	1250 2650 1250 2900
 Wire Wire Line
-	1250 2900 2200 2900
+	1250 2900 1500 2900
 Connection ~ 2200 2900
 Wire Wire Line
 	3800 1600 4000 1600
@@ -312,8 +310,6 @@ Entry Wire Line
 	6800 1800 6900 1700
 Wire Wire Line
 	6600 1800 6800 1800
-Wire Wire Line
-	1600 1600 1800 1600
 Text Label 1600 1600 0    50   ~ 0
 AOUT
 Wire Wire Line
@@ -361,7 +357,7 @@ F 3 "" H 2200 1300 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	1250 1600 1250 1700
+	1250 1600 1250 2350
 Text Label 1350 3100 2    50   ~ 0
 AUDIO
 Text Label 6050 3550 2    50   ~ 0
@@ -674,8 +670,6 @@ Text Label 6050 2200 2    50   ~ 0
 Wire Wire Line
 	4400 1000 1750 1000
 Wire Wire Line
-	1750 1000 1750 2300
-Wire Wire Line
 	1750 2300 1800 2300
 Connection ~ 4400 1000
 Wire Wire Line
@@ -834,29 +828,18 @@ Wire Wire Line
 Text Label 950  3950 0    50   ~ 0
 ~POE
 Wire Wire Line
-	1800 1800 1800 2050
-Wire Wire Line
-	1700 3850 1700 2050
-Wire Wire Line
-	1700 2050 1800 2050
-Connection ~ 1800 2050
+	1700 3850 1700 1800
 $Comp
 L Device:R R3
 U 1 1 64B4A3B4
-P 1700 1900
-F 0 "R3" H 1550 1900 50  0000 L CNN
-F 1 "12K" V 1700 1900 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 1630 1900 50  0001 C CNN
-F 3 "~" H 1700 1900 50  0001 C CNN
-	1    1700 1900
+P 950 1450
+F 0 "R3" H 800 1450 50  0000 L CNN
+F 1 "3K3" V 950 1450 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 880 1450 50  0001 C CNN
+F 3 "~" H 950 1450 50  0001 C CNN
+	1    950  1450
 	1    0    0    -1  
 $EndComp
-Connection ~ 1700 2050
-Wire Wire Line
-	1700 1750 1700 1300
-Connection ~ 1700 1300
-Wire Wire Line
-	1700 1300 2200 1300
 Wire Wire Line
 	3800 2500 3850 2500
 Wire Wire Line
@@ -913,6 +896,25 @@ F 3 "~" H 8350 6050 50  0001 C CNN
 	1    8350 6050
 	1    0    0    -1  
 $EndComp
+Wire Wire Line
+	1750 1000 1750 2300
+Wire Wire Line
+	1800 1800 1700 1800
+Wire Wire Line
+	950  1800 950  1600
+Connection ~ 1700 1800
+Wire Wire Line
+	1700 1800 950  1800
+Wire Wire Line
+	1800 2050 1500 2050
+Wire Wire Line
+	1500 2050 1500 2900
+Connection ~ 1500 2900
+Wire Wire Line
+	1500 2900 2200 2900
+Wire Wire Line
+	950  1300 1250 1300
+Connection ~ 1250 1300
 Wire Bus Line
 	6900 900  6900 1700
 Wire Bus Line
@@ -923,4 +925,8 @@ Wire Bus Line
 	4100 900  4100 2200
 Wire Bus Line
 	5500 1700 5500 3350
+Wire Wire Line
+	1600 1600 1800 1600
+Wire Wire Line
+	1250 1300 2200 1300
 $EndSCHEMATC
