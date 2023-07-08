@@ -1,5 +1,6 @@
 EESchema Schematic File Version 4
-EELAYER 30 0
+LIBS:devcart32k-cache
+EELAYER 29 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -69,7 +70,7 @@ F 3 "" H 5150 1150 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L devcart32k-rescue:Durango_ROM-edge_conn J1
+L edge_conn:Durango_ROM J1
 U 1 1 629256A2
 P 1550 2225
 F 0 "J1" H 1725 3300 50  0000 C CNN
