@@ -229,7 +229,7 @@ U 1 1 63CA4EFF
 P 6200 1900
 F 0 "LOGO2" H 6200 2175 50  0001 C CNN
 F 1 "Logo_Open_Hardware_Small" H 6200 1675 50  0001 C CNN
-F 2 "durango:jaqueria" H 6200 1900 50  0001 C CNN
+F 2 "durango:j300" H 6200 1900 50  0001 C CNN
 F 3 "~" H 6200 1900 50  0001 C CNN
 	1    6200 1900
 	1    0    0    -1  
