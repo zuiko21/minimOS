@@ -2,7 +2,7 @@
 
   (general
     (thickness 1.6)
-    (drawings 18)
+    (drawings 19)
     (tracks 83)
     (zones 0)
     (modules 8)
@@ -967,6 +967,9 @@
     )
   )
 
+  (gr_text JLCJLCJLCJLC (at 33.655 16.637 270) (layer F.SilkS)
+    (effects (font (size 1 1) (thickness 0.15)))
+  )
   (gr_text "nanoLink interface\nv1 2023·05" (at 34.925 24.638 270) (layer B.SilkS) (tstamp 644D07F3)
     (effects (font (size 1.27 1) (thickness 0.15)) (justify mirror))
   )

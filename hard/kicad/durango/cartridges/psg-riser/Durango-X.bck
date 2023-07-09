@@ -1,9 +1,0 @@
-EESchema-DOCLIB  Version 2.0
-#
-$CMP SN76489_PSG
-D SRAM 16 KiBit, [Obsolete]
-K SRAM 16KiBit
-F http://www.princeton.edu/~mae412/HANDOUTS/Datasheets/6116.pdf
-$ENDCMP
-#
-#End Doc Library
