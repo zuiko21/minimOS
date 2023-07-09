@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP SN76489A
+D Programmable Sound Generator
+K PSG
+F https://map.grauw.nl/resources/sound/texas_instruments_sn76489an.pdf
+$ENDCMP
+#
+#End Doc Library
