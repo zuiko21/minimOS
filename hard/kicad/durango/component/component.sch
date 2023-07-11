@@ -711,7 +711,7 @@ L Device:LED D1
 U 1 1 63EB6EA2
 P 1925 3975
 F 0 "D1" V 1925 4125 50  0000 R CNN
-F 1 "LED" V 1825 4125 50  0000 R CNN
+F 1 "RGB mode" V 1825 4125 50  0000 R CNN
 F 2 "LED_THT:LED_D3.0mm" H 1925 3975 50  0001 C CNN
 F 3 "~" H 1925 3975 50  0001 C CNN
 	1    1925 3975
@@ -800,17 +800,6 @@ Wire Wire Line
 Connection ~ 1700 3025
 Wire Wire Line
 	1700 3025 1700 4350
-$Comp
-L Connector:Conn_Coaxial_x3 J3
-U 1 1 64ABF1F2
-P 6125 4550
-F 0 "J3" H 6225 4553 50  0000 L CNN
-F 1 "Audio" H 6225 4462 50  0000 L CNN
-F 2 "durango:3xRCA" H 6125 4550 50  0001 C CNN
-F 3 " ~" H 6125 4550 50  0001 C CNN
-	1    6125 4550
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	5925 4550 5775 4550
 Wire Wire Line
@@ -818,16 +807,66 @@ Wire Wire Line
 Connection ~ 5775 4350
 Wire Wire Line
 	5775 4350 5925 4350
-Wire Wire Line
-	5875 4850 5875 4650
 Connection ~ 5875 3750
-Connection ~ 5875 4450
 Wire Wire Line
-	5875 4450 5875 3750
-Connection ~ 5875 4650
-Wire Wire Line
-	5875 4650 5875 4450
-NoConn ~ 5925 4750
+	5875 4750 5875 3750
 Text Label 5725 4350 2    50   ~ 0
 AUDIO
+$Comp
+L Connector:Conn_Coaxial_x2 J3
+U 1 1 64ADAA19
+P 6125 4450
+F 0 "J3" H 6225 4425 50  0000 L CNN
+F 1 "Audio" H 6225 4334 50  0000 L CNN
+F 2 "Connector_Phoenix_GMSTB:PhoenixContact_GMSTBA_2,5_3-G-7,62_1x03_P7.62mm_Horizontal" H 6125 4350 50  0001 C CNN
+F 3 " ~" H 6125 4350 50  0001 C CNN
+	1    6125 4450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	6125 4750 5875 4750
+$Comp
+L Mechanical:MountingHole H1
+U 1 1 64B085AE
+P 3150 4775
+F 0 "H1" H 3250 4821 50  0000 L CNN
+F 1 "M3" H 3250 4730 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965" H 3150 4775 50  0001 C CNN
+F 3 "~" H 3150 4775 50  0001 C CNN
+	1    3150 4775
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H2
+U 1 1 64B0D1E0
+P 3500 4775
+F 0 "H2" H 3600 4821 50  0000 L CNN
+F 1 "M3" H 3600 4730 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965" H 3500 4775 50  0001 C CNN
+F 3 "~" H 3500 4775 50  0001 C CNN
+	1    3500 4775
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H3
+U 1 1 64B0DA00
+P 3875 4775
+F 0 "H3" H 3975 4821 50  0000 L CNN
+F 1 "M3" H 3975 4730 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965" H 3875 4775 50  0001 C CNN
+F 3 "~" H 3875 4775 50  0001 C CNN
+	1    3875 4775
+	1    0    0    -1  
+$EndComp
+$Comp
+L Graphic:Logo_Open_Hardware_Small LOGO1
+U 1 1 64B4A91C
+P 4675 4800
+F 0 "LOGO1" H 4675 5075 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Small" H 4675 4575 50  0001 C CNN
+F 2 "durango:jaqueria" H 4675 4800 50  0001 C CNN
+F 3 "~" H 4675 4800 50  0001 C CNN
+	1    4675 4800
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
