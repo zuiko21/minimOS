@@ -30,6 +30,7 @@
 #define PSV_INT16 			0xF4
 #define PSV_HEX16			0xF5
 #define PSV_INT8 			0xF6
+#define PSV_INT32 			0xF7
 #define PSV_STOPWATCH_START	0xFB
 #define PSV_STOPWATCH_STOP	0xFC
 #define PSV_DUMP			0xFD
@@ -3498,6 +3499,7 @@ void vps_config(word dir, byte v) {
 void vps_run(word dir, byte v) {
     word psv_int;
     int psv_value;
+	uint32_t psv_value32;
     
     // Cache value
     mem[dir]=v;
@@ -3533,7 +3535,7 @@ void vps_run(word dir, byte v) {
         printf("[%d]", psv_value);	
         psv_index=0;
     }
-    // If int mode enabled
+    // If int16 mode enabled
     else if(mem[0xDF94]==PSV_INT16) {
         // Save value
         psv_filename[psv_index++] = mem[dir];
@@ -3548,6 +3550,18 @@ void vps_run(word dir, byte v) {
                 psv_value=psv_int-65536;
             }
             printf("[%d]", psv_value);	
+            psv_index=0;
+        }
+    }
+	// If int32 mode enabled
+    else if(mem[0xDF94]==PSV_INT32) {
+        // Save value
+        psv_filename[psv_index++] = mem[dir];
+        // Display value
+        if(psv_index==4) {
+            // Print decimal
+            psv_value32=psv_filename[0] + ((psv_filename[1]&0xFF)<<8) + ((psv_filename[2]&0xFF)<<16) + ((psv_filename[3]&0xFF)<<24);
+			printf("[%d]", psv_value32);	
             psv_index=0;
         }
     }
