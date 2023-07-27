@@ -72,12 +72,12 @@ $EndComp
 $Comp
 L Switch:SW_DIP_x06 SW1
 U 1 1 64C433C6
-P 3600 3500
-F 0 "SW1" H 3600 4067 50  0000 C CNN
-F 1 "DEVICE" H 3600 3976 50  0000 C CNN
-F 2 "Package_DIP:DIP-12_W7.62mm" H 3600 3500 50  0001 C CNN
-F 3 "~" H 3600 3500 50  0001 C CNN
-	1    3600 3500
+P 3600 3400
+F 0 "SW1" H 3600 3967 50  0000 C CNN
+F 1 "DEVICE" H 3600 3876 50  0000 C CNN
+F 2 "Package_DIP:DIP-12_W7.62mm" H 3600 3400 50  0001 C CNN
+F 3 "~" H 3600 3400 50  0001 C CNN
+	1    3600 3400
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -221,17 +221,17 @@ Entry Wire Line
 	1700 2200 1800 2100
 Entry Wire Line
 	1700 2300 1800 2200
-Text Label 2000 3200 2    50   ~ 0
-PD0
-Text Label 2000 3300 2    50   ~ 0
-PD1
-Text Label 2000 3400 2    50   ~ 0
-PD2
-Text Label 2000 3500 2    50   ~ 0
-PD3
-Text Label 2000 3600 2    50   ~ 0
-PD4
 Text Label 2000 3700 2    50   ~ 0
+PD0
+Text Label 2000 3200 2    50   ~ 0
+PD1
+Text Label 2000 3600 2    50   ~ 0
+PD2
+Text Label 2000 3300 2    50   ~ 0
+PD3
+Text Label 2000 3500 2    50   ~ 0
+PD4
+Text Label 2000 3400 2    50   ~ 0
 PD5
 Wire Wire Line
 	2000 3200 1800 3200
@@ -361,30 +361,19 @@ Wire Wire Line
 	4050 6250 4050 6550
 NoConn ~ 2000 5950
 NoConn ~ 5050 5050
-Wire Wire Line
-	3000 3200 3300 3200
-Wire Wire Line
-	3000 3300 3300 3300
-Wire Wire Line
-	3000 3400 3300 3400
-Wire Wire Line
-	3000 3500 3300 3500
-Wire Wire Line
-	3000 3600 3300 3600
-Wire Wire Line
-	3000 3700 3300 3700
-Text Label 3050 3200 0    50   ~ 0
+Text Label 3300 3100 2    50   ~ 0
 SEL0
-Text Label 3050 3300 0    50   ~ 0
+Text Label 3300 3200 2    50   ~ 0
 SEL1
-Text Label 3050 3400 0    50   ~ 0
-SEL2
-Text Label 3050 3500 0    50   ~ 0
+Text Label 3300 3400 2    50   ~ 0
 SEL3
-Text Label 3050 3600 0    50   ~ 0
+Text Label 3300 3500 2    50   ~ 0
 SEL4
-Text Label 3050 3700 0    50   ~ 0
+Text Label 3300 3600 2    50   ~ 0
 SEL5
+Wire Wire Line
+	3900 3100 3900 3200
+Connection ~ 3900 3200
 Wire Wire Line
 	3900 3200 3900 3300
 Connection ~ 3900 3300
@@ -396,12 +385,6 @@ Wire Wire Line
 Connection ~ 3900 3500
 Wire Wire Line
 	3900 3500 3900 3600
-Connection ~ 3900 3600
-Wire Wire Line
-	3900 3600 3900 3700
-Wire Wire Line
-	3900 3700 4200 3700
-Connection ~ 3900 3700
 Text Label 4200 3700 2    50   ~ 0
 ~CS
 $Comp
@@ -648,10 +631,6 @@ Wire Wire Line
 	4000 4400 3400 4400
 Wire Wire Line
 	3400 4400 3400 5550
-Wire Bus Line
-	3750 5150 3750 6250
-Wire Bus Line
-	1700 1600 1700 6250
 Connection ~ 4000 3600
 Connection ~ 3400 5550
 Wire Wire Line
@@ -660,6 +639,60 @@ Text Label 3400 4400 0    50   ~ 0
 CLK
 Text Label 2600 2700 0    50   ~ 0
 ~CTL
-Text Notes 7200 1450 2    100  ~ 0
-$DF9E = DATA R/W\n$DF9F = CLOCK (R) / ENABLE (W)
+Text Notes 7200 1450 2    100  ~ 20
+$DF9E = DATA R/W\n\n$DF9F = CLOCK (R) / ~ENABLE (W)
+$Comp
+L Graphic:Logo_Open_Hardware_Small LOGO1
+U 1 1 64D370D2
+P 3350 7150
+F 0 "LOGO1" H 3350 7425 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Small" H 3350 6925 50  0001 C CNN
+F 2 "durango:j300" H 3350 7150 50  0001 C CNN
+F 3 "~" H 3350 7150 50  0001 C CNN
+	1    3350 7150
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3300 3100 3100 3100
+Wire Wire Line
+	3100 3700 3000 3700
+Wire Wire Line
+	3000 3200 3300 3200
+Wire Wire Line
+	3100 3100 3100 3700
+Wire Wire Line
+	3900 3600 3900 3700
+Wire Wire Line
+	3900 3700 4200 3700
+Connection ~ 3900 3600
+Wire Wire Line
+	3200 3300 3200 3600
+Wire Wire Line
+	3200 3600 3000 3600
+Wire Wire Line
+	3000 3300 3150 3300
+Wire Wire Line
+	3150 3300 3150 3400
+Wire Wire Line
+	3150 3400 3300 3400
+Wire Wire Line
+	3300 3300 3200 3300
+Text Label 3300 3300 2    50   ~ 0
+SEL2
+Wire Wire Line
+	3300 3500 3000 3500
+Wire Wire Line
+	3000 3400 3050 3400
+Wire Wire Line
+	3050 3400 3050 3650
+Wire Wire Line
+	3050 3650 3300 3650
+Wire Wire Line
+	3300 3650 3300 3600
+Wire Bus Line
+	3750 5150 3750 6250
+Wire Bus Line
+	1700 1600 1700 6250
+Text Notes 5800 1700 0    67   Italic 13
+Mirrored at $DF96-$DF97
 $EndSCHEMATC
