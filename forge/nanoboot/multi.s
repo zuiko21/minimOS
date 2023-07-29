@@ -2,7 +2,7 @@
 ; now with sidecar/fast SPI support
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230729-1343
+; last modified 20230729-1350
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -451,6 +451,39 @@ dc_cs_disable:
 	LDA #SD_CS
 	TSB IOCart				; CS_DISABLE();
 	LDA #$FF
+	JMP spi_tr				; SPI_transfer(0xFF); ...and return
+
+; *** *** hardware interface for Fast SPI *** ***
+; *** send data in A, return received data in A ***
+sp_spi_tr:
+	STA IO9sp_d				; store outgoing byte
+	LDA IO9sp_c				; send 8 clock pulses (quickly)
+	LDA IO9sp_c
+	LDA IO9sp_c
+	LDA IO9sp_c
+	LDA IO9sp_c
+	LDA IO9sp_c
+	LDA IO9sp_c
+	LDA IO9sp_c
+	LDA IO9sp_d				; retrieve incoming data
+	RTS
+
+; *** enable card transfer ***
+sp_cs_enable:
+	LDA #$FF
+	JSR spi_tr				; SPI_transfer(0xFF);
+	LDA #%11111110			; fixed SPI device 0
+	STA IO9sp_c				; CS_ENABLE();
+	LDA #$FF
+	JMP spi_tr				; SPI_transfer(0xFF); ...and return
+
+; *** disable card transfer ***
+sp_cs_disable:
+	LDA #$FF
+	JSR spi_tr				; SPI_transfer(0xFF);
+	LDA #%11111111			; all SPI devices disabled
+	STA IO9sp_c				; CS_DISABLE();
+;	LDA #$FF
 	JMP spi_tr				; SPI_transfer(0xFF); ...and return
 
 ; *** *** standard SD card support *** ***
