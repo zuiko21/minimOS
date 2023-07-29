@@ -2,7 +2,7 @@
 ; now with sidecar/fast SPI support
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230729-1350
+; last modified 20230729-1401
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -442,7 +442,7 @@ dc_cs_enable:
 	LDA #SD_CS
 	TRB IOCart				; CS_ENABLE();
 	LDA #$FF
-	JMP spi_tr				; SPI_transfer(0xFF); ...and return
+	JMP dc_spi_tr			; SPI_transfer(0xFF); ...and return
 
 ; *** disable card transfer ***
 dc_cs_disable:
@@ -451,7 +451,7 @@ dc_cs_disable:
 	LDA #SD_CS
 	TSB IOCart				; CS_DISABLE();
 	LDA #$FF
-	JMP spi_tr				; SPI_transfer(0xFF); ...and return
+	JMP dc_spi_tr			; SPI_transfer(0xFF); ...and return
 
 ; *** *** hardware interface for Fast SPI *** ***
 ; *** send data in A, return received data in A ***
@@ -475,7 +475,7 @@ sp_cs_enable:
 	LDA #%11111110			; fixed SPI device 0
 	STA IO9sp_c				; CS_ENABLE();
 	LDA #$FF
-	JMP spi_tr				; SPI_transfer(0xFF); ...and return
+	JMP sp_spi_tr			; SPI_transfer(0xFF); ...and return
 
 ; *** disable card transfer ***
 sp_cs_disable:
@@ -484,7 +484,7 @@ sp_cs_disable:
 	LDA #%11111111			; all SPI devices disabled
 	STA IO9sp_c				; CS_DISABLE();
 ;	LDA #$FF
-	JMP spi_tr				; SPI_transfer(0xFF); ...and return
+	JMP sp_spi_tr			; SPI_transfer(0xFF); ...and return
 
 ; *** *** standard SD card support *** ***
 ; *** send command in A to card *** arg.l, crc.b
@@ -1091,8 +1091,8 @@ sd_fail:					; SD card failed
 ; before locking, try another device *** NEW
 	LDA v_spi_tr			; check LSB
 	CMP #<sp_spi_tr			; already at second interface?
-	BNE no_spi
-		LDX #vec_sp_sd-vec_sd-1			; try second interface otherwise
+	BEQ no_spi
+		LDX #vec_sp_sd-vec_sd			; try second interface otherwise
 		JMP vecload						; will get back to init procedure
 no_spi:
 ; here could come the Raspberry Pi module instead (nanoBoot)
@@ -1151,15 +1151,15 @@ msg_ix:
 
 ; vector table
 vec_sd:
-	.word	dc_spi_tr,	dc_cs_enable,	dc_cs_disable		; vectors for devCart interface
 vec_dc_sd:
-	.word	sp_spi_tr,	sp_cs_enable,	sp_cs_disable		; vectors for Fast SPI interface
+	.word	dc_spi_tr,	dc_cs_enable,	dc_cs_disable		; vectors for devCart interface
 vec_sp_sd:
+	.word	sp_spi_tr,	sp_cs_enable,	sp_cs_disable		; vectors for Fast SPI interface
 
 ; SPI device names, in 6-byte packs (like vectors)
 sd_name:
 	.asc	"devC?",13		; devCart SD interface
-	.asc	"fSPI?",13		; Fast SPI interface!
+	.asc	13,"SPI?",13	; Fast SPI interface!
 ;	.asc	"RasPI:"		; nanoBoot (placeholder)
 
 ; other tables
