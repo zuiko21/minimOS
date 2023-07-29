@@ -1,7 +1,8 @@
 ; Durango-X devcart SD multi-boot loader
+; now with sidecar/fast SPI support
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230504-1436
+; last modified 20230729-1343
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -51,6 +52,8 @@ IO9nes0	= $DF9C
 IO9nlat	= IO9nes0
 IO9nes1	= $DF9D
 IO9nclk	= IO9nes1
+IO9sp_d	= $DF9E				; new, Fast SPI data transfer
+IO9sp_c	= $DF9F				; new, Fast SPI control
 IOAie	= $DFA0
 IOBeep	= $DFB0
 IOCart	= $DFC0
@@ -84,6 +87,12 @@ fsize	= buffer+252		; file size INCLUDING 256-byte header
 ; *** directory storage ***
 en_tab		= $300
 sig_tab		= $2F0			; NEW, store signature ('X'=executable, 'S'=16-colour screen, 'R'=HIRES screen)
+
+; *** interface vectors ***	NEW for extra SD interfaces
+v_spi_tr		= $2EA
+v_cs_enable		= $2EC
+v_cs_disable	= $2EE
+
 
 ; *****************************************************
 ; *** firmware & hardware definitions for Durango-X ***
@@ -160,6 +169,24 @@ rom_start:
 ; **********************
 sd_main:
 .(
+; select first SD device (devCart) and try
+	LDX #vec_dc_sd-vec_sd	; set vectors for devCart device
+vecload:
+	LDY #0					; worth going upwards
+vl_loop:
+		LDA vec_sd, X
+		STA v_spi_tr, Y		; assume it's first vector!
+		PHY					; *** print device name ***
+		PHX
+		LDY sd_name, X		; get character
+		JSR conio
+		PLX
+		PLY					; restore regs and go for next byte
+		INX
+		INY
+		CPY #6				; number of bytes per entry
+		BNE vl_loop
+; SD device driver has been installed, proceed to check for SD card as usual
 	JSR sd_init				; check SD card
 	LDY #13
 	JSR conio				; newline
@@ -376,9 +403,17 @@ launch_rom:
 ; ************************
 ; *** support routines ***
 ; ************************
-
-; *** send data in A, return received data in A *** nominally ~4.4 kiB/s
+; *** *** vectored hardware calls *** *** NEW
 spi_tr:
+	JMP (v_spi_tr)
+cs_enable:
+	JMP (v_cs_enable)
+cs_disable:
+	JMP (v_cs_disable)
+
+; *** *** hardware interface for devCart *** ***
+; *** send data in A, return received data in A *** nominally ~4.4 kiB/s
+dc_spi_tr:
 	STA mosi
 	LDY #8					; x = 8;
 	LDA #SD_CLK
@@ -401,7 +436,7 @@ mosi_set:
 	RTS
 
 ; *** enable card transfer ***
-cs_enable:
+dc_cs_enable:
 	LDA #$FF
 	JSR spi_tr				; SPI_transfer(0xFF);
 	LDA #SD_CS
@@ -410,7 +445,7 @@ cs_enable:
 	JMP spi_tr				; SPI_transfer(0xFF); ...and return
 
 ; *** disable card transfer ***
-cs_disable:
+dc_cs_disable:
 	LDA #$FF
 	JSR spi_tr				; SPI_transfer(0xFF);
 	LDA #SD_CS
@@ -418,6 +453,7 @@ cs_disable:
 	LDA #$FF
 	JMP spi_tr				; SPI_transfer(0xFF); ...and return
 
+; *** *** standard SD card support *** ***
 ; *** send command in A to card *** arg.l, crc.b
 sd_cmd:
 ; send command header
@@ -1019,6 +1055,14 @@ sd_fail:					; SD card failed
 	JSR disp_code			; display message
 	LDX #FAIL_MSG			; FAIL message
 	JSR disp_code
+; before locking, try another device *** NEW
+	LDA v_spi_tr			; check LSB
+	CMP #<sp_spi_tr			; already at second interface?
+	BNE no_spi
+		LDX #vec_sp_sd-vec_sd-1			; try second interface otherwise
+		JMP vecload						; will get back to init procedure
+no_spi:
+; here could come the Raspberry Pi module instead (nanoBoot)
 	BRK						; just lock with error LED
 
 ; ********************
@@ -1072,6 +1116,20 @@ msg_ix:
 	.byt	sd_old-msg_sd	; OLD_SD	v1.x before SD Interface
 	.byt	sd_hc-msg_sd	; HC_XC		before Card Ready
 
+; vector table
+vec_sd:
+	.word	dc_spi_tr,	dc_cs_enable,	dc_cs_disable		; vectors for devCart interface
+vec_dc_sd:
+	.word	sp_spi_tr,	sp_cs_enable,	sp_cs_disable		; vectors for Fast SPI interface
+vec_sp_sd:
+
+; SPI device names, in 6-byte packs (like vectors)
+sd_name:
+	.asc	"devC?",13		; devCart SD interface
+	.asc	"fSPI?",13		; Fast SPI interface!
+;	.asc	"RasPI:"		; nanoBoot (placeholder)
+
+; other tables
 prog_pat:
 	.byt	%10000000, %11000000, %11100000, %11110000, %11111000, %11111100, %11111110, %11111111
 .)
