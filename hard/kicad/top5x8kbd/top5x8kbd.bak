@@ -5,11 +5,11 @@ EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
-Title ""
-Date ""
-Rev ""
-Comp ""
-Comment1 ""
+Title "Durango·X Keyboard & Gamepad interface"
+Date "2023-07-30"
+Rev "v1.3"
+Comp "@zuiko21"
+Comment1 "(c) 2023 Carlos J. Santisteban"
 Comment2 ""
 Comment3 ""
 Comment4 ""
@@ -151,7 +151,7 @@ L Switch:SW_Push_45deg SW9
 U 1 1 635EBE63
 P 4100 5550
 F 0 "SW9" H 4050 5350 50  0000 C CNN
-F 1 "9   (" H 4050 5450 50  0000 C CNN
+F 1 "9   )" H 4050 5450 50  0000 C CNN
 F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4100 5550 50  0001 C CNN
 F 3 "~" H 4100 5550 50  0001 C CNN
 	1    4100 5550
@@ -2488,8 +2488,6 @@ Text Label 10400 1550 0    50   ~ 0
 ~AB1
 Text Label 10400 1650 0    50   ~ 0
 ~UP1
-Text Label 10550 1350 2    39   ~ 0
-LATCH
 Text Notes 7700 300  2    200  ~ 40
 NES = ABetUDLR\nPD7..PD0 = AtBeULDR
 Text Label 9650 1050 0    50   ~ 0
@@ -2501,13 +2499,11 @@ Text Label 9650 1250 0    50   ~ 0
 Text Label 9650 1350 0    50   ~ 0
 ~UP1
 Text Label 9650 1750 0    50   ~ 0
-~B1
-Text Label 9650 1650 0    50   ~ 0
+~A1
+Text Label 9650 1450 0    50   ~ 0
 ~SC1
 Text Label 9650 1550 0    50   ~ 0
 ~AB1
-Text Label 9650 1450 0    50   ~ 0
-~C1
 Text Label 9650 2950 0    50   ~ 0
 ~RT2
 Text Label 9650 3050 0    50   ~ 0
@@ -2517,13 +2513,9 @@ Text Label 9650 3150 0    50   ~ 0
 Text Label 9650 3250 0    50   ~ 0
 ~UP2
 Text Label 9650 3650 0    50   ~ 0
-~B2
-Text Label 9650 3550 0    50   ~ 0
-~SC2
+~A2
 Text Label 9650 3450 0    50   ~ 0
 ~AB2
-Text Label 9650 3350 0    50   ~ 0
-~C2
 NoConn ~ 9650 5050
 $Comp
 L power:+5V #PWR0138
@@ -2638,7 +2630,7 @@ Text Label 10400 3450 0    50   ~ 0
 Text Label 10400 3550 0    50   ~ 0
 ~UP2
 Text Label 10550 3250 2    39   ~ 0
-LATCH
+~LATCH
 Wire Wire Line
 	10250 2850 10250 3550
 Wire Wire Line
@@ -2656,21 +2648,21 @@ Wire Wire Line
 Text Label 8650 5150 2    50   ~ 0
 ~SC1
 Text Label 9650 5150 0    50   ~ 0
-~C1
+~S1
 Text Label 8650 5250 2    50   ~ 0
 ~AB1
 Text Label 9650 5250 0    50   ~ 0
-~B1
+~A1
 Wire Wire Line
 	10300 3250 10300 3550
 Text Label 8650 5350 2    50   ~ 0
 ~AB2
 Text Label 9650 5350 0    50   ~ 0
-~B2
+~A2
 Text Label 8650 5450 2    50   ~ 0
 ~SC2
 Text Label 9650 5450 0    50   ~ 0
-~C2
+~S2
 Text Label 6250 3350 2    50   ~ 0
 NCLK
 Text Label 6250 3650 2    50   ~ 0
@@ -2856,4 +2848,12 @@ Wire Bus Line
 	7300 3250 7300 5850
 Wire Bus Line
 	8400 1150 8400 4250
+Text Label 9650 3350 0    50   ~ 0
+~SC2
+Text Label 10550 1350 2    39   ~ 0
+~LATCH
+Text Label 9650 3550 0    50   ~ 0
+~S2
+Text Label 9650 1650 0    50   ~ 0
+~S1
 $EndSCHEMATC
