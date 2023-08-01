@@ -2,7 +2,7 @@
 ; now with sidecar/fast SPI support
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230729-1401
+; last modified 20230801-1549
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -458,7 +458,7 @@ dc_cs_disable:
 sp_spi_tr:
 	STA IO9sp_d				; store outgoing byte
 	LDA IO9sp_c				; send 8 clock pulses (quickly)
-	LDA IO9sp_c
+;	LDA IO9sp_c				; actually seven, as Parallel load will make first bit available!
 	LDA IO9sp_c
 	LDA IO9sp_c
 	LDA IO9sp_c
