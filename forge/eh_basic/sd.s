@@ -1,7 +1,7 @@
 ; SD-card driver module for EhBASIC
 ; supports both the devCart and the Fast SPI interface (ID=0)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230802-1659
+; last modified 20230802-1711
 
 ; uncomment DEBUG version below, does actually write to the card, but also display sector number and contents
 ;#define	DEBUG
@@ -68,6 +68,9 @@ sd_dev_id		= $2F3		; 'd' for devCart, 'S' for Fast SPI
 v_spi_tr		= $2F4
 v_cs_enable		= $2F6
 v_cs_disable	= $2F8		; just before tmp_siz
+
+IO9sp_d	= $DF9E				; new, Fast SPI data transfer
+IO9sp_c	= $DF9F				; new, Fast SPI control
 ; *** ******************************************** ***
 
 ; *** sector buffer and header pointers ***
@@ -409,6 +412,11 @@ set_name:
 	JSR sd_init				; common for LOAD and SAVE, note stack depth in case of failure
 	JSR ssec_rd				; read first volume sector into buffer!
 ; ask for the filename, or $ for directory listing
+; *** *********************** ***
+; *** display selected device ***
+	LDY sd_dev_id
+	JSR conio
+; *** *********************** ***
 	LDX #0
 prompt_l:
 		LDY aux_prompt, X
@@ -755,7 +763,7 @@ r7end:
 sd_init:
 ; *** ************************************************************************* ***
 ; *** set devCart SD as default and, if failed to initialise, try with Fast SPI ***
-	LDX #vec_dc_sd+6		; set vectors for devCart device (note offset going backwards, including ID)
+	LDX #vec_dc_sd+6-vec_sd	; set vectors for devCart device (note offset going backwards, including ID)
 vecload:
 	LDY #6					; note offset including ID
 vl_loop:
@@ -1226,7 +1234,7 @@ sd_fail:
 	CMP #'S'				; already at Fast SPI?
 	BEQ do_fail
 		STX sd_dev_err		; store devCart error code, just in case
-		LDX #vec_sp_sd+6	; set vectors for SPI device (note offset going backwards, including ID)
+		LDX #vec_sp_sd-vec_sd+6			; set vectors for SPI device (note offset going backwards, including ID)
 		JMP vecload
 do_fail:					; no luck on either device, just fail
 	CPX sd_dev_err			; check previous error code
