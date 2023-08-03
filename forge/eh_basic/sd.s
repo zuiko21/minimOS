@@ -1,16 +1,24 @@
 ; SD-card driver module for EhBASIC
 ; supports both the devCart and the Fast SPI interface (ID=0)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230802-1711
+; last modified 20230804-0014
 
 ; uncomment DEBUG version below, does actually write to the card, but also display sector number and contents
 ;#define	DEBUG
 ; uncomment STRICT version below, will look for exact match in filenames for LOADing
 ;#define	STRICT
+; uncomment TALLY version below for LED access indication
+;#define	TALLY
 
 #echo Using SD card (both devCart & SPI) for LOAD and SAVE - interactive filename prompt
 #ifdef	DEBUG
 #echo Debugging version (displaying sizes?)
+#endif
+#ifdef	STRICT
+#echo Strict filename search!
+#endif
+#ifdef	TALLY
+#echo LED access indication
 #endif
 
 #define	CMD0		0
@@ -48,6 +56,9 @@
 -Ram_base	= $0500			; just in case
 
 .(
+; *** hardware definitions ***
+IOCart	= $DFC0				; devCart port
+
 ; *** memory usage *** CHECK
 tmpba	= $E8				; $E8-$E9, no offset unlike multiboot
 f_eof	= $EA				; $EA-$EC, current file size, max 16 MiB
@@ -69,6 +80,7 @@ v_spi_tr		= $2F4
 v_cs_enable		= $2F6
 v_cs_disable	= $2F8		; just before tmp_siz
 
+; *** hardware definitions ***
 IO9sp_d	= $DF9E				; new, Fast SPI data transfer
 IO9sp_c	= $DF9F				; new, Fast SPI control
 ; *** ******************************************** ***
@@ -587,7 +599,6 @@ sec_ok:
 #define	SD_MOSI		%00000010
 #define	SD_CS		%00000100
 #define	SD_MISO		%10000000
-#define	IOCart		$DFC0
 
 ; *** ******************************* ***
 ; *** *** vectored hardware calls *** *** NEW
@@ -619,6 +630,9 @@ sp_cs_enable:
 	JSR spi_tr				; SPI_transfer(0xFF);
 	LDA #%11111110			; fixed SPI device 0
 	STA IO9sp_c				; CS_ENABLE();
+#ifdef	TALLY
+	STA IOAie				; *** this will turn LED on ***
+#endif
 	LDA #$FF
 	JMP sp_spi_tr			; SPI_transfer(0xFF); ...and return
 
@@ -628,6 +642,9 @@ sp_cs_disable:
 	JSR spi_tr				; SPI_transfer(0xFF);
 	LDA #%11111111			; all SPI devices disabled
 	STA IO9sp_c				; CS_DISABLE();
+#ifdef	TALLY
+	STA IOAie				; *** this will turn LED off ***
+#endif
 ;	LDA #$FF
 	JMP sp_spi_tr			; SPI_transfer(0xFF); ...and return
 ; *** ******************************* ***
@@ -663,6 +680,9 @@ dc_cs_enable:				; note dc_ several times
 	LDA #SD_CS
 	TRB IOCart				; CS_ENABLE();
 	LDA #$FF
+#ifdef	TALLY
+	STZ IOAie				; *** this will turn LED on ***
+#endif
 	JMP dc_spi_tr			; SPI_transfer(0xFF); ...and return
 
 ; *** disable card transfer ***
@@ -672,6 +692,9 @@ dc_cs_disable:				; note dc_ several times
 	LDA #SD_CS
 	TSB IOCart				; CS_DISABLE();
 	LDA #$FF
+#ifdef	TALLY
+	STA IOAie				; *** this will turn LED on ***
+#endif
 	JMP dc_spi_tr			; SPI_transfer(0xFF); ...and return
 
 ; ***************************
