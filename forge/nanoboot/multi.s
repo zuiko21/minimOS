@@ -2,11 +2,12 @@
 ; now with sidecar/fast SPI support
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230801-1549
+; last modified 20230804-0031
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
 ; add -DDEBUG
+; add -DTALLY for LED access indicator
 
 ; SD interface definitions
 #define	SD_CLK		%00000001
@@ -442,6 +443,9 @@ dc_cs_enable:
 	LDA #SD_CS
 	TRB IOCart				; CS_ENABLE();
 	LDA #$FF
+#ifdef	TALLY
+	STZ IOAie				; *** this will turn LED on ***
+#endif
 	JMP dc_spi_tr			; SPI_transfer(0xFF); ...and return
 
 ; *** disable card transfer ***
@@ -451,6 +455,9 @@ dc_cs_disable:
 	LDA #SD_CS
 	TSB IOCart				; CS_DISABLE();
 	LDA #$FF
+#ifdef	TALLY
+	STA IOAie				; *** this will turn LED off ***
+#endif
 	JMP dc_spi_tr			; SPI_transfer(0xFF); ...and return
 
 ; *** *** hardware interface for Fast SPI *** ***
@@ -474,6 +481,9 @@ sp_cs_enable:
 	JSR spi_tr				; SPI_transfer(0xFF);
 	LDA #%11111110			; fixed SPI device 0
 	STA IO9sp_c				; CS_ENABLE();
+#ifdef	TALLY
+	STA IOAie				; *** this will turn LED on ***
+#endif
 	LDA #$FF
 	JMP sp_spi_tr			; SPI_transfer(0xFF); ...and return
 
@@ -483,6 +493,9 @@ sp_cs_disable:
 	JSR spi_tr				; SPI_transfer(0xFF);
 	LDA #%11111111			; all SPI devices disabled
 	STA IO9sp_c				; CS_DISABLE();
+#ifdef	TALLY
+	STA IOAie				; *** this will turn LED off ***
+#endif
 ;	LDA #$FF
 	JMP sp_spi_tr			; SPI_transfer(0xFF); ...and return
 
