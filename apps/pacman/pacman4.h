@@ -1,74 +1,72 @@
 ; variables for 4bpp PacMan (Durango-X)
-; (c) 2021-2022 Carlos J. Santisteban
-; last modified 20211010-1434 
+; (c) 2021-2023 Carlos J. Santisteban
+; last modified 20230807-1158 
 
 ; **************************
 ; *** zeropage variables ***
 ; **************************
 
-	.zero
-
-	* = 3					; minimOS-savvy, although will be a stand-alone game
+; minimOS-savvy, although will be a stand-alone game
 
 ; *** these not necessarily in ZP, but nice anyway for performance reasons ***
-; note new order, where pacman is just a srpite like the ghosts
-sprite_x	.dsb	5, 0	; sprite coordinates (in pixels), array for pacman [0] + ghosts [1...4]
-sprite_y	.dsb	5, 0
-sp_dir		.dsb	5, 0	; sprite direction is 0=right, 2=down, 4=left, 6=up *renumbered*
-sp_stat		.dsb	5, 0	; sprite status, see below
-sp_timer	.dsb	5, 0	; timer for next movement of every sprite
-sp_speed	.dsb	5, 0	; increment for each timer
+; note new order, where pacman is just a sprite like the ghosts
+sprite_x	= 3				; sprite coordinates (in pixels), array for pacman [0] + ghosts [1...4]
+sprite_y	= sprite_x + 5
+sp_dir		= sprite_y + 5	; sprite direction is 0=right, 2=down, 4=left, 6=up *renumbered*
+sp_stat		= sp_dir + 5	; sprite status, see below
+sp_timer	= sp_stat + 5	; timer for next movement of every sprite
+sp_speed	= sp_speed + 5	; increment for each timer
 ; should add some timers for scatter/chase modes
 temp:
-sel_gh		.byt	0		; temporarily selected ghost (index for arrays above), also other temporary use
-score		.word	0		; score in BCD (a tenth of the original score, thus up to 99990 in the arcade)
-goal		.byt	0		; desired goal for extra life, every 1000 points (MSB-only is $10 increments -- in BCD!) *new* 
-lives		.byt	0		; remaining lives
-level		.byt	0		; game level
+sel_gh		= sp_speed + 5	; temporarily selected ghost (index for arrays above), also other temporary use
+temp		= sel_gh
+score		= sel_gh + 1	; score in BCD (a tenth of the original score, thus up to 99990 in the arcade)
+goal		= score + 2		; desired goal for extra life, every 1000 points (MSB-only is $10 increments -- in BCD!) *new* 
+lives		= goal + 1		; remaining lives
+level		= lives + 1		; game level
 ; will need some timers for mode change
-dots		.byt	0		; remaining dots
-cur:
-draw_x		.byt	0		; temporary copy of arrays at one index (and other temporary use)
-draw_y		.byt	0
-ds_stat		.byt	0
-jiffy		.dsb	3, 0	; 24-bit jiffy counter, about 19 hours
-stick		.byt	0		; read value from 'joystick', every ISR
-stkb_tab	.word	0		; NEW pointer to stick or keyboard conversion table
-seed		.word	$8988	; seed value for PRNG
-tmp_arr:
+dots		= level + 1		; remaining dots
+draw_x		= dots + 1		; temporary copy of arrays at one index (and other temporary use)
+cur			= draw_x
+draw_y		= draw_x + 1
+ds_stat		= draw_y + 1
+jiffy		= ds_stat + 1	; 24-bit jiffy counter, about 19 hours
+stick		= jiffy + 3		; read value from 'joystick', every ISR
+stkb_tab	= stick + 1		; NEW pointer to stick or keyboard conversion table
+seed		= stkb_tab + 2	; seed value for PRNG
 ; *** *** *** must check all of these TBD *** *** *** TBD
-dmask:						; 16-byte array with dot masks, also temporary space
-mul_tmp		.byt	0		; formerly tmp_arr
-hb_flag		.byt	0		; half-byte indicator (formerly tmp_arr+1)
-pre_pt		.word	0		; temporary dest_pt creation (formerly tmp_arr+2)
-des_dir		.byt	0		; desired direction (formerly tmp_arr+4)
-vh_mask		.byt	0		; direction mask to allow/disable axis changes
-cur_y		.byt	0		; current Y index for screen (formerly as cur)
-s_rot		.word	0		; rotated animation sprite (formerly cur...cur+1)
-swp_ct		.byt	0		; sweep sound counter (formerly temp)
-sqk_par		.dsb	3, 0	; squeak parametrer (formerly from cur, also using swp_ct instrad of temp)
-anim_pt		.byt	0		; frame counter (formerly temp)
-bp_dly:						; new delay storage for 1.536 MHz beep
-alt_msb		.byt	0		; formerly tmp_arr+15 (actually used?)
+mul_tmp		= seed + 2		; formerly tmp_arr
+tmp_arr		= mul_tmp
+dmask:		= mul_tmp		; 16-byte array with dot masks, also temporary space
+hb_flag		= mul_tmp + 1	; half-byte indicator (formerly tmp_arr+1)
+pre_pt		= hb_flag + 1	; temporary dest_pt creation (formerly tmp_arr+2)
+des_dir		= pre_pt + 2	; desired direction (formerly tmp_arr+4)
+vh_mask		= des_dir + 1	; direction mask to allow/disable axis changes
+cur_y		= vh_mask + 1	; current Y index for screen (formerly as cur)
+s_rot		= cur_y + 1		; rotated animation sprite (formerly cur...cur+1)
+swp_ct		= s_rot + 2		; sweep sound counter (formerly temp)
+sqk_par		= swp_ct + 1	; squeak parametrer (formerly from cur, also using swp_ct instrad of temp)
+anim_pt		= sqk_par + 3	; frame counter (formerly temp)
+alt_msb		= anim_pt + 1	; formerly tmp_arr+15 (actually used?)
+bp_dly		= alt_msb		; new delay storage for 1.536 MHz beep
 
 ;		.dsb	16, 0	; 16-byte array with dot masks, also temporary space
 
 ; *** these MUST reside in zeropage ***
-map_pt	.word	0			; pointer to descriptor map
-spr_pt	.word	0			; pointer to sprite entry
-org_pt	.word	0			; pointer to 'clean', sprite-less screen
-dest_pt	.word	0			; VRAM pointer *** NOT used if IOSCREEN ***
+map_pt		= alt_msb + 1	; pointer to descriptor map
+spr_pt		= map_pt + 2	; pointer to sprite entry
+org_pt		= spr_pt + 2	; pointer to 'clean', sprite-less screen
+dest_pt		= org_pt + 2	; VRAM pointer *** NOT used if IOSCREEN ***
 
 ; ***************************
 ; *** big data structures ***
 ; ***************************
 
-	.bss
 
-	* = $600				; more-or-less minimOS-savvy
+;	* = $600				; more-or-less minimOS-savvy
 
-d_map	.dsb	512, 0		; descriptor map (496 bytes actually needed, but rounded to 32x31=992), d7=wall, d6=dot, d5=pill
-org_b	.dsb	8192, 0		; 'clean' screen buffer at $800-$27FF, which is page-aligned with the VRAM ($6000 in Durango-X)
+d_map		= $600			; descriptor map (496 bytes actually needed, but rounded to 32x31=992), d7=wall, d6=dot, d5=pill
+org_b		= d_map + 512	; 'clean' 8 KiB screen buffer at $800-$27FF, which is page-aligned with the VRAM ($6000 in Durango-X)
 
 ; ********************************
 ; *** magic number definitions ***
