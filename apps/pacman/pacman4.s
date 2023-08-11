@@ -18,8 +18,9 @@
 
 ; I/O addresses
 	IO8attr	= $DF80			; screen latch high, actually video mode flags
-	IO9in	= $DF9a			; joystick/keyboard input
-	IO9kbd	= $DF9D			; matrix keyboard port, caps lock off (write column D7...D4, read rows D3...D0)
+	IO9kbd	= $DF9B			; keyboard input
+	IO9pad1	= $DF9C			; gamepad input, also latch signal
+	IO9clk	= $DF9D			; gamepad shift clock
 	IOAie	= $DFAF			; enable hardware interrupt, note status is controlled via D0
 	IOBeep	= $DFB0			; beeper address (latches D0 value)
 	LTCdo	= $FFFF			; LTC display port
