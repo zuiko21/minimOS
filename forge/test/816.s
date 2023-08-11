@@ -12,7 +12,18 @@ dest	= src+3
 picture:
 	.bin	0, 0, "../../other/data/elvira.sv"
 b6502:
+	.byt	$66, $60, $66, $60, $66, $60, $66, $60	; brick red (as in "not supported") 6502
+	.byt	$60, $00, $60, $00, $60, $60, $00, $60
+	.byt	$66, $60, $66, $60, $60, $60, $66, $60
+	.byt	$60, $60, $00, $60, $60, $60, $60, $00
+	.byt	$66, $60, $66, $60, $66, $60, $66, $60
+
 b65816:
+	.byt	$BB, $B0, $BB, $0B, $BB, $0B, $0B, $BB	; pink 65816 @ +120
+	.byt	$B0, $00, $B0, $0B, $0B, $0B, $0B, $00
+	.byt	$BB, $B0, $BB, $0B, $BB, $0B, $0B, $BB
+	.byt	$B0, $B0, $0B, $0B, $0B, $0B, $0B, $0B
+	.byt	$BB, $B0, $BB, $0B, $BB, $0B, $0B, $BB
 
 	.dsb	$FE00-*, $FF	; padding
 
@@ -32,10 +43,6 @@ reset:
 ; *** main loop ***
 ; 6502 code
 t6502:
-	SEC
-;	XCE						; make sure it's in emulation mode!
-	NOP
-	NOP						; extra safety
 	LDX #$60				; screen address
 	LDY #$0
 	TYA						; will clear screen
@@ -49,7 +56,20 @@ clr_l:
 		INX
 		BPL clr_p
 ; draw 6502 banner (TBD)
-
+	LDX #7					; max. offset
+loop_02:
+		LDA b6502, X
+		STA $6F1C, X
+		LDA b6502+8, X
+		STA $6F5C, X
+		LDA b6502+16, X
+		STA $6F9C, X
+		LDA b6502+24, X
+		STA $6FDC, X
+		LDA b6502+32, X
+		STA $701C, X
+		DEX
+		BPL loop_02
 	JSR delay
 ; scroll up picture
 	LDX #$7F				; last page on screen
@@ -78,40 +98,40 @@ loop02:
 	LDA #64					; set counter
 	STA dest
 sh02:
-	LDX #$60
-	LDY #1
-	STY src					; source is one byte ahead
-	DEY
-	STY ptr
+		LDX #$60
+		LDY #1
+		STY src				; source is one byte ahead
+		DEY
+		STY ptr
 sp02:
-		STX src+1
-		STX ptr+1
+			STX src+1
+			STX ptr+1
 sr02:
-		LDY #0				; eeek
+			LDY #0			; eeek
 sl02:
-			LDA (src), Y
-			STA (ptr), Y
-			INY				; fill raster
-			CPY #63
-			BNE sl02
-		LDA src
-		CLC
-		ADC #64				; next raster
-		STA src
-		DEC					; destination is one byte before
-		STA ptr
-		BNE sr02			; still within same page?
-			INX
-		BPL sp02			; otherwise advance until end of screen
-	DEC dest				; next iteration
-	BNE sh02
+				LDA (src), Y
+				STA (ptr), Y
+				INY			; fill raster
+				CPY #63
+				BNE sl02
+			LDA src
+			CLC
+			ADC #64			; next raster
+			STA src
+			DEC				; destination is one byte before
+			STA ptr
+			BNE sr02		; still within same page?
+				INX
+			BPL sp02		; otherwise advance until end of screen
+		DEC dest			; next iteration
+		BNE sh02
 
 ; 65816 code
 t65816:
 	CLC
-;	XCE						; make sure it's in NATIVE mode!
+	XCE						; make sure it's in NATIVE mode!
 	.al						; 16-bit memory
-;	REP #$20;*********CHECK
+	REP #$20
 	LDX #$60				; screen address
 	LDY #$0
 	TYA						; will clear screen
@@ -126,13 +146,29 @@ cw_l:
 		INX
 		BPL cw_p
 ; draw 65816 banner (TBD)
-
+	LDX #6					; max. offset (16-bit mode)
+loop_816:
+		LDA b65816, X
+		STA $6F1C, X
+		LDA b65816+8, X
+		STA $6F5C, X
+		LDA b65816+16, X
+		STA $6F9C, X
+		LDA b65816+24, X
+		STA $6FDC, X
+		LDA b65816+32, X
+		STA $701C, X
+		DEX
+		DEX
+		BPL loop_816
+	SEP #$20				; 8-bit memory for a while
 	JSR delay
+	REP #$20				; back to 16-bit
 ; scroll up picture
 	LDX #$7F				; last page on screen
 	STX dest				; temporary use
 up816:
-		LDA #picture		; set origin pointer
+		LDA #picture		; set 16-bit origin pointer
 		STA src
 		LDY #0
 		STY ptr
@@ -155,38 +191,39 @@ loop816:
 	LDA #64					; set counter (16-bit to avoid mode change)
 	STA dest
 sh816:
-	LDX #$60
-	LDY #1
-	STY src					; source is one byte ahead
-	DEY
-	STY ptr
+		LDX #$60
+		LDY #1
+		STY src				; source is one byte ahead
+		DEY
+		STY ptr
 sp816:
-		STX src+1
-		STX ptr+1
+			STX src+1
+			STX ptr+1
 sr816:
-		LDY #0				; eeek
+			LDY #0			; eeek
 sl816:
-			LDA (src), Y
-			STA (ptr), Y
-			INY				; fill raster
-			INY
-			CPY #62
-			BNE sl816
-		LDA src				; not worth switching modes...
-		CLC
-		ADC #64				; next raster
-		STA src
-		DEC					; destination is one byte before
-		STA ptr
-		AND #$0F
-		BNE sr816
-			INX
-		BPL sp816			; otherwise advance until end of screen
-	DEC dest				; next iteration
-	BNE sh816
+				LDA (src), Y
+				STA (ptr), Y
+				INY			; fill raster
+				INY
+				CPY #62
+				BNE sl816
+			LDA src			; not worth switching modes...
+			CLC
+			ADC #64			; next raster
+			STA src
+			DEC				; destination is one byte before
+			STA ptr
+			AND #$0F
+			BNE sr816
+				INX
+			BPL sp816		; otherwise advance until end of screen
+		DEC dest			; next iteration
+		BNE sh816
+; go back to 6502 demo
+	SEC
+	XCE						; make sure it's in emulation mode!
 	.as
-;	SEP #$20;********CHECK
-
 	JMP t6502
 
 ; *** delay routine ***
@@ -208,13 +245,25 @@ dummy:
 ; ***************
 ; *** ROM end ***
 	.dsb	$FFE1-*, $FF	; usual padding
-	
+
 	JMP ($FFFC)				; devCart support
-; 65816 vectors
+
+; 65816 vectors @ $FFE4
+	.word	dummy			; COP-16
+	.word	dummy			; BRK-16
+	.word	dummy			; ABORT-16
+	.word	dummy			; NMI-16
+	.word	$FFFF			; reserved
+	.word	dummy			; IRQ-16
+	.word	$FFFF			; reserved
+	.word	$FFFF			; reserved
+	.word	dummy			; COP-8
+	.word	$FFFF			; reserved
+	.word	dummy			; ABORT-8
 
 ; 6502 vectors
-	.dsb	$FFFA-*, $FF
+;	.dsb	$FFFA-*, $FF
 
-	.word	dummy
-	.word	reset
-	.word	dummy
+	.word	dummy			; NMI
+	.word	reset			; RST
+	.word	dummy			; IRQ/BRK
