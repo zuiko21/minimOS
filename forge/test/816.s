@@ -14,7 +14,7 @@ picture:
 b6502:
 b65816:
 
-	.dsb	$FF00-*, $FF	; padding
+	.dsb	$FE00-*, $FF	; padding
 
 ; *** *** ROM code *** ***
 
@@ -74,8 +74,120 @@ loop02:
 		LDX dest
 		CPX #$60			; already over screen top?
 		BCS up02			; if not, redraw
+; side scroll
+	LDA #64					; set counter
+	STA dest
+sh02:
+	LDX #$60
+	LDY #1
+	STY src					; source is one byte ahead
+	DEY
+	STY ptr
+sp02:
+		STX src+1
+		STX ptr+1
+sr02:
+		LDY #0				; eeek
+sl02:
+			LDA (src), Y
+			STA (ptr), Y
+			INY				; fill raster
+			CPY #63
+			BNE sl02
+		LDA src
+		CLC
+		ADC #64				; next raster
+		STA src
+		DEC					; destination is one byte before
+		STA ptr
+		BNE sr02			; still within same page?
+			INX
+		BPL sp02			; otherwise advance until end of screen
+	DEC dest				; next iteration
+	BNE sh02
 
-lock:jmp lock
+; 65816 code
+t65816:
+	CLC
+;	XCE						; make sure it's in NATIVE mode!
+	.al						; 16-bit memory
+;	REP #$20;*********CHECK
+	LDX #$60				; screen address
+	LDY #$0
+	TYA						; will clear screen
+	STY ptr
+cw_p:
+		STX ptr+1			; select page
+cw_l:
+			STA (ptr), Y	; clear word
+			INY
+			INY				; 16-bit mode!
+			BNE cw_l
+		INX
+		BPL cw_p
+; draw 65816 banner (TBD)
+
+	JSR delay
+; scroll up picture
+	LDX #$7F				; last page on screen
+	STX dest				; temporary use
+up816:
+		LDA #picture		; set origin pointer
+		STA src
+		LDY #0
+		STY ptr
+page816:
+			STX ptr+1		; current destination pointer
+loop816:
+				LDA (src), Y
+				STA (ptr), Y			; copy byte into selected location
+				INY
+				INY
+				BNE loop816
+			INC src+1		; next page
+			INX
+			BPL page816		; ouside screen?
+		DEC dest			; will start one page upwards
+		LDX dest
+		CPX #$60			; already over screen top?
+		BCS up816			; if not, redraw
+; side scroll
+	LDA #64					; set counter (16-bit to avoid mode change)
+	STA dest
+sh816:
+	LDX #$60
+	LDY #1
+	STY src					; source is one byte ahead
+	DEY
+	STY ptr
+sp816:
+		STX src+1
+		STX ptr+1
+sr816:
+		LDY #0				; eeek
+sl816:
+			LDA (src), Y
+			STA (ptr), Y
+			INY				; fill raster
+			INY
+			CPY #62
+			BNE sl816
+		LDA src				; not worth switching modes...
+		CLC
+		ADC #64				; next raster
+		STA src
+		DEC					; destination is one byte before
+		STA ptr
+		AND #$0F
+		BNE sr816
+			INX
+		BPL sp816			; otherwise advance until end of screen
+	DEC dest				; next iteration
+	BNE sh816
+	.as
+;	SEP #$20;********CHECK
+
+	JMP t6502
 
 ; *** delay routine ***
 delay:
