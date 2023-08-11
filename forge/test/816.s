@@ -1,6 +1,8 @@
 ; testing 65C816 board for Durango-X
 ; (c) 2023 Carlos J. Santisteban
 
+#echo fix 16-bit pointers
+
 ; *** common ***
 ptr		= 0
 src		= ptr+3				; note extra padding
@@ -8,7 +10,31 @@ dest	= src+3
 
 ; *** *** ROM contents *** ***
 	* = $8000
+; Durango-X ROM image header
+demo_start:
+	.byt	0				; [0]=NUL, first magic number
+	.asc	"dX"			; image header for Durango-X devCart SD
+	.asc	"****"			; reserved
+	.byt	13				; [7]=NEWLINE, second magic number
+; filename
+	.asc	"65C816 demo!", 0
+	.word	0				; non-existent comment
 
+; advance to end of header
+; commits or version make no sense here, thus all the way to timestamp
+	.dsb	demo_start + $F8 - *, $FF
+
+	.word	0
+	.word	0				; so far, midnight Jan 1, 1980
+
+; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
+	.word	$8000			; 32K ROM image
+	.word	0				; if less than 16M, [255]=NUL may be third magic number
+
+; one-page filling so the screenshot is sector-aligned
+	.dsb	256, $FF
+
+; *** ROM data ***
 picture:
 	.bin	0, 0, "../../other/data/elvira.sv"
 b6502:
@@ -164,7 +190,7 @@ loop_816:
 	SEP #$20				; 8-bit memory for a while
 	JSR delay
 	REP #$20				; back to 16-bit
-; scroll up picture
+; scroll up picture *** maybe with MOVP?
 	LDX #$7F				; last page on screen
 	STX dest				; temporary use
 up816:
@@ -191,14 +217,11 @@ loop816:
 	LDA #64					; set counter (16-bit to avoid mode change)
 	STA dest
 sh816:
-		LDX #$60
-		LDY #1
-		STY src				; source is one byte ahead
-		DEY
-		STY ptr
+		LDA #$6001
+		STA src				; source is one byte ahead
+		DEC
+		STA ptr
 sp816:
-			STX src+1
-			STX ptr+1
 sr816:
 			LDY #0			; eeek
 sl816:
@@ -214,9 +237,6 @@ sl816:
 			STA src
 			DEC				; destination is one byte before
 			STA ptr
-			AND #$0F
-			BNE sr816
-				INX
 			BPL sp816		; otherwise advance until end of screen
 		DEC dest			; next iteration
 		BNE sh816
