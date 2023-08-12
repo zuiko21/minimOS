@@ -31,9 +31,6 @@ demo_start:
 	.word	$8000			; 32K ROM image
 	.word	0				; if less than 16M, [255]=NUL may be third magic number
 
-; one-page filling so the screenshot is sector-aligned
-	.dsb	256, $FF
-
 ; *** ROM data ***
 picture:
 	.bin	0, 0, "../../other/data/elvira.sv"
@@ -232,7 +229,7 @@ sh816:
 		LDY #$6000
 sp816:
 			LDA #62			; will move 63 bytes
-			MVN #0, #0		; *** not sure about xa syntax...
+			MVN 0, 0		; *** not sure about xa syntax...
 			INX
 			INY				; advance to next raster, as easy as this!
 			BPL sp816		; otherwise advance until end of screen
