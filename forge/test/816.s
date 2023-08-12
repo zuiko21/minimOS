@@ -156,8 +156,8 @@ sl02:
 t65816:
 	CLC
 	XCE						; make sure it's in NATIVE mode!
-	.al						; 16-bit memory
 	REP #$20
+	.al						; 16-bit memory
 	LDX #$60				; screen address
 	LDY #$0
 	TYA						; will clear screen
@@ -189,8 +189,13 @@ loop_816:
 		BPL loop_816
 	SEP #$20				; 8-bit memory for a while
 	JSR delay
-	REP #$20				; back to 16-bit
-; scroll up picture *** maybe with MOVP?
+	REP #$20				; back to 16-bit... but for indices too!
+;	.xl
+; scroll up picture *** now using MVN
+
+
+
+
 	LDX #$7F				; last page on screen
 	STX dest				; temporary use
 up816:
@@ -213,30 +218,23 @@ loop816:
 		LDX dest
 		CPX #$60			; already over screen top?
 		BCS up816			; if not, redraw
-; side scroll
+; side scroll *** using MVN
+
+	REP #$30				; back to 16-bit... but for indices too!
+	.xl
+
+
+
 	LDA #64					; set counter (16-bit to avoid mode change)
 	STA dest
 sh816:
-		LDA #$6001
-		STA src				; source is one byte ahead
-		DEC
-		STA ptr
+		LDX #$6001			; source is one byte ahead
+		LDY #$6000
 sp816:
-sr816:
-			LDY #0			; eeek
-sl816:
-				LDA (src), Y
-				STA (ptr), Y
-				INY			; fill raster
-				INY
-				CPY #62
-				BNE sl816
-			LDA src			; not worth switching modes...
-			CLC
-			ADC #64			; next raster
-			STA src
-			DEC				; destination is one byte before
-			STA ptr
+			LDA #62			; will move 63 bytes
+			MVN #0, #0		; *** not sure about xa syntax...
+			INX
+			INY				; advance to next raster, as easy as this!
 			BPL sp816		; otherwise advance until end of screen
 		DEC dest			; next iteration
 		BNE sh816
