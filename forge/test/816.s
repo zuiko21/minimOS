@@ -158,29 +158,21 @@ t65816:
 	STZ $6000				; crear first two bytes as pattern
 	LDX #$6000				; screen address
 	LDY #$6002
-	LDA #8191				; will move two less bytes of screen size
+	LDA #8189				; will move two less bytes of screen size
 	MVN 0, 0				; clear the screen FAST!
-
-	SEP #$10				; back to 8-bit index
-	.xs
-
-; draw 65816 banner (TBD)
-	LDX #6					; max. offset (16-bit mode)
+; draw 65816 banner (faster)
+	LDX #b65816
+	LDY #$6F1C
 loop_816:
-		LDA b65816, X
-		STA $6F1C, X
-		LDA b65816+8, X
-		STA $6F5C, X
-		LDA b65816+16, X
-		STA $6F9C, X
-		LDA b65816+24, X
-		STA $6FDC, X
-		LDA b65816+32, X
-		STA $701C, X
-		DEX
-		DEX
-		BPL loop_816
-	SEP #$20				; 8-bit memory for a while
+		LDA #7				; 8 bytes per raster
+		MVN 0, 0
+		TYA
+		CLC
+		ADC #56				; advance to raster below
+		TAY
+		CPY #$705C
+		BNE loop_816
+	SEP #$30				; all 8-bit for a while
 	JSR delay
 	REP #$20				; back to 16-bit... but for indices too!
 ;	.xl
@@ -234,9 +226,9 @@ sp816:
 ; go back to 6502 demo
 	SEC
 	XCE						; make sure it's in emulation mode!
-	.as
 	JMP t6502
 
+	.as
 ; *** delay routine ***
 delay:
 	LDA #10
