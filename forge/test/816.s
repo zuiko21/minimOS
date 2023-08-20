@@ -153,6 +153,7 @@ sl02:
 t65816:
 	CLC
 	XCE						; make sure it's in NATIVE mode!
+; clear screen
 	REP #$30
 	.al:.xl					; all 16-bit
 	STZ $6000				; crear first two bytes as pattern
@@ -174,42 +175,23 @@ loop_816:
 		BNE loop_816
 	SEP #$30				; all 8-bit for a while
 	JSR delay
-	REP #$20				; back to 16-bit... but for indices too!
-;	.xl
 ; scroll up picture *** now using MVN
-
-
-
-
-	LDX #$7F				; last page on screen
-	STX dest				; temporary use
-up816:
-		LDA #picture		; set 16-bit origin pointer
-		STA src
-		LDY #0
-		STY ptr
-page816:
-			STX ptr+1		; current destination pointer
-loop816:
-				LDA (src), Y
-				STA (ptr), Y			; copy byte into selected location
-				INY
-				INY
-				BNE loop816
-			INC src+1		; next page
-			INX
-			BPL page816		; ouside screen?
-		DEC dest			; will start one page upwards
-		LDX dest
-		CPX #$60			; already over screen top?
-		BCS up816			; if not, redraw
-; side scroll *** using MVN
-
 	REP #$30				; back to 16-bit... but for indices too!
-	.xl
-
-
-
+	LDY #$7F00				; last page on screen
+	STY dest				; will use another byte!
+	LDA #$00FF				; one page size
+	STA ptr					; use as counter (note that will use another byte from src, but not used otherwise!)
+up816:
+		LDX #picture		; start from top of file
+;		LDY dest			; destination on screen
+		LDA ptr				; current display position
+		MVN 0, 0
+		INC ptr+1			; one more page... wasting one byte, actually
+		DEC dest+1			; one page up... wasting one byte
+		LDY dest
+		CPY #$6000			; is it above screen top?
+		BCS up816
+; side scroll
 	LDA #64					; set counter (16-bit to avoid mode change)
 	STA dest
 sh816:
