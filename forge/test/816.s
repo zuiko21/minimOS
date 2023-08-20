@@ -153,21 +153,17 @@ sl02:
 t65816:
 	CLC
 	XCE						; make sure it's in NATIVE mode!
-	REP #$20
-	.al						; 16-bit memory
-	LDX #$60				; screen address
-	LDY #$0
-	TYA						; will clear screen
-	STY ptr
-cw_p:
-		STX ptr+1			; select page
-cw_l:
-			STA (ptr), Y	; clear word
-			INY
-			INY				; 16-bit mode!
-			BNE cw_l
-		INX
-		BPL cw_p
+	REP #$30
+	.al:.xl					; all 16-bit
+	STZ $6000				; crear first two bytes as pattern
+	LDX #$6000				; screen address
+	LDY #$6002
+	LDA #8191				; will move two less bytes of screen size
+	MVN 0, 0				; clear the screen FAST!
+
+	SEP #$10				; back to 8-bit index
+	.xs
+
 ; draw 65816 banner (TBD)
 	LDX #6					; max. offset (16-bit mode)
 loop_816:
