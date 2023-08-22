@@ -6,7 +6,9 @@ IOAie	= $DFA0
 IO9sp_c	= $DF9F
 IO9sp_d	= $DF9E
 
-#define	SPI5	%11011111
+; note! /CS goes into /SPI1 (like the Pocket) but C/D is tied to /SPI5 for convenience
+#define	SPICMD	%11011101
+#define	SPIDAT	%11111101
 
 ; *** *** ROM contents *** ***
 	* = $8000
@@ -45,8 +47,8 @@ reset:
 ; Durango-X stuff
 	STX IOAie				; turn LED off, but don't bother with screen
 ; prepare SPI interface
-	LDA #SPI5
-	STA IO9sp_c				; keep SPI device 5 selected all the time
+	LDA #SPICMD
+	STA IO9sp_c				; keep SPI device 5 selected all the time... but check mode
 ; init OLED screen via SPI
 	LDX #tab_end-tab_start
 init_l:
@@ -54,10 +56,43 @@ init_l:
 		JSR send_spi
 		DEX
 		BPL init_l
-; convert PBM to 
+
+; TEST CODE, clear screen
+	LDA #SPIDAT
+	STA IO9sp_c
+	
+	LDX #0
+	LDY #4					; 1024 bytes
+cl_loop:
+			LDA #0
+			JSR send_spi
+			INX
+			BNE cl_loop
+		DEY
+		BNE cl_loop
+
+; make screen blink and lock
+	LDA #SPICMD
+	STA IO9sp_c
+	LDA #$A6				; standard display
+flash:
+		PHA
+		JSR send_spi
+		PLA
+delay:
+
 
 ; *** support ***
 send_spi:
+	STA IO9sp_d				; put data into shift register
+	LDA IO9sp_c				; send 7 clock pulses
+	LDA IO9sp_c
+	LDA IO9sp_c
+	LDA IO9sp_c
+	LDA IO9sp_c
+	LDA IO9sp_c
+	LDA IO9sp_c				; no data to be read, thus we're done!
+	RTS
 
 ; *** data tables ***
 tab_start:					; OLED init sequence... in reverse!
