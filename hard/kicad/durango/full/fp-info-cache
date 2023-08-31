@@ -1,4 +1,4 @@
-16735568252315041
+16737265414990041
 Battery
 BatteryHolder_Bulgin_BX0036_1xC
 Bulgin Battery Holder, BX0036, Battery Type C (https://www.bulgin.com/products/pub/media/bulgin/data/Battery_holders.pdf)
@@ -47403,6 +47403,13 @@ NES gamepad
 0
 9
 8
+durango
+PowerSwitch
+SK12D07
+switch SPDT
+0
+3
+3
 durango
 SCART
 SCART socket, Tyco P/N 1483465-1
