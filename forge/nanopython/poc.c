@@ -5,9 +5,10 @@
 #include <stdio.h>
 
 char buffer[80];
-int cursor, lvalue;
+int vars[26];
+int cursor, lvalue, result, old, oper;
 int exitf			= 0;
-char tokens[256]	= {	'p','r','i','n','t',0,
+char tokens[256]	= {	'p','r','i','n','t',' ',0,
 						'q','u','i','t','(',')',0,
 						'=',0,
 						'+',0,
@@ -60,7 +61,40 @@ next_tk:
 		temptr += y;
 	} while(tokens[temptr] >= 0);	// BPL tk_loop
 eval:
-	printf("(eval)");
+	a = buffer[x];
+	printf("[%c]",a);
+	if (!a)		goto eol;
+	a = isletter(a);
+	if (a) {				// BEQ evalnum
+		y = a;
+		a = vars[y-1];
+		goto operand;
+	} else {				// evalnum:
+		do {
+			a = buffer[x];
+			printf("[%c]",a);
+			if (a<'0' || a>'9')	break;	// BCC/BCS pending
+			a -= '0';
+			result *= 10;
+			a += result;
+operand:
+			result = a;
+			x++;
+		} while (x);		// BNE evalnum
+		x++;				// pending:INX
+		cursor = x;
+		a = result;
+		x = oper;
+		if (x) {
+			a = old;
+//			do_op();
+			oper = 0;
+			x = cursor;
+		}					// noop:
+		old = a;
+		result = 0;
+	}
+eol:
 	return;
 found:
 	cursor = ++x;
