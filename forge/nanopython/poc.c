@@ -8,6 +8,7 @@ char buffer[80];
 int vars[26];
 int cursor, lvalue, result, old, oper;
 int exitf			= 0;
+int cmd_id			= 0;
 char tokens[256]	= {	'p','r','i','n','t',' ',0,
 						'q','u','i','t','(',')',0,
 						'=',0,
@@ -17,7 +18,9 @@ char tokens[256]	= {	'p','r','i','n','t',' ',0,
 						'/',0,
 							-1};
 
-void get_token(void);
+int get_token(void);
+int parse(void);
+void evaluate(void);
 int isletter(int c);
 void error(void);
 
@@ -28,38 +31,55 @@ int main(void) {
 		printf(">>> ");		// JSR prompt
 		gets(buffer);		// buff:
 		printf("\nParsing %s\n",buffer);// ******debug*********
-		cursor = 0;			// parse:
-		get_token();
+//		cursor = 0;			// parse:
+		if (parse())	error();
+//		get_token();
 	} while (!exitf);
 	printf("\nThanks for using nanoPython\n");
 
 	return 0;
 }
+int parse(void) {
+	cursor = 0;
+	while (buffer[cursor]) {
+		a = get_token();
+		if (a<0)	evaluate();
+	}
+	
+}
 
-void get_token() {
+int get_token(void) {
 	int a, x, y;
-	int cmd_id	= 0;
 	int temptr	= 0;
 
+	cmd_id	= 0;
 	do {					// tk_loop:
 		x = cursor;
 		y = 0;
 		do {				// tk_char:
 			a = tokens[y+temptr];//printf("%c",a);
-			if (!a)					goto found;
-			if (a != buffer[x])		goto next_tk;
+			if (!a)					break;
+			if (a != buffer[x])		break;
 			x++;
 			y++;
 		} while (-1);		// BNE tk_char
-next_tk:
-		do {
+//next_tk:
+		if (!a) {
+			return cmd_id;
+		} else {
+			do {
+				y++;
+				a = tokens[y+temptr];//printf(">%c",a);
+			} while (a);		// BNE next_tk
+			cmd_id++;//printf("*");
 			y++;
-			a = tokens[y+temptr];//printf(">%c",a);
-		} while (a);		// BNE next_tk
-		cmd_id++;//printf("*");
-		y++;
-		temptr += y;
+			temptr += y;
+		}
 	} while(tokens[temptr] >= 0);	// BPL tk_loop
+
+	return -1;
+}
+
 eval:
 	a = buffer[x];
 	printf("[%c]",a);
