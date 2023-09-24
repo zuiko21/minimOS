@@ -21,6 +21,7 @@ char tokens[256]	= {	'p','r','i','n','t',' ',0,
 int get_token(void);
 int parse(void);
 void evaluate(void);
+void execute(int c);
 int isletter(int c);
 void error(void);
 
@@ -39,11 +40,14 @@ int main(void) {
 
 	return 0;
 }
+
 int parse(void) {
 	cursor = 0;
+	oper = 0;
 	while (buffer[cursor]) {
 		a = get_token();
 		if (a<0)	evaluate();
+		else		execute(a);
 	}
 	
 }
@@ -117,8 +121,11 @@ operand:
 eol:
 	return;
 found:
-	cursor = ++x;
-	switch(cmd_id) {		// JMP (exec, X)
+
+void execute(int c) {
+//	cursor = ++x;
+	if (oper)	error();	// prevents evaluating negative values
+	switch(c) {				// JMP (exec, X)
 		case 0:				// do_print:
 			printf(" TOKEN = print\n");
 			break;
@@ -128,23 +135,28 @@ found:
 			break;
 		case 2:				// assign:
 			printf(" TOKEN = '='\n");
-			x = cursor-2;
-			a = buffer[x];
-			a = isletter(a);
-			if (!a)		error();
-			else		lvalue = a;
+//			x = cursor-2;
+//			a = buffer[x];
+//			a = isletter(a);
+//			if (!a)		error();
+//			else		lvalue = a;
 			break;
 		case 3:				// opadd:
 			printf(" TOKEN = +\n");
+			oper = 1;
 			break;
 		case 4:				// opsub:
 			printf(" TOKEN = -\n");
+//			if (oper)	error();
+			oper = 2;
 			break;
 		case 5:				// opmul:
 			printf(" TOKEN = *\n");
+			oper = 3;
 			break;
 		case 6:				// opdiv:
 			printf(" TOKEN = /\n");
+			oper = 4;
 			break;
 	}
 }
