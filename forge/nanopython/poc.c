@@ -6,7 +6,8 @@
 
 char buffer[80];
 int vars[26];
-int cursor, lvalue, result, old, oper;
+int a, x, y;
+int cursor, lvalue, result, old, oper, temptr, prnflag, errflag, assign;
 int exitf			= 0;
 int cmd_id			= 0;
 char tokens[256]	= {	'p','r','i','n','t',' ',0,
@@ -31,7 +32,6 @@ int main(void) {
 	do {					// repl:
 		printf(">>> ");		// JSR prompt
 		gets(buffer);		// buff:
-		printf("\nParsing %s\n",buffer);// ******debug*********
 //		cursor = 0;			// parse:
 		if (parse())	error();
 //		get_token();
@@ -42,21 +42,29 @@ int main(void) {
 }
 
 int parse(void) {
+		printf("\nParsing %s\n",buffer);// ******debug*********
 	cursor = 0;
 	oper = 0;
-	while (buffer[cursor]) {
+	prnflag = 0;
+	errflag = 0;
+	lvalue = 0;
+	assign = 0;
+	while (buffer[cursor] && !errflag) {
 		a = get_token();
 		if (a<0)	evaluate();
 		else		execute(a);
 	}
-	
+	if (!errflag && prnflag)	printf("OUTPUT: %d\n", result);
+	if (!errflag && assign)		vars[lvalue-1] = result;
+
+	return errflag;
 }
 
 int get_token(void) {
-	int a, x, y;
-	int temptr	= 0;
-
+		printf("{GT}");
+	temptr	= 0;
 	cmd_id	= 0;
+
 	do {					// tk_loop:
 		x = cursor;
 		y = 0;
@@ -84,50 +92,69 @@ int get_token(void) {
 	return -1;
 }
 
-eval:
+void evaluate(void) {
+		printf("{EV}");
+	x = cursor;
 	a = buffer[x];
 	printf("[%c]",a);
-	if (!a)		goto eol;
-	a = isletter(a);
-	if (a) {				// BEQ evalnum
-		y = a;
-		a = vars[y-1];
-		goto operand;
-	} else {				// evalnum:
-		do {
-			a = buffer[x];
-			printf("[%c]",a);
-			if (a<'0' || a>'9')	break;	// BCC/BCS pending
-			a -= '0';
-			result *= 10;
-			a += result;
-operand:
-			result = a;
-			x++;
-		} while (x);		// BNE evalnum
-		x++;				// pending:INX
+	if (a) {
+		a = isletter(a);
+		if (a) {
+			printf("!");
+			y = a;
+			a = vars[y-1];
+			if (x)			result = a;
+			else			lvalue = y;
+		} else {
+			result = 0;
+			do {
+				a = buffer[x];
+				printf("[%c]",a);
+				if (a<'0' || a>'9')	break;	// BCC/BCS pending
+				a -= '0';
+				result *= 10;
+				a += result;
+				result = a;
+				x++;
+			} while (x);
+			x--;
+		}
+		x++;
 		cursor = x;
-		a = result;
 		x = oper;
-		if (x) {
-			a = old;
-//			do_op();
-			oper = 0;
-			x = cursor;
-		}					// noop:
-		old = a;
-		result = 0;
+		switch(x) {
+			case 1:
+				result = old + result;
+				printf(".suma.");
+				oper = 0;
+				break;
+			case 2:
+				result = old - result;
+				printf(".resta.");
+				oper = 0;
+				break;
+			case 3:
+				result = old * result;
+				printf(".mul.");
+				oper = 0;
+				break;
+			case 4:
+				result = old / result;
+				printf(".div.");
+				oper = 0;
+				break;
+		}
 	}
-eol:
-	return;
-found:
+}
 
 void execute(int c) {
-//	cursor = ++x;
+		printf("{XC}");
 	if (oper)	error();	// prevents evaluating negative values
+	cursor = ++x;
 	switch(c) {				// JMP (exec, X)
 		case 0:				// do_print:
 			printf(" TOKEN = print\n");
+			prnflag = 1;
 			break;
 		case 1:				// exit:
 			printf(" TOKEN = quit()\n");
@@ -135,11 +162,8 @@ void execute(int c) {
 			break;
 		case 2:				// assign:
 			printf(" TOKEN = '='\n");
-//			x = cursor-2;
-//			a = buffer[x];
-//			a = isletter(a);
-//			if (!a)		error();
-//			else		lvalue = a;
+			if (!lvalue)	error();
+			else			assign = 1;
 			break;
 		case 3:				// opadd:
 			printf(" TOKEN = +\n");
@@ -159,6 +183,7 @@ void execute(int c) {
 			oper = 4;
 			break;
 	}
+	old = result;
 }
 
 void error(void) {
