@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230529-1401
+; last modified 20230927-0951
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -9400,6 +9400,20 @@ irq_sup:
 	PHY						; needed for 5x8 matrix support
 ; *** interrupt support for matrix keyboard ***
 	JSR kbd_isr
+; *** *** special patch for improving BREAK key read *** ***
+#ifdef	KBDMAT
+	LDA #1			; select first column
+ 	STA IO9m5x8
+  	LDA IO9m5x8		; get rows for this column
+   	AND #%00000101		; check bits for SHIFT and SPACE *** check
+    	CMP #%00000101
+     	BNE irq_nbrk
+      		LDA #3		; BREAK key code (Control-C)
+		STA kb_asc	; as received key continuously while pressed, no matter the repeat function!
+irq_nbrk:
+;	STZ IO9m5x8		; disable column (CMOS only, not needed but lowers power)
+#endif
+; *** ***
 ; * after reading keyboard, gamepads are read, may suppress this for slight performance improvement *
 #ifndef	KBBYPAD
 ; keep gamepad input updated (already done for KBD emulation)
