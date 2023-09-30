@@ -1,6 +1,6 @@
 ; nanoPython (Proof Of Concept)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230930-1259
+; last modified 20230930-1721
 
 ; *** zeropage ***
 cio_pt		= $E6
@@ -45,11 +45,41 @@ fw_scur		= fw_io9+1		; NEW, cursor control
 buffer		= fw_scur+1		; input buffer
 ;lvalue		= buffer+80		; variable to be assigned
 
+*	= $C000
+
+rom_start:
+; header ID
+	.byt	0						; [0]=NUL, first magic number
+	.asc	"dX"					; bootable ROM for Durango-X devCart
+	.asc	"****"					; reserved
+	.byt	13						; [7]=NEWLINE, second magic number
+; filename
+	.asc	"nanoPython POC"		; C-string with filename @ [8], max 238 chars
+	.byt	0						; first terminator for filename
+	.asc	""						; optional C-string with comment after filename, filename+comment up to 238 chars
+	.byt	0						; second terminator for optional comment, just in case
+
+; advance to end of header
+	.dsb	rom_start + $E6 - *, $FF
+
+; library commit (new, optional)
+	.asc	"--------"				; USERFIELD2
+	.dsb	(rom_start + $EE - *) * (* < rom_start+$EE), $FF	; padding in case of string shorter than 8 chars!
+; version number (new)
+	.word	VERSION
+; main commit (new, helpful)
+	.asc	"--------"				; USERFIELD1
+	.dsb	(rom_start + $F8 - *) * (* < rom_start+$F8), $FF	; padding in case of string shorter than 8 chars!
+; date & time in MS-DOS format at byte 248 ($F8)
+	.word	$9D80					; H_TIME
+	.word	$5597					; H_DATE
+; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
+	.word	$10000-rom_start		; filesize (rom_end is actually $10000)
+	.word	0						; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
+
 ; *************************
 ; *** *** main code *** ***
 ; *************************
-
-*	= $C000
 
 nanopython:
 	LDX #>splash
@@ -96,7 +126,7 @@ ploop:
 			LDX cursor
 			LDA buffer, X
 		BNE chk_err			; ... && buffer[cursor]) {
-			JSR get_token	; a = get_token();
+			JSR get_token	; a = get_token();		*** could be inlined as well ***
 			BPL do_exec		; if (a<0)	evaluate();
 				JSR evaluate
 				BRA no_exec
@@ -170,14 +200,8 @@ str_loop:
 str_end:
 	RTS
 
-
-
-
-
-
-
 get_token:
-; *** detect some token at specified position
+; *** detect some token at specified position ***
 	LDY #<tokens
 	LDA #>tokens
 	STY temptr
@@ -188,52 +212,63 @@ tk_loop:
 		LDY #0
 tk_char:
 			LDA (temptr), Y	; check token list
-		BEQ found			; terminated token without any difference found
+		BEQ found			; if (!a)	break;					terminated token without any difference found
 			CMP buffer, X	; compare with what is at the input
-		BNE next_tk			; any difference will try next token
+		BNE next_tk			; if (a != buffer[x])	break;		any difference will try next token
 			INX
 			INY				; advance position
-			BNE tk_char		; keep trying
-next_tk:
+			BRA tk_char		; keep trying
+next_tk:					; do {
 		INY					; eeeeeeeeeeeek
-		LDA (temptr), Y
-		BNE next_tk			; browse until end of token
+		LDA (temptr), Y		; a = tokens[y+temptr];
+		BNE next_tk			; } while (a);						browse until end of token
 	INC cmd_id				; eeeeek
 	INY
 	TYA
 	CLC
 	ADC temptr
-	STA temptr				; advance to next token in list
+	STA temptr				; temptr += y;						advance to next token in list
 	BCC tk_pass				; try another one
 		INC temptr+1		; in case of page crossing
 tk_pass:
 	LDA (temptr)			; check start of new token
-	BPL tk_loop				; go check next token...
+	BPL tk_loop				; } while(tokens[temptr] >= 0);		go check next token...
 ; if arrived here, token is invalid (list has ended at $FF)
-	BMI eval				; try to evaluate a expression
+	RTS						; return -1;						try to evaluate a expression
 found:
-	INX
-	STX cursor				; eeeek
-	ASL cmd_id				; times two for indexing
-	LDX cmd_id
-	JMP (exec, X)			; do command
-eval:
-; *** simple expression evaluator ***
+	LDA cmd_id
+	RTS						; return cmd_id;
+
+evaluate:
+; *** get values from variables or numeric constants ***
+	LDX cursor				; just in case
 ; single-letter variables
 	LDA buffer, X			; take current char from buffer
-		BEQ eol				; no more in buffer! check for assignation
+	BNE not_eol				; no more in buffer! check for assignation
+		RTS
+not_eol:					; if (a) {
 	JSR isletter			; variable, perhaps?
-	BEQ evalnum				; eeeeeek
+	BEQ evalnum				; if (a) {							eeeeeek
 		TAY					; use as index
 		LDA vars-1, Y		; note offset
-		BRA operand
+		CPX #0				; justified use
+		BEQ is_lvalue
+			STA result		; if (x)	result = a;
+			BRA was_rval
+is_lvalue:
+		STY lvalue			; else		lvalue = y;
+was_rval:
+		INX
+		BRA pending
 evalnum:
 ; single-byte numbers and basic operators with no priorities nor parenthesis
-	LDA buffer, X
-	CMP #'0'
-	BCC pending
+	STZ result
+enuml:						; do {
+		LDA buffer, X
+		CMP #'0'
+			BCC pending
 		CMP #'9'+1
-		BCS pending			; no more numbers
+			BCS pending		; if (a<'0' || a>'9')	break;		no more numbers
 ; if arrived here, it's a number
 		SBC #'0'-1			; C was clear, thus borrows
 		ASL result			; times 2...
@@ -244,9 +279,82 @@ evalnum:
 		CLC					; just in case
 		ADC result			; 8i+j
 		ADC scratch			; 10i+j
-operand:
-		STA result
+		STA result			; ...result *= 10; a += result; result = a;
 		INX					; next char
+		BRA enuml			; } while (x);						actually more like	} while(1);
+pending:
+	STX cursor
+	LDA oper				; x = oper;							see below
+	ASL cmd_id				; times two for indexing
+	LDX cmd_id
+	JMP (exec, X)			; switch(x) {						do command
+; *** pending operation pointer list    ***
+exec:
+	.word	str_end			; NULL pointer for unused index 0
+	.word	p_add
+	.word	p_sub
+	.word	p_mul
+	.word	p_div
+; *** pending operation execution block ***
+p_add:						; case 1:
+	LDA old
+	CLC
+	ADC result
+	STA result				; result = old + result;
+	BRA not_pend
+p_sub:
+	LDA old
+	SEC
+	SBC result
+	STA result				; result = old - result;
+	BRA not_pend
+p_mul:						; *** quick-and-dirty multiplication algorithm ***
+	LDA #0
+	CLC
+	LDY result
+		BEQ not_pend		; n * 0 = 0, do nothing
+mul_loop:
+		ADC old
+		DEY
+		BNE mul_loop
+	STA result				; result = old * result;
+	BRA not_pend
+p_div:						; *** quick-and-dirtiest division algorithm ***
+	LDA result
+	BNE div_ok
+		INC errflag			; generic error for divide-by-zero
+		BRA not_pend
+div_ok:
+	LDY #0
+	LDA old
+div_loop:
+		CMP result
+	BMI quot
+	BEQ quot
+		SEC
+		SBC result
+		INY
+		BRA div_loop
+quot:
+	STY result				; result = old / result;
+;	BRA not_pend			; ...break
+not_pend:
+	STZ oper				; oper = 0...
+	RTS
+
+
+
+
+
+
+
+
+
+
+
+
+operand:
+
 		BNE evalnum			; don't bother with letters in between numbers
 pending:
 	INX						; skip last number
