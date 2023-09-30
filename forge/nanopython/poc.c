@@ -22,8 +22,8 @@ char tokens[256]	= {	'p','r','i','n','t',' ',0,
 int get_token(void);
 int parse(void);
 void evaluate(void);
-void execute(int c);
-int isletter(int c);
+void execute(void);
+int isletter(void);
 void error(void);
 
 int main(void) {
@@ -52,7 +52,7 @@ int parse(void) {
 	while (buffer[cursor] && !errflag) {
 		a = get_token();
 		if (a<0)	evaluate();
-		else		execute(a);
+		else		execute();
 	}
 	if (!errflag && prnflag)	printf("OUTPUT: %d\n", result);
 	if (!errflag && assign)		vars[lvalue-1] = result;
@@ -61,7 +61,7 @@ int parse(void) {
 }
 
 int get_token(void) {
-		printf("{GT}");
+		printf("{GT@%d}",cursor);
 	temptr	= 0;
 	cmd_id	= 0;
 
@@ -77,6 +77,7 @@ int get_token(void) {
 		} while (-1);		// BNE tk_char
 //next_tk:
 		if (!a) {
+			printf("{~GT.cmd_id@%d}\n",cursor);
 			return cmd_id;
 		} else {
 			do {
@@ -88,28 +89,30 @@ int get_token(void) {
 			temptr += y;
 		}
 	} while(tokens[temptr] >= 0);	// BPL tk_loop
+	printf("{~GT.NOT@%d}\n",cursor);
 
 	return -1;
 }
 
 void evaluate(void) {
-		printf("{EV}");
+		printf("{EV@%d}",cursor);
 	x = cursor;
 	a = buffer[x];
 	printf("[%c]",a);
 	if (a) {
-		a = isletter(a);
+		a = isletter();
 		if (a) {
 			printf("!");
 			y = a;
 			a = vars[y-1];
 			if (x)			result = a;
 			else			lvalue = y;
+			x++;
 		} else {
 			result = 0;
 			do {
 				a = buffer[x];
-				printf("[%c]",a);
+				printf("[#%c]",a);
 				if (a<'0' || a>'9')	break;	// BCC/BCS pending
 				a -= '0';
 				result *= 10;
@@ -117,11 +120,10 @@ void evaluate(void) {
 				result = a;
 				x++;
 			} while (x);
-			x--;
 		}
-		x++;
 		cursor = x;
 		x = oper;
+		printf("<%d>",x);
 		switch(x) {
 			case 1:
 				result = old + result;
@@ -145,45 +147,47 @@ void evaluate(void) {
 				break;
 		}
 	}
+	printf("{~EV@%d}\n",cursor);
 }
 
-void execute(int c) {
-		printf("{XC}");
+void execute(void) {
+		printf("{XC@%d}",cursor);
 	if (oper)	error();	// prevents evaluating negative values
-	cursor = ++x;
-	switch(c) {				// JMP (exec, X)
+	cursor = x;
+	switch(a) {				// JMP (exec, X)
 		case 0:				// do_print:
-			printf(" TOKEN = print\n");
+			printf(" TOKEN = print");
 			prnflag = 1;
 			break;
 		case 1:				// exit:
-			printf(" TOKEN = quit()\n");
+			printf(" TOKEN = quit()");
 			exitf = 1;
 			break;
 		case 2:				// assign:
-			printf(" TOKEN = '='\n");
+			printf(" TOKEN = '='");
 			if (!lvalue)	error();
 			else			assign = 1;
 			break;
 		case 3:				// opadd:
-			printf(" TOKEN = +\n");
+			printf(" TOKEN = +");
 			oper = 1;
 			break;
 		case 4:				// opsub:
-			printf(" TOKEN = -\n");
+			printf(" TOKEN = -");
 //			if (oper)	error();
 			oper = 2;
 			break;
 		case 5:				// opmul:
-			printf(" TOKEN = *\n");
+			printf(" TOKEN = *");
 			oper = 3;
 			break;
 		case 6:				// opdiv:
-			printf(" TOKEN = /\n");
+			printf(" TOKEN = /");
 			oper = 4;
 			break;
 	}
 	old = result;
+	printf("{~XC@%d}\n",cursor);
 }
 
 void error(void) {
@@ -191,8 +195,8 @@ void error(void) {
 // may set some flags preventing further parsing
 }
 
-int isletter(int c) {
-	c |= 32;
-	if (c >= 'a' && c <= 'z')	return c-'a'+1;
+int isletter(void) {
+	a |= 32;
+	if (a >= 'a' && a <= 'z')	return a-'a'+1;
 	return 0;
 }
