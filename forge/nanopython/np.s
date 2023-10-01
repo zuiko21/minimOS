@@ -1,6 +1,6 @@
 ; nanoPython (Proof Of Concept)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230930-1721
+; last modified 20231001-1650
 
 ; *** zeropage ***
 cio_pt		= $E6
@@ -288,13 +288,6 @@ pending:
 	ASL cmd_id				; times two for indexing
 	LDX cmd_id
 	JMP (exec, X)			; switch(x) {						do command
-; *** pending operation pointer list    ***
-exec:
-	.word	str_end			; NULL pointer for unused index 0
-	.word	p_add
-	.word	p_sub
-	.word	p_mul
-	.word	p_div
 ; *** pending operation execution block ***
 p_add:						; case 1:
 	LDA old
@@ -342,7 +335,8 @@ not_pend:
 	STZ oper				; oper = 0...
 	RTS
 
-
+execute:
+; *** perform detected token ***
 
 
 
@@ -394,66 +388,6 @@ var_ok:
 	SBC #'a'-2				; C known clear, but should turn 'a' into 1 (proper l_value)
 	RTS
 
-; *** commands ***
-; placeholders
-do_print:
-do_if:
-RTS
-
-; operator detection
-opadd:
-	LDA #2
-	BNE setop
-opsub:
-	LDA #4
-	BNE setop
-opmul:
-	LDA #6
-	BNE setop
-opdiv:
-	LDA #8
-setop:
-	STA oper
-	RTS
-; operator execution (first operand in A, take second from result, return in A)
-doadd:
-	CLC
-	ADC result
-	RTS
-dosub:
-	SEC
-	SBC result
-	RTS
-domul:
-	LDY result				; number of times
-	CLC
-		BEQ byzero
-	BNE mul_chk
-mul_loop:
-		ADC old
-mul_chk:
-		DEY
-		BNE mul_loop
-	BEQ mul_done
-byzero:
-	LDA #0
-mul_done:
-	RTS
-dodiv:;*******************************
-	RTS
-
-assign:
-; get back one char, read single name variable and set it as lvalue
-	LDX cursor				; current position after =
-	DEX
-	DEX
-	LDA buffer, X			; get variable name
-	JSR isletter
-	BNE do_assign
-		JMP error			; always a letter as lvalue, otherwise error
-do_assign:
-	STA lvalue
-	RTS
 
 ; ********************
 ; *** *** data *** ***
@@ -477,21 +411,15 @@ tokens:
 	.asc	"/", 0			; 14
 
 	.byt	$FF				; list termination
+; *** pending operation pointer list    ***
 exec:
-	.word	do_print		; 0
-	.word	exit			; 2
-	.word	do_if			; 4
-	.word	assign			; 6
-	.word	opadd			; 8
-	.word	opsub			; 10
-	.word	opmul			; 12
-	.word	opdiv			; 14
+	.word	str_end			; NULL pointer for unused index 0
+	.word	p_add
+	.word	p_sub
+	.word	p_mul
+	.word	p_div
 
-arithm:						; operations themselves
-	.word	doadd
-	.word	dosub
-	.word	domul
-	.word	dodiv
+
 
 ; *** *** *** ***** *** *** ***
 
