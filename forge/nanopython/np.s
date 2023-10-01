@@ -1,9 +1,9 @@
 ; nanoPython (Proof Of Concept)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231001-1901
+; last modified 20231001-1932
 
 ; assemble from /forge/nanopython with:
-; xa np.s -I ../../firmware
+; xa np.s -I ../../OS/firmware
 
 ; *** zeropage ***
 cio_pt		= $E6
@@ -13,7 +13,7 @@ cursor		= $EA			; input buffer position
 cmd_id		= $EB			; token counter
 vars		= $80			; a-z, single byte!
 old			= vars+26		; previous operand
-oper		= old+1			; operator (0 = none, 2/4/6/8 = +-*/)
+oper		= old+1			; operator
 result		= oper+1		; last evaluation
 lvalue		= result+1		; variable to be assigned after end of evaluation (0=none, 1=a... 26=z)
 scratch		= lvalue+1		; temporary value
@@ -125,6 +125,7 @@ parse:
 		STZ oper
 		STZ prnflag
 		STZ errflag
+		STZ exitf
 		STZ lvalue
 		STZ assign
 ploop:
@@ -132,7 +133,7 @@ ploop:
 		BNE chk_err
 			LDX cursor
 			LDA buffer, X
-		BNE chk_err			; ... && buffer[cursor]) {
+		BEQ chk_err			; ... && buffer[cursor]) {
 			JSR get_token	; a = get_token();		*** could be inlined as well ***
 			BPL do_exec		; if (a<0)	evaluate();
 				JSR evaluate
@@ -400,8 +401,8 @@ print:
 	LDX #0
 cent:
 		CMP #100
-	BCS no_cent
-		SBC #99					; C was clear, thus borrows
+	BCC no_cent
+		SBC #100				; C was set
 		INX
 		BRA cent
 no_cent:
@@ -409,7 +410,7 @@ no_cent:
 	TXA
 	BEQ nlead_c
 		INC scratch				; does have hundreds, thus next zero is needed
-		ADC #'0'-1				; C was set, thus carry
+		ADC #'0'				; C was clear
 		TAY
 		JSR conio
 nlead_c:
@@ -417,8 +418,8 @@ nlead_c:
 	LDX #0
 tens:
 		CMP #10
-	BCS no_tens
-		SBC #9					; C was clear, thus borrows
+	BCC no_tens
+		SBC #10					; C was set
 		INX
 		BRA tens
 no_tens:
@@ -446,7 +447,7 @@ nlead_t:
 ; *** *** data *** ***
 ; ********************
 splash:
-	.asc	"65C02 nanoPython PoC", 13, "@zuiko21", 13, 0
+	.asc	"65C02 nanoPython PoC 0.1", 13, "@zuiko21", 13, 0
 bye:
 	.asc	13, "Thanks for using nanoPython on", 13, "the 65C02-powered ", 14, "Durango·X", 15,"!", 0
 wtf:
