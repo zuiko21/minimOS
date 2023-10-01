@@ -1,6 +1,9 @@
 ; nanoPython (Proof Of Concept)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231001-1650
+; last modified 20231001-1901
+
+; assemble from /forge/nanopython with:
+; xa np.s -I ../../firmware
 
 ; *** zeropage ***
 cio_pt		= $E6
@@ -14,6 +17,10 @@ oper		= old+1			; operator (0 = none, 2/4/6/8 = +-*/)
 result		= oper+1		; last evaluation
 lvalue		= result+1		; variable to be assigned after end of evaluation (0=none, 1=a... 26=z)
 scratch		= lvalue+1		; temporary value
+prnflag		= scratch+1		; print enabled
+errflag		= prnflag+1		; error detected
+assign		= errflag+1		; pending assignation
+exitf		= assign+1		; exit requested
 
 ; *** hardware definitions for Durango-X ***
 IO8attr		= $DF80
@@ -66,7 +73,7 @@ rom_start:
 	.asc	"--------"				; USERFIELD2
 	.dsb	(rom_start + $EE - *) * (* < rom_start+$EE), $FF	; padding in case of string shorter than 8 chars!
 ; version number (new)
-	.word	VERSION
+	.word	$0000					; VERSION
 ; main commit (new, helpful)
 	.asc	"--------"				; USERFIELD1
 	.dsb	(rom_start + $F8 - *) * (* < rom_start+$F8), $FF	; padding in case of string shorter than 8 chars!
@@ -337,43 +344,35 @@ not_pend:
 
 execute:
 ; *** perform detected token ***
-
-
-
-
-
-
-
-
-
-
-operand:
-
-		BNE evalnum			; don't bother with letters in between numbers
-pending:
-	INX						; skip last number
-	STX cursor				; advance position
+	LDY oper				; is there any pending operation?
+		BNE error			; note this prevents the use of negative numbers
+	STX cursor
+	ASL						; A times two for indexing
+	TAX
+	JMP (set_tk, X)			; switch(a);
+; *** token acknowledge execution block ***
+t_prn:
+	INC prnflag
+	BRA end_ex
+t_bye:
+	INC exitf
+	BRA end_ex
+t_asgn:
+	LDA lvalue
+		BEQ error
+	INC assign
+	BRA end_ex
+t_add:
+t_sub:
+t_mul:
+t_div:
+	DEC
+	DEC
+	STA oper				; oper is actually A-2
+end_ex:
 	LDA result
-	LDX oper				; any pending operation?
-	BEQ noop
-		LDA old				; get first operand
-		JSR do_op			; will return with new result in A
-		STZ oper
-		LDX cursor
-noop:
-	STA old					; store current result for later
-	STZ result				; clear for later
-	JMP get_token			; continue with expression
-eol:
-; input line has been parsed, check for assignation
-	LDY lvalue				; pending?
-	BEQ parsed
-		LDA old				; last evaluated value
-		STA vars-1, Y		; update stored value
-parsed:
-	JMP repl				; and another one
-do_op:
-	JMP (arithm-2, X)		; call operation (note offset)
+	STA old					; old = result;
+	RTS
 
 isletter:
 ; *** check A if letter, return index 1...26 or 0 if failed
@@ -388,6 +387,60 @@ var_ok:
 	SBC #'a'-2				; C known clear, but should turn 'a' into 1 (proper l_value)
 	RTS
 
+error:
+; *** discard stack, print error message and back to line input ***
+	PLA
+	PLA						; discard return address
+	JMP do_error
+
+print:
+; *** display 'result' in decimal form ***
+	STZ scratch					; temporary use, 0=previous zero not printed, 1=print everything
+	LDA result
+	LDX #0
+cent:
+		CMP #100
+	BCS no_cent
+		SBC #99					; C was clear, thus borrows
+		INX
+		BRA cent
+no_cent:
+	PHA							; keep value!
+	TXA
+	BEQ nlead_c
+		INC scratch				; does have hundreds, thus next zero is needed
+		ADC #'0'-1				; C was set, thus carry
+		TAY
+		JSR conio
+nlead_c:
+	PLA							; retrieve value
+	LDX #0
+tens:
+		CMP #10
+	BCS no_tens
+		SBC #9					; C was clear, thus borrows
+		INX
+		BRA tens
+no_tens:
+	PHA							; keep value!
+	LDA scratch					; check previous zero
+		BNE ylead_t				; none skipped, thus print even if zero
+	TXA
+	BEQ nlead_t
+ylead_t:
+		TXA
+		CLC
+		ADC #'0'				; C is not known
+		TAY
+		JSR conio
+nlead_t:
+	PLA							; retrieve remaining value, just units
+	CLC
+	ADC #'0'					; no previous comparison, thus clear C
+	TAY
+	JSR conio
+	LDY #13
+	JMP conio					; new line and return
 
 ; ********************
 ; *** *** data *** ***
@@ -401,26 +454,32 @@ wtf:
 pr3gt:
 	.asc	13, ">>> ", 0
 tokens:
-	.asc	"print", 0		; 0
-	.asc	"quit()", 0		; 2
-	.asc	"if", 0			; 4
-	.asc	"=", 0			; 6
-	.asc	"+", 0			; 8
-	.asc	"-", 0			; 10
-	.asc	"*", 0			; 12
-	.asc	"/", 0			; 14
-
+	.asc	"print ", 0
+	.asc	"quit()", 0
+	.asc	"=", 0
+	.asc	"+", 0
+	.asc	"-", 0
+	.asc	"*", 0
+	.asc	"/", 0
 	.byt	$FF				; list termination
-; *** pending operation pointer list    ***
+
+; *** *** *** ***** *** *** ***
+; *** pending operation pointer list ***
 exec:
 	.word	str_end			; NULL pointer for unused index 0
 	.word	p_add
 	.word	p_sub
 	.word	p_mul
 	.word	p_div
-
-
-
+; *** token acknowledge pointer list ***
+set_tk:
+	.word	t_prn
+	.word	t_bye
+	.word	t_asgn
+	.word	t_add
+	.word	t_sub
+	.word	t_mul
+	.word	t_div
 ; *** *** *** ***** *** *** ***
 
 	.dsb	$E000-*, $FF	; just in case, skip IO
