@@ -1,6 +1,6 @@
 ; nanoPython (Proof Of Concept)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231001-1932
+; last modified 20231001-2355
 
 ; assemble from /forge/nanopython with:
 ; xa np.s -I ../../OS/firmware
@@ -152,14 +152,13 @@ no_print:
 		LDA assign
 		BEQ no_assign
 			LDX lvalue
-			DEX
 			LDA result
-			STA vars, X
+			STA vars-1, X
 no_assign:
 		LDA errflag			; actually 0
 do_error:					; return errflag;
 ; *** end of parse() ***
-		BNE no_err			; if (parse())	error();
+		BEQ no_err			; if (parse())	error();
 			LDX #>wtf
 			LDY #<wtf
 			JSR string
@@ -293,8 +292,8 @@ enuml:						; do {
 pending:
 	STX cursor
 	LDA oper				; x = oper;							see below
-	ASL cmd_id				; times two for indexing
-	LDX cmd_id
+	ASL 					; times two for indexing
+	TAX						; eeeeeek
 	JMP (exec, X)			; switch(x) {						do command
 ; *** pending operation execution block ***
 p_add:						; case 1:
@@ -330,8 +329,8 @@ div_ok:
 	LDA old
 div_loop:
 		CMP result
-	BMI quot
-	BEQ quot
+	BCC quot
+;	BEQ quot
 		SEC
 		SBC result
 		INY
@@ -367,6 +366,7 @@ t_add:
 t_sub:
 t_mul:
 t_div:
+	LSR						; eeeeeeeeeeeeeeeeek
 	DEC
 	DEC
 	STA oper				; oper is actually A-2
@@ -467,7 +467,7 @@ tokens:
 ; *** *** *** ***** *** *** ***
 ; *** pending operation pointer list ***
 exec:
-	.word	str_end			; NULL pointer for unused index 0
+	.word	not_pend		; NULL pointer for unused index 0
 	.word	p_add
 	.word	p_sub
 	.word	p_mul
