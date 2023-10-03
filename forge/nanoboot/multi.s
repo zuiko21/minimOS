@@ -2,7 +2,7 @@
 ; now with sidecar/fast SPI support
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20230804-0031
+; last modified 20231003-1029
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -45,6 +45,7 @@
 #define	SPCR_MSG	11
 #define	OLD_SD		12
 #define	HC_XC		13
+#define	SPLASH		14
 
 ; *** hardware definitions ***
 IO8attr	= $DF80
@@ -58,6 +59,7 @@ IO9sp_c	= $DF9F				; new, Fast SPI control
 IOAie	= $DFA0
 IOBeep	= $DFB0
 IOCart	= $DFC0
+IO_PSG	= $DFDB				; PSG riser port
 
 #define	KBDMAT
 
@@ -138,7 +140,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"multiboot"		; C-string with filename @ [8], max 220 chars
+	.asc	"devCart/FastSPI multiboot"		; C-string with filename @ [8], max 220 chars
 #ifdef	SCREEN
 	.asc	" & image browser"
 #endif
@@ -170,6 +172,8 @@ rom_start:
 ; **********************
 sd_main:
 .(
+	LDX #SPLASH
+	JSR disp_code			; display splash screen
 ; select first SD device (devCart) and try
 	LDX #vec_dc_sd-vec_sd	; set vectors for devCart device
 vecload:
@@ -331,6 +335,7 @@ skip_err:
 ; *** image is selected, now boot from it ***
 ; *******************************************
 do_boot:
+	SEI						; no more interaction needed, slight performance improvement.
 ; reload sector of selected entry into buffer
 	LDX #>buffer			; temporary load address
 	STX ptr+1
@@ -398,7 +403,7 @@ no_wrap:
 		BRK
 launch_rom:
 #endif
-	SEI						; might be important!
+; Interrupts already shut off for performance, good for reset anyway
 	JMP switch				; start code loaded into cartidge RAM!
 
 ; ************************
@@ -433,7 +438,7 @@ mosi_set:
 		DEC IOCart			; digitalWrite(SCK, 0);	** assume SD_CLK  is   1 **
 		DEY					; x--;
 		BNE tr_l			; (worst case, 8*43 = 344t)
-	LDA miso				; return in; (total including call overhead = 372t, ~242 Âµs)
+	LDA miso				; return in; (total including call overhead = 372t, ~242 µs)
 	RTS
 
 ; *** enable card transfer ***
@@ -808,7 +813,7 @@ rd_wtok:
 			LDA #$FF
 			JSR spi_tr
 			CMP #$FF
-			BEQ rd_wtok		; if((read = SPI_transfer(0xFF)) != 0xFF)		break; (759t ~494Âµs)
+			BEQ rd_wtok		; if((read = SPI_transfer(0xFF)) != 0xFF)		break; (759t ~494µs)
 chk_tok:
 		STA res				; read = ...
 		CMP #$FE
@@ -1144,7 +1149,8 @@ sd_page:
 	.asc	13, 14, "0", 15, " next page...", 0
 sd_spcr:
 	.asc	13, "-----------", 13, 0
-
+sd_splash:
+	.asc	14,"Durango·X", 15, " SD bootloader 1.0", 13, 13, 0
 ; offset table for the above messages
 msg_ix:
 	.byt	0				; IDLE_ERR
@@ -1161,6 +1167,7 @@ msg_ix:
 	.byt	sd_spcr-msg_sd	; SPCR_MSG	page separator
 	.byt	sd_old-msg_sd	; OLD_SD	v1.x before SD Interface
 	.byt	sd_hc-msg_sd	; HC_XC		before Card Ready
+	.byt	sd_splash-msg_sd	; SPLASH		splash screen
 
 ; vector table
 vec_sd:
@@ -1189,7 +1196,15 @@ reset:
 	CLD
 	LDX #$FF
 	TXS						; usual 6502 stuff
-; Durango-X specifics
+; Durango-X specifics, including PSG mute!
+	LDA #%10011111			; max. attenuation channel 0
+psg_mute:
+		STA IO_PSG
+		JSR psg_del			; suitable 36-cycle delay
+		CLC
+		ADC #32				; next channel
+		BMI psg_mute
+; standard stuff
 	STX IOAie				; enable interrupt hardware, turn off error LED
 	LDA #%10110000			; HIRES screen 3
 	STA IO8attr
@@ -1220,7 +1235,7 @@ jf_res:
 nes_init:
 		STA IO9nes1			; send clock pulse
 		DEX
-		BNE nes_init		; all bits read @Â IO9nes0
+		BNE nes_init		; all bits read @ IO9nes0
 	LDA IO9nes0				; get bits
 	LDX IO9nes1				; get bits for pad 2
 	STA GAMEPAD_MASK1		; * MUST have a standard address, and MUST be initialised! *
@@ -1246,6 +1261,13 @@ not_5x8:
 
 	CLI						; must enable interrupts!
 	JMP sd_main				; start loader!
+
+; delay routine for PSG access
+psg_del:
+	JSR psg_rts
+	JSR psg_rts
+psg_rts:
+	RTS
 
 ; **************************
 ; *** interrupt handlers ***
@@ -1274,7 +1296,7 @@ irq_sup:
 nes_loop:
 		STA IO9nes1			; send clock pulse
 		DEX
-		BNE nes_loop		; all bits read @Â IO9nes0/1
+		BNE nes_loop		; all bits read @ IO9nes0/1
 ; done, but check GAMEPAD_MASK1 & GAMEPAD_MASK2 after reading ports in BASIC!
 	LDA IO9nes0
 	EOR GAMEPAD_MASK1
