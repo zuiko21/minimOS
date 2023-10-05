@@ -95,6 +95,7 @@ int get_token(void) {
 }
 
 void evaluate(void) {
+int any;
 		printf("{EV@%d}",cursor);
 	x = cursor;
 	a = buffer[x];
@@ -110,6 +111,7 @@ void evaluate(void) {
 			x++;
 		} else {
 			result = 0;
+any=x;
 			do {
 				a = buffer[x];
 				printf("[#%c]",a);
@@ -120,6 +122,7 @@ void evaluate(void) {
 				result = a;
 				x++;
 			} while (x);
+if (any==x)	{cursor=x+1;error();return;}
 		}
 		cursor = x;
 		x = oper;

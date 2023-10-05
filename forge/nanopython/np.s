@@ -1,6 +1,6 @@
 ; nanoPython (Proof Of Concept)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231001-2355
+; last modified 20231005-1540
 
 ; assemble from /forge/nanopython with:
 ; xa np.s -I ../../OS/firmware
@@ -270,6 +270,7 @@ was_rval:
 evalnum:
 ; single-byte numbers and basic operators with no priorities nor parenthesis
 	STZ result
+	STX cmd_id				; * better error handling *
 enuml:						; do {
 		LDA buffer, X
 		CMP #'0'
@@ -289,6 +290,13 @@ enuml:						; do {
 		STA result			; ...result *= 10; a += result; result = a;
 		INX					; next char
 		BRA enuml			; } while (x);						actually more like	} while(1);
+; * new code for better error handling *
+	CPX cmd_id
+	BNE pending				; no strange characters found
+		INX
+		STX cursor
+		JMP error
+; * *
 pending:
 	STX cursor
 	LDA oper				; x = oper;							see below
