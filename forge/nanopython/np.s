@@ -274,9 +274,9 @@ evalnum:
 enuml:						; do {
 		LDA buffer, X
 		CMP #'0'
-			BCC pending
+			BCC c_pending
 		CMP #'9'+1
-			BCS pending		; if (a<'0' || a>'9')	break;		no more numbers
+			BCS c_pending	; if (a<'0' || a>'9')	break;		no more numbers
 ; if arrived here, it's a number
 		SBC #'0'-1			; C was clear, thus borrows
 		ASL result			; times 2...
@@ -291,6 +291,7 @@ enuml:						; do {
 		INX					; next char
 		BRA enuml			; } while (x);						actually more like	} while(1);
 ; * new code for better error handling *
+c_pending:
 	CPX cmd_id
 	BNE pending				; no strange characters found
 		INX
@@ -455,7 +456,7 @@ nlead_t:
 ; *** *** data *** ***
 ; ********************
 splash:
-	.asc	"65C02 nanoPython PoC 0.1", 13, "@zuiko21", 13, 0
+	.asc	"65C02 nanoPython PoC 0.2", 13, "@zuiko21", 13, 0
 bye:
 	.asc	13, "Thanks for using nanoPython on", 13, "the 65C02-powered ", 14, "Durango·X", 15,"!", 0
 wtf:
