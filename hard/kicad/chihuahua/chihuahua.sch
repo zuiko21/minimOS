@@ -1550,7 +1550,7 @@ U 1 1 65AA8F70
 P 3550 4150
 F 0 "D1" H 3550 4250 50  0000 C CNN
 F 1 "BAT85" H 3550 4050 50  0000 C CNN
-F 2 "Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_AnodeUp" H 3550 4150 50  0001 C CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_KathodeUp" H 3550 4150 50  0001 C CNN
 F 3 "~" H 3550 4150 50  0001 C CNN
 	1    3550 4150
 	1    0    0    -1  
@@ -2137,7 +2137,7 @@ Wire Wire Line
 Wire Wire Line
 	750  5150 1050 5150
 Wire Wire Line
-	1050 5250 750  5250
+	1050 5250 800  5250
 Wire Wire Line
 	750  5350 1050 5350
 $Comp
@@ -2256,6 +2256,32 @@ Wire Wire Line
 Connection ~ 1950 3050
 Wire Wire Line
 	1950 3050 2350 3050
+Text Label 4500 4750 2    50   ~ 0
+~VP
+$Comp
+L Graphic:Logo_Open_Hardware_Large LOGO1
+U 1 1 65300219
+P 10200 3600
+F 0 "LOGO1" H 10200 4100 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Large" H 10200 3200 50  0001 C CNN
+F 2 "Symbol:OSHW-Symbol_8.9x8mm_SilkScreen" H 10200 3600 50  0001 C CNN
+F 3 "~" H 10200 3600 50  0001 C CNN
+	1    10200 3600
+	1    0    0    -1  
+$EndComp
+$Comp
+L Graphic:Logo_Open_Hardware_Small LOGO2
+U 1 1 65301B9B
+P 10200 4950
+F 0 "LOGO2" H 10200 5225 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Small" H 10200 4725 50  0001 C CNN
+F 2 "durango:jaqueria" H 10200 4950 50  0001 C CNN
+F 3 "~" H 10200 4950 50  0001 C CNN
+	1    10200 4950
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	800  5250 800  5600
 Wire Bus Line
 	3650 1600 5600 1600
 Wire Bus Line
@@ -2284,6 +2310,9 @@ Wire Bus Line
 	7400 1700 7400 4450
 Wire Bus Line
 	7500 1600 7500 3750
-Text Label 4500 4750 2    50   ~ 0
-~VP
+Connection ~ 800  5250
+Wire Wire Line
+	800  5250 750  5250
+Text Label 800  5600 0    50   ~ 0
+~IOC
 $EndSCHEMATC
