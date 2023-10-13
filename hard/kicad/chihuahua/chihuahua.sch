@@ -1393,7 +1393,7 @@ F 3 "" H 6600 4250 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Text Label 8300 5700 2    50   ~ 0
-~RW
+R~W
 Text Label 8300 5900 2    50   ~ 0
 VIA_~CS
 Text Label 8300 5000 2    50   ~ 0
@@ -2278,6 +2278,20 @@ F 3 "~" H 10200 4950 50  0001 C CNN
 	1    10200 4950
 	1    0    0    -1  
 $EndComp
+Wire Wire Line
+	750  5250 1050 5250
+$Comp
+L power:+5V #PWR?
+U 1 1 652EE0F4
+P 9300 5350
+F 0 "#PWR?" H 9300 5200 50  0001 C CNN
+F 1 "+5V" V 9315 5478 50  0000 L CNN
+F 2 "" H 9300 5350 50  0001 C CNN
+F 3 "" H 9300 5350 50  0001 C CNN
+	1    9300 5350
+	0    1    1    0   
+$EndComp
+Connection ~ 9300 5350
 Wire Bus Line
 	3650 1600 5600 1600
 Wire Bus Line
@@ -2306,18 +2320,4 @@ Wire Bus Line
 	7400 1700 7400 4450
 Wire Bus Line
 	7500 1600 7500 3750
-Wire Wire Line
-	750  5250 1050 5250
-$Comp
-L power:+5V #PWR?
-U 1 1 652EE0F4
-P 9300 5350
-F 0 "#PWR?" H 9300 5200 50  0001 C CNN
-F 1 "+5V" V 9315 5478 50  0000 L CNN
-F 2 "" H 9300 5350 50  0001 C CNN
-F 3 "" H 9300 5350 50  0001 C CNN
-	1    9300 5350
-	0    1    1    0   
-$EndComp
-Connection ~ 9300 5350
 $EndSCHEMATC
