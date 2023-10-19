@@ -89,12 +89,6 @@ Wire Wire Line
 Wire Wire Line
 	3000 1800 3000 2000
 Wire Wire Line
-	3000 2100 2950 2100
-Wire Wire Line
-	2950 2100 2950 2500
-Wire Wire Line
-	2950 2500 3500 2500
-Wire Wire Line
 	2500 2100 2900 2100
 Wire Wire Line
 	2900 2100 2900 2200
@@ -108,9 +102,6 @@ Wire Wire Line
 	2900 1500 3000 1500
 Wire Wire Line
 	2500 2200 2500 2500
-Wire Wire Line
-	2500 2500 2950 2500
-Connection ~ 2950 2500
 Wire Wire Line
 	2500 1500 2500 1200
 Wire Wire Line
@@ -153,7 +144,6 @@ Text Label 2550 2000 0    50   ~ 0
 BR~W
 Text Label 2550 2100 0    50   ~ 0
 ~IOX
-NoConn ~ 2500 1900
 Text Label 2000 1500 2    50   ~ 0
 PD0
 Text Label 2000 1600 2    50   ~ 0
@@ -574,7 +564,7 @@ CLK
 Text Label 2600 2700 0    50   ~ 0
 ~CTL
 Text Notes 6300 1250 2    100  ~ 20
-$DF9E = DATA R/W\n\n$DF9F = CLOCK (R) / ~ENABLE (W)
+$DF96 = DATA R/W\n\n$DF97 = CLOCK (R) / ~ENABLE (W)
 $Comp
 L Graphic:Logo_Open_Hardware_Small LOGO1
 U 1 1 64D370D2
@@ -598,8 +588,6 @@ Wire Wire Line
 	8600 3500 3000 3500
 Wire Wire Line
 	3000 3400 9600 3400
-Text Notes 4300 1450 0    67   Italic 13
-Mirrored at $DF96-$DF97
 Wire Wire Line
 	3650 4800 3650 6150
 Wire Wire Line
@@ -1330,8 +1318,18 @@ Wire Wire Line
 	5600 3200 5600 4050
 Wire Wire Line
 	5600 3200 3000 3200
+Wire Wire Line
+	2500 2500 3500 2500
+Wire Wire Line
+	2500 1900 2950 1900
+Wire Wire Line
+	2950 1900 2950 2100
+Wire Wire Line
+	2950 2100 3000 2100
 Wire Bus Line
 	3750 5150 3750 6250
 Wire Bus Line
 	1700 1600 1700 6250
+Text Label 2550 1900 0    50   ~ 0
+BA3
 $EndSCHEMATC
