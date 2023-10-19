@@ -2,12 +2,14 @@
 ; now with sidecar/fast SPI support
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231003-1029
+; last modified 20231019-1748
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
-; add -DDEBUG
 ; add -DTALLY for LED access indicator
+; add -DDEBUG if desired
+
+#echo	FastSPI @ $DF96-7, SPI ID=0
 
 ; SD interface definitions
 #define	SD_CLK		%00000001
@@ -54,8 +56,8 @@ IO9nes0	= $DF9C
 IO9nlat	= IO9nes0
 IO9nes1	= $DF9D
 IO9nclk	= IO9nes1
-IO9sp_d	= $DF9E				; new, Fast SPI data transfer
-IO9sp_c	= $DF9F				; new, Fast SPI control
+IO9sp_d	= $DF96				; new, Fast SPI data transfer *** NO LONGER $DF9E
+IO9sp_c	= $DF97				; new, Fast SPI control       *** NO LONGER $DF9F
 IOAie	= $DFA0
 IOBeep	= $DFB0
 IOCart	= $DFC0
@@ -140,7 +142,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"devCart/FastSPI multiboot"		; C-string with filename @ [8], max 220 chars
+	.asc	"devCart/FastSPI@$DF9E-F multiboot"		; C-string with filename @ [8], max 220 chars
 #ifdef	SCREEN
 	.asc	" & image browser"
 #endif
@@ -161,8 +163,8 @@ rom_start:
 ; NEW coded version number
 	.word	$1004			; 1.0a4
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$6A00			; time, 13.16		%0110 1-010 000-0 0000
-	.word	$5CA3			; date, 2023/5/3	%0101 110-0 101-0 0011
+	.word	$8A80			; time, 17.20		%1000 1-010 100-0 0000
+	.word	$5D53			; date, 2023/10/19	%0101 110-1 010-1 0011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -1150,7 +1152,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 1.0", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 1.1a", 13, 13, 0
 ; offset table for the above messages
 msg_ix:
 	.byt	0				; IDLE_ERR
