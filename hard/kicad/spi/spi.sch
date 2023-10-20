@@ -872,17 +872,6 @@ F 3 "" H 7100 2500 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:R R1
-U 1 1 64D21B4A
-P 7100 1950
-F 0 "R1" H 6900 1950 50  0000 L CNN
-F 1 "1K2" V 7100 1950 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7030 1950 50  0001 C CNN
-F 3 "~" H 7100 1950 50  0001 C CNN
-	1    7100 1950
-	1    0    0    -1  
-$EndComp
-$Comp
 L power:+5V #PWR0118
 U 1 1 64D2370D
 P 7100 1800
@@ -902,7 +891,6 @@ Wire Wire Line
 Wire Wire Line
 	6800 2400 6800 3100
 Connection ~ 6800 2400
-Connection ~ 7100 2100
 $Comp
 L 74xx:74LS132 U5
 U 5 1 64D67236
@@ -1038,7 +1026,7 @@ U 1 1 64DC2395
 P 8050 3950
 F 0 "J5" H 8100 4150 50  0000 C CNN
 F 1 "SPI 3" H 8100 3750 50  0000 C CNN
-F 2 "Connector_IDC:IDC-Header_2x03_P2.54mm_Vertical" H 8050 3950 50  0001 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical" H 8050 3950 50  0001 C CNN
 F 3 "~" H 8050 3950 50  0001 C CNN
 	1    8050 3950
 	1    0    0    -1  
@@ -1458,10 +1446,22 @@ Wire Wire Line
 	10950 5200 10800 5200
 Wire Wire Line
 	10950 5100 10800 5100
+Connection ~ 7100 2100
 Wire Bus Line
 	11050 5100 11050 6800
 Wire Bus Line
 	3750 5150 3750 6250
 Wire Bus Line
 	1700 1600 1700 6250
+$Comp
+L Device:R R1
+U 1 1 64D21B4A
+P 7100 1950
+F 0 "R1" H 6900 1950 50  0000 L CNN
+F 1 "1K2" V 7100 1950 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7030 1950 50  0001 C CNN
+F 3 "~" H 7100 1950 50  0001 C CNN
+	1    7100 1950
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC

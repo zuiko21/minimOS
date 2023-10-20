@@ -1303,12 +1303,12 @@ $Comp
 L Device:R R7
 U 1 1 6538F9D6
 P 8850 5700
-F 0 "R7" V 8750 5600 50  0000 L CNN
+F 0 "R7" V 8950 5700 50  0000 L CNN
 F 1 "3K3" V 8850 5700 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 8780 5700 50  0001 C CNN
 F 3 "~" H 8850 5700 50  0001 C CNN
 	1    8850 5700
-	0    1    1    0   
+	0    -1   -1   0   
 $EndComp
 $Comp
 L Device:D D4
