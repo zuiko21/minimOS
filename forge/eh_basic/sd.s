@@ -1,7 +1,7 @@
 ; SD-card driver module for EhBASIC
-; supports both the devCart and the Fast SPI interface (ID=0)
+; supports both the devCart and the Fast SPI interface (ID=0-3)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20230804-0014
+; last modified 20231021-2232
 
 ; uncomment DEBUG version below, does actually write to the card, but also display sector number and contents
 ;#define	DEBUG
@@ -10,7 +10,7 @@
 ; uncomment TALLY version below for LED access indication
 ;#define	TALLY
 
-#echo Using SD card (both devCart & SPI) for LOAD and SAVE - interactive filename prompt
+#echo Using SD card (devCart & FastSPI 0-3) for LOAD and SAVE - interactive filename prompt
 #ifdef	DEBUG
 #echo Debugging version (displaying sizes?)
 #endif
@@ -75,7 +75,7 @@ crc		= sd_ver+ 1			; $FF
 ; *** ******************************************** ***
 ; *** interface vectors ***	NEW for Fast SPI interface
 sd_dev_err		= $2F2		; error code for previous device, in case Fast SPI is not present
-sd_dev_id		= $2F3		; 'd' for devCart, 'S' for Fast SPI
+sd_dev_id		= $2F3		; will add 47 to display ' ' for devCart, 0...3 for Fast SPI
 v_spi_tr		= $2F4
 v_cs_enable		= $2F6
 v_cs_disable	= $2F8		; just before tmp_siz
@@ -426,7 +426,10 @@ set_name:
 ; ask for the filename, or $ for directory listing
 ; *** *********************** ***
 ; *** display selected device ***
-	LDY sd_dev_id
+	LDA sd_dev_id
+	CLC
+	ADC #'0'-1
+	TAY
 	JSR conio
 ; *** *********************** ***
 	LDX #0
@@ -786,12 +789,14 @@ r7end:
 sd_init:
 ; *** ************************************************************************* ***
 ; *** set devCart SD as default and, if failed to initialise, try with Fast SPI ***
-	LDX #vec_dc_sd+6-vec_sd	; set vectors for devCart device (note offset going backwards, including ID)
+	LDX #vec_dc_sd+5-vec_sd	; set vectors for devCart device (note offset going backwards, no longer including ID)
+	LDA #241				; devCart ID (note offset)
+	STA sd_dev_id
 vecload:
-	LDY #6					; note offset including ID
+	LDY #5					; note offset, no longer including ID
 vl_loop:
 		LDA vec_sd, X
-		STA sd_dev_id, Y	; start of vectors, including ID
+		STA v_spi_tr, Y		; start of vectors, no longer including ID
 		DEX
 		DEY
 		BPL vl_loop
@@ -1252,28 +1257,28 @@ no_let:
 ; *** exit point in case of error *** X = error code
 sd_fail:
 ; *** ********************************************************************************** ***
-; *** first check whether selected device is fast SPI, otherwise select it and try again ***
-	LDA sd_dev_id
-	CMP #'S'				; already at Fast SPI?
-	BEQ do_fail
+; *** change devCart to FastSPI #3, then downwards until negative ***
+	DEC sd_dev_id
+	BEQ actual_fail			; no more SPI devices? error!
+	BPL do_fail				; if positive, already at FastSPI, try next device
 		STX sd_dev_err		; store devCart error code, just in case
-		LDX #vec_sp_sd-vec_sd+6			; set vectors for SPI device (note offset going backwards, including ID)
-		JMP vecload
-do_fail:					; no luck on either device, just fail
-	CPX sd_dev_err			; check previous error code
-	BCS actual_fail
-		LDX sd_dev_err		; if higher than that from SPI, devCart makes more sense
-		LDA #'d'
+		LDA #4				; came from devCart, set "first" SPI device
 		STA sd_dev_id
+do_fail:					; no luck on either device, just fail
+	LDX #vec_sp_sd-vec_sd+5	; set vectors for SPI device (note offset going backwards, no longer including ID)
+	JMP vecload
 actual_fail:
 	PHX						; save numeric error code
-	LDY sd_dev_id			; get device ID
+	LDA sd_dev_id			; get device ID
+	CLC
+	ADC #'0'-1				; convert into ASCII
+	TAY
 	JSR conio
 	PLA						; retrieve numeric error code
 ; *** ********************************************************************************** ***
 ;	TXA						; single-device error code
 	CLC
-	ADC #'0'				; convert error code into ASCII
+	ADC #'a'				; convert error code into ASCII letters
 	TAY
 	JSR conio
 	LDX #0
@@ -1311,10 +1316,8 @@ oospace:
 ; vector table
 vec_sd:
 vec_dc_sd:
-	.asc	'd'												; devCart ID
 	.word	dc_spi_tr,	dc_cs_enable,	dc_cs_disable		; vectors for devCart interface
 vec_sp_sd:
-	.asc	'S'												; FastSPI ID
 	.word	sp_spi_tr,	sp_cs_enable,	sp_cs_disable		; vectors for Fast SPI interface
 ; ************
 .)
