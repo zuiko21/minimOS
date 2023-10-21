@@ -9,7 +9,7 @@
 ; add -DTALLY for LED access indicator
 ; add -DDEBUG if desired
 
-#echo	FastSPI @ $DF96-7, SPI ID=0
+#echo	FastSPI @ $DF96-7, SPI ID=0...3
 
 ; SD interface definitions
 #define	SD_CLK		%00000001
@@ -143,7 +143,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"devCart/FastSPI@$DF9E-F multiboot"		; C-string with filename @ [8], max 220 chars
+	.asc	"devCart/FastSPI multiboot"		; C-string with filename @ [8], max 220 chars
 #ifdef	SCREEN
 	.asc	" & image browser"
 #endif
@@ -162,7 +162,7 @@ rom_start:
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1004			; 1.0a4
+	.word	$11C0			; 1.1f
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$5A00			; time, 11.16		%0101 1-010 000-0 0000
 	.word	$5755			; date, 2023/10/21	%0101 011-1 010-1 0101
@@ -496,7 +496,8 @@ sp_spi_tr:
 sp_cs_enable:
 	LDA #$FF
 	JSR spi_tr				; SPI_transfer(0xFF);
-	LDA #%11111110			; fixed SPI device 0
+	LDY dev_id				; must preserve X! eeek!
+	LDA sid_en, Y			; get enable mask for selected ID
 	STA IO9sp_c				; CS_ENABLE();
 #ifdef	TALLY
 	STA IOAie				; *** this will turn LED on ***
@@ -1153,7 +1154,7 @@ sd_m4:
 sd_ok:
 	.asc	" OK", 13, 0
 sd_err:
-	.asc	" ", 14, "FAIL!", 15, 7, 13, 0
+	.asc	" ", 14, "FAIL!", 15, 7, 13, 13, 0
 sd_inv:
 	.asc	" ", 14, "No ROM image found", 15, 7, 0
 sd_sel:
@@ -1165,7 +1166,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 1.1a", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 1.1", 13, 13, 0
 ; offset table for the above messages
 msg_ix:
 	.byt	0				; IDLE_ERR
@@ -1200,6 +1201,8 @@ sd_name:
 ; other tables
 prog_pat:
 	.byt	%10000000, %11000000, %11100000, %11110000, %11111000, %11111100, %11111110, %11111111
+sid_en:
+	.byt	%11111111, %11111110, %11111101, %11111011, %11110111	; SPI /CS patterns for ID0..3 (index 1..4, 0 is disable)
 .)
 end_sd:
 
