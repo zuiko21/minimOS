@@ -1,7 +1,7 @@
 ; SD-card driver module for EhBASIC
 ; supports both the devCart and the Fast SPI interface (ID=0-3)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231021-2232
+; last modified 20231021-2258
 
 ; uncomment DEBUG version below, does actually write to the card, but also display sector number and contents
 ;#define	DEBUG
@@ -81,8 +81,8 @@ v_cs_enable		= $2F6
 v_cs_disable	= $2F8		; just before tmp_siz
 
 ; *** hardware definitions ***
-IO9sp_d	= $DF9E				; new, Fast SPI data transfer
-IO9sp_c	= $DF9F				; new, Fast SPI control
+IO9sp_d	= $DF96				; new, Fast SPI data transfer EEEEK
+IO9sp_c	= $DF97				; new, Fast SPI control       EEEEK
 ; *** ******************************************** ***
 
 ; *** sector buffer and header pointers ***
@@ -631,10 +631,11 @@ sp_spi_tr:
 sp_cs_enable:
 	LDA #$FF
 	JSR spi_tr				; SPI_transfer(0xFF);
-	LDA #%11111110			; fixed SPI device 0
+	LDY sd_dev_id
+	LDA en_id_spi, Y		; get enable bitmap 1...4 (0=disable)
 	STA IO9sp_c				; CS_ENABLE();
 #ifdef	TALLY
-	STA IOAie				; *** this will turn LED on ***
+	STZ IOAie				; *** this will turn LED on ***
 #endif
 	LDA #$FF
 	JMP sp_spi_tr			; SPI_transfer(0xFF); ...and return
@@ -1319,5 +1320,8 @@ vec_dc_sd:
 	.word	dc_spi_tr,	dc_cs_enable,	dc_cs_disable		; vectors for devCart interface
 vec_sp_sd:
 	.word	sp_spi_tr,	sp_cs_enable,	sp_cs_disable		; vectors for Fast SPI interface
+; SPI enable bitmaps
+en_id_spi:
+	.byt	%11111111, %11111110, %11111101, %11111011, %11110111	; enable bitmaps (0=disable)
 ; ************
 .)
