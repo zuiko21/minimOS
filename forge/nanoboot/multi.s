@@ -2,7 +2,7 @@
 ; now with sidecar/fast SPI support
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231019-1748
+; last modified 20231021-1134
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -66,7 +66,8 @@ IO_PSG	= $DFDB				; PSG riser port
 #define	KBDMAT
 
 ; *** memory usage ***
-crc		= $EC
+dev_id	= $EB		; $EB 1...4=SPI, 241=devCart, 0=RasPi; will turn into '0...3' and ' ' (and '/') for display
+crc		= dev_id+ 1	; $EC
 en_ix	= crc	+ 1	; $ED ### directory storage ###
 sd_ver	= en_ix	+ 1 ; $EE ### not so temporary ###
 arg		= sd_ver+ 1	; $F0-$F3
@@ -163,8 +164,8 @@ rom_start:
 ; NEW coded version number
 	.word	$1004			; 1.0a4
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8A80			; time, 17.20		%1000 1-010 100-0 0000
-	.word	$5D53			; date, 2023/10/19	%0101 110-1 010-1 0011
+	.word	$5A00			; time, 11.16		%0101 1-010 000-0 0000
+	.word	$5755			; date, 2023/10/21	%0101 011-1 010-1 0101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -177,8 +178,17 @@ sd_main:
 	LDX #SPLASH
 	JSR disp_code			; display splash screen
 ; select first SD device (devCart) and try
+	LDA #241				; devCart ID
+	STA dev_id
 	LDX #vec_dc_sd-vec_sd	; set vectors for devCart device
 vecload:
+	LDA dev_id				; get present device ID
+	CLC
+	ADC #'0'-1				; convert into ASCII (' ' for devCart)
+	TAY
+	PHX
+	JSR conio				; print ID
+	PLX						; retrieve vector index and continue
 	LDY #0					; worth going upwards
 vl_loop:
 		LDA vec_sd, X
@@ -1108,12 +1118,15 @@ sd_fail:					; SD card failed
 	JSR disp_code			; display message
 	LDX #FAIL_MSG			; FAIL message
 	JSR disp_code
-; before locking, try another device *** NEW
-	LDA v_spi_tr			; check LSB
-	CMP #<sp_spi_tr			; already at second interface?
-	BEQ no_spi
-		LDX #vec_sp_sd-vec_sd			; try second interface otherwise
-		JMP vecload						; will get back to init procedure
+; before locking, try another device *** NEW AND IMPROVED
+	DEC dev_id				; check next device
+	BEQ no_spi				; ID=0 for RasPi
+	BPL next_dev			; or continue with next SPI
+		LDA #4				; came from devCart, set "first" SPI device
+		STA dev_id
+next_dev:
+	LDX #vec_sp_sd-vec_sd	; try SPI interface otherwise
+	JMP vecload				; will get back to init procedure
 no_spi:
 ; here could come the Raspberry Pi module instead (nanoBoot)
 	BRK						; just lock with error LED
@@ -1140,7 +1153,7 @@ sd_m4:
 sd_ok:
 	.asc	" OK", 13, 0
 sd_err:
-	.asc	" ", 14, "FAIL!", 15, 7, 0
+	.asc	" ", 14, "FAIL!", 15, 7, 13, 0
 sd_inv:
 	.asc	" ", 14, "No ROM image found", 15, 7, 0
 sd_sel:
@@ -1180,8 +1193,8 @@ vec_sp_sd:
 
 ; SPI device names, in 6-byte packs (like vectors)
 sd_name:
-	.asc	"devC?",13		; devCart SD interface
-	.asc	13,"SPI?",13	; Fast SPI interface!
+	.asc	"devC?", 13		; devCart SD interface
+	.asc	":SPI?", 13		; Fast SPI interface!
 ;	.asc	"RasPI:"		; nanoBoot (placeholder)
 
 ; other tables
