@@ -1,7 +1,7 @@
 ; SD-card driver module for EhBASIC
 ; supports both the devCart and the Fast SPI interface (ID=0-3)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231021-2258
+; last modified 20231022-1241
 
 ; uncomment DEBUG version below, does actually write to the card, but also display sector number and contents
 ;#define	DEBUG
@@ -159,8 +159,8 @@ rd_byte:
 		CPX #>(buffer+512)	; usually 5 EEEEEEEEK
 	BNE adv_wbyte
 		JSR flush_sd		; write current sector
-		LDX #>buffer
-		STX ptr+1			; wrap buffer pointer (assume page aligned) EEEEEEEEK
+;		LDX #>buffer
+;		STX ptr+1			; wrap buffer pointer (assume page aligned) EEEEEEEEK
 		INC arg+3			; advance to next sector
 	BNE adv_wbyte
 		INC arg+2
@@ -178,22 +178,14 @@ wr_byte:
 	LDX f_cur+2				; just in case
 	CPX f_eof+2
 	BCC has_room
-	LDX f_cur+1
-	CPX f_eof+1				; compare against free space limit
+		LDX f_cur+1
+		CPX f_eof+1			; compare against free space limit
 	BCC has_room
 		LDX f_cur
 		CPX f_eof
 	BCC has_room			; if ran out of space...
-		LDX #0
-oos_loop:
-			LDY oospace, X
-		BEQ oos_end
-			PHX
-			JSR conio
-			PLX
-			INX
-			BNE oos_loop
-oos_end:
+		LDX #oospace-msg_list
+		JSR msg_disp		; ...display error message
 		LDX #2				; device 2 is NULL eeeeeeek
 		STX stdout			; redirect output to NULL!
 		SEC					; notify error, probably ignored
@@ -204,16 +196,8 @@ has_room:
 +aux_load:					; *** prepare things for LOAD, Carry if not possible ***
 	JSR set_name
 	BCS auxl_end			; do nothing in case of error
-		LDX #0
-fnd_file:
-			LDY fnd_msg, X
-		BEQ fnd_ok
-			PHX
-			JSR conio		; show 'Found' message...
-			PLX
-			INX
-			BNE fnd_file
-fnd_ok:
+		LDX #fnd_msg-msg_list
+		JSR msg_disp		; show 'Found' message...
 		JSR name_prn		; ...and add detected filename
 		STZ f_cur
 		LDX #1				; actual read starts one page after the header
@@ -305,16 +289,8 @@ name_copied:
 		LDA #>(buffer+256)
 		STA ptr+1
 ; confirm it's saving
-		LDX #0
-is_svng:
-			LDY save_msg, X
-		BEQ save_rdy
-			PHX
-			JSR conio
-			PLX
-			INX
-			BNE is_svng
-save_rdy:
+		LDX #save_msg-msg_list
+		JSR msg_disp
 		CLC					; allow actual SAVE
 		RTS
 auxs_end:
@@ -432,16 +408,8 @@ set_name:
 	TAY
 	JSR conio
 ; *** *********************** ***
-	LDX #0
-prompt_l:
-		LDY aux_prompt, X
-		BEQ ask_name
-		PHX
-		JSR conio			; display prompt string
-		PLX
-		INX
-		BNE prompt_l
-ask_name:
+	LDX #aux_prompt-msg_list
+	JSR msg_disp			; display prompt string
 	JSR LAB_INLN
 	STX ut1_pl
 	STY ut1_ph				; set indirect pointer
@@ -560,6 +528,18 @@ end_ln:
 #endif
 	LDY #13
 	JMP conio				; print CR and return
+
+; *** display generic message ***	X = offset
+msg_disp:
+		LDY msg_list, X
+	BEQ end_msg				; print full message
+		PHX
+		JSR conio
+		PLX
+		INX
+		BNE msg_disp		; no need for BRA
+end_msg:
+	RTS
 
 ; *** advance to next header ***
 nxt_head:
@@ -1282,22 +1262,15 @@ actual_fail:
 	ADC #'a'				; convert error code into ASCII letters
 	TAY
 	JSR conio
-	LDX #0
-fail_loop:
-		LDY fail_msg, X
-	BEQ fail_end
-		PHX
-		JSR conio
-		PLX
-		INX
-		BNE fail_loop		; no need for BRA
-fail_end:
+	LDX #fail_msg-msg_list	; display generic failure message
+	JSR msg_disp
 	JMP LAB_WARM
 
 ; ********************
 ; *** diverse data ***
 ; ********************
 
+msg_list:
 aux_prompt:
 	.asc	":Filename", 0
 
