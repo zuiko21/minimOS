@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20230927-0951
+; last modified 20231022-1018
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -126,7 +126,7 @@ rom_start:
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$22D2			; 2.22f2
+	.word	$22D3			; 2.22f3
 
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$5800			; time, 11.00
@@ -9403,15 +9403,15 @@ irq_sup:
 ; *** *** special patch for improving BREAK key read *** ***
 #ifdef	KBDMAT
 	LDA #1			; select first column
- 	STA IO9m5x8
-  	LDA IO9m5x8		; get rows for this column
-   	AND #%00000101		; check bits for SHIFT and SPACE *** check
-    	CMP #%00000101
-     	BNE irq_nbrk
-      		LDA #3		; BREAK key code (Control-C)
+	STA IO9m5x8
+	LDA IO9m5x8		; get rows for this column
+	AND #%10100000	; check bits for SHIFT and SPACE *** check
+	CMP #%10100000
+	BNE irq_nbrk
+		LDA #3		; BREAK key code (Control-C)
 		STA kb_asc	; as received key continuously while pressed, no matter the repeat function!
 irq_nbrk:
-;	STZ IO9m5x8		; disable column (CMOS only, not needed but lowers power)
+	STZ IO9m5x8		; disable column (CMOS only, not needed but lowers power)
 #endif
 ; *** ***
 ; * after reading keyboard, gamepads are read, may suppress this for slight performance improvement *
