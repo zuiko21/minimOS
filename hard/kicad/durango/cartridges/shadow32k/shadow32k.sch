@@ -1006,13 +1006,13 @@ MISO
 $Comp
 L Connector_Generic:Conn_02x08_Odd_Even J2
 U 1 1 63B847A5
-P 6900 5350
-F 0 "J2" H 6950 5867 50  0000 C CNN
-F 1 "SD Interface" H 6950 5776 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_2x08_P2.54mm_Horizontal" H 6900 5350 50  0001 C CNN
-F 3 "~" H 6900 5350 50  0001 C CNN
-	1    6900 5350
-	1    0    0    -1  
+P 7000 5350
+F 0 "J2" H 7050 5867 50  0000 C CNN
+F 1 "SD Interface" H 7050 5776 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x08_P2.54mm_Horizontal" H 7000 5350 50  0001 C CNN
+F 3 "~" H 7000 5350 50  0001 C CNN
+	1    7000 5350
+	-1   0    0    -1  
 $EndComp
 Wire Wire Line
 	6700 5050 7200 5050
@@ -1033,17 +1033,6 @@ Wire Wire Line
 	6700 5750 7200 5750
 Connection ~ 6700 5750
 $Comp
-L Graphic:Logo_Open_Hardware_Large LOGO1
-U 1 1 63BF327C
-P 10600 1100
-F 0 "LOGO1" H 10600 1600 50  0001 C CNN
-F 1 "Logo_Open_Hardware_Large" H 10600 700 50  0001 C CNN
-F 2 "Symbol:OSHW-Logo2_24.3x20mm_SilkScreen" H 10600 1100 50  0001 C CNN
-F 3 "~" H 10600 1100 50  0001 C CNN
-	1    10600 1100
-	1    0    0    -1  
-$EndComp
-$Comp
 L Graphic:Logo_Open_Hardware_Small LOGO2
 U 1 1 63BF61E9
 P 10600 1875
@@ -1056,17 +1045,6 @@ F 3 "~" H 10600 1875 50  0001 C CNN
 $EndComp
 Text Label 4050 4150 1    50   ~ 0
 G~WE
-$Comp
-L Graphic:Logo_Open_Hardware_Small LOGO3
-U 1 1 63C2970C
-P 10600 2400
-F 0 "LOGO3" H 10600 2675 50  0001 C CNN
-F 1 "Logo_Open_Hardware_Small" H 10600 2175 50  0001 C CNN
-F 2 "durango:durango-x90" H 10600 2400 50  0001 C CNN
-F 3 "~" H 10600 2400 50  0001 C CNN
-	1    10600 2400
-	1    0    0    -1  
-$EndComp
 NoConn ~ 4050 6625
 Wire Wire Line
 	1650 5750 4950 5750
@@ -1083,7 +1061,7 @@ A4
 Text Label 4050 7050 0    50   ~ 0
 ~BL0
 Text Notes 5950 2875 0    200  ~ 40
-32 KiB RAM DevCart + SD\n$DFC0-$DFC7
+32 KiB shadow RAM + SD\n$DFC0-$DFC7
 Text Notes 6700 4725 0    100  ~ 20
 D0 = MCLK\nD1 = MOSI\nD2 = ~SSEL\nD5 = ~WRITEN\nD6 = ~ROMEN\nD7 = MISO
 Wire Wire Line
