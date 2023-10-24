@@ -582,8 +582,6 @@ Wire Wire Line
 Wire Wire Line
 	1550 3425 1650 3425
 Wire Wire Line
-	2400 3425 2400 3075
-Wire Wire Line
 	2400 3075 2500 3075
 Connection ~ 1550 3425
 Connection ~ 2500 3075
@@ -604,9 +602,6 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS174" H 1650 4950 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	1650 4250 1650 3725
-Connection ~ 1650 3425
-Wire Wire Line
-	1650 3425 2400 3425
 Wire Wire Line
 	1150 4550 1000 4550
 Wire Wire Line
@@ -741,8 +736,6 @@ $EndComp
 Connection ~ 1650 5750
 Wire Wire Line
 	1950 3025 2350 3025
-Wire Wire Line
-	2350 3025 2350 3975
 Text Label 2825 6725 2    50   ~ 0
 ~IOC
 Wire Wire Line
@@ -1009,7 +1002,7 @@ U 1 1 63B847A5
 P 7000 5350
 F 0 "J2" H 7050 5867 50  0000 C CNN
 F 1 "SD Interface" H 7050 5776 50  0000 C CNN
-F 2 "Connector_PinSocket_2.54mm:PinSocket_2x08_P2.54mm_Horizontal" H 7000 5350 50  0001 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x08_P2.54mm_Horizontal" H 7000 5350 50  0001 C CNN
 F 3 "~" H 7000 5350 50  0001 C CNN
 	1    7000 5350
 	-1   0    0    -1  

@@ -6,8 +6,8 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 1 1
 Title "Compact 32 KiB Shadow RAM cartridge for Durango-X"
-Date "2023-10-22"
-Rev "v1"
+Date "2023-10-24"
+Rev "v1.1"
 Comp "@zuiko21"
 Comment1 ""
 Comment2 ""
@@ -578,17 +578,8 @@ Connection ~ 2450 3825
 Wire Wire Line
 	2450 3825 2925 3825
 Wire Wire Line
-	2500 2875 2500 3075
-Wire Wire Line
 	1550 3425 1650 3425
-Wire Wire Line
-	2400 3425 2400 3075
-Wire Wire Line
-	2400 3075 2500 3075
 Connection ~ 1550 3425
-Connection ~ 2500 3075
-Text Notes 2925 3525 0    50   ~ 0
-Upper 16K only
 Text Label 1950 1275 0    50   ~ 0
 ~RST
 $Comp
@@ -604,9 +595,6 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS174" H 1650 4950 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	1650 4250 1650 3725
-Connection ~ 1650 3425
-Wire Wire Line
-	1650 3425 2400 3425
 Wire Wire Line
 	1150 4550 1000 4550
 Wire Wire Line
@@ -740,9 +728,7 @@ F 3 "" H 1650 5750 50  0001 C CNN
 $EndComp
 Connection ~ 1650 5750
 Wire Wire Line
-	1950 3025 2350 3025
-Wire Wire Line
-	2350 3025 2350 3975
+	1950 3025 2200 3025
 Text Label 2825 6725 2    50   ~ 0
 ~IOC
 Wire Wire Line
@@ -824,7 +810,7 @@ Wire Wire Line
 Text Label 4425 6525 0    50   ~ 0
 ~STATUS
 Wire Wire Line
-	2350 3975 2825 3975
+	2200 3975 2825 3975
 $Comp
 L 74xx:74LS139 U5
 U 1 1 63C54FD8
@@ -1072,14 +1058,59 @@ Wire Wire Line
 	3050 6725 2825 6725
 Wire Wire Line
 	2825 3975 2825 6725
+Wire Wire Line
+	2200 3025 2200 3975
+Wire Wire Line
+	2325 3075 2400 3075
+Text Label 2475 3075 2    50   ~ 0
+A14
+Entry Wire Line
+	2325 3075 2225 2975
+Text Label 2500 2875 2    50   ~ 0
+MA14
+$Comp
+L Jumper:SolderJumper_3_Bridged12 JP1
+U 1 1 653E313B
+P 3550 2875
+F 0 "JP1" V 3504 2943 50  0000 L CNN
+F 1 "32KiB" V 3595 2943 50  0000 L CNN
+F 2 "Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm" H 3550 2875 50  0001 C CNN
+F 3 "~" H 3550 2875 50  0001 C CNN
+	1    3550 2875
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	2400 3075 2400 3600
+Wire Wire Line
+	2400 3600 3550 3600
+Wire Wire Line
+	3550 3600 3550 3075
+Connection ~ 2400 3075
+Wire Wire Line
+	2400 3075 2500 3075
+Wire Wire Line
+	3400 2875 2500 2875
 Wire Bus Line
 	3550 875  3550 2075
-Wire Bus Line
-	2225 775  2225 2775
 Wire Bus Line
 	900  875  900  4850
 Wire Bus Line
 	3975 775  3975 2750
 Wire Bus Line
+	2225 775  2225 2975
+Wire Bus Line
 	5700 875  5700 4750
+$Comp
+L power:+5V #PWR0108
+U 1 1 653FB2FC
+P 3550 2675
+F 0 "#PWR0108" H 3550 2525 50  0001 C CNN
+F 1 "+5V" H 3565 2848 50  0000 C CNN
+F 2 "" H 3550 2675 50  0001 C CNN
+F 3 "" H 3550 2675 50  0001 C CNN
+	1    3550 2675
+	1    0    0    -1  
+$EndComp
+Text Notes 3575 3200 0    50   ~ 0
+Set this for\n27C256 only
 $EndSCHEMATC
