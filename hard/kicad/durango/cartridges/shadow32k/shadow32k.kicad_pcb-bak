@@ -2,7 +2,7 @@
 
   (general
     (thickness 1.6)
-    (drawings 40)
+    (drawings 42)
     (tracks 681)
     (zones 0)
     (modules 10)
@@ -1035,6 +1035,12 @@
     (pad 1 smd roundrect (at 45.72 -3.81 270) (size 1.524 8) (layers F.Cu F.Paste F.Mask) (roundrect_rratio 0.25))
   )
 
+  (gr_text "GND\n\n ·\n\n+5V\n\n~CS~\n\nMOSI\n\nMCLK\n\nMISO\n\nGND" (at 118.745 88.9) (layer B.SilkS) (tstamp 65376856)
+    (effects (font (size 0.77 0.77) (thickness 0.15)) (justify left mirror))
+  )
+  (gr_text "GND\n\n ·\n\n+5V\n\n~CS~\n\nMOSI\n\nMCLK\n\nMISO\n\nGND" (at 118.745 88.9) (layer F.SilkS)
+    (effects (font (size 0.77 0.77) (thickness 0.15)) (justify right))
+  )
   (gr_text 2023·10 (at 68.58 128.27 270) (layer F.SilkS)
     (effects (font (size 1.2 1.2) (thickness 0.2)))
   )
@@ -1082,7 +1088,7 @@
   (gr_text @zuiko21 (at 124.46 109.22 270) (layer F.SilkS) (tstamp 628DEEC5)
     (effects (font (size 1.8 1.8) (thickness 0.4)))
   )
-  (gr_text "Durango 32 KiB Shadow RAM & SD  v1" (at 62.23 99.06 270) (layer F.SilkS)
+  (gr_text "Durango·X 32 KiB ShadowRAM+SD  v1" (at 62.23 99.06 270) (layer F.SilkS)
     (effects (font (size 1.8 1.5) (thickness 0.3)))
   )
 
