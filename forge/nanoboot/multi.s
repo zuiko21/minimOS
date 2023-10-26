@@ -2,7 +2,7 @@
 ; now with sidecar/fast SPI support
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231021-1134
+; last modified 20231026-2312
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -48,10 +48,13 @@
 #define	OLD_SD		12
 #define	HC_XC		13
 #define	SPLASH		14
+#define	NX_DEVICE	15
+#define	ABORT		16
 
 ; *** hardware definitions ***
 IO8attr	= $DF80
 IO8blk	= $DF88
+IO9kbd	= $DF9B				; should be into firmware
 IO9nes0	= $DF9C
 IO9nlat	= IO9nes0
 IO9nes1	= $DF9D
@@ -204,6 +207,7 @@ vl_loop:
 		CPY #6				; number of bytes per entry
 		BNE vl_loop
 ; SD device driver has been installed, proceed to check for SD card as usual
+sd_selected:
 	JSR sd_init				; check SD card
 	LDY #13
 	JSR conio				; newline
@@ -333,6 +337,8 @@ end_vol:
 skip_hd:
 		LDX #PAGE_MSG
 		JSR disp_code		; add next page option
+		LDX #NX_DEVICE
+		JSR disp_code		; and next device (new)
 last_pg:
 		JSR sel_en			; wait for a valid entry...
 		STZ en_ix			; ...but if arrived here, skip to new page
@@ -386,6 +392,16 @@ set_ptr:
 boot:
 		JSR ssec_rd			; read one 512-byte sector
 ; might do some error check here...
+; in the meanwhile, check for BREAK key
+		LDA #1				; first column has both SPACE & SHIFT
+		STA IO9kbd
+		LDA IO9kbd			; get active rows
+		AND #%10100000		; mask relevant keys
+		CMP #%10100000		; both SHIFT & SPACE?
+		BNE no_break
+			JMP sd_selected	; init card again, same device
+no_break:
+; continue as usual
 		JSR progress
 ;		LDX ptr+1			; current page (after switching)
 ;		LDA #$FF			; elongated white dots *** may change feedback
@@ -946,6 +962,8 @@ sel_loop:
 ;		ORA gamepad2
 		CPY #'0'			; next page?
 	BEQ exit_sel
+		CPY #'d'			; next device? (new)
+	BEQ exit_dev
 ;		BIT #%00000101		; check left or right
 ;	BEQ exit_sel			; also means next page
 ;		PHY					; eeeek
@@ -1007,6 +1025,8 @@ exit_sel:
 	CMP #9					; does next page make any sense?
 		BNE sel_err
 	RTS						; if next page is requested, just return
+exit_dev:
+	JMP sd_fail
 
 ; *** display selected entry ***
 ; X = new entry position (1...9)
@@ -1120,6 +1140,8 @@ sd_fail:					; SD card failed
 	LDX #FAIL_MSG			; FAIL message
 	JSR disp_code
 ; before locking, try another device *** NEW AND IMPROVED
+	LDA dev_id
+		BEQ was_raspi
 	DEC dev_id				; check next device
 	BEQ no_spi				; ID=0 for RasPi
 	BPL next_dev			; or continue with next SPI
@@ -1131,6 +1153,8 @@ next_dev:
 no_spi:
 ; here could come the Raspberry Pi module instead (nanoBoot)
 	BRK						; just lock with error LED
+was_raspi:
+	JMP sd_main				; restart if switching device from RasPi (placeholder)
 
 ; ********************
 ; *** diverse data ***
@@ -1166,7 +1190,14 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 1.1", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 1.2a", 13, 13, 0
+sd_next:
+	.asc	"SELECT next ", 14, "D", 15, "evice...", 0
+sd_abort:
+	.asc	14, "-STOPPED!", 7, 15, 13, 13, 0
+
+#echo	1.2a
+
 ; offset table for the above messages
 msg_ix:
 	.byt	0				; IDLE_ERR
@@ -1184,6 +1215,8 @@ msg_ix:
 	.byt	sd_old-msg_sd	; OLD_SD	v1.x before SD Interface
 	.byt	sd_hc-msg_sd	; HC_XC		before Card Ready
 	.byt	sd_splash-msg_sd	; SPLASH		splash screen
+	.byt	sd_next-msg_sd	; NX_DEVICE
+	.byt	sd_abort-msg_sd	; ABORT
 
 ; vector table
 vec_sd:
