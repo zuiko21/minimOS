@@ -2,7 +2,7 @@
 ; now with sidecar/fast SPI support
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231026-2312
+; last modified 20231027-0027
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -396,10 +396,18 @@ boot:
 		LDA #1				; first column has both SPACE & SHIFT
 		STA IO9kbd
 		LDA IO9kbd			; get active rows
+		STZ IO9kbd			; just for good measure
 		AND #%10100000		; mask relevant keys
 		CMP #%10100000		; both SHIFT & SPACE?
 		BNE no_break
-			JMP sd_selected	; init card again, same device
+			LDX #ABORT
+			JSR disp_code	; show abort message EEEEK
+			LDX #vec_dc_sd-vec_sd		; set vectors for devCart device
+			LDA dev_id		; really DevCart?
+			BMI do_repeat	; seem so
+				LDX #vec_sp_sd-vec_sd
+do_repeat:
+			JMP vecload		; init card again, same device
 no_break:
 ; continue as usual
 		JSR progress
@@ -1026,7 +1034,8 @@ exit_sel:
 		BNE sel_err
 	RTS						; if next page is requested, just return
 exit_dev:
-	JMP sd_fail
+	LDX #OK_MSG				; eeeek
+	JMP switch_dev			; no FAIL, please
 
 ; *** display selected entry ***
 ; X = new entry position (1...9)
@@ -1138,6 +1147,7 @@ ffsd_nw:
 sd_fail:					; SD card failed
 	JSR disp_code			; display message
 	LDX #FAIL_MSG			; FAIL message
+switch_dev:
 	JSR disp_code
 ; before locking, try another device *** NEW AND IMPROVED
 	LDA dev_id
@@ -1176,7 +1186,7 @@ sd_hc:
 sd_m4:
 	.asc	"Card Ready", 0
 sd_ok:
-	.asc	" OK", 13, 0
+	.asc	15, " OK", 13, 0
 sd_err:
 	.asc	" ", 14, "FAIL!", 15, 7, 13, 13, 0
 sd_inv:
@@ -1190,13 +1200,13 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 1.2a", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 1.2b3", 13, 13, 0
 sd_next:
-	.asc	"SELECT next ", 14, "D", 15, "evice...", 0
+	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
-	.asc	14, "-STOPPED!", 7, 15, 13, 13, 0
+	.asc	" -STOPPED!", 7, 15, 13, 13, 0
 
-#echo	1.2a
+#echo	1.2b3
 
 ; offset table for the above messages
 msg_ix:
@@ -1375,8 +1385,7 @@ not_brk:
 	PLY						; for 5x8 matrix support
 	PLX
 	PLA
-nmi:
-	RTI						; NMI is completely disabled
+	RTI
 
 ;nmi:
 ;	JMP (fw_nmi)			; standard minimOS vector
@@ -1435,7 +1444,7 @@ autoreset:
 ; *** standard 6502 vectors ***
 ; *****************************
 * = $FFFA
-	.word	nmi
+	.word	reset			; NMI does warm reset
 	.word	reset
 	.word	irq
 rom_end:
