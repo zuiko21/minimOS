@@ -2,7 +2,7 @@
 ; now with sidecar/fast SPI support
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231027-0027
+; last modified 20231027-1748
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -165,7 +165,7 @@ rom_start:
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$11C0			; 1.1f
+	.word	$12C0			; 1.2f
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$5A00			; time, 11.16		%0101 1-010 000-0 0000
 	.word	$5755			; date, 2023/10/21	%0101 011-1 010-1 0101
@@ -407,6 +407,7 @@ boot:
 			BMI do_repeat	; seem so
 				LDX #vec_sp_sd-vec_sd
 do_repeat:
+			CLI				; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEKKKKKKKKKKKKKKKKKKKK
 			JMP vecload		; init card again, same device
 no_break:
 ; continue as usual
@@ -1200,13 +1201,13 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 1.2b3", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 1.2", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
 	.asc	" -STOPPED!", 7, 15, 13, 13, 0
 
-#echo	1.2b3
+#echo	1.2
 
 ; offset table for the above messages
 msg_ix:
