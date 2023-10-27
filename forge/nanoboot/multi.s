@@ -2,7 +2,7 @@
 ; now with sidecar/fast SPI support
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231027-1925
+; last modified 20231027-2004
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -968,7 +968,7 @@ sel_en:
 sel_loop:
 		LDY #0
 		JSR conio			; input char
-		BCS sel_loop		; wait for a key ** KEYBOARD ONLY
+;		BCS sel_loop		; wait for a key ** KEYBOARD ONLY
 		CPY #'0'			; next page?
 	BEQ exit_sel
 		CPY #'d'			; next device? (new)
@@ -983,6 +983,14 @@ sel_loop:
 	BEQ no_down				; *
 ; try to advance selection
 		LDX fw_knes			; *
+		BNE not_first		; * new, make NEWLINE the first time
+			PHX				; *
+			PHY				; *
+			LDY #13			; *
+			JSR conio		; * not that efficient, but works
+			PLY				; *
+			PLX				; *
+not_first:
 		CPX en_ix			; * room for it?
 		BCS no_down			; * CHECK
 			INX				; * update value
@@ -1207,13 +1215,13 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 1.3", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 1.3b3", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
 	.asc	" -STOPPED!", 7, 15, 13, 13, 0
 
-#echo	1.3
+#echo	1.3b3
 
 ; offset table for the above messages
 msg_ix:
