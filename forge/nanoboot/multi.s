@@ -2,7 +2,7 @@
 ; now with sidecar/fast SPI support
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231027-1748
+; last modified 20231027-1925
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -959,55 +959,61 @@ dc_end:
 
 ; *** wait for user selection ***
 ; 1...9 = entry index (may be selected with up/down)
-; 0     = next page   (may be selected with right or left)
-; when selected via game pad, use FIRE/SELECT/B/START to boot
+; 0     = next page   (may be selected with right... and/or left?)
+; D     = next device (or SELECT)
+; when selected via game pad, use FIRE/B/START to boot (see * in comments)
+; maybe use START as BREAK?
 sel_en:
-;	STZ fw_knes				; reset input-by-pad
+	STZ fw_knes				; * reset input-by-pad
 sel_loop:
 		LDY #0
 		JSR conio			; input char
 		BCS sel_loop		; wait for a key ** KEYBOARD ONLY
-;		LDA gamepad1		; check also pad input
-;		ORA gamepad2
 		CPY #'0'			; next page?
 	BEQ exit_sel
 		CPY #'d'			; next device? (new)
 	BEQ exit_dev
-;		BIT #%00000101		; check left or right
-;	BEQ exit_sel			; also means next page
-;		PHY					; eeeek
-;		BIT #%00000010		; check down
-;	BEQ no_down
+		LDA gamepad1		; * check also ANY pad input
+		ORA gamepad2		; *
+		BIT #%00000001		; * BIT #%00000101		; check (left or) right
+	BNE exit_sel			; * also means next page EEEEEEEEK
+		BIT #%00010000		; * check SELECT (new)
+	BNE exit_dev			; * means next device (new)
+		BIT #%00000010		; * check down
+	BEQ no_down				; *
 ; try to advance selection
-;		LDX fw_knes
-;		CPX en_ix			; room for it?
-;		BCS no_down
-;			INX				; update value
-;			JSR show_sel	; and display new selection
+		LDX fw_knes			; *
+		CPX en_ix			; * room for it?
+		BCS no_down			; * CHECK
+			INX				; * update value
+			PHY				; * EEEEEK
+			JSR show_sel	; * and display new selection
+			PLY				; * EEEEEK
 no_down:
-;		BIT #%00001000		; check up
-;	BEQ no_up
+		BIT #%00001000		; * check up
+	BEQ no_up				; *
 ; try to decrement selection
-;		LDX fw_knes
-;		BEQ no_up			; no previous selection
-;			DEX				; update value
-;		BEQ no_up			; was first one, do nothing
-;			JSR show_sel	; or display new selection
+		LDX fw_knes			; *
+		BEQ no_up			; * no previous selection
+			DEX				; * update value
+		BEQ no_up			; * was first one, do nothing
+			PHY				; * eeeek EEEEEEK EEEEEEEEEEEEEEKKKKKKKKKKKK
+			JSR show_sel	; * or display new selection
+			PLY				; * EEEEEEEEEEEEEEEKKKKKKKKKKKKKKKKKKKKKKKKK
 no_up:
-;		PLY
-;		BIT #%11110000		; check any selection button
-;	BEQ sel_loop;	BNE pad_sel
+		BIT #%11100000		; * check any selection button (minus SELECT)
+	BNE pad_sel				; * BEQ sel_loop EEEEEK
 		TYA
 		CMP #'1'			; less than 1 is ignored
 	BCC sel_loop
-;		CMP #'9'+1			; but 1...9 is accepted
-;	BCS sel_loop
-;		SEC
+		CMP #'9'+1			; but 1...9 is accepted -- why commented?
+	BCS sel_loop			; -- why commented?
+		SEC
 		SBC #'0'			; convert to index 1...9
-;		BRA launch
+		BRA launch
 pad_sel:
-;		LDA fw_knes			; get selection
-;		BEQ sel_loop		; nothing yet!
+		LDA fw_knes			; * get selection
+		BEQ sel_loop		; * nothing yet!
 launch:
 ; arrived here with A = 1...9 selected entry, no return
 		DEC					; make A = 0...8
@@ -1201,13 +1207,13 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 1.2", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 1.3", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
 	.asc	" -STOPPED!", 7, 15, 13, 13, 0
 
-#echo	1.2
+#echo	1.3
 
 ; offset table for the above messages
 msg_ix:
