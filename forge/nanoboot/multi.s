@@ -1,15 +1,18 @@
 ; Durango-X devcart SD multi-boot loader
 ; now with sidecar/fast SPI support
+; v2.0 with volume-into-FAT32 support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231027-2004
+; last modified 20231105-1249
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
 ; add -DTALLY for LED access indicator
 ; add -DDEBUG if desired
 
+#echo	DevCart @ $DFC0
 #echo	FastSPI @ $DF96-7, SPI ID=0...3
+#echo	volume-into-FAT32 support!
 
 ; SD interface definitions
 #define	SD_CLK		%00000001
@@ -50,6 +53,8 @@
 #define	SPLASH		14
 #define	NX_DEVICE	15
 #define	ABORT		16
+#define	MNT_RAW		17
+#define	MNT_FAT		18
 
 ; *** hardware definitions ***
 IO8attr	= $DF80
@@ -93,15 +98,17 @@ ftime	= buffer+248		; time in MS-DOS format
 fdate	= buffer+250		; date in MS-DOS format
 fsize	= buffer+252		; file size INCLUDING 256-byte header
 
-; *** directory storage ***
+; *** directory storage *** ($2F0-$2FF)
 en_tab		= $300
 sig_tab		= $2F0			; NEW, store signature ('X'=executable, 'S'=16-colour screen, 'R'=HIRES screen)
 
-; *** interface vectors ***	NEW for extra SD interfaces
+; *** interface vectors ***	NEW for extra SD interfaces ($2EA-$2EF)
 v_spi_tr		= $2EA
-v_cs_enable		= $2EC
-v_cs_disable	= $2EE
+v_cs_enable		= v_spi_tr+2			; $2EC
+v_cs_disable	= v_cs_enable+2			; $2EE
 
+; *** mount point *** NEW ($2E6-$2E9)
+mount_bl	= $2E6			; BIG endian, just as arg!
 
 ; *****************************************************
 ; *** firmware & hardware definitions for Durango-X ***
@@ -165,10 +172,11 @@ rom_start:
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$12C0			; 1.2f
+	.word	$2001			; 2.0a1		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+							; alt.		%vvvvrrrrsshhbbbb, where revision = %hhrrrr
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5A00			; time, 11.16		%0101 1-010 000-0 0000
-	.word	$5755			; date, 2023/10/21	%0101 011-1 010-1 0101
+	.word	$5C20			; time, 11.33		%0101 1-100 001-0 0000
+	.word	$5765			; date, 2023/11/05	%0101 011-1 011-0 0101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -212,14 +220,18 @@ sd_selected:
 	LDY #13
 	JSR conio				; newline
 ; *** list SD contents ***
-; get ready to read first sector
-	STZ arg
-	STZ arg+1
-	STZ arg+2
-	STZ arg+3				; assume reading from the very first sector
+; get ready to read first sector *in volume*
+; ...but it should be already loaded?
+	LDX #3					; max byte offset for 32-bit amount
+go_volume:
+		LDA mount_bl, X		; get mount point...
+		STA arg, X			; ...and set as argument
+		DEX
+		BPL go_volume
 	STZ en_ix				; reset index
 ls_disp:
 ; * load current sector *
+; ...but it should be already loaded?
 #ifdef	DEBUG
 			LDX #0
 			TXA				; this will clear the read buffer, just in case
@@ -227,7 +239,7 @@ canary:
 				STA buffer, X
 				STA buffer+256, X
 				INX
-				BNE canary	
+				BNE canary
 #endif
 			LDX #>buffer	; temporary load address
 			STX ptr+1
@@ -412,10 +424,6 @@ do_repeat:
 no_break:
 ; continue as usual
 		JSR progress
-;		LDX ptr+1			; current page (after switching)
-;		LDA #$FF			; elongated white dots *** may change feedback
-;		STA $7EFE, X
-;		STA $7EFF, X		; display on screen (finished pages)
 		INC arg+3			; only 64 sectors, no need to check MSB... EEEEEEEEK endianness!
 		BNE no_wrap
 			INC arg+2		; now could have several images, may wrap...
@@ -628,8 +636,7 @@ r7end:
 ; *** init SD card in SPI mode ***
 sd_init:
 ; ** SD_powerUpSeq is inlined here **
-	LDA #SD_CS				; CS bit
-	TSB IOCart				; CS_DISABLE();
+	JSR cs_disable			; EEEEEEEEEEEEEEEKKKKKKKKKKKKK
 	LDX #220				; ** may substitute SD logo load for this delay **
 sdpu_dl:
 		NOP
@@ -816,7 +823,25 @@ sd_sc:
 hcxc:
 	LDX #HC_XC				; ### notify this instead ###
 card_ok:
-	JMP pass_x				; *** PASS 4 in white ***
+	JSR pass_x				; *** PASS 4 in white ***
+;	JMP vol_find			; find and mount volume * NEW
+
+; ******************************************************
+; *** mount volume, either from raw sectors or FAT32 *** NEW
+; ******************************************************
+vol_find:
+	LDX #MNT_RAW
+	JSR disp_code			; let's mount the volume
+	STZ mount_bl			; first of all, try raw card format
+	STZ mount_bl+1
+	STZ mount_bl+2
+	STZ mount_bl+3
+
+;	LDX #OK_MSG
+;	JMP disp_code
+	LDX #MNT_FAT
+	JMP pass_x
+;	RTS						; PLACEHOLDER
 
 ; *** read single sector ***
 ; ptr MUST be even, NOT starting at $DF00 and certainly (two) page-aligned
@@ -1191,11 +1216,11 @@ msg_sd:
 sd_old:
 	.asc	"v1.x "			; ### special prefix for older v1.x cards ###
 sd_m1:
-	.asc	"SD Interface", 0
+	.asc	"SD", 0
 sd_m2:
-	.asc	"Pattern echo", 0
+	.asc	"Echo", 0
 sd_m3:
-	.asc	"Card Init", 0
+	.asc	"Init", 0
 sd_hc:
 	.asc	"HC/XC "		; ### special prefix if CCS=1 ###
 sd_m4:
@@ -1207,7 +1232,7 @@ sd_err:
 sd_inv:
 	.asc	" ", 14, "No ROM image found", 15, 7, 0
 sd_sel:
-	.asc	" is selected", 1, 0
+	.asc	" selected", 1, 0
 sd_load:
 	.asc	13, 14, "Loading ", 0
 sd_page:
@@ -1215,13 +1240,17 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 1.3b3", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 2.0a1", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
 	.asc	" -STOPPED!", 7, 15, 13, 13, 0
+sd_mnt:
+	.asc	"Mount", 0
+sd_fat32:
+	.asc	" DURANGO.AV", 0
 
-#echo	1.3b3
+#echo	2.0a1
 
 ; offset table for the above messages
 msg_ix:
@@ -1242,6 +1271,9 @@ msg_ix:
 	.byt	sd_splash-msg_sd	; SPLASH		splash screen
 	.byt	sd_next-msg_sd	; NX_DEVICE
 	.byt	sd_abort-msg_sd	; ABORT
+	.byt	sd_mnt-msg_sd	; MNT_RAW
+	.byt	sd_fat32-msg_sd	; MNT_FAT
+
 
 ; vector table
 vec_sd:
