@@ -3,7 +3,7 @@
 ; v2.0 with volume-into-FAT32 support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231107-0903
+; last modified 20231107-0951
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -108,7 +108,7 @@ v_cs_enable		= v_spi_tr+2			; $2EC
 v_cs_disable	= v_cs_enable+2			; $2EE
 
 ; *** mount point *** NEW ($2E6-$2E9)
-mount_bl	= $2E6			; BIG endian, just as arg!
+;mount_bl	= $2E6			; BIG endian, just as arg!
 
 ; *****************************************************
 ; *** firmware & hardware definitions for Durango-X ***
@@ -832,6 +832,9 @@ vol_find:
 	STZ arg+1
 	STZ arg+2
 	STZ arg+3
+	LDX #>buffer			; temporary load address EEEEEEEEEEEEK
+	STX ptr+1
+	STZ ptr					; assume buffer is page-aligned
 	JSR ssec_rd				; read very first sector in device
 	JSR chk_head			; and look for a valid header
 	BCC vol_ok				; if RAW formatted, this will be a valid header
@@ -1212,11 +1215,11 @@ was_raspi:
 
 ; messages for SD init, with offsets
 msg_sd:
-	.asc	"Set Idle", 0
+	.asc	"Idle", 0
 sd_old:
 	.asc	"v1.x "			; ### special prefix for older v1.x cards ###
 sd_m1:
-	.asc	"SD", 0
+	.asc	"SPI", 0
 sd_m2:
 	.asc	"Echo", 0
 sd_m3:
@@ -1250,7 +1253,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV", 0
 
-#echo	2.0a2
+#echo	2.0a2-1
 
 ; offset table for the above messages
 msg_ix:
