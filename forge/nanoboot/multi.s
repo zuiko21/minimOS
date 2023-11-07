@@ -3,7 +3,7 @@
 ; v2.0 with volume-into-FAT32 support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231107-1859
+; last modified 20231108-0046
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -172,11 +172,11 @@ rom_start:
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2002			; 2.0a1		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2002			; 2.0a2		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 							; alt.		%vvvvrrrrsshhbbbb, where revision = %hhrrrr
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$48C0			; time, 9.06		%0100 1-000 110-0 0000
-	.word	$5767			; date, 2023/11/07	%0101 011-1 011-0 0111
+	.word	$05C0			; time, 00.46		%0000 0-101 110-0 0000
+	.word	$5768			; date, 2023/11/08	%0101 011-1 011-0 1000
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -229,7 +229,7 @@ ls_disp:
 ; ...unless it's the very first
 			LDX #>buffer	; temporary load address
 			STX ptr+1
-			STZ ptr			; assume buffer is page-aligned
+;			STZ ptr			; assume buffer is page-aligned
 			JSR ssec_rd		; read one 512-byte sector
 ; might do some error check here...
 header_see:
@@ -349,7 +349,7 @@ do_boot:
 ; reload sector of selected entry into buffer
 	LDX #>buffer			; temporary load address
 	STX ptr+1
-	STZ ptr					; assume buffer is page-aligned
+;	STZ ptr					; assume buffer is page-aligned
 	JSR ssec_rd				; read first 512-byte sector of the file (will be read again)
 ; print loading message with filename
 	LDX #LOAD_MSG
@@ -834,10 +834,12 @@ vol_find:
 	STZ arg+3
 	LDX #>buffer			; temporary load address EEEEEEEEEEEEK
 	STX ptr+1
-	STZ ptr					; assume buffer is page-aligned
+;	STZ ptr					; assume buffer is page-aligned
 	JSR ssec_rd				; read very first sector on device
 	JSR chk_head			; and look for a valid header
-	BCC vol_ok				; if RAW formatted, this will be a valid header
+		BCS try_fat			; not valid? try FAT32
+	JMP vol_ok				; if RAW formatted, this will be a valid header
+try_fat:
 		LDX #MNT_FAT		; otherwise assume it's FAT32
 		JSR disp_code
 ; this should be the MBR, check it out
@@ -845,7 +847,7 @@ vol_find:
 		CMP #$0C			; is it FAT32LBA?
 		BEQ mbr_ptype_ok
 			LDX #mbr_ptype-fat_msg
-			BRA fat_err
+			JMP fat_err
 mbr_ptype_ok:
 		LDA #$55
 		CMP buffer+$1FE		; boot signature
@@ -855,7 +857,7 @@ mbr_ptype_ok:
 		BEQ mbr_bsig_ok
 mbr_bsig_bad:
 			LDX #mbr_bsig-fat_msg
-			BRA fat_err
+			JMP fat_err
 mbr_bsig_ok:
 ; let's get the partition's first sector
 	LDY #0
@@ -869,7 +871,7 @@ vbr_sector:
 ; read VBR
 	LDX #>buffer			; temporary load address
 	STX ptr+1
-	STZ ptr					; assume buffer is page-aligned
+;	STZ ptr					; assume buffer is page-aligned
 	JSR ssec_rd				; read first sector on partition
 ; check out VBR
 	LDA buffer				; first byte on VBR...
@@ -882,47 +884,149 @@ vbr_sector:
 	BEQ vbr_jump_ok
 vbr_jump_bad:
 		LDX #vbr_jump-fat_msg
-		BRA fat_err
+		JMP fat_err
 vbr_jump_ok: 
 	LDA buffer+$15			; media descriptor
 	CMP #$F0				; 3.5" or other media
-	BEQ vbr_media_ok
-		LDX #vbr_media-fat_msg
-		BRA fat_err
-vbr_media_ok:
+	BEQ bpb_media_ok
+		LDX #bpb_media-fat_msg
+		JMP fat_err
+bpb_media_ok:
+	LDA buffer+$42			; extended boot signature
+	AND #%11111110			; ignore LSB
+	CMP #$28				; $28 or $29
+	BEQ bpb_extbs_ok
+		LDX #bpb_extbs-fat_msg
+bpb_extbs_ok:
+	LDA buffer+$B			; bytes per sector
+	BNE bpb_bps_bad			; LSB must be zero for 512
+		LDA buffer+$C		; check MSB
+		CMP #2				; 512 bytes/sector is the standard
+	BEQ bpb_bps_ok
+bpb_bps_bad:
+		LDX #bpb_bps-fat_msg
+		JMP fat_err
+bpb_bps_ok:
+; VBR appears compatible, let's compute directory sector
+	LDA buffer+$10			; number of FATs (may assume it's one or two, at least a power of two)
+fat_shift:
+		LSR
+	BEQ all_fats			; all shifts done (none if 1, once if 2)
+		ASL buffer+$24		; multiply sectors per FAT
+		ROL buffer+$25
+		ROL buffer+$26
+		ROL buffer+$27
+		BRA fat_shift
+all_fats:
+	LDA buffer+$24
+	CLC
+	ADC buffer+$E			; add reserved sectors
+	STA buffer+$24
+	LDA buffer+$25
+	ADC buffer+$F
+	STA buffer+$25
+		BCC fat_total
+	INC buffer+$26
+		BNE fat_total
+	INC buffer+$27
+fat_total:
+; we've computed the sector number where the directory begins
+	LDY #0
+	LDX #3					; four bytes to copy
+dir_sector:
+		LDA buffer+$24, Y	; modified sectors/FAT (times # of FATs plus reserved sectors, little endian)
+		STA arg, X			; SD card expects block number BIG endian
+		INY
+		DEX
+		BPL dir_sector
+; before loading directory sectors, take note of the limit (only first cluster is explored)
+	LDA buffer+$D			; number of sectors per cluster
+	STA cnt					; store as directory scan limit!
+; read directory sector...
+dir_rd:
+		LDX #>buffer		; temporary load address
+		STX ptr+1
+;		STZ ptr				; assume buffer is page-aligned
+		JSR ssec_rd			; read first sector on partition
+; ...and scan its entries
+		LDX #>buffer		; temporary load address
+		STX ptr+1			; assume LSB stays at zero
+dir_scan:
+			LDY #0
+dir_entry:
+				LDA (ptr), Y			; compare name in directory entry...
+				CMP vol_name, Y			; ...with desired volume name
+			BNE next_entry	; if mismatched, try next entry
+				INY			; otherwise, check next char
+				CPY #11		; all matching?
+				BNE dir_entry
+			BEQ vol_found	; we got it!
+next_entry:
+			LDA ptr
+			CLC
+			ADC #32			; next entry is 32 bytes ahead
+			STA ptr
+			BNE dir_scan	; if still within page, check next entry
+		INC ptr+1
+		LDA ptr+1
+		CMP #>(buffer+512)	; still within sector?
+			BNE dir_scan	; keep trying
+		INC arg+3			; otherwise read following sector
+		BNE next_dirs
+			INC arg+2
+		BNE next_dirs
+			INC arg+1
+		BNE next_dirs
+			INC arg
+next_dirs:
+		DEC cnt				; one sector less in the first directory cluster
+		BNE dir_rd
+	JMP fe_end				; notify error and lock
+vol_found:
+; compute volume header position from cluster in entry
 
+
+; MUST read first sector on DURANGO.AV!
+	LDX #>buffer			; temporary load address
+	STX ptr+1
+	STZ ptr					; assume buffer is page-aligned (needed here!)
+	JSR ssec_rd				; read first sector on partition
+	BRA vol_ok				; all done
 fat_err:
-; display special error message for FAT32 mounting procedure
+; * display special error message for FAT32 mounting procedure *
+	PHX						; save error code
 #ifdef	DEBUG
 	PHA						; save last value
 #endif
-	PHX						; save error code
 	LDY #7
 	JSR conio				; beep
 	LDY #13
 	JSR conio
 	LDY #13
 	JSR conio
-	PLX						; retrieve error
 #ifdef	DEBUG
 	PLA
-	
+	JSR disp_hex
+	LDY #':'
+	JSR conio
 #endif
+	PLX						; retrieve error
 fe_loop:
 		LDY fat_msg, X		; get char
-	BEQ dc_end				; message ended
+	BEQ fe_end				; message ended
 		PHX
 		JSR conio			; display char
 		PLX
 		INX
 		BNE fe_loop			; next char
-dc_end:
-
-; make sure first sector in DURANGO.AV volume is loaded into buffer!
+fe_end:
+	LDX #FAIL_MSG
+	JSR disp_code
+	BRK
+; * volume mounted some way or another *
 vol_ok:
 	LDX #OK_MSG
-	JMP disp_code
-;	RTS						; PLACEHOLDER
+	JMP disp_code			; call and return
 
 ; *** read single sector ***
 ; ptr MUST be even, NOT starting at $DF00 and certainly (two) page-aligned
@@ -1269,7 +1373,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV", 0
 
-#echo	2.0a2-1
+#echo	2.0a2-2
 
 ; offset table for the above messages
 msg_ix:
@@ -1296,14 +1400,21 @@ msg_ix:
 ; extended messages for FAT32 debugging
 fat_msg:
 mbr_ptype:
-	.asc	"MBR: Partition type", 0
+	.asc	"MBR Partition type", 0
 mbr_bsig:
-	.asc	"MBR: Boot signature", 0
+	.asc	"MBR Boot signature", 0
 vbr_jump:
-	.asc	"VBR: Jump instruction", 0
-vbr_media:
-	.asc	"VBR: Media type", 0
+	.asc	"VBR Jump instruction", 0
+bpb_media:
+	.asc	"BPB2 Media type", 0
+bpb_extbs:
+	.asc	"BPB7 Extended boot signature", 0
+bpb_bps:
+	.asc	"BPB2 Bytes per sector", 0
 
+; volume name into FAT32 device
+vol_name:
+	.asc	"DURANGO AV "	; 8+3 format, upper case, with padding spaces
 
 ; vector table
 vec_sd:
@@ -1389,7 +1500,19 @@ ffsd_nw:
 	JMP conio				; newline and... return
 
 disp_hex:
-
+	PHA
+	LSR
+	LSR
+	LSR
+	LSR
+	JSR prn_hex
+	PLA
+	AND #15
+prn_hex:
+	CLC
+	ADC #'0'
+	TAY
+	JMP conio
 #endif
 .)
 end_sd:
