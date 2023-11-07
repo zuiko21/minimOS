@@ -3,7 +3,7 @@
 ; v2.0 with volume-into-FAT32 support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231105-1249
+; last modified 20231107-0903
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -98,7 +98,7 @@ ftime	= buffer+248		; time in MS-DOS format
 fdate	= buffer+250		; date in MS-DOS format
 fsize	= buffer+252		; file size INCLUDING 256-byte header
 
-; *** directory storage *** ($2F0-$2FF)
+; *** directory storage *** ($2F0-$2FF +36 bytes after $300, might be compacted)
 en_tab		= $300
 sig_tab		= $2F0			; NEW, store signature ('X'=executable, 'S'=16-colour screen, 'R'=HIRES screen)
 
@@ -172,11 +172,11 @@ rom_start:
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2001			; 2.0a1		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2002			; 2.0a1		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 							; alt.		%vvvvrrrrsshhbbbb, where revision = %hhrrrr
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5C20			; time, 11.33		%0101 1-100 001-0 0000
-	.word	$5765			; date, 2023/11/05	%0101 011-1 011-0 0101
+	.word	$48C0			; time, 9.06		%0100 1-000 110-0 0000
+	.word	$5767			; date, 2023/11/07	%0101 011-1 011-0 0111
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -220,42 +220,23 @@ sd_selected:
 	LDY #13
 	JSR conio				; newline
 ; *** list SD contents ***
-; get ready to read first sector *in volume*
+; first sector *in volume* is read!
 ; ...but it should be already loaded?
-	LDX #3					; max byte offset for 32-bit amount
-go_volume:
-		LDA mount_bl, X		; get mount point...
-		STA arg, X			; ...and set as argument
-		DEX
-		BPL go_volume
 	STZ en_ix				; reset index
+	BRA header_see			; because it's already loaded! perhaps checked too, but check it anyway
 ls_disp:
 ; * load current sector *
-; ...but it should be already loaded?
-#ifdef	DEBUG
-			LDX #0
-			TXA				; this will clear the read buffer, just in case
-canary:
-				STA buffer, X
-				STA buffer+256, X
-				INX
-				BNE canary
-#endif
+; ...unless it's the very first
 			LDX #>buffer	; temporary load address
 			STX ptr+1
 			STZ ptr			; assume buffer is page-aligned
 			JSR ssec_rd		; read one 512-byte sector
 ; might do some error check here...
-; * look for a valid header *
-			LDA magic1		; check magic number one
-			BEQ magic1_ok 
-		JMP end_vol
-magic1_ok:
-			LDA magic2		; check magic number two
-			CMP #13			; must be NEWL instead of zero
-		BNE end_vol_near
-			LDA magic3		; check magic number three
-		BNE end_vol_near
+header_see:
+			JSR chk_head	; look for a valid header
+		BCC header_ok
+			JMP end_vol		; if not, that's the end of the volume
+header_ok:
 ; header is valid, check whether bootable or not
 			LDA bootsig		; check Durango-X bootable ROM image signature
 			CMP #'d'
@@ -334,8 +315,7 @@ name_end:
 			JSR show_sector
 #endif
 			BRA next_file
-end_vol_near:
-		BRA end_vol
+
 ; * in any case, jump and read next header *
 next_file:
 ; compute next header sector
@@ -417,7 +397,7 @@ boot:
 			LDX #vec_dc_sd-vec_sd		; set vectors for devCart device
 			LDA dev_id		; really DevCart?
 			BMI do_repeat	; seem so
-				LDX #vec_sp_sd-vec_sd
+				LDX #vec_sp_sd-vec_sd	; FastSPI otherwise
 do_repeat:
 			CLI				; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEKKKKKKKKKKKKKKKKKKKK
 			JMP vecload		; init card again, same device
@@ -450,6 +430,22 @@ launch_rom:
 #endif
 ; Interrupts already shut off for performance, good for reset anyway
 	JMP switch				; start code loaded into cartidge RAM!
+
+; *** some high-level routines ***
+chk_head:
+; * look for a valid header * assume sector loaded at buffer
+	LDA magic1				; check magic number one
+	BNE not_magic 
+		LDA magic2			; check magic number two
+		CMP #13				; must be NEWL instead of zero
+		BNE not_magic
+			LDA magic3		; check magic number three
+			BNE not_magic
+				CLC			; report no error, header is valid
+				RTS
+not_magic:
+	SEC						; otherwise header is not valid
+	RTS
 
 ; ************************
 ; *** support routines ***
@@ -832,15 +828,19 @@ card_ok:
 vol_find:
 	LDX #MNT_RAW
 	JSR disp_code			; let's mount the volume
-	STZ mount_bl			; first of all, try raw card format
-	STZ mount_bl+1
-	STZ mount_bl+2
-	STZ mount_bl+3
-
-;	LDX #OK_MSG
-;	JMP disp_code
-	LDX #MNT_FAT
-	JMP pass_x
+	STZ arg					; first of all, try raw card format
+	STZ arg+1
+	STZ arg+2
+	STZ arg+3
+	JSR ssec_rd				; read very first sector in device
+	JSR chk_head			; and look for a valid header
+	BCC vol_ok				; if RAW formatted, this will be a valid header
+		LDX #MNT_FAT		; otherwise assume it's FAT32
+		JSR disp_code
+; make sure first sector in DURANGO.AV volume is loaded into buffer!
+vol_ok:
+	LDX #OK_MSG
+	JMP disp_code
 ;	RTS						; PLACEHOLDER
 
 ; *** read single sector ***
@@ -1240,7 +1240,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 2.0a1", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 2.0a2", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1250,7 +1250,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV", 0
 
-#echo	2.0a1
+#echo	2.0a2
 
 ; offset table for the above messages
 msg_ix:
