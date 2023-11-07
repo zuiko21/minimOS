@@ -3,7 +3,7 @@
 ; v2.0 with volume-into-FAT32 support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231107-0951
+; last modified 20231107-1859
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -835,11 +835,89 @@ vol_find:
 	LDX #>buffer			; temporary load address EEEEEEEEEEEEK
 	STX ptr+1
 	STZ ptr					; assume buffer is page-aligned
-	JSR ssec_rd				; read very first sector in device
+	JSR ssec_rd				; read very first sector on device
 	JSR chk_head			; and look for a valid header
 	BCC vol_ok				; if RAW formatted, this will be a valid header
 		LDX #MNT_FAT		; otherwise assume it's FAT32
 		JSR disp_code
+; this should be the MBR, check it out
+		LDA buffer+$1C2		; first partition type
+		CMP #$0C			; is it FAT32LBA?
+		BEQ mbr_ptype_ok
+			LDX #mbr_ptype-fat_msg
+			BRA fat_err
+mbr_ptype_ok:
+		LDA #$55
+		CMP buffer+$1FE		; boot signature
+			BNE mbr_bsig_bad
+		ASL
+		CMP buffer+$1FF		; second byte
+		BEQ mbr_bsig_ok
+mbr_bsig_bad:
+			LDX #mbr_bsig-fat_msg
+			BRA fat_err
+mbr_bsig_ok:
+; let's get the partition's first sector
+	LDY #0
+	LDX #3					; four bytes to copy
+vbr_sector:
+		LDA buffer+$1C6, Y	; first sector on first partition (little endian)
+		STA arg, X			; SD card expects block number BIG endian
+		INY
+		DEX
+		BPL vbr_sector
+; read VBR
+	LDX #>buffer			; temporary load address
+	STX ptr+1
+	STZ ptr					; assume buffer is page-aligned
+	JSR ssec_rd				; read first sector on partition
+; check out VBR
+	LDA buffer				; first byte on VBR...
+	CMP #$E9				; ...could be jump long...
+	BEQ vbr_jump_ok
+		CMP #$EB			; ...or short...
+	BNE vbr_jump_bad
+		LDA buffer+2
+		CMP #$90			; ...followed by NOP
+	BEQ vbr_jump_ok
+vbr_jump_bad:
+		LDX #vbr_jump-fat_msg
+		BRA fat_err
+vbr_jump_ok: 
+	LDA buffer+$15			; media descriptor
+	CMP #$F0				; 3.5" or other media
+	BEQ vbr_media_ok
+		LDX #vbr_media-fat_msg
+		BRA fat_err
+vbr_media_ok:
+
+fat_err:
+; display special error message for FAT32 mounting procedure
+#ifdef	DEBUG
+	PHA						; save last value
+#endif
+	PHX						; save error code
+	LDY #7
+	JSR conio				; beep
+	LDY #13
+	JSR conio
+	LDY #13
+	JSR conio
+	PLX						; retrieve error
+#ifdef	DEBUG
+	PLA
+	
+#endif
+fe_loop:
+		LDY fat_msg, X		; get char
+	BEQ dc_end				; message ended
+		PHX
+		JSR conio			; display char
+		PLX
+		INX
+		BNE fe_loop			; next char
+dc_end:
+
 ; make sure first sector in DURANGO.AV volume is loaded into buffer!
 vol_ok:
 	LDX #OK_MSG
@@ -1122,68 +1200,6 @@ progress:
 no_bar:
 	RTS
 
-#ifdef	DEBUG
-show_sector:
-	LDX #0					; 256 words = 512 bytes
-	DEC ptr+1
-	DEC ptr+1				; 512 bytes back
-fsd_loop:
-		PHX
-		LDY #16				; binary mode!
-		JSR conio
-		LDA (ptr)			; first byte in word
-		TAY
-		JSR conio
-		INC ptr				; no wrap here
-		LDY #16				; binary mode!
-		JSR conio
-		LDA (ptr)			; second byte in word
-		TAY
-		JSR conio
-		INC ptr
-		BNE fsd_nw
-			INC ptr+1
-fsd_nw:
-		PLX
-		INX
-		BNE fsd_loop		; repeat for every word
-
-	ldy#13
-	jsr conio
-	inc arg+2	; WTF
-	inc arg+2	; WTFeeeeeeeeeeeek
-	jsr ssec_rd
-	LDX #0					; 256 words = 512 bytes
-	DEC ptr+1
-	DEC ptr+1				; 512 bytes back
-ffsd_loop:
-		PHX
-		LDY #16				; binary mode!
-		JSR conio
-		LDA (ptr)			; first byte in word
-		TAY
-		JSR conio
-		INC ptr				; no wrap here
-		LDY #16				; binary mode!
-		JSR conio
-		LDA (ptr)			; second byte in word
-		TAY
-		JSR conio
-		INC ptr
-		BNE ffsd_nw
-			INC ptr+1
-ffsd_nw:
-		PLX
-		INX
-		BNE ffsd_loop		; repeat for every word	
-
-	dec arg+2		; WTF
-	dec arg+2		; WTFeeeeeeeeeeek
-
-	LDY #13
-	JMP conio				; newline and... return
-#endif
-
 ; ***************************
 ; *** standard exit point ***
 ; ***************************
@@ -1277,6 +1293,17 @@ msg_ix:
 	.byt	sd_mnt-msg_sd	; MNT_RAW
 	.byt	sd_fat32-msg_sd	; MNT_FAT
 
+; extended messages for FAT32 debugging
+fat_msg:
+mbr_ptype:
+	.asc	"MBR: Partition type", 0
+mbr_bsig:
+	.asc	"MBR: Boot signature", 0
+vbr_jump:
+	.asc	"VBR: Jump instruction", 0
+vbr_media:
+	.asc	"VBR: Media type", 0
+
 
 ; vector table
 vec_sd:
@@ -1296,11 +1323,81 @@ prog_pat:
 	.byt	%10000000, %11000000, %11100000, %11110000, %11111000, %11111100, %11111110, %11111111
 sid_en:
 	.byt	%11111111, %11111110, %11111101, %11111011, %11110111	; SPI /CS patterns for ID0..3 (index 1..4, 0 is disable)
+
+; **************************
+; *** *** DEBUG code *** ***
+; **************************
+#ifdef	DEBUG
+show_sector:
+	LDX #0					; 256 words = 512 bytes
+	DEC ptr+1
+	DEC ptr+1				; 512 bytes back
+fsd_loop:
+		PHX
+		LDY #16				; binary mode!
+		JSR conio
+		LDA (ptr)			; first byte in word
+		TAY
+		JSR conio
+		INC ptr				; no wrap here
+		LDY #16				; binary mode!
+		JSR conio
+		LDA (ptr)			; second byte in word
+		TAY
+		JSR conio
+		INC ptr
+		BNE fsd_nw
+			INC ptr+1
+fsd_nw:
+		PLX
+		INX
+		BNE fsd_loop		; repeat for every word
+
+	ldy#13
+	jsr conio
+	inc arg+2	; WTF
+	inc arg+2	; WTFeeeeeeeeeeeek
+	jsr ssec_rd
+	LDX #0					; 256 words = 512 bytes
+	DEC ptr+1
+	DEC ptr+1				; 512 bytes back
+ffsd_loop:
+		PHX
+		LDY #16				; binary mode!
+		JSR conio
+		LDA (ptr)			; first byte in word
+		TAY
+		JSR conio
+		INC ptr				; no wrap here
+		LDY #16				; binary mode!
+		JSR conio
+		LDA (ptr)			; second byte in word
+		TAY
+		JSR conio
+		INC ptr
+		BNE ffsd_nw
+			INC ptr+1
+ffsd_nw:
+		PLX
+		INX
+		BNE ffsd_loop		; repeat for every word	
+
+	dec arg+2		; WTF
+	dec arg+2		; WTFeeeeeeeeeeek
+
+	LDY #13
+	JMP conio				; newline and... return
+
+disp_hex:
+
+#endif
 .)
 end_sd:
 
 ; ************************
-; *** firmware support ***
+; ************************
+; *** firmware support *** for Durango·X
+; ************************
 ; ************************
 reset:
 	SEI
