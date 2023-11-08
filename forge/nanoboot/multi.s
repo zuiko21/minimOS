@@ -995,21 +995,19 @@ vol_found:
 fat_err:
 ; * display special error message for FAT32 mounting procedure *
 	PHX						; save error code
-#ifdef	DEBUG
+;#ifdef	DEBUG
 	PHA						; save last value
-#endif
-	LDY #7
-	JSR conio				; beep
+;#endif
 	LDY #13
 	JSR conio
 	LDY #13
 	JSR conio
-#ifdef	DEBUG
+;#ifdef	DEBUG
 	PLA
 	JSR disp_hex
 	LDY #':'
 	JSR conio
-#endif
+;#endif
 	PLX						; retrieve error
 fe_loop:
 		LDY fat_msg, X		; get char
@@ -1363,7 +1361,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 2.0a2", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 2.0a3", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1373,7 +1371,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV", 0
 
-#echo	2.0a2-2
+#echo	2.0a3
 
 ; offset table for the above messages
 msg_ix:
@@ -1498,6 +1496,7 @@ ffsd_nw:
 
 	LDY #13
 	JMP conio				; newline and... return
+#endif
 
 disp_hex:
 	PHA
@@ -1509,11 +1508,14 @@ disp_hex:
 	PLA
 	AND #15
 prn_hex:
-	CLC
+	CMP #10
+	BCC to_asc
+		ADC #6
+to_asc:
 	ADC #'0'
 	TAY
 	JMP conio
-#endif
+;#endif
 .)
 end_sd:
 
