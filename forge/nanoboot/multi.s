@@ -3,7 +3,7 @@
 ; v2.0 with volume-into-FAT32 support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231108-0046
+; last modified 20231108-0922
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -175,7 +175,7 @@ rom_start:
 	.word	$2002			; 2.0a2		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 							; alt.		%vvvvrrrrsshhbbbb, where revision = %hhrrrr
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$05C0			; time, 00.46		%0000 0-101 110-0 0000
+	.word	$4AC0			; time, 00.46		%0100 1-010 110-0 0000
 	.word	$5768			; date, 2023/11/08	%0101 011-1 011-0 1000
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -834,7 +834,7 @@ vol_find:
 	STZ arg+3
 	LDX #>buffer			; temporary load address EEEEEEEEEEEEK
 	STX ptr+1
-;	STZ ptr					; assume buffer is page-aligned
+	STZ ptr					; assume buffer is page-aligned (this is needed)
 	JSR ssec_rd				; read very first sector on device
 	JSR chk_head			; and look for a valid header
 		BCS try_fat			; not valid? try FAT32
