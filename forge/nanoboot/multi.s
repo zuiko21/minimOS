@@ -3,7 +3,7 @@
 ; v2.0 with volume-into-FAT32 support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231100-1820
+; last modified 20231100-1847
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -938,8 +938,10 @@ lda buffer+$24:jsr disp_hex
 ldy#')':jsr conio
 	LDY #0
 	LDX #3					; four bytes to copy
+	CLC						; eeeeek
 dir_sector:
-		LDA buffer+$24, Y	; modified sectors/FAT (times # of FATs plus reserved sectors, little endian)
+		LDA arg, X			; EEEEEEEEEEEEEEEEEEK
+		ADC buffer+$24, Y	; modified sectors/FAT (times # of FATs plus reserved sectors, little endian)
 		STA arg, X			; SD card expects block number BIG endian
 		INY
 		DEX
@@ -1376,7 +1378,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV", 0
 
-#echo	2.0a3-2
+#echo	2.0a3-3
 
 ; offset table for the above messages
 msg_ix:
