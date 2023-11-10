@@ -931,21 +931,22 @@ all_fats:
 	INC buffer+$27
 fat_total:
 ; we've computed the sector number where the directory begins
-lda buffer+$27:jsr disp_hex
-lda buffer+$26:jsr disp_hex
-lda buffer+$25:jsr disp_hex
-lda buffer+$24:jsr disp_hex
-ldy#')':jsr conio
 	LDY #0
 	LDX #3					; four bytes to copy
 	CLC						; eeeeek
 dir_sector:
 		LDA arg, X			; EEEEEEEEEEEEEEEEEEK
-		ADC buffer+$24, Y	; modified sectors/FAT (times # of FATs plus reserved sectors, little endian)
+		ADC buffer+$24, Y	; ADD modified sectors/FAT (times # of FATs plus reserved sectors, little endian)
 		STA arg, X			; SD card expects block number BIG endian
 		INY
 		DEX
 		BPL dir_sector
+ldy#13:jsr conio
+lda arg:jsr disp_hex
+lda arg+1:jsr disp_hex
+lda arg+2:jsr disp_hex
+lda arg+3:jsr disp_hex
+ldy#')':jsr conio
 ; before loading directory sectors, take note of the limit (only first cluster is explored)
 	LDA buffer+$D			; number of sectors per cluster
 	STA cnt					; store as directory scan limit!
@@ -953,15 +954,22 @@ dir_sector:
 dir_rd:
 		LDX #>buffer		; temporary load address
 		STX ptr+1
-;		STZ ptr				; assume buffer is page-aligned
+		STZ ptr				; assume buffer is page-aligned (just in case)
 		JSR ssec_rd			; read first sector on partition
 ; ...and scan its entries
 		LDX #>buffer		; temporary load address
 		STX ptr+1			; assume LSB stays at zero
 dir_scan:
+ldy#13:jsr conio
 			LDY #0
 dir_entry:
 				LDA (ptr), Y			; compare name in directory entry...
+pha
+phy
+tay
+jsr conio
+ply
+pla
 				CMP vol_name, Y			; ...with desired volume name
 			BNE next_entry	; if mismatched, try next entry
 				INY			; otherwise, check next char
