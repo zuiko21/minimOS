@@ -3,7 +3,7 @@
 ; v2.0 with volume-into-FAT32 support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231108-0922
+; last modified 20231100-1820
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -172,11 +172,11 @@ rom_start:
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2002			; 2.0a2		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2003			; 2.0a3		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 							; alt.		%vvvvrrrrsshhbbbb, where revision = %hhrrrr
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$4AC0			; time, 00.46		%0100 1-010 110-0 0000
-	.word	$5768			; date, 2023/11/08	%0101 011-1 011-0 1000
+	.word	$53C0			; time, 18.30		%1001 0-011 110-0 0000
+	.word	$576B			; date, 2023/11/08	%0101 011-1 011-0 1011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -931,6 +931,11 @@ all_fats:
 	INC buffer+$27
 fat_total:
 ; we've computed the sector number where the directory begins
+lda buffer+$27:jsr disp_hex
+lda buffer+$26:jsr disp_hex
+lda buffer+$25:jsr disp_hex
+lda buffer+$24:jsr disp_hex
+ldy#')':jsr conio
 	LDY #0
 	LDX #3					; four bytes to copy
 dir_sector:
@@ -1371,7 +1376,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV", 0
 
-#echo	2.0a3
+#echo	2.0a3-2
 
 ; offset table for the above messages
 msg_ix:
