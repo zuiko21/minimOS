@@ -3,7 +3,7 @@
 ; v2.0 with volume-into-FAT32 support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231111-0907
+; last modified 20231111-0924
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -887,19 +887,20 @@ vbr_chk:
 	BEQ vbr_jump_ok
 vbr_jump_bad:
 		LDX #vbr_jump-fat_msg
-		JMP fat_err
+		JMP fatal			; non-MBR errors ARE fatal
 vbr_jump_ok: 
 	LDA buffer+$15			; media descriptor
 	CMP #$F0				; 3.5" or other media
 	BEQ bpb_media_ok
 		LDX #bpb_media-fat_msg
-		JMP fat_err
+		JMP fatal
 bpb_media_ok:
 	LDA buffer+$42			; extended boot signature
 	AND #%11111110			; ignore LSB
 	CMP #$28				; $28 or $29
 	BEQ bpb_extbs_ok
 		LDX #bpb_extbs-fat_msg
+		JMP fatal
 bpb_extbs_ok:
 	LDA buffer+$B			; bytes per sector
 	BNE bpb_bps_bad			; LSB must be zero for 512
@@ -908,7 +909,7 @@ bpb_extbs_ok:
 	BEQ bpb_bps_ok
 bpb_bps_bad:
 		LDX #bpb_bps-fat_msg
-		JMP fat_err
+		JMP fatal
 bpb_bps_ok:
 ; VBR appears compatible, let's compute directory sector
 	LDA buffer+$10			; number of FATs (may assume it's one or two, at least a power of two)
@@ -1381,7 +1382,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV", 0
 
-#echo	2.0a5 - non-fatal MBR errors
+#echo	2.0a5-2 - non-fatal MBR errors, VBR errors ARE
 
 ; offset table for the above messages
 msg_ix:
