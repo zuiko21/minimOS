@@ -3,7 +3,7 @@
 ; v2.0 with volume-into-FAT32 support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231111-0924
+; last modified 20231111-0955
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -846,6 +846,8 @@ try_fat:
 		LDA buffer+$1C2		; first partition type
 		CMP #$0C			; is it FAT32LBA?
 		BEQ mbr_ptype_ok
+			CMP #$0B		; or FAT32CHS?
+		BEQ mbr_ptype_ok
 			LDX #mbr_ptype-fat_msg
 			JSR fat_err
 			BRA vbr_chk		; try with VBR as this is non-fatal
@@ -891,6 +893,8 @@ vbr_jump_bad:
 vbr_jump_ok: 
 	LDA buffer+$15			; media descriptor
 	CMP #$F0				; 3.5" or other media
+	BEQ bpb_media_ok
+		CMP #$F8			; also hard disk?
 	BEQ bpb_media_ok
 		LDX #bpb_media-fat_msg
 		JMP fatal
@@ -1382,7 +1386,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV", 0
 
-#echo	2.0a5-2 - non-fatal MBR errors, VBR errors ARE
+#echo	2.0a5-3 - tolerate CHS and Media descriptor
 
 ; offset table for the above messages
 msg_ix:
