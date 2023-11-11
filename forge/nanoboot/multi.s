@@ -3,7 +3,7 @@
 ; v2.0 with volume-into-FAT32 support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231100-1847
+; last modified 20231111-0907
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -172,11 +172,11 @@ rom_start:
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2003			; 2.0a3		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2004			; 2.0a5		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 							; alt.		%vvvvrrrrsshhbbbb, where revision = %hhrrrr
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$53C0			; time, 18.30		%1001 0-011 110-0 0000
-	.word	$576B			; date, 2023/11/08	%0101 011-1 011-0 1011
+	.word	$4BC0			; time, 9.30		%0100 1-011 110-0 0000
+	.word	$576B			; date, 2023/11/11	%0101 011-1 011-0 1011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -842,12 +842,13 @@ vol_find:
 try_fat:
 		LDX #MNT_FAT		; otherwise assume it's FAT32
 		JSR disp_code
-; this should be the MBR, check it out
+; this should be the MBR, check it out *** some cards have no MBR, thus non-fatal
 		LDA buffer+$1C2		; first partition type
 		CMP #$0C			; is it FAT32LBA?
 		BEQ mbr_ptype_ok
 			LDX #mbr_ptype-fat_msg
-			JMP fat_err
+			JSR fat_err
+			BRA vbr_chk		; try with VBR as this is non-fatal
 mbr_ptype_ok:
 		LDA #$55
 		CMP buffer+$1FE		; boot signature
@@ -857,7 +858,8 @@ mbr_ptype_ok:
 		BEQ mbr_bsig_ok
 mbr_bsig_bad:
 			LDX #mbr_bsig-fat_msg
-			JMP fat_err
+			JSR fat_err
+			BRA vbr_chk		; try with VBR as this is non-fatal
 mbr_bsig_ok:
 ; let's get the partition's first sector
 	LDY #0
@@ -874,6 +876,7 @@ vbr_sector:
 ;	STZ ptr					; assume buffer is page-aligned
 	JSR ssec_rd				; read first sector on partition
 ; check out VBR
+vbr_chk:
 	LDA buffer				; first byte on VBR...
 	CMP #$E9				; ...could be jump long...
 	BEQ vbr_jump_ok
@@ -941,12 +944,6 @@ dir_sector:
 		INY
 		DEX
 		BPL dir_sector
-ldy#13:jsr conio
-lda arg:jsr disp_hex
-lda arg+1:jsr disp_hex
-lda arg+2:jsr disp_hex
-lda arg+3:jsr disp_hex
-ldy#')':jsr conio
 ; before loading directory sectors, take note of the limit (only first cluster is explored)
 	LDA buffer+$D			; number of sectors per cluster
 	STA cnt					; store as directory scan limit!
@@ -954,22 +951,15 @@ ldy#')':jsr conio
 dir_rd:
 		LDX #>buffer		; temporary load address
 		STX ptr+1
-		STZ ptr				; assume buffer is page-aligned (just in case)
+		STZ ptr				; assume buffer is page-aligned EEEEEEEEEEEK
 		JSR ssec_rd			; read first sector on partition
 ; ...and scan its entries
 		LDX #>buffer		; temporary load address
 		STX ptr+1			; assume LSB stays at zero
 dir_scan:
-ldy#13:jsr conio
 			LDY #0
 dir_entry:
 				LDA (ptr), Y			; compare name in directory entry...
-pha
-phy
-tay
-jsr conio
-ply
-pla
 				CMP vol_name, Y			; ...with desired volume name
 			BNE next_entry	; if mismatched, try next entry
 				INY			; otherwise, check next char
@@ -1006,7 +996,18 @@ vol_found:
 	STX ptr+1
 	STZ ptr					; assume buffer is page-aligned (needed here!)
 	JSR ssec_rd				; read first sector on partition
-	BRA vol_ok				; all done
+; * volume mounted some way or another *
+vol_ok:
+	LDX #OK_MSG
+	JMP disp_code			; call and return
+
+fatal:
+; * display fatal error for FAT32 *
+	JSR fat_err				; call non-fatal code below, and lock
+	LDX #FAIL_MSG
+	JSR disp_code
+	BRK
+
 fat_err:
 ; * display special error message for FAT32 mounting procedure *
 	PHX						; save error code
@@ -1033,13 +1034,7 @@ fe_loop:
 		INX
 		BNE fe_loop			; next char
 fe_end:
-	LDX #FAIL_MSG
-	JSR disp_code
-	BRK
-; * volume mounted some way or another *
-vol_ok:
-	LDX #OK_MSG
-	JMP disp_code			; call and return
+	RTS
 
 ; *** read single sector ***
 ; ptr MUST be even, NOT starting at $DF00 and certainly (two) page-aligned
@@ -1376,7 +1371,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 2.0a3", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 2.0a5", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1386,7 +1381,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV", 0
 
-#echo	2.0a3-3
+#echo	2.0a5 - non-fatal MBR errors
 
 ; offset table for the above messages
 msg_ix:
