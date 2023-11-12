@@ -873,6 +873,13 @@ vbr_sector:
 		INY
 		DEX
 		BPL vbr_sector
+ldy#13:jsr conio
+ldy#'v':jsr conio
+lda arg:jsr disp_hex
+lda arg+1:jsr disp_hex
+lda arg+2:jsr disp_hex
+lda arg+3:jsr disp_hex
+ldy#13:jsr conio
 ; read VBR
 	LDX #>buffer			; temporary load address
 	STX ptr+1
@@ -958,6 +965,7 @@ dir_sector:
 	STA cnt					; store as directory scan limit!
 	STA sec_clus			; keep for later volume access!
 ; read directory sector...
+ldy#'d':jsr conio
 lda arg:jsr disp_hex
 lda arg+1:jsr disp_hex
 lda arg+2:jsr disp_hex
@@ -1034,6 +1042,7 @@ sec_mul:
 		ROL dir_clus+3
 	BRA sec_mul
 mul_done:
+ldy#'+':jsr conio
 lda dir_clus+3:jsr disp_hex
 lda dir_clus+2:jsr disp_hex
 lda dir_clus+1:jsr disp_hex
@@ -1047,10 +1056,10 @@ vol_sector:
 		LDA mnt_point, Y	; temporarily stored in little-endian!
 		ADC dir_clus, Y		; add sector offset
 		STA arg, X			; SD card expects block number BIG endian
-;		STA mnt_point, X	; keep this sector, just in case
 		INY					; next iteration
 		DEX
 		BPL vol_sector
+ldy#'=':jsr conio
 lda arg:jsr disp_hex
 lda arg+1:jsr disp_hex
 lda arg+2:jsr disp_hex
@@ -1446,7 +1455,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.b1-2
+#echo	2.0b1-3
 
 ; offset table for the above messages
 msg_ix:
