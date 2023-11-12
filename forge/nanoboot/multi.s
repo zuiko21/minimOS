@@ -3,7 +3,7 @@
 ; v2.0 with volume-into-FAT32 support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231112-1644
+; last modified 20231112-1701
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -174,10 +174,10 @@ rom_start:
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2041			; 2.0b1		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$20C0			; 2.0f		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 							; alt.		%vvvvrrrrsshhbbbb, where revision = %hhrrrr
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8100			; time, 16.08		%1000 0-001 000-0 0000
+	.word	$8800			; time, 17.00		%1000 1-000 000-0 0000
 	.word	$576C			; date, 2023/11/12	%0101 011-1 011-0 1100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -873,13 +873,6 @@ vbr_sector:
 		INY
 		DEX
 		BPL vbr_sector
-ldy#13:jsr conio
-ldy#'v':jsr conio
-lda arg:jsr disp_hex
-lda arg+1:jsr disp_hex
-lda arg+2:jsr disp_hex
-lda arg+3:jsr disp_hex
-ldy#13:jsr conio
 ; read VBR
 	LDX #>buffer			; temporary load address
 	STX ptr+1
@@ -965,12 +958,6 @@ dir_sector:
 	STA cnt					; store as directory scan limit!
 	STA sec_clus			; keep for later volume access!
 ; read directory sector...
-ldy#'d':jsr conio
-lda arg:jsr disp_hex
-lda arg+1:jsr disp_hex
-lda arg+2:jsr disp_hex
-lda arg+3:jsr disp_hex
-ldy#13:jsr conio
 dir_rd:
 		LDX #>buffer		; temporary load address
 		STX ptr+1
@@ -1042,12 +1029,6 @@ sec_mul:
 		ROL dir_clus+3
 	BRA sec_mul
 mul_done:
-ldy#'+':jsr conio
-lda dir_clus+3:jsr disp_hex
-lda dir_clus+2:jsr disp_hex
-lda dir_clus+1:jsr disp_hex
-lda dir_clus:jsr disp_hex
-ldy#13:jsr conio
 ; finally, add that number of sectors to the start of directory! note endianness
 	LDY #0
 	LDX #3					; four bytes to copy
@@ -1059,11 +1040,6 @@ vol_sector:
 		INY					; next iteration
 		DEX
 		BPL vol_sector
-ldy#'=':jsr conio
-lda arg:jsr disp_hex
-lda arg+1:jsr disp_hex
-lda arg+2:jsr disp_hex
-lda arg+3:jsr disp_hex
 ; MUST read first sector on DURANGO.AV!
 	LDX #>buffer			; temporary load address
 	STX ptr+1
@@ -1445,7 +1421,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 2.0b2", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 2.0", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1455,7 +1431,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.0b2
+#echo	2.0f
 
 ; offset table for the above messages
 msg_ix:
