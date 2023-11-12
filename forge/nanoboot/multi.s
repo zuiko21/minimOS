@@ -3,7 +3,7 @@
 ; v2.0 with volume-into-FAT32 support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231111-0955
+; last modified 20231112-1608
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -107,8 +107,10 @@ v_spi_tr		= $2EA
 v_cs_enable		= v_spi_tr+2			; $2EC
 v_cs_disable	= v_cs_enable+2			; $2EE
 
-; *** mount point *** NEW ($2E6-$2E9)
-;mount_bl	= $2E6			; BIG endian, just as arg!
+; *** mount point *** NEW ($2E1-$2E9)
+sec_clus	= $2E1			; number of sectors per cluster $2E1
+dir_clus	= sec_clus+1	; first cluster of directory (needed for subtract) $2E2
+mnt_point	= dir_clus+4	; mount point (BIG endian like arg) $2E6
 
 ; *****************************************************
 ; *** firmware & hardware definitions for Durango-X ***
@@ -141,7 +143,7 @@ gamepad2		= gamepad1		+1		; "standard" read value at $227
 cio_pt		= $E6
 cio_src		= $E4
 
-	* = $E000
+	* = $E000				; 8 kiB ROM image, non-downloadable
 
 ; ***********************
 ; *** standard header *** to be found before ANY ROM image
@@ -172,11 +174,11 @@ rom_start:
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2004			; 2.0a5		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2041			; 2.0b1		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 							; alt.		%vvvvrrrrsshhbbbb, where revision = %hhrrrr
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$4BC0			; time, 9.30		%0100 1-011 110-0 0000
-	.word	$576B			; date, 2023/11/11	%0101 011-1 011-0 1011
+	.word	$8100			; time, 16.08		%1000 0-001 000-0 0000
+	.word	$576C			; date, 2023/11/12	%0101 011-1 011-0 1100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -938,7 +940,7 @@ all_fats:
 		BNE fat_total
 	INC buffer+$27
 fat_total:
-; we've computed the sector number where the directory begins
+; we've computed the offset from VBR where the directory begins, let's compute absolute sector
 	LDY #0
 	LDX #3					; four bytes to copy
 	CLC						; eeeeek
@@ -946,12 +948,16 @@ dir_sector:
 		LDA arg, X			; EEEEEEEEEEEEEEEEEEK
 		ADC buffer+$24, Y	; ADD modified sectors/FAT (times # of FATs plus reserved sectors, little endian)
 		STA arg, X			; SD card expects block number BIG endian
-		INY
+		STA mnt_point, X	; keep this sector temporarily!
+		LDA buffer+$2C, X	; while we're on it, copy the root directory cluster as well
+		STA dir_clus, X
+		INY					; next iteration
 		DEX
 		BPL dir_sector
 ; before loading directory sectors, take note of the limit (only first cluster is explored)
 	LDA buffer+$D			; number of sectors per cluster
 	STA cnt					; store as directory scan limit!
+	STA sec_clus			; keep for later volume access!
 ; read directory sector...
 dir_rd:
 		LDX #>buffer		; temporary load address
@@ -991,11 +997,51 @@ next_entry:
 next_dirs:
 		DEC cnt				; one sector less in the first directory cluster
 		BNE dir_rd
-	JMP fe_end				; notify error and lock
+	BRA fail_brk			; notify error and lock
 vol_found:
-; compute volume header position from cluster in entry
-
-
+; * compute volume header position from cluster in entry *
+; fisrt, subtract directory cluster from entry cluster 
+	LDY #$1A				; location of LSW cluster in entry
+	LDA (ptr), Y
+	SEC
+	SBC dir_clus			; subtract directory cluster (non indexed)
+	STA dir_clus			; store temporarily
+	INY						; next byte
+	LDA (ptr), Y
+	SBC dir_clus+1			; note manual indexing, needed because of the strange entry format
+	STA dir_clus+1
+	LDY #$14				; location of MSW cluster in entry
+	LDA (ptr), Y
+	SEC
+	SBC dir_clus+2			; subtract directory cluster, manually indexed
+	STA dir_clus+2			; store temporarily
+	INY						; next byte
+	LDA (ptr), Y
+	SBC dir_clus+3			; note manual indexing, needed because of the strange entry format
+	STA dir_clus+3
+; now dir_clus is the cluster offset, turn it into sector offset
+	LDA sec_clus			; cluster offset times this (always power of two)
+sec_mul:
+		LSR
+	BEQ mul_done			; check whether more shifts are needed
+		ASL dir_clus		; multiply by two as needed
+		ROL dir_clus+1
+		ROL dir_clus+2
+		ROL dir_clus+3
+	BRA sec_mul
+mul_done:
+; finally, add that number of sectors to the start of directory! note endianness
+	LDY #0
+	LDX #3					; four bytes to copy
+	CLC						; eeeeek
+vol_sector:
+		LDA mnt_point, Y	; temporarily stored in little-endian!
+		ADC dir_clus, Y		; add sector offset
+		STA arg, X			; SD card expects block number BIG endian
+;		STA mnt_point, X	; keep this sector, just in case
+		INY					; next iteration
+		DEX
+		BPL vol_sector
 ; MUST read first sector on DURANGO.AV!
 	LDX #>buffer			; temporary load address
 	STX ptr+1
@@ -1009,6 +1055,7 @@ vol_ok:
 fatal:
 ; * display fatal error for FAT32 *
 	JSR fat_err				; call non-fatal code below, and lock
+fail_brk:
 	LDX #FAIL_MSG
 	JSR disp_code
 	BRK
@@ -1376,7 +1423,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 2.0a5", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 2.0b1", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1384,9 +1431,9 @@ sd_abort:
 sd_mnt:
 	.asc	"Mount", 0
 sd_fat32:
-	.asc	" DURANGO.AV", 0
+	.asc	" DURANGO.AV...", 0
 
-#echo	2.0a5-3 - tolerate CHS and Media descriptor
+#echo	2.b1
 
 ; offset table for the above messages
 msg_ix:
