@@ -222,8 +222,7 @@ sd_selected:
 	LDY #13
 	JSR conio				; newline
 ; *** list SD contents ***
-; first sector *in volume* is read!
-; ...but it should be already loaded?
+; first sector *in volume* is already read!
 	STZ en_ix				; reset index
 	BRA header_see			; because it's already loaded! perhaps checked too, but check it anyway
 ls_disp:
@@ -959,6 +958,11 @@ dir_sector:
 	STA cnt					; store as directory scan limit!
 	STA sec_clus			; keep for later volume access!
 ; read directory sector...
+lda arg:jsr disp_hex
+lda arg+1:jsr disp_hex
+lda arg+2:jsr disp_hex
+lda arg+3:jsr disp_hex
+ldy#13:jsr conio
 dir_rd:
 		LDX #>buffer		; temporary load address
 		STX ptr+1
@@ -1000,7 +1004,7 @@ next_dirs:
 	BRA fail_brk			; notify error and lock
 vol_found:
 ; * compute volume header position from cluster in entry *
-; fisrt, subtract directory cluster from entry cluster 
+; first, subtract directory cluster from entry cluster 
 	LDY #$1A				; location of LSW cluster in entry
 	LDA (ptr), Y
 	SEC
@@ -1030,6 +1034,11 @@ sec_mul:
 		ROL dir_clus+3
 	BRA sec_mul
 mul_done:
+lda dir_clus+3:jsr disp_hex
+lda dir_clus+2:jsr disp_hex
+lda dir_clus+1:jsr disp_hex
+lda dir_clus:jsr disp_hex
+ldy#13:jsr conio
 ; finally, add that number of sectors to the start of directory! note endianness
 	LDY #0
 	LDX #3					; four bytes to copy
@@ -1042,6 +1051,10 @@ vol_sector:
 		INY					; next iteration
 		DEX
 		BPL vol_sector
+lda arg:jsr disp_hex
+lda arg+1:jsr disp_hex
+lda arg+2:jsr disp_hex
+lda arg+3:jsr disp_hex
 ; MUST read first sector on DURANGO.AV!
 	LDX #>buffer			; temporary load address
 	STX ptr+1
@@ -1433,7 +1446,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.b1
+#echo	2.b1-2
 
 ; offset table for the above messages
 msg_ix:
