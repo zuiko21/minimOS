@@ -1001,7 +1001,7 @@ next_entry:
 next_dirs:
 		DEC cnt				; one sector less in the first directory cluster
 		BNE dir_rd
-	BRA fail_brk			; notify error and lock
+	JMP fail_brk			; notify error and lock
 vol_found:
 ; * compute volume header position from cluster in entry *
 ; first, subtract directory cluster from entry cluster 
