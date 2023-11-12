@@ -3,7 +3,7 @@
 ; v2.0 with volume-into-FAT32 support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231112-1608
+; last modified 20231112-1644
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -954,7 +954,7 @@ dir_sector:
 		LDA arg, X			; EEEEEEEEEEEEEEEEEEK
 		ADC buffer+$24, Y	; ADD modified sectors/FAT (times # of FATs plus reserved sectors, little endian)
 		STA arg, X			; SD card expects block number BIG endian
-		STA mnt_point, X	; keep this sector temporarily!
+		STA mnt_point, X	; keep this sector temporarily! BIG endian too!
 		LDA buffer+$2C, X	; while we're on it, copy the root directory cluster as well
 		STA dir_clus, X
 		INY					; next iteration
@@ -1053,7 +1053,7 @@ ldy#13:jsr conio
 	LDX #3					; four bytes to copy
 	CLC						; eeeeek
 vol_sector:
-		LDA mnt_point, Y	; temporarily stored in little-endian!
+		LDA mnt_point, X	; was BIG endian EEEEEEEEEEEEK
 		ADC dir_clus, Y		; add sector offset
 		STA arg, X			; SD card expects block number BIG endian
 		INY					; next iteration
@@ -1445,7 +1445,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 2.0b1", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 2.0b2", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1455,7 +1455,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.0b1-3
+#echo	2.0b2
 
 ; offset table for the above messages
 msg_ix:
