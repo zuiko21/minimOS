@@ -1,9 +1,9 @@
 ; Durango-X devcart SD multi-boot loader
 ; now with sidecar/fast SPI support
-; v2.0 with volume-into-FAT32 support!
+; v2.1 with volume-into-FAT32 and Pocket support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231112-1701
+; last modified 20231119-0152
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -12,7 +12,7 @@
 
 #echo	DevCart @ $DFC0
 #echo	FastSPI @ $DF96-7, SPI ID=0...3
-#echo	volume-into-FAT32 support!
+#echo	volume-into-FAT32 & pX support!
 
 ; SD interface definitions
 #define	SD_CLK		%00000001
@@ -92,7 +92,9 @@ buffer	= $400
 magic1	= buffer+0			; must contain zero
 magic2	= buffer+7			; must contain CR (13)
 magic3	= buffer+255		; must contain zero (assume filesize < 16 MiB)
-bootsig	= buffer+1			; must contain 'dX' for bootable ROM images
+bootsig	= buffer+1			; contains 'dX' for bootable ROM images, 'pX' for Pocket format
+ld_addr	= buffer+3			; load address for Pocket format, '**' otherwise
+ex_addr	= buffer+5			; execution address for Pocket format, '**' otherwise
 fname	= buffer+8
 ftime	= buffer+248		; time in MS-DOS format
 fdate	= buffer+250		; date in MS-DOS format
@@ -100,6 +102,7 @@ fsize	= buffer+252		; file size INCLUDING 256-byte header
 
 ; *** directory storage *** ($2F0-$2FF +36 bytes after $300, might be compacted)
 en_tab		= $300
+;ex_ptr		= $2FE			; execution pointer for Pocket files NEW
 sig_tab		= $2F0			; NEW, store signature ('X'=executable, 'S'=16-colour screen, 'R'=HIRES screen)
 
 ; *** interface vectors ***	NEW for extra SD interfaces ($2EA-$2EF)
@@ -170,15 +173,15 @@ rom_start:
 	.dsb	rom_start + $E6 - *, $FF
 
 ; NEW library commit (user field 2)
-	.dsb	8, '$'			; unused field
-; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
+	.asc	"$$$$$$$$"
+; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$20C0			; 2.0f		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2141			; 2.1b1		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 							; alt.		%vvvvrrrrsshhbbbb, where revision = %hhrrrr
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8800			; time, 17.00		%1000 1-000 000-0 0000
-	.word	$576C			; date, 2023/11/12	%0101 011-1 011-0 1100
+	.word	$0800			; time, 1.00		%0000 1-000 000-0 0000
+	.word	$5773			; date, 2023/11/19	%0101 011-1 011-1 0011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -241,7 +244,10 @@ header_ok:
 ; header is valid, check whether bootable or not
 			LDA bootsig		; check Durango-X bootable ROM image signature
 			CMP #'d'
+		BEQ chk_exec		; *
+			CMP #'p'		; * might be Pocket as well
 		BNE next_file
+chk_exec:
 			LDA bootsig+1
 			CMP #'X'
 #ifdef	SCREEN
@@ -250,7 +256,7 @@ header_ok:
 		BEQ ls_page
 			CMP #'R'		; HIRES mode
 #endif
-		BNE next_file
+		BNE next_file		; ignore generic files otherwise
 
 ; * bootable ROM image detected, register sector and display entry *
 ls_page:
@@ -258,7 +264,7 @@ ls_page:
 			CPX #9			; already full?
 		BCS skip_hd
 #ifdef	SCREEN
-			STA sig_tab, X	; store accepted type NEW
+			STA sig_tab, X	; store accepted type NEW ** not used?
 #endif
 			TXA
 			ASL
@@ -376,6 +382,18 @@ prl_ok:
 	BNE set_ptr				; always screen address
 rom_siz:
 #endif
+	LDA bootsig				; * ROM image or Pocket?
+	CMP #'d'				; *
+	BEQ set_image			; * if Pocket...
+;		LDY ex_addr			; *
+;		LDX ex_addr+1		; * ...get execution address...
+;		STY ex_ptr			; *
+;		STX ex_ptr+1		; * ...and save it for later!
+;		LDY ld_addr			; * we may assume load address is at least page-aligned
+		LDA ld_addr+1		; * get load address from header
+		BRA set_ptr			; *
+; ROM images go towards the end of 64K space
+set_image:
 	LDA #0
 	SEC
 	SBC fsize+1				; subtract number of pages
@@ -429,7 +447,12 @@ no_wrap:
 		BRK
 launch_rom:
 #endif
+	LDA bootsig				; * Pocket or ROM image?
+	CMP #'d'				; * standard Durango-X ROM image?
+	BEQ launch_image		; * otherwise must be 'pX'
+		JMP (ex_addr)		; * run from specified address (from preloaded header)
 ; Interrupts already shut off for performance, good for reset anyway
+launch_image:
 	JMP switch				; start code loaded into cartidge RAM!
 
 ; *** some high-level routines ***
@@ -1421,7 +1444,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 2.0", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 2.1b1", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1431,7 +1454,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.0f
+#echo	2.1b1
 
 ; offset table for the above messages
 msg_ix:
