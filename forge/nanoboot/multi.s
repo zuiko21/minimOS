@@ -388,7 +388,7 @@ prl_ok:
 		LDX #$80
 		STX end_pg			; tweak this indicator with end page!
 		LDA #$5E			; will load header sector off-screen!
-	BNE set_ptr				; always screen address
+	BRA set_ptr				; always screen address
 rom_siz:
 #endif
 	LDA bootsig				; * ROM image or Pocket?
@@ -415,7 +415,7 @@ set_ptr:
 	STZ ptr					; definitive pointer is ready, proceed with load!
 
 ldy#13:jsr conio
-jsr disp_hex
+lda ptr+1:jsr disp_hex
 ldy#'>':jsr conio
 lda end_pg:jsr disp_hex
 ldy#13:jsr conio
@@ -1464,7 +1464,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 2.1b4-2", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 2.1b4-3", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1474,7 +1474,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.1b4-2
+#echo	2.1b4-3
 
 ; offset table for the above messages
 msg_ix:
