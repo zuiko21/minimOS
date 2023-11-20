@@ -392,8 +392,8 @@ prl_ok:
 rom_siz:
 #endif
 	LDA bootsig				; * ROM image or Pocket?
-	CMP #'d'				; *
-	BEQ set_image			; * if Pocket...
+	CMP #'p'				; *
+	BNE set_image			; * if Pocket...
 		LDA ld_addr+1		; * get load address from header
 		TAX					; * and save for later
 		CLC					; *
@@ -413,10 +413,17 @@ set_image:
 set_ptr:
 	STA ptr+1
 	STZ ptr					; definitive pointer is ready, proceed with load!
+
+ldy#13:jsr conio
+jsr disp_hex
+ldy#'>':jsr conio
+lda end_pg:jsr disp_hex
+ldy#13:jsr conio
+
 boot:
 		JSR ssec_rd			; read one 512-byte sector
 ; might do some error check here...
-; in the meanwhile, check for BREAK key
+; *** in the meanwhile, check for BREAK key ***
 		LDA #1				; first column has both SPACE & SHIFT
 		STA IO9kbd
 		LDA IO9kbd			; get active rows
@@ -434,7 +441,7 @@ do_repeat:
 			CLI				; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEKKKKKKKKKKKKKKKKKKKK
 			JMP vecload		; init card again, same device
 no_break:
-; continue as usual
+; *** continue as usual ***
 		JSR progress
 		INC arg+3			; only 64 sectors, no need to check MSB... EEEEEEEEK endianness!
 		BNE no_wrap
@@ -1457,7 +1464,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 2.1b4", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 2.1b4-2", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1467,7 +1474,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.1b4
+#echo	2.1b4-2
 
 ; offset table for the above messages
 msg_ix:

@@ -75,8 +75,8 @@ reset:
 	LDX #>font				; font start
 	STX org+1
 ; * new, use standard interrupt vectors
-	LDY #<row
-	LDA #>row				; restart address...
+	LDY #<reset
+	LDA #>reset				; restart address...
 	STY $0202
 	STA $0203				; ...as NMI
 	LDY #<none
