@@ -1,24 +1,46 @@
 ; test of hires Durango-X font
-; (c) 2021-2023 Carlos J. Santisteban 
+; (c) 2021-2023 Carlos J. Santisteban
+; add -DPOCKET for non-ROMmable, downloadable version (pX)
 
+#echo	Colour font demo for Durango-X
+#ifndef	POCKET
+#echo	ROMmable version (4K)
 	* =	$F000
+#else
+#echo	Pocket version
+	* =	$0800
+#endif
+
 rom_start:
 ; *** *** *** header ID *** *** ***
 	.byt	0				; [0]=NUL, first magic number
+#ifndef	POCKET
 	.asc	"dX"			; bootable ROM for Durango-X devCart
 	.asc	"****"			; reserved
+#else
+	.asc	"pX"			; downloadable executable for Durango-X
+	.word	rom_start		; load address
+	.word	reset			; execution address
+#endif
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
 	.asc	"font", 0	; C-string with filename @ [8], max 238 chars
 	.asc	"Colour font demo"		; optional C-string with comment after filename, filename+comment up to 238 chars
 	.byt	0				; second terminator for optional comment, just in case
 
-; advance to end of header
-	.dsb	rom_start + $F8 - *, $FF
+; advance to end of header *** NEW format
+	.dsb	rom_start + $E6 - *, $FF
 
+; NEW library commit (user field 2)
+	.asc	"$$$$$$$$"
+; NEW main commit (user field 1)
+	.asc	"$$$$$$$$"
+; NEW coded version number
+	.word	$10C0			; 1.0f		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+							; alt.		%vvvvrrrrsshhbbbb, where revision = %hhrrrr
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5800			; time, 11.00
-	.word	$5673			; date, 2023/3/19
+	.word	$4000			; time, 8.00		%0100 0-000 000-0 0000
+	.word	$5774			; date, 2023/11/20	%0101 011-1 011-1 0100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -33,14 +55,14 @@ fd		= 6
 cnt		= 7
 
 ; code & I/O location
-io8flags	= $DF80			; will be $DF80
+io8flags	= $DF80
 
 reset:
 	SEI
 	CLD
 	LDX #$FF
 	TXS
-	STX $DFA0
+	STX $DFA0				; turn error LED off
 ; init stuff
 	LDA #$38
 	STA io8flags			; set colour mode
@@ -52,6 +74,15 @@ reset:
 	STX ptr+1
 	LDX #>font				; font start
 	STX org+1
+; * new, use standard interrupt vectors
+	LDY #<row
+	LDA #>row				; restart address...
+	STY $0202
+	STA $0203				; ...as NMI
+	LDY #<none
+	LDA #>none				; RTI address...
+	STY $0200
+	STA $0201				; ...as IRQ
 
 ; ****************************
 ; go for it!
@@ -131,7 +162,7 @@ lnw:
 lock:
 ; inverse bars 
 	STA io8flags			; set flags
-	LDX #4
+	LDX #4					; may revise value for Durango v2
 rb_1:
 		INX
 		BNE rb_1			; delay 1.28 kt (~830 µs, 600 Hz)
@@ -145,6 +176,13 @@ none:
 font:
 #include "../../OS/drivers/fonts/8x8.s"
 end:
+
+#ifndef	POCKET
+; *** standard interrupt handlers ***
+irq_hndl:
+	JMP ($0200)
+nmi_hndl:
+	JMP ($0202)
 ; *** fill and vectors ***
 	.dsb	$FFD6-*, $FF
 	.asc	"DmOS"			; standard minimOS signature
@@ -154,8 +192,8 @@ end:
 
 	.dsb	$FFFA-*, $FF
 
-	.word reset				; NMI does cold start
+	.word nmi_hndl			; NMI will do warm start
 	.word reset				; RESET does full init
-	.word none				; IRQ does nothing
-
+	.word irq_hndl			; IRQ will do nothing
+#endif
 

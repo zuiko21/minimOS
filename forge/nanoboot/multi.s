@@ -3,7 +3,7 @@
 ; v2.1 with volume-into-FAT32 and Pocket support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231119-0152
+; last modified 20231120-0804
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -177,11 +177,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2141			; 2.1b1		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2142			; 2.1b2		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 							; alt.		%vvvvrrrrsshhbbbb, where revision = %hhrrrr
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$0800			; time, 1.00		%0000 1-000 000-0 0000
-	.word	$5773			; date, 2023/11/19	%0101 011-1 011-1 0011
+	.word	$4000			; time, 1.00		%0100 0-000 000-0 0000
+	.word	$5774			; date, 2023/11/20	%0101 011-1 011-1 0100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -1676,6 +1676,10 @@ not_5x8:
 	JSR conio
 
 	CLI						; must enable interrupts!
+	LDX #>sd_main			; * use start address for NMI
+	LDY #<sd_main
+	STY fw_nmi
+	STX fw_nmi+1
 	JMP sd_main				; start loader!
 
 ; delay routine for PSG access
@@ -1742,8 +1746,8 @@ not_brk:
 	PLA
 	RTI
 
-;nmi:
-;	JMP (fw_nmi)			; standard minimOS vector
+nmi:
+	JMP (fw_nmi)			; standard minimOS vector
 
 ; *** multi-keyboard support ***
 kbd_isr:
@@ -1799,7 +1803,7 @@ autoreset:
 ; *** standard 6502 vectors ***
 ; *****************************
 * = $FFFA
-	.word	reset			; NMI does warm reset
+	.word	nmi			; NMI will do warm reset
 	.word	reset
 	.word	irq
 rom_end:
