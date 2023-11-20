@@ -3,7 +3,7 @@
 ; v2.1 with volume-into-FAT32 and Pocket support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231120-0804
+; last modified 20231120-1642
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -180,7 +180,7 @@ rom_start:
 	.word	$2142			; 2.1b2		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 							; alt.		%vvvvrrrrsshhbbbb, where revision = %hhrrrr
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$4000			; time, 1.00		%0100 0-000 000-0 0000
+	.word	$4300			; time, 16.48		%1000 0-110 000-0 0000
 	.word	$5774			; date, 2023/11/20	%0101 011-1 011-1 0100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -1779,10 +1779,14 @@ kbd_drv:
 #include "../../OS/firmware/modules/durango-5x8key.s"
 
 fw_end:
+; ************************************
+; *** Pocket & devCart ROM support ***
+; ************************************
 
-; ***************************
-; *** devcart ROM support ***
-; ***************************
+	.dsb	$FFD0-*, $FF
+
+conio_std:
+	JMP conio				; * standard entry point at $FFD0
 
 	.dsb	$FFD6-*, $FF
 	.asc	"DmOS"			; standard minimOS signature
