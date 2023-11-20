@@ -3,7 +3,7 @@
 ; v2.1 with volume-into-FAT32 and Pocket support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231120-2308
+; last modified 20231121-0009
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -178,11 +178,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2144			; 2.1b4		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$21C0			; 2.1f		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 							; alt.		%vvvvrrrrsshhbbbb, where revision = %hhrrrr
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$B800			; time, 23.00		%1011 1-000 000-0 0000
-	.word	$5774			; date, 2023/11/20	%0101 011-1 011-1 0100
+	.word	$0200			; time, 00.16		%0000 0-010 000-0 0000
+	.word	$5775			; date, 2023/11/21	%0101 011-1 011-1 0101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -394,10 +394,7 @@ rom_siz:
 	LDA bootsig				; * ROM image or Pocket?
 	CMP #'p'				; *
 	BNE set_image			; * if Pocket...
-ldy#'p':jsr conio
 		LDA ld_addr+1		; * get load address from header
-pha:jsr disp_hex:ldy#'+':jsr conio
-lda fsize+1:jsr disp_hex:pla
 		TAX					; * and save for later
 		CLC					; *
 		ADC fsize+1			; * add number of pages
@@ -416,13 +413,6 @@ set_image:
 set_ptr:
 	STA ptr+1
 	STZ ptr					; definitive pointer is ready, proceed with load!
-
-ldy#13:jsr conio
-lda ptr+1:jsr disp_hex
-ldy#'>':jsr conio
-lda end_pg:jsr disp_hex
-ldy#13:jsr conio
-
 boot:
 		JSR ssec_rd			; read one 512-byte sector
 ; might do some error check here...
@@ -1467,7 +1457,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 2.1b4-6", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 2.1", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1477,7 +1467,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.1b4-6
+#echo	2.1f
 
 ; offset table for the above messages
 msg_ix:
