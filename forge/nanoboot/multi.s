@@ -366,14 +366,6 @@ do_boot:
 	STX ptr+1
 ;	STZ ptr					; assume buffer is page-aligned
 	JSR ssec_rd				; read first 512-byte sector of the file (will be read again)
-
-ldy#13:jsr conio
-lda ld_addr+1:jsr disp_hex
-lda ld_addr:jsr disp_hex
-ldy#',':jsr conio
-lda ex_addr+1:jsr disp_hex
-lda ex_addr:jsr disp_hex
-
 ; print loading message with filename
 	LDX #LOAD_MSG
 	JSR disp_code
@@ -402,7 +394,9 @@ rom_siz:
 	LDA bootsig				; * ROM image or Pocket?
 	CMP #'p'				; *
 	BNE set_image			; * if Pocket...
+ldy#'p':jsr conio
 		LDA ld_addr+1		; * get load address from header
+pha:jsr disp_hex:ldy#13:jsr conio:pla
 		TAX					; * and save for later
 		CLC					; *
 		ADC fsize+1			; * add number of pages
@@ -1472,7 +1466,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 2.1b4-4", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 2.1b4-5", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1482,7 +1476,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.1b4-4
+#echo	2.1b4-5
 
 ; offset table for the above messages
 msg_ix:
