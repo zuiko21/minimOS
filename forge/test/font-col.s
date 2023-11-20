@@ -42,7 +42,7 @@ rom_start:
 	.word	$4000			; time, 8.00		%0100 0-000 000-0 0000
 	.word	$5774			; date, 2023/11/20	%0101 011-1 011-1 0100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
-	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
+	.word	rom_end-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
 ; ***************************
 
@@ -175,7 +175,6 @@ none:
 	.dsb	rom_start+$200-*, $FF		; EEEEEEK
 font:
 #include "../../OS/drivers/fonts/8x8.s"
-end:
 
 #ifndef	POCKET
 ; *** standard interrupt handlers ***
@@ -195,5 +194,7 @@ nmi_hndl:
 	.word nmi_hndl			; NMI will do warm start
 	.word reset				; RESET does full init
 	.word irq_hndl			; IRQ will do nothing
+#else
+; already rounded up to sector size!
 #endif
-
+rom_end:
