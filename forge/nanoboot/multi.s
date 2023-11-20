@@ -3,7 +3,7 @@
 ; v2.1 with volume-into-FAT32 and Pocket support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231120-1642
+; last modified 20231120-1800
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -99,6 +99,7 @@ fname	= buffer+8
 ftime	= buffer+248		; time in MS-DOS format
 fdate	= buffer+250		; date in MS-DOS format
 fsize	= buffer+252		; file size INCLUDING 256-byte header
+end_pg	= buffer+255		; originally zero, this is a somewhat ugly hack...
 
 ; *** directory storage *** ($2F0-$2FF +36 bytes after $300, might be compacted)
 en_tab		= $300
@@ -177,10 +178,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2142			; 2.1b2		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2143			; 2.1b3		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 							; alt.		%vvvvrrrrsshhbbbb, where revision = %hhrrrr
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$4300			; time, 16.48		%1000 0-110 000-0 0000
+	.word	$9000			; time, 18.00		%1001 0-000 000-0 0000
 	.word	$5774			; date, 2023/11/20	%0101 011-1 011-1 0100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -372,12 +373,13 @@ pr_load:
 		BNE pr_load			; no need for BRA
 prl_ok:
 ; check size, determine ptr towards end of 64K space (or select screen address right now)
+; but if pX format, begin from specified address AND end as required
 #ifdef	SCREEN
 	LDA bootsig+1
 	CMP #'X'				; if not executable, it's a screenshot
 	BEQ rom_siz
 		LDX #$80
-		STX fsize+3			; tweak this indicator with end page!
+		STX end_pg			; tweak this indicator with end page!
 		LDA #$5E			; will load header sector off-screen!
 	BNE set_ptr				; always screen address
 rom_siz:
@@ -385,12 +387,15 @@ rom_siz:
 	LDA bootsig				; * ROM image or Pocket?
 	CMP #'d'				; *
 	BEQ set_image			; * if Pocket...
-;		LDY ex_addr			; *
-;		LDX ex_addr+1		; * ...get execution address...
-;		STY ex_ptr			; *
-;		STX ex_ptr+1		; * ...and save it for later!
-;		LDY ld_addr			; * we may assume load address is at least page-aligned
 		LDA ld_addr+1		; * get load address from header
+		TAX					; * and save for later
+		CLC					; *
+		ADC fsize+1			; * add number of pages
+		LDY fsize			; * but check LSB (size not necessarily page-aligned)
+		BEQ all_pg			; * if zero, already OK
+			INC				; * otherwise fill last page
+all_pg:						; *
+		STA end_pg			; * store end page
 		BRA set_ptr			; *
 ; ROM images go towards the end of 64K space
 set_image:
@@ -432,7 +437,7 @@ no_break:
 			INC arg			; now could have several images, may wrap...
 no_wrap:
 		LDA ptr+1			; check current page
-		CMP fsize+3			; this is usually zero... unless it's a screenshot!
+		CMP end_pg			; this is usually zero... unless it's a screenshot!
 		BNE boot			; until completion
 ; ** after image is loaded... **
 #ifdef	SCREEN
@@ -1219,7 +1224,7 @@ below64:
 	LDA fsize+2		; **
 	ADC arg+2
 	STA arg+2
-	LDA fsize+3		; just in case...
+	LDA #0			; no files over 16 MiB! eeeek
 	ADC arg+1		; propagate carry, just in case
 	STA arg+1
 	BCC sec_ok
@@ -1444,7 +1449,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 2.1b2", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 2.1b3", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1454,7 +1459,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.1b2
+#echo	2.1b3
 
 ; offset table for the above messages
 msg_ix:
@@ -1676,8 +1681,8 @@ not_5x8:
 	JSR conio
 
 	CLI						; must enable interrupts!
-	LDX #>sd_main			; * use start address for NMI
-	LDY #<sd_main
+	LDX #>reset				; * use start address for NMI
+	LDY #<reset
 	STY fw_nmi
 	STX fw_nmi+1
 	JMP sd_main				; start loader!
@@ -1807,7 +1812,7 @@ autoreset:
 ; *** standard 6502 vectors ***
 ; *****************************
 * = $FFFA
-	.word	nmi			; NMI will do warm reset
+	.word	nmi			; NMI will do cold reset
 	.word	reset
 	.word	irq
 rom_end:
