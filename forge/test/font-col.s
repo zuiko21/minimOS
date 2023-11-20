@@ -172,7 +172,7 @@ rb_1:
 none:
 	RTI
 
-	.dsb	$F200-*, $FF
+	.dsb	rom_start+$200-*, $FF		; EEEEEEK
 font:
 #include "../../OS/drivers/fonts/8x8.s"
 end:
