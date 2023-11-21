@@ -1,9 +1,9 @@
 ; Durango-X devcart SD multi-boot loader
 ; now with sidecar/fast SPI support
-; v2.1 with volume-into-FAT32 and Pocket support!
+; v2.1.1 with volume-into-FAT32 and Pocket support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231121-0009
+; last modified 20231121-1356
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -178,10 +178,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$21C0			; 2.1f		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$21C1			; 2.1f1		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 							; alt.		%vvvvrrrrsshhbbbb, where revision = %hhrrrr
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$0200			; time, 00.16		%0000 0-010 000-0 0000
+	.word	$0200			; time, 13.40		%0110 1-101 000-0 0000
 	.word	$5775			; date, 2023/11/21	%0101 011-1 011-1 0101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -344,9 +344,10 @@ end_vol:
 skip_hd:
 		LDX #PAGE_MSG
 		JSR disp_code		; add next page option
-		LDX #NX_DEVICE
-		JSR disp_code		; and next device (new)
 last_pg:
+		LDX #NX_DEVICE
+		JSR disp_code		; and next device (new, also displayed after last page)
+;last_pg:
 		JSR sel_en			; wait for a valid entry...
 		STZ en_ix			; ...but if arrived here, skip to new page
 		LDX #SPCR_MSG
@@ -416,25 +417,10 @@ set_ptr:
 boot:
 		JSR ssec_rd			; read one 512-byte sector
 ; might do some error check here...
-; *** in the meanwhile, check for BREAK key ***
-		LDA #1				; first column has both SPACE & SHIFT
-		STA IO9kbd
-		LDA IO9kbd			; get active rows
-		STZ IO9kbd			; just for good measure
-		AND #%10100000		; mask relevant keys
-		CMP #%10100000		; both SHIFT & SPACE?
-		BNE no_break
-			LDX #ABORT
-			JSR disp_code	; show abort message EEEEK
-			LDX #vec_dc_sd-vec_sd		; set vectors for devCart device
-			LDA dev_id		; really DevCart?
-			BMI do_repeat	; seem so
-				LDX #vec_sp_sd-vec_sd	; FastSPI otherwise
-do_repeat:
-			CLI				; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEKKKKKKKKKKKKKKKKKKKK
-			JMP vecload		; init card again, same device
-no_break:
-; *** continue as usual ***
+		JSR chk_brk			; ** check for BREAK key
+		BCC cont_load		; ** if pressed...
+			JMP vecload		; ** ...restart with same _interface_
+cont_load:					; ** or continue as usual
 		JSR progress
 		INC arg+3			; only 64 sectors, no need to check MSB... EEEEEEEEK endianness!
 		BNE no_wrap
@@ -483,6 +469,30 @@ chk_head:
 not_magic:
 	SEC						; otherwise header is not valid
 	RTS
+
+chk_brk:
+; * check for BREAK key *
+	LDA #1					; first column has both SPACE & SHIFT
+	STA IO9kbd
+	LDA IO9kbd				; get active rows
+	STZ IO9kbd				; just for good measure
+	AND #%10100000			; mask relevant keys
+	CMP #%10100000			; both SHIFT & SPACE?
+	BNE no_break
+		LDX #ABORT
+		JSR disp_code		; show abort message EEEEK
+		LDX #vec_dc_sd-vec_sd			; set vectors for devCart device
+		LDA dev_id			; really DevCart?
+		BMI do_repeat		; seem so
+			LDX #vec_sp_sd-vec_sd		; FastSPI otherwise
+do_repeat:
+		CLI					; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEKKKKKKKKKKKKKKKKKKKK
+;		JMP vecload			; init card again, same device
+		SEC
+		RTS					; notify BREAK and return
+no_break:
+	CLC
+	RTS						; no break, continue as usual
 
 ; ************************
 ; *** support routines ***
@@ -999,6 +1009,11 @@ dir_rd:
 		STX ptr+1
 		STZ ptr				; assume buffer is page-aligned EEEEEEEEEEEK
 		JSR ssec_rd			; read first sector on partition
+		JSR chk_brk			; ** check for BREAK key
+		BCC cont_mnt		; ** if pressed...
+			LDX #FAIL_MSG	; ** ...complain a bit and...
+			JMP switch_dev	; ** ...restart with _next_ interface
+cont_mnt:					; ** or continue as usual
 ; ...and scan its entries
 		LDX #>buffer		; temporary load address
 		STX ptr+1			; assume LSB stays at zero
@@ -1457,7 +1472,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 2.1", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 2.1.1", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1467,7 +1482,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.1f
+#echo	2.1f1
 
 ; offset table for the above messages
 msg_ix:
