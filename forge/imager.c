@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231128-1010
+ * last modified 20231128-1339
  * */
 
 /* Libraries */
@@ -83,7 +83,9 @@ void	delete(void);		// Delete file from volume
 dword	setfree(void);		// Select free space to be appended
 void	generate(void);		// Generate volume
 int		getheader(byte* p, struct header* h);		// Extract header specs, returns 0 if not valid
+void	signature(struct header* h);				// Display file type from coded signature
 int		confirm(char* msg);	// Request confirmation for dangerous actions, returns 0 if rejected
+int		empty(void);		// Returns 0 unless it's empty
 
 /* ** main code ** */
 int main (void) {
@@ -192,9 +194,21 @@ void	open(void) {		// Open volume
 }
 
 void	list(void) {		// List volume contents
-	if (!used) {
-		printf("\tVolume is empty!\n");
-		return;
+	int				i;
+	struct header	h;
+
+	if (empty())	return;
+	for (i=0; i<used; i++) {			// scan thru all stored headers
+		getheader(ptr[i], &h);			// get surely loaded header into local storage 
+		printf("%d. %s (%4.2f KiB)\n", i+1, h.name, h.size/1024.0);				// Name and size
+		printf("\n v%d.%d%c%d, ", h->version, h->revision, h->phase, h->build);	// Version
+		printf("last modified: %d-%d-%d, %d:%d:%d", h->year, h->month, h->day, h->hour, h->minute, h->second);	// Last modified
+		printf("\nMain commit ");
+		for (i=0; i<8; i++)		printf("%c", h->commit[i]);						// Main commit string
+		printf(", Lib commit ");
+		for (i=0; i<8; i++)		printf("%c", h->lib[i]);						// Lib commit string
+		if (h->comment[0] != '\0')		printf("\nComment: %s", h->comment);	// optional comment
+		print("\n--------n");
 	}
 }
 
@@ -208,17 +222,13 @@ void	add(void) {			// Add file to volume
 }
 
 void	extract(void) {		// Extract file from volume
-	if (!used) {
-		printf("\tVolume is empty!\n");
-		return;
-	}
+	if (empty())	return;
+	
 }
 
 void	delete(void) {		// Delete file from volume
-	if (!used) {
-		printf("\tVolume is empty!\n");
-		return;
-	}
+	if (empty())	return;
+	
 }
 
 dword	setfree(void) {		// Select free space to be appended
@@ -250,10 +260,8 @@ dword	setfree(void) {		// Select free space to be appended
 }
 
 void	generate(void) {	// Generate volume
-	if (!used) {
-		printf("\tVolume is empty!\n");
-		return;
-	}
+	if (empty())	return;
+	
 }
 
 int		getheader(byte* p, struct header* h) {			// Extract header specs, return 0 if not valid
@@ -291,6 +299,42 @@ int		getheader(byte* p, struct header* h) {			// Extract header specs, return 0 
 	return	1;				// all OK
 }
 
+void	signature(struct header* h) {	// Display file type from coded signature
+	if (h->signature[0] == 'p') {		// pX Pocket executable should be the only possibility so far
+		if (h->signature[1] == 'X') {
+			printf("Pocket executable [LOAD:$%04X, EXEC:$04X]", h->ld_addr, h->ex_addr);
+		} else {
+			printf("* UNKNOWN (p%c) *", h->signature[1]);		// otherwise unsupported
+		}
+	} else if (h->signature[0] == 'd') {						// Standard Durango signature type
+		switch (h->signature[1]) {
+			case 'X':
+				printf("ROM image");
+				break;
+			case 'A':
+				printf("Generic file");
+				break;
+			case 'R':
+				printf("HIRES screen dump");
+				break;
+			case 'S':
+				printf("Colour screen dump");
+				break;
+			case 'r':
+				printf("RLE-compressed HIRES screen dump");
+				break;
+			case 's':
+				printf("RLE-compressed colour screen dump");
+				break;
+			case 'L':
+				printf("* Free space *");						// should never be loaded!
+				break;
+			default:
+				printf("* UNKNOWN (d%c) *", h->signature[1]);					// Unsupported signature
+		}
+	} else printf("* UNKNOWN (%c%c) *", h->signature[0], h->signature[1]);		// Totally unknown signature
+}
+
 int		confirm(char* msg) {			// Request confirmation for dangerous actions, returns 0 if rejected
 	char	pass[80];
 
@@ -302,4 +346,13 @@ int		confirm(char* msg) {			// Request confirmation for dangerous actions, retur
 	}
 
 	return 1;				// if not aborted, proceed
+}
+
+int		empty(void) {		// returns 0 unless it's empty
+	if (!used) {
+		printf("\tVolume is empty!\n");
+		return	-1;
+	}
+
+	return	0;				// found some stored headers, thus not empty
 }
