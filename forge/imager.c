@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231128-0101
+ * last modified 20231128-1010
  * */
 
 /* Libraries */
@@ -11,6 +11,10 @@
 /* Constants */
 // Max number of files into volume
 #define		MAXFILES	100
+// bytes per header/page
+#define		HD_BYTES	256
+// Max volume name length
+#define		VOL_NLEN	80
 // Magic numbers
 #define		OPT_OPEN	1
 #define		OPT_LIST	2
@@ -21,6 +25,20 @@
 #define		OPT_GEN		7
 #define		OPT_EXIT	9
 #define		OPT_NONE	0
+// Header offsets
+#define		H_MAGIC1	0
+#define		H_SIGNATURE	1
+#define		H_LOAD		3
+#define		H_EXECUTE	5
+#define		H_MAGIC2	7
+#define		H_NAME		8
+#define		H_LIB		230
+#define		H_COMMIT	238
+#define		H_VERSION	246
+#define		H_TIME		248
+#define		H_DATE		250
+#define		H_SIZE		252
+#define		H_MAGIC3	255
 
 /* Custom types */
 typedef	u_int8_t		byte;
@@ -33,9 +51,11 @@ struct	header {
 	word	ex_addr;		// [5-6]
 	char	name[220];		// [8-]
 	char	comment[220];	// name and comment together cannot be over 220 chars
+	char	lib[8];			// [230-237]
+	char	commit[8];		// [238-245]
 	byte	version;		// [246-247]
 	byte	revision;
-	char	phase;			// a-b-c-f
+	char	phase;			// (a)lpha-(b)eta-(R)elease candidate-(f)inal
 	byte	build;
 	byte	hour;			// [248-249]
 	byte	minute;
@@ -43,11 +63,11 @@ struct	header {
 	byte	year;			// [250-251]
 	byte	month;
 	byte	day;
-	dword	size;			// [252-254]
+	dword	size;			// [252-254] bytes including this 256-byte header
 };
 
 /* Global variables */
-byte*	ptr_h[MAXFILES];	// pointer to dynamically stored header (and file)
+byte*	ptr[MAXFILES];	// pointer to dynamically stored header (and file)
 int		used;				// actual number of files
 dword	space;				// free space after contents (in 256-byte pages)
 
@@ -62,7 +82,8 @@ void	extract(void);		// Extract file from volume
 void	delete(void);		// Delete file from volume
 dword	setfree(void);		// Select free space to be appended
 void	generate(void);		// Generate volume
-int		getheader(byte* p, struct header* h);		// Extract header specs, return 0 if not valid
+int		getheader(byte* p, struct header* h);		// Extract header specs, returns 0 if not valid
+int		confirm(char* msg);	// Request confirmation for dangerous actions, returns 0 if rejected
 
 /* ** main code ** */
 int main (void) {
@@ -113,16 +134,17 @@ void init(void) {			// Init stuff
 
 	used =	0;				// empty array, nothing stored in heap
 	for (i=0;i<MAXFILES;i++) {
-		ptr_h[i] =	NULL;	// reset all empty pointers
+		ptr[i] =	NULL;	// reset all empty pointers
 	} 
 }
 
 void bye(void) {			// Release heap memory * * * VERY IMPORTANT * * *
 	int		i =	0;
 
-	while(ptr_h[i]!=NULL) {
-		free(ptr_h[i++]);	// release this block
+	while(ptr[i]!=NULL) {
+		free(ptr[i++]);		// release this block
 	}
+	used = 0;				// all clear
 }
 
 int		menu(void) {		// Show menu and choose action
@@ -144,18 +166,13 @@ int		menu(void) {		// Show menu and choose action
 }
 
 void	open(void) {		// Open volume
-	char	volume[80];		// volume filename
+	char	volume[VOL_NLEN];			// volume filename
 	FILE*	file;
-	byte	buffer[256];	// temporary header fits into a full page
+	byte	buffer[HD_BYTES];			// temporary header fits into a full page
 	struct header	h;		// metadata storage
 
 	if (used) {	// there's another volume in use...
-		printf("\t* Current volume will be lost. Proceed? (Y/N) * ");
-		scanf("%s", volume);			// just getting confirmation
-		if ((volume[0]|32) != 'y') {	// either case
-			printf("*** ABORTED ***\n");
-			return;
-		}
+		if (!confirm("Current volume will be lost"))	return;
 	}
 	printf("Volume name (usually 'durango.av'): ");
 	scanf("%s", volume);
@@ -168,20 +185,40 @@ void	open(void) {		// Open volume
 	bye();					// free up dynamic memory
 	while(!feof(file)) {
 		fread(buffer,256,1,file);
+// ...and do actual things
+		used++;				// another file into volume
 	}
 	fclose(file);
 }
 
 void	list(void) {		// List volume contents
+	if (!used) {
+		printf("\tVolume is empty!\n");
+		return;
+	}
 }
 
 void	add(void) {			// Add file to volume
+	if (used >= MAXFILES) {
+		printf("\tVolume is full!\n");
+		return;
+	}
+// Do things
+	used++;					// another file into volume
 }
 
 void	extract(void) {		// Extract file from volume
+	if (!used) {
+		printf("\tVolume is empty!\n");
+		return;
+	}
 }
 
 void	delete(void) {		// Delete file from volume
+	if (!used) {
+		printf("\tVolume is empty!\n");
+		return;
+	}
 }
 
 dword	setfree(void) {		// Select free space to be appended
@@ -213,35 +250,56 @@ dword	setfree(void) {		// Select free space to be appended
 }
 
 void	generate(void) {	// Generate volume
+	if (!used) {
+		printf("\tVolume is empty!\n");
+		return;
+	}
 }
 
 int		getheader(byte* p, struct header* h) {			// Extract header specs, return 0 if not valid
 	static char phasevec[4] = {'a', 'b', 'R', 'f'};
 	int		src, dest;
 
-	if ((p[0] != 0) && (p[7] != 13) && (p[255] != 0))	return	0;	// invalid header
+	if ((p[H_MAGIC1] != 0) && (p[H_MAGIC2] != 13) && (p[H_MAGIC3] != 0))	return	0;	// invalid header
 // otherwise extract header data
-	h->signature[0] =	p[1];
-	h->signature[1] =	p[2];
-	h->ld_addr	=		p[3] | p[4]<<8;
-	h->ex_addr	=		p[5] | p[6]<<8;
-	src = 8;
+	h->signature[0] =	p[H_SIGNATURE];
+	h->signature[1] =	p[H_SIGNATURE+1];
+	h->ld_addr	=		p[H_LOAD] | p[H_LOAD+1]<<8;
+	h->ex_addr	=		p[H_EXECUTE] | p[H_EXECUTE]<<8;
+	src = H_NAME;										// filename offset
 	dest = 0;
 	while (p[src])		h->name[dest++] = p[src++];		// copy filename
 	src++;												// skip terminator
 	dest = 0;
-	while (p[src])		h->comment[dest++] = p[src++];		// copy comment
-	h->version	=		p[246]>>4;
-	h->revision	=		(p[246] & 0xF) | (p[247] & 0x30);
-	h->phase	=		phasevec[p[247]>>6];
-	h->build	=		p[247] & 0xF;
-	h->hour		=		p[248]>>3;
-	h->minute	=		(p[248] & 0x7)<<3 | p[249]>>5;
-	h->second	=		(p[249] & 0x1F)<<1;
-	h->year		=		p[250]>>1;		// add 1980
-	h->month	=		p[250]<<4 | p[251]>>5;
-	h->day		=		p[251] & 0x1F;
-	h->size		=		p[252] | p[253]<<8 | p[254]<<16;
+	while (p[src])		h->comment[dest++] = p[src++];	// copy comment
+	src = H_LIB;												// library commit offset
+	for (dest=0;dest<8;dest++)		h->lib[dest] = p[src++];	// copy library commit
+//	src = H_COMMIT;												// main commit offset (already there)
+	for (dest=0;dest<8;dest++)		h->commit[dest] = p[src++];	// copy main commit afterwards
+	h->version	=		p[H_VERSION]>>4;
+	h->revision	=		(p[H_VERSION] & 0xF) | (p[H_VERSION+1] & 0x30);
+	h->phase	=		phasevec[p[H_VERSION+1]>>6];
+	h->build	=		p[H_VERSION+1] & 0xF;
+	h->hour		=		p[H_TIME]>>3;
+	h->minute	=		(p[H_TIME] & 0x7)<<3 | p[H_TIME+1]>>5;
+	h->second	=		(p[H_TIME+1] & 0x1F)<<1;
+	h->year		=		p[H_DATE]>>1;		// add 1980
+	h->month	=		p[H_DATE]<<4 | p[H_DATE+1]>>5;
+	h->day		=		p[H_DATE+1] & 0x1F;
+	h->size		=		p[H_SIZE] | p[H_SIZE+1]<<8 | p[H_SIZE+2]<<16;
 
 	return	1;				// all OK
+}
+
+int		confirm(char* msg) {			// Request confirmation for dangerous actions, returns 0 if rejected
+	char	pass[80];
+
+	printf("\t%s. Proceed? (Y/N) ", msg);
+	scanf("%s", pass);					// just getting confirmation
+	if ((pass[0]|32) != 'y') {			// either case
+		printf("*** ABORTED ***\n");
+		return 0;
+	}
+
+	return 1;				// if not aborted, proceed
 }
