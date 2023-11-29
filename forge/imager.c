@@ -1,12 +1,17 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231128-1239
+ * last modified 20231128-1802
  * */
 
 /* Libraries */
 #include	<stdio.h>
 #include	<stdlib.h>
 #include	<string.h>
+/* optional libraries for timestamp fetching */
+#include	<sys/stat.h>
+#include	<unistd.h>
+#include	<time.h>
+/* ***************************************** */
 
 /* Constants */
 // Max number of files into volume
@@ -130,14 +135,15 @@ int main (void) {
 				generate();
 				break;
 			case OPT_EXIT:
-				printf("Bye!\n");
-				break;		// just EXIT
+				if (!confirm("Volume will be lost"))	opt = OPT_NONE;	// in case we stay
+				break;
 			default:
 				printf("\n * * * ERROR! * * *\n");
 				opt = OPT_NONE;
 		}
 	}
 	bye();					// Clean up
+	printf("Bye!\n");
 
 	return	0;
 }
@@ -246,16 +252,86 @@ void	list(void) {		// List volume contents
 }
 
 void	add(void) {			// Add file to volume
+	char			name[VOL_NLEN];		// filename
+	FILE*			file;
+	byte			buffer[HD_BYTES];	// temporary header fits into a full page
+	struct header	h;					// metadata storage
+/* optional variables for timestamp fetching */
+	struct tm*		stamp;
+	struct stat		attrib;
+/* ***************************************** */
+printf("\n\n\n* * * D O   N O T   U S E * * *\n\n\n");
 	if (used >= MAXFILES) {
 		printf("\tVolume is full!\n");
 		return;
 	}
-// Do things
+	printf("File to add into volume: ");
+	scanf("%s", name);
+	printf("Opening %s... ", name);
+	if ((file = fopen(name, "rb")) == NULL) {
+		printf("NOT found\n");
+		return;
+	}
+	printf("OK\nReading header... ");
+	if (fread(buffer, HD_BYTES, 1, file) != 1) {		// get header into buffer
+		printf("*** I/O error ***\n");
+		fclose(file);
+		return;											// couldn't even load header, something's VERY wrong
+	}
+	if (!getheader(buffer, &h)) {						// check header and get metadata
+		printf("GENERIC file\n");
+		strcpy(&(h.name[0]), name);						// place supplied filename
+		fseek(file, 0, SEEK_END);
+		h.size			= ftell(file);					// check actual file length
+		fseek(file, HD_BYTES, SEEK_SET);
+		h.signature[0]	= 'd';
+		h.signature[1]	= 'A';							// generic file signature
+		h.version		= 1;
+		h.revision		= 0;
+		h.phase			= 'a';
+		h.build			= 0;							// generic 1.0a0 version
+/* timestamp fetching (don't know if it's portable) */
+		stat(name, &attrib);
+		stamp = gmtime(&(attrib.st_mtime));
+		h.year			= stamp->tm_year;
+		h.month			= stamp->tm_mon;
+		h.day			= stamp->tm_mday;
+		h.hour			= stamp->tm_hour;
+		h.minute		= stamp->tm_min;
+		h.second		= stamp->tm_sec;	// is this OK?
+/* ************************************************ */
+	}
+	
+	
+	printf("\nAdding %s (%5.2f KiB): Allocating[%d]", h.name, h.size/1024.0, used);
+	if ((ptr[used] = malloc(h.size)) == NULL) {				// Allocate dynamic memory
+		printf("\n\t*** Out of memory! ***\n");
+		return;
+	}
+
+
+	printf(", Header");
+	memcpy(ptr[used], buffer, HD_BYTES);					// copy preloaded header
+//		for (i=0; i<HD_BYTES; i++)		ptr[used][i] = buffer[i];	// * * * B A D * * * EEEEK
+	printf(", Code");
+	if (fread(ptr[used]+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {		// read remaining bytes 
+		printf("... ERROR!");
+		free(ptr[used]);
+		ptr[used] = NULL;			// eeeeek
+	} else {
+		printf(" OK");
+		used++;			// another file into volume
+	}
+
+	fclose(file);
+	printf("\n\nDone!\n");
+
+
 	used++;					// another file into volume
 }
 
 void	extract(void) {		// Extract file from volume
-	int				i, ext;
+	int				i, ext, skip;
 	struct header	h;
 	FILE*			file;
 
@@ -263,13 +339,15 @@ void	extract(void) {		// Extract file from volume
 	ext = choose("to extract");
 	if (ext < 0)	return;		// invalid selection
 	getheader(ptr[ext], &h);	// get info for candidate
-	info();
+	info(&h);
+	if (signature(&h) == SIG_FILE)		skip = HD_BYTES;		// generic files trim headers
+	else								skip = 0;
 	printf("\nWriting to file %s... ", h.name);
 	if ((file = fopen(h.name, "wb")) == NULL) {
 		printf("*** Can't create ***\n");
 		return;
 	}
-	if (fwrite(ptr[ext], h.size, 1, file) != 1) {
+	if (fwrite(ptr[ext]+skip, h.size-skip, 1, file) != 1) {		// note header removal option
 		printf("*** I/O error ***\n");
 	} else {
 		printf(" OK!\n");	// finish without padding
@@ -330,6 +408,7 @@ void	setfree(void) {		// Select free space to be appended
 
 void	generate(void) {	// Generate volume
 	if (empty())	return;
+printf("\n\n\n* * * D O   N O T   U S E * * *\n\n\n");
 	
 }
 
