@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231128-0100
+ * last modified 20231128-0819
  * */
 
 /* Libraries */
@@ -152,10 +152,16 @@ void init(void) {			// Init stuff
 }
 
 void bye(void) {			// Release heap memory * * * VERY IMPORTANT * * *
-	int		i =	0;
-	while(ptr[i] != NULL) {
-		free(ptr[i++]);		// release this block
+	int		i = 0;
+
+	while (ptr[i] != NULL) {
+		free(ptr[i]);		// release this block
+		ptr[i++] = NULL;	// EEEEEEK
 	}
+/*	for (i=0; i<MAXFILES; i++) {
+		if (ptr[i] != NULL)		free(ptr[i]);
+		ptr[i] = NULL;
+	}*/
 	used = 0;				// all clear
 }
 
@@ -182,9 +188,7 @@ void	open(void) {					// Open volume
 	FILE*			file;
 	byte			buffer[HD_BYTES];	// temporary header fits into a full page
 	struct header	h;					// metadata storage
-	int				i;
 
-printf("=%d)",used);
 	if (used) {	// there's another volume in use...
 		if (!confirm("Current volume will be lost"))	return;
 	}
@@ -197,35 +201,35 @@ printf("=%d)",used);
 	}
 	printf(" OK\nReading headers...");
 	bye();					// free up dynamic memory
-printf("(%d)",used);
 	while(!feof(file)) {
-		if (fread(buffer, HD_BYTES, 1, file) != 1)	break;			// get header into buffer
-		if (!getheader(buffer, &h)) {								// check header and get metadata
+		if (fread(buffer, HD_BYTES, 1, file) != 1)	break;		// get header into buffer
+		if (!getheader(buffer, &h)) {							// check header and get metadata
 			printf("\n\t* Bad header *\n");
 			break;
 		}
 		if (signature(&h) == SIG_FREE) {
 			printf("\n(Skipping free space)");
-			fseek(file, h.size-HD_BYTES, SEEK_CUR);					// just skip free space!
-			continue;												// EEEEEEEK
+			fseek(file, h.size-HD_BYTES, SEEK_CUR);				// just skip free space!
+			continue;											// EEEEEEEK
 		}
 		printf("\nFound %s (%5.2f KiB): Allocating", h.name, h.size/1024.0);
-printf("[%d]",used);
-		if ((ptr[used] = malloc(h.size)) == NULL) {					// Allocate dynamic memory
+		printf("[%d]",used);									// entry to be allocated
+		if ((ptr[used] = malloc(h.size)) == NULL) {				// Allocate dynamic memory
 			printf("\n\t*** Out of memory! ***\n");
 			return;
 		}
 		printf(", Header");
-		for (i=0; i<HD_BYTES; i++)		ptr[used][i] = buffer[i];	// copy preloaded header
+		memcpy(ptr[used], buffer, HD_BYTES);					// copy preloaded header
+//		for (i=0; i<HD_BYTES; i++)		ptr[used][i] = buffer[i];	// * * * B A D * * * EEEEK
 		printf(", Code");
-		if (fread((&ptr[used][i])+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {		// read remaining bytes 
+		if (fread(ptr[used]+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {		// read remaining bytes 
 			printf("... ERROR!");
 			free(ptr[used]);
-			used--;			// will cancel this allocated block on next iteration
+			ptr[used] = NULL;			// eeeeek
 		} else {
 			printf(" OK");
+			used++;			// another file into volume
 		}
-		used++;				// another file into volume
 	}
 	fclose(file);
 	printf("\n\nDone!\n");
@@ -238,7 +242,7 @@ void	list(void) {		// List volume contents
 	if (empty())	return;
 	for (i=0; i<used; i++) {			// scan thru all stored headers
 		getheader(ptr[i], &h);			// get surely loaded header into local storage 
-		printf("%d. ", i+1);			// entry number (1-based)
+		printf("%d: ", i+1);			// entry number (1-based)
 		info(&h);						// display all info about the file
 		printf("\n--------\n");
 	}
