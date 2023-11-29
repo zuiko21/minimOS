@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231128-1657
+ * last modified 20231128-0100
  * */
 
 /* Libraries */
@@ -153,8 +153,7 @@ void init(void) {			// Init stuff
 
 void bye(void) {			// Release heap memory * * * VERY IMPORTANT * * *
 	int		i =	0;
-
-	while(ptr[i]!=NULL) {
+	while(ptr[i] != NULL) {
 		free(ptr[i++]);		// release this block
 	}
 	used = 0;				// all clear
@@ -178,12 +177,14 @@ int		menu(void) {		// Show menu and choose action
 	return	opt;
 }
 
-void	open(void) {		// Open volume
-	char	volume[VOL_NLEN];			// volume filename
-	FILE*	file;
-	byte	buffer[HD_BYTES];			// temporary header fits into a full page
-	struct header	h;		// metadata storage
+void	open(void) {					// Open volume
+	char			volume[VOL_NLEN];	// volume filename
+	FILE*			file;
+	byte			buffer[HD_BYTES];	// temporary header fits into a full page
+	struct header	h;					// metadata storage
+	int				i;
 
+printf("=%d)",used);
 	if (used) {	// there's another volume in use...
 		if (!confirm("Current volume will be lost"))	return;
 	}
@@ -194,14 +195,40 @@ void	open(void) {		// Open volume
 		printf(" *** Error ***\n");
 		return;
 	}
-	printf("OK\nReading headers...");
+	printf(" OK\nReading headers...");
 	bye();					// free up dynamic memory
+printf("(%d)",used);
 	while(!feof(file)) {
-		fread(buffer,256,1,file);
-// ...and do actual things
+		if (fread(buffer, HD_BYTES, 1, file) != 1)	break;			// get header into buffer
+		if (!getheader(buffer, &h)) {								// check header and get metadata
+			printf("\n\t* Bad header *\n");
+			break;
+		}
+		if (signature(&h) == SIG_FREE) {
+			printf("\n(Skipping free space)");
+			fseek(file, h.size-HD_BYTES, SEEK_CUR);					// just skip free space!
+			continue;												// EEEEEEEK
+		}
+		printf("\nFound %s (%5.2f KiB): Allocating", h.name, h.size/1024.0);
+printf("[%d]",used);
+		if ((ptr[used] = malloc(h.size)) == NULL) {					// Allocate dynamic memory
+			printf("\n\t*** Out of memory! ***\n");
+			return;
+		}
+		printf(", Header");
+		for (i=0; i<HD_BYTES; i++)		ptr[used][i] = buffer[i];	// copy preloaded header
+		printf(", Code");
+		if (fread((&ptr[used][i])+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {		// read remaining bytes 
+			printf("... ERROR!");
+			free(ptr[used]);
+			used--;			// will cancel this allocated block on next iteration
+		} else {
+			printf(" OK");
+		}
 		used++;				// another file into volume
 	}
 	fclose(file);
+	printf("\n\nDone!\n");
 }
 
 void	list(void) {		// List volume contents
@@ -212,8 +239,8 @@ void	list(void) {		// List volume contents
 	for (i=0; i<used; i++) {			// scan thru all stored headers
 		getheader(ptr[i], &h);			// get surely loaded header into local storage 
 		printf("%d. ", i+1);			// entry number (1-based)
-		info(h);						// display all info about the file
-		print("\n--------\n");
+		info(&h);						// display all info about the file
+		printf("\n--------\n");
 	}
 }
 
@@ -270,35 +297,37 @@ void	generate(void) {	// Generate volume
 }
 
 int		getheader(byte* p, struct header* h) {			// Extract header specs, return 0 if not valid
-	static char phasevec[4] = {'a', 'b', 'R', 'f'};
-	int		src, dest;
+	static char	phasevec[4] = {'a', 'b', 'R', 'f'};
+	int			src, dest;
 
 	if ((p[H_MAGIC1] != 0) && (p[H_MAGIC2] != 13) && (p[H_MAGIC3] != 0))	return	0;	// invalid header
 // otherwise extract header data
 	h->signature[0] =	p[H_SIGNATURE];
 	h->signature[1] =	p[H_SIGNATURE+1];
-	h->ld_addr	=		p[H_LOAD] | p[H_LOAD+1]<<8;
-	h->ex_addr	=		p[H_EXECUTE] | p[H_EXECUTE]<<8;
+	h->ld_addr		=	p[H_LOAD] | p[H_LOAD+1]<<8;
+	h->ex_addr		=	p[H_EXECUTE] | p[H_EXECUTE+1]<<8;
 	src = H_NAME;										// filename offset
 	dest = 0;
 	while (p[src])		h->name[dest++] = p[src++];		// copy filename
+	h->name[dest]	=	p[src];							// and terminator EEEEEK
 	src++;												// skip terminator
 	dest = 0;
 	while (p[src])		h->comment[dest++] = p[src++];	// copy comment
+	h->comment[dest]=	p[src];							// and terminator EEEEEK
 	src = H_LIB;												// library commit offset
 	for (dest=0;dest<8;dest++)		h->lib[dest] = p[src++];	// copy library commit
 //	src = H_COMMIT;												// main commit offset (already there)
 	for (dest=0;dest<8;dest++)		h->commit[dest] = p[src++];	// copy main commit afterwards
-	h->version	=		p[H_VERSION]>>4;
-	h->revision	=		(p[H_VERSION] & 0xF) | (p[H_VERSION+1] & 0x30);
-	h->phase	=		phasevec[p[H_VERSION+1]>>6];
-	h->build	=		p[H_VERSION+1] & 0xF;
-	h->hour		=		p[H_TIME]>>3;
-	h->minute	=		(p[H_TIME] & 0x7)<<3 | p[H_TIME+1]>>5;
-	h->second	=		(p[H_TIME+1] & 0x1F)<<1;
-	h->year		=		p[H_DATE]>>1;		// add 1980
-	h->month	=		p[H_DATE]<<4 | p[H_DATE+1]>>5;
-	h->day		=		p[H_DATE+1] & 0x1F;
+	h->version	=		p[H_VERSION+1]>>4;
+	h->revision	=		(p[H_VERSION+1] & 0xF) | (p[H_VERSION] & 0x30);
+	h->phase	=		phasevec[p[H_VERSION]>>6];
+	h->build	=		p[H_VERSION] & 0xF;
+	h->hour		=		p[H_TIME+1]>>3;
+	h->minute	=		(p[H_TIME+1] & 0x7)<<3 | p[H_TIME]>>5;
+	h->second	=		(p[H_TIME] & 0x1F)<<1;
+	h->year		=		p[H_DATE+1]>>1;	// add 1980
+	h->month	=		(p[H_DATE+1] & 1)<<3 | p[H_DATE]>>5;
+	h->day		=		p[H_DATE] & 0x1F;
 	h->size		=		p[H_SIZE] | p[H_SIZE+1]<<8 | p[H_SIZE+2]<<16;
 
 	return	1;				// all OK
@@ -333,20 +362,20 @@ int		signature(struct header* h) {	// Returns file type from coded signature
 	} else return	SIG_UNKN;		// Totally unknown signature
 }
 
-void	info(struct header* h) {					// Display info about header
+void	info(struct header* h) {								// Display info about header
 	int		i;
 
-	printf("%s (%5.2f KiB)", h->name, h->size/1024.0);					// Name and size
+	printf("%s (%5.2f KiB)", h->name, h->size/1024.0);			// Name and size
 	printf("\nType: ");
 	switch(signature(h)) {
 		case SIG_FREE:		// dL
-			printf("* Free space *");						// should never be loaded!
+			printf("* Free space *");							// should never be loaded!
 			break;
 		case SIG_ROM:		// dX
 			printf("ROM image");
 			break;
 		case SIG_POCKET:	// pX
-			printf("Pocket executable [LOAD:$%04X, EXEC:$04X]", h->ld_addr, h->ex_addr);
+			printf("Pocket executable [LOAD:$%04X, EXEC:$%04X]", h->ld_addr, h->ex_addr);
 			break;
 		case SIG_FILE:		// dA
 			printf("Generic file");
@@ -365,9 +394,9 @@ void	info(struct header* h) {					// Display info about header
 			break;
 		default:
 			printf("* UNKNOWN (%c%c) *", h->signature[0], h->signature[1]);
-	}	
+	}
 	printf("\nv%d.%d%c%d, ", h->version, h->revision, h->phase, h->build);	// Version
-	printf("last modified: %d-%d-%d, %d:%d:%d", h->year, h->month, h->day, h->hour, h->minute, h->second);	// Last modified
+	printf("last modified: %d/%d/%d, %02d:%02d", 1980+h->year, h->month, h->day, h->hour, h->minute);	// Last modified
 	printf("\nMain commit ");
 	for (i=0; i<8; i++)		printf("%c", h->commit[i]);						// Main commit string
 	printf(", Lib commit ");
