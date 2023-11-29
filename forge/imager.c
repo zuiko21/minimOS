@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231128-0856
+ * last modified 20231128-1239
  * */
 
 /* Libraries */
@@ -95,6 +95,7 @@ void	generate(void);		// Generate volume
 int		getheader(byte* p, struct header* h);		// Extract header specs, returns 0 if not valid
 int		signature(struct header* h);				// Return file type from coded signature
 void	info(struct header* h);						// Display info about header
+int		choose(char *msg);	// Choose file from list
 int		confirm(char* msg);	// Request confirmation for dangerous actions, returns 0 if rejected
 int		empty(void);		// Returns 0 unless it's empty
 
@@ -254,8 +255,26 @@ void	add(void) {			// Add file to volume
 }
 
 void	extract(void) {		// Extract file from volume
+	int				i, ext;
+	struct header	h;
+	FILE*			file;
+
 	if (empty())	return;
-	
+	ext = choose("to extract");
+	if (ext < 0)	return;		// invalid selection
+	getheader(ptr[ext], &h);	// get info for candidate
+	info();
+	printf("\nWriting to file %s... ", h.name);
+	if ((file = fopen(h.name, "wb")) == NULL) {
+		printf("*** Can't create ***\n");
+		return;
+	}
+	if (fwrite(ptr[ext], h.size, 1, file) != 1) {
+		printf("*** I/O error ***\n");
+	} else {
+		printf(" OK!\n");	// finish without padding
+	}
+	fclose(file);
 }
 
 void	delete(void) {		// Delete file from volume
@@ -263,23 +282,14 @@ void	delete(void) {		// Delete file from volume
 	struct header	h;
 
 	if (empty())	return;
-	for (i=0; i<used; i++) {
-		printf("%d) %s\n", i+1, ptr[i]+8);		// display list of contents
-	}
-	printf("\nNumber of file to be REMOVED from volume? ");
-	scanf("%d", &del);
-	if (del<1 || del>used) {
-		printf("\tWrong index *** Aborted ***\n");
-		return;
-	}
-	del--;					// make this 0-based...
+	del = choose("to be REMOVED from volume");
+	if (del < 0)	return;		// invalid selection
 	getheader(ptr[del], &h);	// get info for candidate
-	info(&h);
+	info(&h);					// display properties
 	printf("\n");
-	if (!confirm("Will REMOVE this file from volume"))	return;
+	if (!confirm("Will REMOVE this file from volume"))	return;		// make sure
 	// If arrived here, proceed to removal
 	free(ptr[del]);			// actual removal
-	ptr[del] = NULL;			// just in case...
 	used--;					// one less file!
 	for (i=del; i<used; i++)		ptr[i] = ptr[i+1];				// shift down all remainin entries after deleted one
 	ptr[i] = NULL;			// extra safety!
@@ -429,6 +439,21 @@ void	info(struct header* h) {								// Display info about header
 	printf(", Lib commit ");
 	for (i=0; i<8; i++)		printf("%c", h->lib[i]);						// Lib commit string
 	if (h->comment[0] != '\0')		printf("\nComment: %s", h->comment);	// optional comment
+}
+
+int		choose(char* msg) {		// Choose file from list
+	int		i, sel;
+
+	for (i=0; i<used; i++) {
+		printf("%d) %s\n", i+1, ptr[i]+8);		// display list of contents
+	}
+	printf("\nNumber of file %s? ", msg);
+	scanf("%d", &sel);
+	if (sel<1 || sel>used) {
+		printf("\tWrong index *** Aborted ***\n");
+		return -1;			// invalid index
+	}
+	return	sel-1;			// make this 0-based...
 }
 
 int		confirm(char* msg) {			// Request confirmation for dangerous actions, returns 0 if rejected
