@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231128-0819
+ * last modified 20231128-0856
  * */
 
 /* Libraries */
@@ -77,7 +77,7 @@ struct	header {
 };
 
 /* Global variables */
-byte*	ptr[MAXFILES];	// pointer to dynamically stored header (and file)
+byte*	ptr[MAXFILES];		// pointer to dynamically stored header (and file)
 int		used;				// actual number of files
 dword	space;				// free space after contents (in 256-byte pages)
 
@@ -90,7 +90,7 @@ void	list(void);			// List volume contents
 void	add(void);			// Add file to volume
 void	extract(void);		// Extract file from volume
 void	delete(void);		// Delete file from volume
-dword	setfree(void);		// Select free space to be appended
+void	setfree(void);		// Select free space to be appended
 void	generate(void);		// Generate volume
 int		getheader(byte* p, struct header* h);		// Extract header specs, returns 0 if not valid
 int		signature(struct header* h);				// Return file type from coded signature
@@ -123,7 +123,7 @@ int main (void) {
 				delete();
 				break;
 			case OPT_SETF:	// Set free space after volume contents
-				space = setfree();
+				setfree();
 				break;
 			case OPT_GEN:	// Generate volume
 				generate();
@@ -158,10 +158,6 @@ void bye(void) {			// Release heap memory * * * VERY IMPORTANT * * *
 		free(ptr[i]);		// release this block
 		ptr[i++] = NULL;	// EEEEEEK
 	}
-/*	for (i=0; i<MAXFILES; i++) {
-		if (ptr[i] != NULL)		free(ptr[i]);
-		ptr[i] = NULL;
-	}*/
 	used = 0;				// all clear
 }
 
@@ -263,11 +259,33 @@ void	extract(void) {		// Extract file from volume
 }
 
 void	delete(void) {		// Delete file from volume
+	int				i, del;
+	struct header	h;
+
 	if (empty())	return;
-	
+	for (i=0; i<used; i++) {
+		printf("%d) %s\n", i+1, ptr[i]+8);		// display list of contents
+	}
+	printf("\nNumber of file to be REMOVED from volume? ");
+	scanf("%d", &del);
+	if (del<1 || del>used) {
+		printf("\tWrong index *** Aborted ***\n");
+		return;
+	}
+	del--;					// make this 0-based...
+	getheader(ptr[del], &h);	// get info for candidate
+	info(&h);
+	printf("\n");
+	if (!confirm("Will REMOVE this file from volume"))	return;
+	// If arrived here, proceed to removal
+	free(ptr[del]);			// actual removal
+	ptr[del] = NULL;			// just in case...
+	used--;					// one less file!
+	for (i=del; i<used; i++)		ptr[i] = ptr[i+1];				// shift down all remainin entries after deleted one
+	ptr[i] = NULL;			// extra safety!
 }
 
-dword	setfree(void) {		// Select free space to be appended
+void	setfree(void) {		// Select free space to be appended
 	int		req;
 
 	printf("\n\tSET FREE SPACE\n");
@@ -281,17 +299,22 @@ dword	setfree(void) {		// Select free space to be appended
 	scanf("%d", &req);
 	switch(req) {
 		case 1:
-			return	256;	// 64K
+			space = 256;	// 64K
+			break;
 		case 2:
-			return	1024;	// 256K
+			space = 1024;	// 256K
+			break;
 		case 3:
-			return	4096;	// 1M
+			space = 4096;	// 1M
+			break;
 		case 4:
-			return	16384;	// 4M
+			space = 16384;	// 4M
+			break;
 		case 5:
-			return	65536;	// 16M
+			space = 65536;	// 16M
+			break;
 		default:
-			return	0;
+			space = 0;		// do not append anything
 	}
 }
 
