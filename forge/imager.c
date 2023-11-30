@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231128-1802
+ * last modified 20231130-1054
  * */
 
 /* Libraries */
@@ -260,7 +260,6 @@ void	add(void) {			// Add file to volume
 	struct tm*		stamp;
 	struct stat		attrib;
 /* ***************************************** */
-printf("\n\n\n* * * D O   N O T   U S E * * *\n\n\n");
 	if (used >= MAXFILES) {
 		printf("\tVolume is full!\n");
 		return;
@@ -274,16 +273,18 @@ printf("\n\n\n* * * D O   N O T   U S E * * *\n\n\n");
 	}
 	printf("OK\nReading header... ");
 	if (fread(buffer, HD_BYTES, 1, file) != 1) {		// get header into buffer
-		printf("*** I/O error ***\n");
-		fclose(file);
-		return;											// couldn't even load header, something's VERY wrong
+		if (!ftell(file)) {								// if it was a generic file, could be shorter than HD_BYTES
+			printf("*** I/O error ***\n");				// otherwise something's VERY wrong
+			fclose(file);
+			return;
+		}
 	}
 	if (!getheader(buffer, &h)) {						// check header and get metadata
 		printf("GENERIC file\n");
 		strcpy(&(h.name[0]), name);						// place supplied filename
 		fseek(file, 0, SEEK_END);
-		h.size			= ftell(file);					// check actual file length
-		fseek(file, HD_BYTES, SEEK_SET);
+		h.size			= ftell(file) + HD_BYTES;		// check actual file length PLUS new header EEEEEK
+		rewind(file);									// after precomputed header, file on disk will be loaded in full
 		h.signature[0]	= 'd';
 		h.signature[1]	= 'A';							// generic file signature
 		h.version		= 1;
@@ -300,34 +301,27 @@ printf("\n\n\n* * * D O   N O T   U S E * * *\n\n\n");
 		h.minute		= stamp->tm_min;
 		h.second		= stamp->tm_sec;	// is this OK?
 /* ************************************************ */
+		// transfer header struct back into buffer
 	}
-	
-	
 	printf("\nAdding %s (%5.2f KiB): Allocating[%d]", h.name, h.size/1024.0, used);
 	if ((ptr[used] = malloc(h.size)) == NULL) {				// Allocate dynamic memory
 		printf("\n\t*** Out of memory! ***\n");
+		fclose(file);
 		return;
 	}
-
-
 	printf(", Header");
 	memcpy(ptr[used], buffer, HD_BYTES);					// copy preloaded header
-//		for (i=0; i<HD_BYTES; i++)		ptr[used][i] = buffer[i];	// * * * B A D * * * EEEEK
 	printf(", Code");
-	if (fread(ptr[used]+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {		// read remaining bytes 
+	skip = ftell(file);										// subtract current position from full size
+	if (fread(ptr[used]+HD_BYTES, h.size-skip, 1, file) != 1) {		// read remaining bytes, always after header (computed or preloaded)
 		printf("... ERROR!");
 		free(ptr[used]);
 		ptr[used] = NULL;			// eeeeek
 	} else {
-		printf(" OK");
+		printf(" OK!\n");
 		used++;			// another file into volume
 	}
-
 	fclose(file);
-	printf("\n\nDone!\n");
-
-
-	used++;					// another file into volume
 }
 
 void	extract(void) {		// Extract file from volume
