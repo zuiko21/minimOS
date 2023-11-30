@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231130-1631
+ * last modified 20231130-1815
  * */
 
 /* Libraries */
@@ -225,7 +225,8 @@ void	open(void) {					// Open volume
 		printf(", Header");
 		memcpy(ptr[used], buffer, HD_BYTES);					// copy preloaded header
 //		for (i=0; i<HD_BYTES; i++)		ptr[used][i] = buffer[i];	// * * * B A D * * * EEEEK
-		printf(", Code");
+		if (signature(&h) == SIG_FILE)	printf(", Data");
+		else							printf(", Code");
 		if (fread(ptr[used]+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {		// read remaining bytes 
 			printf("... ERROR!");
 			free(ptr[used]);
@@ -283,7 +284,7 @@ void	add(void) {			// Add file to volume
 	}
 	if (!getheader(buffer, &h)) {						// check header and get metadata
 		printf("GENERIC file");
-		strcpy(&(h.name[0]), name);						// place supplied filename
+		strcpy(h.name, name);							// place supplied filename
 		h.comment[0]	= '\0';							// terminate comment EEEEK
 		fseek(file, 0, SEEK_END);
 		h.size			= ftell(file) + HD_BYTES;		// check actual file length PLUS new header EEEEEK
@@ -291,11 +292,13 @@ void	add(void) {			// Add file to volume
 		h.signature[0]	= 'd';
 		h.signature[1]	= 'A';							// generic file signature
 		h.ld_addr		= 0x2A2A;
-		h.ex_addr		= 0x2A2A;						// unused Pocket fiels have '****'
-		h.version		= 1;
+		h.ex_addr		= 0x2A2A;						// unused Pocket fields have '****'
+		memcpy(h.lib, "$$$$$$$$", 8);
+		memcpy(h.commit, "$$$$$$$$", 8);				// unused commits
+		h.version		= 0;
 		h.revision		= 0;
 		h.phase			= 'a';
-		h.build			= 0;							// generic 1.0a0 version
+		h.build			= 0;							// generic 0.0a0 version
 /* timestamp fetching (don't know if it's portable) */
 		stat(name, &attrib);
 		stamp = gmtime(&(attrib.st_mtime));
@@ -317,14 +320,15 @@ void	add(void) {			// Add file to volume
 	}
 	printf(", Header");
 	memcpy(ptr[used], buffer, HD_BYTES);				// copy preloaded header
-	printf(", Code");
+	if (signature(&h) == SIG_FILE)	printf(", Data");
+	else							printf(", Code");
 	skip = ftell(file);									// subtract current position from full size
 	if (fread(ptr[used]+HD_BYTES, h.size-skip, 1, file) != 1) {			// read remaining bytes, always after header (computed or preloaded)
 		printf("... ERROR!\n");
 		free(ptr[used]);
 		ptr[used] = NULL;				// eeeeek
 	} else {
-		printf(" OK!\n");
+		printf(" OK\n");
 		used++;							// another file into volume
 	}
 	fclose(file);
@@ -350,7 +354,7 @@ void	extract(void) {		// Extract file from volume
 	if (fwrite(ptr[ext]+skip, h.size-skip, 1, file) != 1) {		// note header removal option
 		printf("*** I/O error ***\n");
 	} else {
-		printf(" OK!\n");	// finish without padding
+		printf(" Done!\n");	// finish without padding
 	}
 	fclose(file);
 }
@@ -399,7 +403,7 @@ void	setfree(void) {		// Select free space to be appended
 			space = 16384;	// 4M
 			break;
 		case 5:
-			space = 65536;	// 16M
+			space = 65534;	// 16M minus one sector!
 			break;
 		default:
 			space = 0;		// do not append anything
@@ -407,9 +411,80 @@ void	setfree(void) {		// Select free space to be appended
 }
 
 void	generate(void) {	// Generate volume
+	const byte		pad = 0xFF;				// padding byte
+	char			volume[VOL_NLEN];		// filename
+	FILE*			file;
+	byte			buffer[HD_BYTES];		// temporary header storage
+	struct header	h;
+	int				i, err;
+
 	if (empty())	return;
-printf("\n\n\n* * * D O   N O T   U S E * * *\n\n\n");
-	
+	printf("Volume name (usually 'durango.av'): ");
+	scanf("%s", volume);
+	printf("Writing to %s...", volume);
+	if ((file = fopen(volume, "wb")) == NULL) {
+		printf(" *** can't ***\n");
+		return;
+	}
+	printf(" OK\nLinking files...\n");
+	for (i=0; i<used; i++) {
+		err = 0;
+		getheader(ptr[i], &h);			// info about file to be added
+		printf("%s: ", h.name);
+		if ((signature(&h) == SIG_ROM) && (h.size & 511)) {		// ROM images non-multiple of 512 need pre-padding
+//			printf("Header");
+//			printf(", Pre-padding");
+			// pre-padding *** *** *** TBD
+//			printf(", ");
+printf("HAY QUE TENER MUY MALA HOSTIA, EH? ");
+		}
+		if (signature(&h) == SIG_FILE)	printf("Data");
+		else							printf("Code");
+		if (fwrite(ptr[i], h.size, 1, file) != 1) {				// attempt to write whole file
+			printf(" *** FAIL ***");
+			err++;
+		}
+		if ((signature(&h) != SIG_ROM) && (h.size & 511)) {		// non-ROM images non-multiple of 512 need post-padding
+			printf(", Padding");
+			while (h.size++ & 511) {							// pad with $FF until end of sector
+				if (fwrite(&pad, 1, 1, file) != 1)	err++;		// hopefully with no errors!
+			}
+		}
+		if (!err)	printf(" OK");
+		printf("\n");
+	}
+	if (space) {
+		printf("Free space: ");
+		h.name[0]		= '\0';
+		h.comment[0]	= '\0';					// empty name and comment
+		h.signature[0]	= 'd';
+		h.signature[1]	= 'L';					// free space signature
+		h.ld_addr		= 0x2A2A;
+		h.ex_addr		= 0x2A2A;				// unused Pocket fields have '****'
+		memcpy(h.lib, "$$$$$$$$", 8);
+		memcpy(h.commit, "$$$$$$$$", 8);		// unused commits
+		h.version		= 0;
+		h.revision		= 0;
+		h.phase			= 'a';
+		h.build			= 0;					// generic 0.0a0 version
+		h.year			= 2022-1980;
+		h.month			= 12;
+		h.day			= 23;
+		h.hour			= 19;
+		h.minute		= 44;
+		h.second		= 0;
+		h.size			= space << 8;
+		makeheader(buffer, &h);					// create free space header
+		if (fwrite(buffer, HD_BYTES, 1, file) != 1)		printf("Error! ");		// hopefully with no errors!
+		printf("Appending... ");
+		err = 0;
+		for (i=HD_BYTES; i<(space<<8); i++)
+			if (fwrite(&pad, 1, 1, file) != 1)	err++;			// hopefully with no errors!
+		if (!err)	printf("OK");
+		else		printf("Error!");
+	}
+	fclose(file);
+	printf("\nDone!\n");
 }
 
 int		getheader(byte* p, struct header* h) {			// Extract header specs, return 0 if not valid
@@ -471,7 +546,8 @@ void	makeheader(byte* p, struct header* h) {		// Generate header from struct
 	while (h->comment[src])
 		p[dest++] = h->comment[src++];				// copy comment
 	p[dest++] = 0;									// ...and terminator (skipping it)
-	dest = H_LIB;												// library commit offset
+	while (dest<H_LIB)				p[dest++] = 0xFF;			// safe padding
+//	dest = H_LIB;												// library commit offset
 	for (src=0;src<8;src++)			p[dest++] = h->lib[src];	// copy library commit
 //	dest = H_COMMIT;											// main commit offset (already there)
 	for (src=0;src<8;src++)			p[dest++] = h->commit[src];	// copy main commit afterwards
