@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231201-1822
+ * last modified 20231201-1907
  * */
 
 /* Libraries */
@@ -305,9 +305,9 @@ void	add(void) {			// Add file to volume
 		h.build			= 0;							// generic 0.0a0 version
 /* timestamp fetching (don't know if it's portable) */
 		stat(name, &attrib);
-		stamp = gmtime(&(attrib.st_mtime));
+		stamp = localtime(&(attrib.st_mtime));
 		h.year			= stamp->tm_year - 80;			// wtf?
-		h.month			= stamp->tm_mon;
+		h.month			= stamp->tm_mon + 1;			// WTF?
 		h.day			= stamp->tm_mday;
 		h.hour			= stamp->tm_hour;
 		h.minute		= stamp->tm_min;
