@@ -1,7 +1,7 @@
 /* Durango touch utility - CLI version
  * sets file timestamp into header!
  * (C)2023 Carlos J. Santisteban
- * last modified 20231201-1913
+ * last modified 20231201-1920
  * */
 
 /* Libraries */
@@ -76,6 +76,11 @@ int main (int argc, char* argv[]) {
 	}
 	if (fread(buffer, HD_BYTES, 1, file) != 1) {// get header into buffer
 		printf("\n\t*** No header ***\n\n");	// not even space for a header
+		fclose(file);
+		return	-1;
+	}
+	if ((buffer[H_MAGIC1]!=0) || (buffer[H_MAGIC2]!=13) || (buffer[H_MAGIC1]!=0)) {
+		printf("\n\t*** No valid header, probably NOT a Durango file ***\n");	// EEEEEEEEK
 		fclose(file);
 		return	-1;
 	}
