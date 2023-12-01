@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231130-1815
+ * last modified 20231201-0916
  * */
 
 /* Libraries */
@@ -64,8 +64,8 @@ struct	header {
 	char	signature[2];	// [1-2]
 	word	ld_addr;		// [3-4]
 	word	ex_addr;		// [5-6]
-	char	name[220];		// [8-]
-	char	comment[220];	// name and comment together cannot be over 220 chars
+	char	name[221];		// [8-]
+	char	comment[221];	// name and comment together cannot be over 220 chars (plus both terminators)
 	char	lib[8];			// [230-237]
 	char	commit[8];		// [238-245]
 	byte	version;		// [246-247]
@@ -205,7 +205,7 @@ void	open(void) {					// Open volume
 	}
 	printf(" OK\nReading headers...");
 	bye();					// free up dynamic memory
-	while(!feof(file)) {
+	while (!feof(file)) {
 		if (fread(buffer, HD_BYTES, 1, file) != 1)	break;		// get header into buffer
 		if (!getheader(buffer, &h)) {							// check header and get metadata
 			printf("\n\t* Bad header *\n");
@@ -225,8 +225,8 @@ void	open(void) {					// Open volume
 		printf(", Header");
 		memcpy(ptr[used], buffer, HD_BYTES);					// copy preloaded header
 //		for (i=0; i<HD_BYTES; i++)		ptr[used][i] = buffer[i];	// * * * B A D * * * EEEEK
-		if (signature(&h) == SIG_FILE)	printf(", Data");
-		else							printf(", Code");
+		if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf(", Code");
+		else																printf(", Data");
 		if (fread(ptr[used]+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {		// read remaining bytes 
 			printf("... ERROR!");
 			free(ptr[used]);
@@ -277,7 +277,7 @@ void	add(void) {			// Add file to volume
 	printf("OK\nReading header... ");
 	if (fread(buffer, HD_BYTES, 1, file) != 1) {		// get header into buffer
 		if (!ftell(file)) {								// if it was a generic file, could be shorter than HD_BYTES
-			printf("*** I/O error ***\n");				// otherwise something's VERY wrong
+			printf("is EMPTY!\n");						// otherwise it's an empty file!
 			fclose(file);
 			return;
 		}
@@ -320,8 +320,8 @@ void	add(void) {			// Add file to volume
 	}
 	printf(", Header");
 	memcpy(ptr[used], buffer, HD_BYTES);				// copy preloaded header
-	if (signature(&h) == SIG_FILE)	printf(", Data");
-	else							printf(", Code");
+	if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf(", Code");
+	else																printf(", Data");
 	skip = ftell(file);									// subtract current position from full size
 	if (fread(ptr[used]+HD_BYTES, h.size-skip, 1, file) != 1) {			// read remaining bytes, always after header (computed or preloaded)
 		printf("... ERROR!\n");
@@ -438,8 +438,8 @@ void	generate(void) {	// Generate volume
 //			printf(", ");
 printf("HAY QUE TENER MUY MALA HOSTIA, EH? ");
 		}
-		if (signature(&h) == SIG_FILE)	printf("Data");
-		else							printf("Code");
+		if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf("Code");
+		else																printf("Data");
 		if (fwrite(ptr[i], h.size, 1, file) != 1) {				// attempt to write whole file
 			printf(" *** FAIL ***");
 			err++;
@@ -447,10 +447,18 @@ printf("HAY QUE TENER MUY MALA HOSTIA, EH? ");
 		if ((signature(&h) != SIG_ROM) && (h.size & 511)) {		// non-ROM images non-multiple of 512 need post-padding
 			printf(", Padding");
 			while (h.size++ & 511) {							// pad with $FF until end of sector
-				if (fwrite(&pad, 1, 1, file) != 1)	err++;		// hopefully with no errors!
+				if (fwrite(&pad, 1, 1, file) != 1)	{
+					printf(" *** FAIL ***");
+					err++;
+					break;
+				}
 			}
 		}
 		if (!err)	printf(" OK");
+		else {
+			fclose(file);
+			return;
+		}
 		printf("\n");
 	}
 	if (space) {
@@ -481,7 +489,7 @@ printf("HAY QUE TENER MUY MALA HOSTIA, EH? ");
 		for (i=HD_BYTES; i<(space<<8); i++)
 			if (fwrite(&pad, 1, 1, file) != 1)	err++;			// hopefully with no errors!
 		if (!err)	printf("OK");
-		else		printf("Error!");
+		else		printf("*** FAIL *** Do NOT use free space!!");
 	}
 	fclose(file);
 	printf("\nDone!\n");
