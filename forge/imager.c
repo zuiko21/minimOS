@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231201-0916
+ * last modified 20231201-1822
  * */
 
 /* Libraries */
@@ -110,6 +110,7 @@ int main (void) {
 	int		opt =	OPT_NONE;
 
 	init();					// Init things
+	printf("\nDurango-X volume creator, v1.0 by @zuiko21\n");
 // Do actual stuff
 	while (opt != OPT_EXIT) {
 		opt =	menu();		// choose task
@@ -200,7 +201,7 @@ void	open(void) {					// Open volume
 	scanf("%s", volume);
 	printf("Opening %s...", volume);
 	if ((file = fopen(volume, "rb")) == NULL) {
-		printf(" *** Error ***\n");
+		printf(" *** NOT found ***\n");
 		return;
 	}
 	printf(" OK\nReading headers...");
@@ -225,10 +226,13 @@ void	open(void) {					// Open volume
 		printf(", Header");
 		memcpy(ptr[used], buffer, HD_BYTES);					// copy preloaded header
 //		for (i=0; i<HD_BYTES; i++)		ptr[used][i] = buffer[i];	// * * * B A D * * * EEEEK
+		if (h.size & 511) {	// uneven size in header, must be rounded up as was padded in volume
+			h.size = (h.size + 512) & 0xFFFFFE00;				// sector-aligned size
+		}
 		if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf(", Code");
 		else																printf(", Data");
 		if (fread(ptr[used]+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {		// read remaining bytes 
-			printf("... ERROR!");
+			printf("... *** ERROR! ***");
 			free(ptr[used]);
 			ptr[used] = NULL;			// eeeeek
 		} else {
@@ -271,7 +275,7 @@ void	add(void) {			// Add file to volume
 	scanf("%s", name);
 	printf("Opening %s... ", name);
 	if ((file = fopen(name, "rb")) == NULL) {
-		printf("NOT found\n");
+		printf(" NOT found\n");
 		return;
 	}
 	printf("OK\nReading header... ");
@@ -293,8 +297,8 @@ void	add(void) {			// Add file to volume
 		h.signature[1]	= 'A';							// generic file signature
 		h.ld_addr		= 0x2A2A;
 		h.ex_addr		= 0x2A2A;						// unused Pocket fields have '****'
-		memcpy(h.lib, "$$$$$$$$", 8);
-		memcpy(h.commit, "$$$$$$$$", 8);				// unused commits
+		memcpy(h.lib,	"$$$$$$$$", 8);
+		memcpy(h.commit,"$$$$$$$$", 8);					// unused commits
 		h.version		= 0;
 		h.revision		= 0;
 		h.phase			= 'a';
@@ -320,10 +324,16 @@ void	add(void) {			// Add file to volume
 	}
 	printf(", Header");
 	memcpy(ptr[used], buffer, HD_BYTES);				// copy preloaded header
+	if ((signature(&h) == SIG_ROM) && (h.size & 511)) {	// check for misaligned ROM images
+		printf(" *** Misaligned ROM image *** Aborting...\n\n");		// simply not accepted!
+		free(ptr[used]);
+		fclose(file);
+		return;
+	}
 	if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf(", Code");
 	else																printf(", Data");
-	skip = ftell(file);									// subtract current position from full size
-	if (fread(ptr[used]+HD_BYTES, h.size-skip, 1, file) != 1) {			// read remaining bytes, always after header (computed or preloaded)
+	skip = ftell(file);					// subtract current position from full size
+	if (fread(ptr[used]+HD_BYTES, h.size-skip, 1, file) != 1) {	// read remaining bytes after header (computed or preloaded)
 		printf("... ERROR!\n");
 		free(ptr[used]);
 		ptr[used] = NULL;				// eeeeek
@@ -423,7 +433,7 @@ void	generate(void) {	// Generate volume
 	scanf("%s", volume);
 	printf("Writing to %s...", volume);
 	if ((file = fopen(volume, "wb")) == NULL) {
-		printf(" *** can't ***\n");
+		printf(" *** cannot ***\n");
 		return;
 	}
 	printf(" OK\nLinking files...\n");
@@ -431,20 +441,13 @@ void	generate(void) {	// Generate volume
 		err = 0;
 		getheader(ptr[i], &h);			// info about file to be added
 		printf("%s: ", h.name);
-		if ((signature(&h) == SIG_ROM) && (h.size & 511)) {		// ROM images non-multiple of 512 need pre-padding
-//			printf("Header");
-//			printf(", Pre-padding");
-			// pre-padding *** *** *** TBD
-//			printf(", ");
-printf("HAY QUE TENER MUY MALA HOSTIA, EH? ");
-		}
 		if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf("Code");
 		else																printf("Data");
 		if (fwrite(ptr[i], h.size, 1, file) != 1) {				// attempt to write whole file
 			printf(" *** FAIL ***");
 			err++;
 		}
-		if ((signature(&h) != SIG_ROM) && (h.size & 511)) {		// non-ROM images non-multiple of 512 need post-padding
+		if (h.size & 511) {				// non-multiple of 512 need padding
 			printf(", Padding");
 			while (h.size++ & 511) {							// pad with $FF until end of sector
 				if (fwrite(&pad, 1, 1, file) != 1)	{
@@ -469,8 +472,8 @@ printf("HAY QUE TENER MUY MALA HOSTIA, EH? ");
 		h.signature[1]	= 'L';					// free space signature
 		h.ld_addr		= 0x2A2A;
 		h.ex_addr		= 0x2A2A;				// unused Pocket fields have '****'
-		memcpy(h.lib, "$$$$$$$$", 8);
-		memcpy(h.commit, "$$$$$$$$", 8);		// unused commits
+		memcpy(h.lib,	"$$$$$$$$", 8);
+		memcpy(h.commit,"$$$$$$$$", 8);			// unused commits
 		h.version		= 0;
 		h.revision		= 0;
 		h.phase			= 'a';
@@ -529,36 +532,36 @@ int		getheader(byte* p, struct header* h) {			// Extract header specs, return 0 
 	h->day		=		p[H_DATE] & 0x1F;
 	h->size		=		p[H_SIZE] | p[H_SIZE+1]<<8 | p[H_SIZE+2]<<16;
 
-	return	-1;				// all OK
+	return	-1;				// header is valid
 }
 
 void	makeheader(byte* p, struct header* h) {		// Generate header from struct
 	int		src, dest, skip;
 	byte	bits;
 
-	p[H_MAGIC1] = 0;
-	p[H_MAGIC2] = 13;
-	p[H_MAGIC3] = 0;								// set magic numbers
+	p[H_MAGIC1]			=	0;
+	p[H_MAGIC2]			=	13;
+	p[H_MAGIC3]			=	0;							// set magic numbers
 	p[H_SIGNATURE]		=	h->signature[0];
-	p[H_SIGNATURE+1]	=	h->signature[1];		// copy signature
+	p[H_SIGNATURE+1]	=	h->signature[1];			// copy signature
 	p[H_LOAD]			=	h->ld_addr & 0xFF;
 	p[H_LOAD+1]			=	h->ld_addr >> 8;
 	p[H_EXECUTE]		=	h->ex_addr & 0xFF;
-	p[H_EXECUTE+1]		=	h->ex_addr >> 8;		// Pocket addresses (unused)
-	dest = H_NAME;									// filename offset
+	p[H_EXECUTE+1]		=	h->ex_addr >> 8;			// Pocket addresses (unused)
+	dest = H_NAME;										// filename offset
 	src = 0;
 	while (h->name[src])
-		p[dest++] = h->name[src++];					// copy filename
-	p[dest++] = 0;									// ...and terminator (skipping it)
+		p[dest++] = h->name[src++];						// copy filename
+	p[dest++] = 0;										// ...and terminator (skipping it)
 	src = 0;
 	while (h->comment[src])
-		p[dest++] = h->comment[src++];				// copy comment
-	p[dest++] = 0;									// ...and terminator (skipping it)
-	while (dest<H_LIB)				p[dest++] = 0xFF;			// safe padding
-//	dest = H_LIB;												// library commit offset
-	for (src=0;src<8;src++)			p[dest++] = h->lib[src];	// copy library commit
-//	dest = H_COMMIT;											// main commit offset (already there)
-	for (src=0;src<8;src++)			p[dest++] = h->commit[src];	// copy main commit afterwards
+		p[dest++] = h->comment[src++];					// copy comment
+	p[dest++] = 0;										// ...and terminator (skipping it)
+	while (dest<H_LIB)		p[dest++] = 0xFF;			// safe padding
+//	dest = H_LIB;										// library commit offset
+	for (src=0;src<8;src++)	p[dest++] = h->lib[src];	// copy library commit
+//	dest = H_COMMIT;									// main commit offset (already there)
+	for (src=0;src<8;src++)	p[dest++] = h->commit[src];	// copy main commit afterwards
 	switch(h->phase) {
 		case 'a':
 			bits = 0;		// alpha				%00hhbbbb
@@ -574,14 +577,14 @@ void	makeheader(byte* p, struct header* h) {		// Generate header from struct
 			bits = 0xC0;	// final				%11hhbbbb
 	}
 	p[H_VERSION]	=	bits | (h->revision & 0x30)| h->build;
-	p[H_VERSION+1]	=	(h->version << 4) | (h->revision & 0x0F);
+	p[H_VERSION+1]	=	(h->version << 4) | (h->revision & 0x0F);		// coded version number
 	p[H_TIME]		=	((h->minute << 5) & 0xFF) | (h->second >> 1);
-	p[H_TIME+1]		=	(h->hour << 3) | (h->minute >> 3);
+	p[H_TIME+1]		=	(h->hour << 3) | (h->minute >> 3);				// coded time
 	p[H_DATE]		=	((h->month << 5) & 0xFF) | h->day;
-	p[H_DATE+1]		=	(h->year << 1) | (h->month >> 3);
+	p[H_DATE+1]		=	(h->year << 1) | (h->month >> 3);				// coded date
 	p[H_SIZE]		=	h->size & 0xFF;
 	p[H_SIZE+1]		=	(h->size >> 8) & 0xFF;
-	p[H_SIZE+2]		=	h->size >> 16;
+	p[H_SIZE+2]		=	h->size >> 16;									// coded size
 }
 
 int		signature(struct header* h) {	// Returns file type from coded signature
