@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231201-1907
+ * last modified 20231203-0930
  * */
 
 /* Libraries */
@@ -260,7 +260,6 @@ void	list(void) {		// List volume contents
 void	add(void) {			// Add file to volume
 	char			name[VOL_NLEN];		// filename
 	FILE*			file;
-	int				skip;				// header bytes to skip if preloaded
 	byte			buffer[HD_BYTES];	// temporary header fits into a full page
 	struct header	h;					// metadata storage
 /* optional variables for timestamp fetching */
@@ -314,7 +313,7 @@ void	add(void) {			// Add file to volume
 		h.second		= stamp->tm_sec;				// is this OK?
 /* ************************************************ */
 		makeheader(buffer, &h);			// transfer header struct back into buffer
-		h.size -= HD_BYTES;				// eeeek
+//		h.size -= HD_BYTES;				// eeeek
 	}
 	printf("\nAdding %s (%-5.2f KiB): Allocating[%d]", h.name, h.size/1024.0, used);
 	if ((ptr[used] = malloc(h.size)) == NULL) {			// Allocate dynamic memory
@@ -332,8 +331,7 @@ void	add(void) {			// Add file to volume
 	}
 	if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf(", Code");
 	else																printf(", Data");
-	skip = ftell(file);					// subtract current position from full size
-	if (fread(ptr[used]+HD_BYTES, h.size-skip, 1, file) != 1) {	// read remaining bytes after header (computed or preloaded)
+	if (fread(ptr[used]+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {	// read remaining bytes after header (computed or preloaded)
 		printf("... ERROR!\n");
 		free(ptr[used]);
 		ptr[used] = NULL;				// eeeeek
@@ -536,7 +534,7 @@ int		getheader(byte* p, struct header* h) {			// Extract header specs, return 0 
 }
 
 void	makeheader(byte* p, struct header* h) {		// Generate header from struct
-	int		src, dest, skip;
+	int		src, dest;
 	byte	bits;
 
 	p[H_MAGIC1]			=	0;
