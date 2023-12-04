@@ -226,6 +226,7 @@ fflush(stdout);
 			printf("\n\t*** Out of memory! ***\n");
 			return;
 		}
+else printf("{malloc OK}");fflush(stdout);
 		printf(", Header");
 fflush(stdout);
 		memcpy(ptr[used], buffer, HD_BYTES);					// copy preloaded header
