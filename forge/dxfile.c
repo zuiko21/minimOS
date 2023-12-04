@@ -1,6 +1,6 @@
 /* Durango file information - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231130-1900
+ * last modified 20231204-1210
  * */
 
 /* Libraries */
@@ -204,9 +204,9 @@ void	info(struct header* h) {								// Display info about header
 	printf("\nLast modified: %d/%d/%d, %02d:%02d", 1980+h->year, h->month, h->day, h->hour, h->minute);	// Last modified
 	if (signature(h) != SIG_FILE) {
 		printf(" (v%d.%d%c%d)", h->version, h->revision, h->phase, h->build);	// Version
-		printf("\nMain commit ");
+		printf("\nUser field #1: ");
 		for (i=0; i<8; i++)		printf("%c", h->commit[i]);						// Main commit string
-		printf(", Lib commit ");
+		printf(", #2: ");
 		for (i=0; i<8; i++)		printf("%c", h->lib[i]);						// Lib commit string
 		if (h->comment[0] != '\0')		printf("\nComment: %s", h->comment);	// optional comment
 	}
