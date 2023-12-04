@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231204-1257
+ * last modified 20231204-1310
  * */
 
 /* Libraries */
@@ -205,6 +205,7 @@ void	open(void) {					// Open volume
 		return;
 	}
 	printf(" OK\nReading headers...");
+fflush(stdout);
 	bye();					// free up dynamic memory
 	while (!feof(file)) {
 		if (fread(buffer, HD_BYTES, 1, file) != 1)	break;		// get header into buffer
@@ -218,12 +219,15 @@ void	open(void) {					// Open volume
 			continue;											// EEEEEEEK
 		}
 		printf("\nFound %s (%-5.2f KiB): Allocating", h.name, h.size/1024.0);
+fflush(stdout);
 		printf("[%d]",used);									// entry to be allocated
+fflush(stdout);
 		if ((ptr[used] = malloc(h.size)) == NULL) {				// Allocate dynamic memory
 			printf("\n\t*** Out of memory! ***\n");
 			return;
 		}
 		printf(", Header");
+fflush(stdout);
 		memcpy(ptr[used], buffer, HD_BYTES);					// copy preloaded header
 //		for (i=0; i<HD_BYTES; i++)		ptr[used][i] = buffer[i];	// * * * B A D * * * EEEEK
 		if (h.size & 511) {	// uneven size in header, must be rounded up as was padded in volume
