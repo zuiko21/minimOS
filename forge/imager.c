@@ -326,6 +326,7 @@ void	add(void) {			// Add file to volume
 	if ((signature(&h) == SIG_ROM) && (h.size & 511)) {	// check for misaligned ROM images
 		printf(" *** Misaligned ROM image *** Aborting...\n\n");		// simply not accepted!
 		free(ptr[used]);
+		ptr[used] = NULL;								// unlikely to be a problem, but...
 		fclose(file);
 		return;
 	}
