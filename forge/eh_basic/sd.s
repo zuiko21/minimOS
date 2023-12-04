@@ -1,7 +1,8 @@
 ; SD-card driver module for EhBASIC
 ; supports both the devCart and the Fast SPI interface (ID=0-3)
+; now with FAT32 host filesystem support!
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231022-1241
+; last modified 20231204-2308
 
 ; uncomment DEBUG version below, does actually write to the card, but also display sector number and contents
 ;#define	DEBUG
@@ -11,6 +12,7 @@
 ;#define	TALLY
 
 #echo Using SD card (devCart & FastSPI 0-3) for LOAD and SAVE - interactive filename prompt
+#echo with FAT32 host support!
 #ifdef	DEBUG
 #echo Debugging version (displaying sizes?)
 #endif
@@ -52,6 +54,12 @@
 #define	SPCR_MSG	11
 #define	OLD_SD		12
 #define	HC_XC		13
+; FAT32 specific errors (after 0...4 from SD, thus 'f'...'j')
+#define	FAT_VJMP	5
+#define	FAT_MEDIA	6
+#define	FAT_EBS		7
+#define	FAT_BPS		8
+#define	FAT_NOVOL	9
 
 -Ram_base	= $0500			; just in case
 
@@ -73,6 +81,11 @@ sd_ver	= ptr	+ 2			; $FE
 crc		= sd_ver+ 1			; $FF
 
 ; *** ******************************************** ***
+; *** mount point *** NEW for FAT32 support($2E9-$2F1)
+sec_clus	= $2E9			; number of sectors per cluster $2E9
+dir_clus	= sec_clus+1	; first cluster of directory (needed for subtract) $2EA
+mnt_point	= dir_clus+4	; mount point (BIG endian like arg) $2EE
+
 ; *** interface vectors ***	NEW for Fast SPI interface
 sd_dev_err		= $2F2		; error code for previous device, in case Fast SPI is not present
 sd_dev_id		= $2F3		; will add 47 to display ' ' for devCart, 0...3 for Fast SPI
@@ -975,13 +988,250 @@ hcxc:
 ;	LDX #HC_XC				; ### notify this instead ###
 card_ok:
 ;	JMP pass_x				; *** PASS 4 in white ***
+
+; *** ****************************************** ***
 ; *** card properly inited, may mount volume now ***
+; *** ****************************************** ***
 ;	JMP mount_vol
+
 ; should look for 'durango.av' file but, this far, from the very first sector of card instead
+mount_vol:
 	STZ arg
 	STZ arg+1
 	STZ arg+2
 	STZ arg+3				; assume reading from the very first sector
+; *** try mounting from first sector ***
+	LDX #>buffer			; temporary load address EEEEEEEEEEEEK
+	STX ptr+1
+	STZ ptr					; assume buffer is page-aligned (this is needed)
+	JSR ssec_rd				; read very first sector on device
+	JSR chk_head			; and look for a valid header
+		BCS try_fat			; not valid? try FAT32
+	JMP vol_ok				; if RAW formatted, this will be a valid header
+try_fat:
+; this should be the MBR, check it out *** some cards have no MBR, thus non-fatal
+		LDA buffer+$1C2		; first partition type
+		CMP #$0C			; is it FAT32LBA?
+		BEQ mbr_ptype_ok
+			CMP #$0B		; or FAT32CHS?
+		BEQ mbr_ptype_ok
+;			LDX #mbr_ptype-fat_msg
+;			JSR fat_err
+			BRA vbr_chk		; try with VBR as this is non-fatal
+mbr_ptype_ok:
+		LDA #$55
+		CMP buffer+$1FE		; boot signature
+			BNE mbr_bsig_bad
+		ASL
+		CMP buffer+$1FF		; second byte
+		BEQ mbr_bsig_ok
+mbr_bsig_bad:
+;			LDX #mbr_bsig-fat_msg
+;			JSR fat_err
+			BRA vbr_chk		; try with VBR as this is non-fatal
+mbr_bsig_ok:
+; let's get the partition's first sector
+	LDY #0
+	LDX #3					; four bytes to copy
+vbr_sector:
+		LDA buffer+$1C6, Y	; first sector on first partition (little endian)
+		STA arg, X			; SD card expects block number BIG endian
+		INY
+		DEX
+		BPL vbr_sector
+; read VBR
+	LDX #>buffer			; temporary load address
+	STX ptr+1
+;	STZ ptr					; assume buffer is page-aligned
+	JSR ssec_rd				; read first sector on partition
+; check out VBR
+vbr_chk:
+	LDA buffer				; first byte on VBR...
+	CMP #$E9				; ...could be jump long...
+	BEQ vbr_jump_ok
+		CMP #$EB			; ...or short...
+	BNE vbr_jump_bad
+		LDA buffer+2
+		CMP #$90			; ...followed by NOP
+	BEQ vbr_jump_ok
+vbr_jump_bad:
+;		LDX #vbr_jump-fat_msg
+		LDA #FAT_VJMP		; error 'f'
+		JMP fatal			; non-MBR errors ARE fatal
+vbr_jump_ok: 
+	LDA buffer+$15			; media descriptor
+	CMP #$F0				; 3.5" or other media
+	BEQ bpb_media_ok
+		CMP #$F8			; also hard disk?
+	BEQ bpb_media_ok
+;		LDX #bpb_media-fat_msg
+		LDA #FAT_MEDIA		; error 'g'
+		JMP fatal
+bpb_media_ok:
+	LDA buffer+$42			; extended boot signature
+	AND #%11111110			; ignore LSB
+	CMP #$28				; $28 or $29
+	BEQ bpb_extbs_ok
+;		LDX #bpb_extbs-fat_msg
+		LDA #FAT_EBS		; error 'h'
+		JMP fatal
+bpb_extbs_ok:
+	LDA buffer+$B			; bytes per sector
+	BNE bpb_bps_bad			; LSB must be zero for 512
+		LDA buffer+$C		; check MSB
+		CMP #2				; 512 bytes/sector is the standard
+	BEQ bpb_bps_ok
+bpb_bps_bad:
+;		LDX #bpb_bps-fat_msg
+		LDA #FAT_BPS		; error 'i'
+		JMP fatal
+bpb_bps_ok:
+; VBR appears compatible, let's compute directory sector
+	LDA buffer+$10			; number of FATs (may assume it's one or two, at least a power of two)
+fat_shift:
+		LSR
+	BEQ all_fats			; all shifts done (none if 1, once if 2)
+		ASL buffer+$24		; multiply sectors per FAT
+		ROL buffer+$25
+		ROL buffer+$26
+		ROL buffer+$27
+		BRA fat_shift
+all_fats:
+	LDA buffer+$24
+	CLC
+	ADC buffer+$E			; add reserved sectors
+	STA buffer+$24
+	LDA buffer+$25
+	ADC buffer+$F
+	STA buffer+$25
+		BCC fat_total
+	INC buffer+$26
+		BNE fat_total
+	INC buffer+$27
+fat_total:
+; we've computed the offset from VBR where the directory begins, let's compute absolute sector
+	LDY #0
+	LDX #3					; four bytes to copy
+	CLC						; eeeeek
+dir_sector:
+		LDA arg, X			; EEEEEEEEEEEEEEEEEEK
+		ADC buffer+$24, Y	; ADD modified sectors/FAT (times # of FATs plus reserved sectors, little endian)
+		STA arg, X			; SD card expects block number BIG endian
+		STA mnt_point, X	; keep this sector temporarily! BIG endian too!
+		LDA buffer+$2C, X	; while we're on it, copy the root directory cluster as well
+		STA dir_clus, X
+		INY					; next iteration
+		DEX
+		BPL dir_sector
+; before loading directory sectors, take note of the limit (only first cluster is explored)
+	LDA buffer+$D			; number of sectors per cluster
+	STA cnt					; store as directory scan limit!
+	STA sec_clus			; keep for later volume access!
+; read directory sector...
+dir_rd:
+		LDX #>buffer		; temporary load address
+		STX ptr+1
+		STZ ptr				; assume buffer is page-aligned EEEEEEEEEEEK
+		JSR ssec_rd			; read first sector on partition
+;		JSR chk_brk			; ** check for BREAK key
+;		BCC cont_mnt		; ** if pressed...
+;			LDX #FAIL_MSG	; ** ...complain a bit and...
+;			JMP switch_dev	; ** ...restart with _next_ interface
+cont_mnt:					; ** or continue as usual
+; ...and scan its entries
+		LDX #>buffer		; temporary load address
+		STX ptr+1			; assume LSB stays at zero
+dir_scan:
+			LDY #0
+dir_entry:
+				LDA (ptr), Y			; compare name in directory entry...
+				CMP vol_name, Y			; ...with desired volume name
+			BNE next_entry	; if mismatched, try next entry
+				INY			; otherwise, check next char
+				CPY #11		; all matching?
+				BNE dir_entry
+			BEQ vol_found	; we got it!
+next_entry:
+			LDA ptr
+			CLC
+			ADC #32			; next entry is 32 bytes ahead
+			STA ptr
+			BNE dir_scan	; if still within page, check next entry
+		INC ptr+1
+		LDA ptr+1
+		CMP #>(buffer+512)	; still within sector?
+			BNE dir_scan	; keep trying
+		INC arg+3			; otherwise read following sector
+		BNE next_dirs
+			INC arg+2
+		BNE next_dirs
+			INC arg+1
+		BNE next_dirs
+			INC arg
+next_dirs:
+		DEC cnt				; one sector less in the first directory cluster
+		BNE dir_rd
+	LDA #FAT_NOVOL			; error 'j'
+	JMP fatal				; notify error and return
+vol_found:
+; * compute volume header position from cluster in entry *
+; first, subtract directory cluster from entry cluster 
+	LDY #$1A				; location of LSW cluster in entry
+	LDA (ptr), Y
+	SEC
+	SBC dir_clus			; subtract directory cluster (non indexed)
+	STA dir_clus			; store temporarily
+	INY						; next byte
+	LDA (ptr), Y
+	SBC dir_clus+1			; note manual indexing, needed because of the strange entry format
+	STA dir_clus+1
+	LDY #$14				; location of MSW cluster in entry
+	LDA (ptr), Y
+	SEC
+	SBC dir_clus+2			; subtract directory cluster, manually indexed
+	STA dir_clus+2			; store temporarily
+	INY						; next byte
+	LDA (ptr), Y
+	SBC dir_clus+3			; note manual indexing, needed because of the strange entry format
+	STA dir_clus+3
+; now dir_clus is the cluster offset, turn it into sector offset
+	LDA sec_clus			; cluster offset times this (always power of two)
+sec_mul:
+		LSR
+	BEQ mul_done			; check whether more shifts are needed
+		ASL dir_clus		; multiply by two as needed
+		ROL dir_clus+1
+		ROL dir_clus+2
+		ROL dir_clus+3
+	BRA sec_mul
+mul_done:
+; finally, add that number of sectors to the start of directory! note endianness
+	LDY #0
+	LDX #3					; four bytes to copy
+	CLC						; eeeeek
+vol_sector:
+		LDA mnt_point, X	; was BIG endian EEEEEEEEEEEEK
+		ADC dir_clus, Y		; add sector offset
+		STA arg, X			; SD card expects block number BIG endian
+		INY					; next iteration
+		DEX
+		BPL vol_sector
+	RTS
+
+; *** some high-level routines ***
+chk_head:
+; * look for a valid header * assume sector loaded at buffer
+	LDA magic1				; check magic number one
+	BNE not_magic 
+		LDA magic2			; check magic number two
+		CMP #13				; must be NEWL instead of zero
+		BNE not_magic
+			LDA magic3		; check magic number three
+			BNE not_magic
+				CLC			; report no error, header is valid
+				RTS
+not_magic:
+	SEC						; otherwise header is not valid
 	RTS
 
 ; **************************
@@ -1258,6 +1508,7 @@ actual_fail:
 	PLA						; retrieve numeric error code
 ; *** ********************************************************************************** ***
 ;	TXA						; single-device error code
+fatal:
 	CLC
 	ADC #'a'				; convert error code into ASCII letters
 	TAY
