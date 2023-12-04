@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231203-0930
+ * last modified 20231204-1213
  * */
 
 /* Libraries */
@@ -480,7 +480,7 @@ void	generate(void) {	// Generate volume
 		h.month			= 12;
 		h.day			= 23;
 		h.hour			= 19;
-		h.minute		= 44;
+		h.minute		= 44;					// default timestamp is Durango-X unit #1 build date ;-)
 		h.second		= 0;
 		h.size			= space << 8;
 		makeheader(buffer, &h);					// create free space header
@@ -650,9 +650,9 @@ void	info(struct header* h) {								// Display info about header
 	printf("\nLast modified: %d/%d/%d, %02d:%02d", 1980+h->year, h->month, h->day, h->hour, h->minute);	// Last modified
 	if (signature(h) != SIG_FILE) {
 		printf(" (v%d.%d%c%d)", h->version, h->revision, h->phase, h->build);	// Version
-		printf("\nMain commit ");
+		printf("\User field #1: ");
 		for (i=0; i<8; i++)		printf("%c", h->commit[i]);						// Main commit string
-		printf(", Lib commit ");
+		printf(", #2: ");
 		for (i=0; i<8; i++)		printf("%c", h->lib[i]);						// Lib commit string
 		if (h->comment[0] != '\0')		printf("\nComment: %s", h->comment);	// optional comment
 	}
@@ -667,7 +667,7 @@ int		choose(char* msg) {		// Choose file from list
 	printf("\nNumber of file %s? (0=none) ", msg);
 	scanf("%d", &sel);
 	if (sel<1 || sel>used) {
-		printf("\tWrong index *** Aborted ***\n");
+		printf("\tBad index *** Aborted ***\n");
 		return -1;			// invalid index
 	}
 	return	sel-1;			// make this 0-based...
