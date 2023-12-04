@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231204-1213
+ * last modified 20231204-1218
  * */
 
 /* Libraries */
@@ -161,11 +161,11 @@ void init(void) {			// Init stuff
 }
 
 void bye(void) {			// Release heap memory * * * VERY IMPORTANT * * *
-	int		i = 0;
+	int		i;
 
-	while (ptr[i] != NULL) {
-		free(ptr[i]);		// release this block
-		ptr[i++] = NULL;	// EEEEEEK
+	for (i=0; i<MAXFILES; i++) {
+		if (ptr[i] != NULL)		free(ptr[i]);		// release this block
+		ptr[i] =	NULL;	// EEEEEEK
 	}
 	used = 0;				// all clear
 }
@@ -662,7 +662,7 @@ int		choose(char* msg) {		// Choose file from list
 	int		i, sel;
 
 	for (i=0; i<used; i++) {
-		printf("%d) %s\n", i+1, ptr[i]+8);		// display list of contents
+		printf("%d) %s\n", i+1, ptr[i]+H_NAME);		// display list of contents
 	}
 	printf("\nNumber of file %s? (0=none) ", msg);
 	scanf("%d", &sel);
