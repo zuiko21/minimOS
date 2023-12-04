@@ -1,7 +1,7 @@
 /* Durango touch utility - CLI version
  * sets file timestamp into header!
  * (C)2023 Carlos J. Santisteban
- * last modified 20231201-1920
+ * last modified 20231204-1211
  * */
 
 /* Libraries */
@@ -94,7 +94,7 @@ int main (int argc, char* argv[]) {
 	h.minute		= stamp->tm_min;
 	h.second		= stamp->tm_sec;					// is this OK?
 /* ************************************************ */
-	printf("%d/%d/%d, %02d:%02d\n", h.year+1980, h.month, h.day, h.hour, h.minute);
+	printf("Original timestamp: %d/%d/%d, %02d:%02d\n", h.year+1980, h.month, h.day, h.hour, h.minute);
 	buffer[H_TIME]	=	((h.minute << 5) & 0xFF) | (h.second >> 1);
 	buffer[H_TIME+1]=	(h.hour << 3) | (h.minute >> 3);		// coded time
 	buffer[H_DATE]	=	((h.month << 5) & 0xFF) | h.day;
