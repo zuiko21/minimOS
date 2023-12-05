@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
 ; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20231022-1018
+; last modified 20231205-0915
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -126,7 +126,7 @@ rom_start:
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$22D3			; 2.22f3
+	.word	$26D3			; 2.22f3
 
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$5800			; time, 11.00
