@@ -2,7 +2,7 @@
 ; supports both the devCart and the Fast SPI interface (ID=0-3)
 ; now with FAT32 host filesystem support!
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231204-2308
+; last modified 20231204-2359
 
 ; uncomment DEBUG version below, does actually write to the card, but also display sector number and contents
 ;#define	DEBUG
@@ -81,8 +81,9 @@ sd_ver	= ptr	+ 2			; $FE
 crc		= sd_ver+ 1			; $FF
 
 ; *** ******************************************** ***
-; *** mount point *** NEW for FAT32 support($2E9-$2F1)
-sec_clus	= $2E9			; number of sectors per cluster $2E9
+; *** mount point *** NEW for FAT32 support($2E8-$2F1)
+cnt			= $2E8			; directory sector counter, unfortunately no longer in ZP ($2E8)
+sec_clus	= cnt+1			; number of sectors per cluster $2E9
 dir_clus	= sec_clus+1	; first cluster of directory (needed for subtract) $2EA
 mnt_point	= dir_clus+4	; mount point (BIG endian like arg) $2EE
 
@@ -236,10 +237,14 @@ auxl_end:
 	JMP auxs_end			; do nothing in case of error (file exists)
 do_save:
 ; locate free, change name and reset pointers 
-		STZ arg
-		STZ arg+1
-		STZ arg+2
-		STZ arg+3			; back to first sector, actually should return to cached volume start
+		LDA mnt_point
+		STA arg
+		LDA mnt_point+1
+		STA arg+1
+		LDA mnt_point+2
+		STA arg+2
+		LDA mnt_point+3
+		STA arg+3			; back to cached volume start
 		LDA #>buffer
 		STA ptr+1
 		JSR ssec_rd			; read actual sector
@@ -996,10 +1001,12 @@ card_ok:
 
 ; should look for 'durango.av' file but, this far, from the very first sector of card instead
 mount_vol:
-	STZ arg
-	STZ arg+1
-	STZ arg+2
-	STZ arg+3				; assume reading from the very first sector
+	LDX #3					; max. offset
+set_mnt:
+		STZ arg, X			; assume reading from the very first sector
+		STZ mnt_point, X	; store for later, too
+		DEX
+		BPL set_mnt
 ; *** try mounting from first sector ***
 	LDX #>buffer			; temporary load address EEEEEEEEEEEEK
 	STX ptr+1
@@ -1007,7 +1014,7 @@ mount_vol:
 	JSR ssec_rd				; read very first sector on device
 	JSR chk_head			; and look for a valid header
 		BCS try_fat			; not valid? try FAT32
-	JMP vol_ok				; if RAW formatted, this will be a valid header
+	RTS						; if RAW formatted, this will be a valid header
 try_fat:
 ; this should be the MBR, check it out *** some cards have no MBR, thus non-fatal
 		LDA buffer+$1C2		; first partition type
@@ -1212,7 +1219,8 @@ mul_done:
 vol_sector:
 		LDA mnt_point, X	; was BIG endian EEEEEEEEEEEEK
 		ADC dir_clus, Y		; add sector offset
-		STA arg, X			; SD card expects block number BIG endian
+		STA mnt_point, X	; SD card expects block number BIG endian
+		STA arg, X			; but here too!
 		INY					; next iteration
 		DEX
 		BPL vol_sector
@@ -1536,6 +1544,10 @@ save_msg:
 
 oospace:
 	.asc	"Out of space!", 7, 13, 0
+
+; volume name into FAT32 device
+vol_name:
+	.asc	"DURANGO AV "	; 8+3 format, upper case, with padding spaces
 
 ; ************
 ; vector table
