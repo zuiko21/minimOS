@@ -379,7 +379,7 @@ pr_load:
 		INX
 		BNE pr_load			; no need for BRA
 prl_ok:
-	LDY #13
+	LDY #13
 	JSR conio				; leave some space for the progress indicator
 ; check size, determine ptr towards end of 64K space (or select screen address right now)
 ; but if pX format, begin from specified address AND end as required
