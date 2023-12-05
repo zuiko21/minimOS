@@ -379,6 +379,8 @@ pr_load:
 		INX
 		BNE pr_load			; no need for BRA
 prl_ok:
+	LDY #13
+	JSR conio				; leave some space for the progress indicator
 ; check size, determine ptr towards end of 64K space (or select screen address right now)
 ; but if pX format, begin from specified address AND end as required
 #ifdef	SCREEN
@@ -1486,7 +1488,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.1f2
+#echo	2.1f2-3
 
 ; offset table for the above messages
 msg_ix:
