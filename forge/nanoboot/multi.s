@@ -3,7 +3,7 @@
 ; v2.1.2 with volume-into-FAT32 and Pocket support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231205-0938
+; last modified 20231205-0948
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -180,7 +180,7 @@ rom_start:
 ; NEW coded version number
 	.word	$21C2			; 2.1f2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$4CC0			; time, 9.38		%0100 1-100 110-0 0000
+	.word	$4E00			; time, 9.48		%0100 1-110 000-0 0000
 	.word	$5785			; date, 2023/12/05	%0101 011-1 100-0 0101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -418,12 +418,6 @@ boot:
 ; might do some error check here...
 		JSR chk_brk			; ** check for BREAK key
 		BCC cont_load		; ** if pressed...
-			LDA #0			; *** last line, where progress indicator was
-			TAY				; *** unfortunately, no STZ abs, Y
-brk_clean:
-				STA $7F00, Y; *** clear last line, thus progress remains
-				INY			; ***
-				BNE brk_clean;*** until the end of screen
 			JMP vecload		; ** ...restart with same _interface_
 cont_load:					; ** or continue as usual
 		JSR progress
@@ -484,6 +478,11 @@ chk_brk:
 	AND #%10100000			; mask relevant keys
 	CMP #%10100000			; both SHIFT & SPACE?
 	BNE no_break
+		LDX #0				; *** last line, where progress indicator was
+brk_clean:
+			STZ $7F00, X	; *** clear last line, thus progress remains
+			INX				; ***
+			BNE brk_clean	; *** until the end of screen
 		LDX #ABORT
 		JSR disp_code		; show abort message EEEEK
 		LDX #vec_dc_sd-vec_sd			; set vectors for devCart device
