@@ -1477,7 +1477,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 2.1.1", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 2.1.2", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1487,7 +1487,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.1f1
+#echo	2.1f2
 
 ; offset table for the above messages
 msg_ix:
