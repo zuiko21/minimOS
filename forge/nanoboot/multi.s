@@ -1,9 +1,9 @@
 ; Durango-X devcart SD multi-boot loader
 ; now with sidecar/fast SPI support
-; v2.1.1 with volume-into-FAT32 and Pocket support!
+; v2.1.2 with volume-into-FAT32 and Pocket support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231121-1356
+; last modified 20231205-0938
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -178,11 +178,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$21C1			; 2.1f1		%vvvvrrrrssbbbbbb, where ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-							; alt.		%vvvvrrrrsshhbbbb, where revision = %hhrrrr
+	.word	$21C2			; 2.1f2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$0200			; time, 13.40		%0110 1-101 000-0 0000
-	.word	$5775			; date, 2023/11/21	%0101 011-1 011-1 0101
+	.word	$4CC0			; time, 9.38		%0100 1-100 110-0 0000
+	.word	$5785			; date, 2023/12/05	%0101 011-1 100-0 0101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -419,6 +418,12 @@ boot:
 ; might do some error check here...
 		JSR chk_brk			; ** check for BREAK key
 		BCC cont_load		; ** if pressed...
+			LDA #0			; *** last line, where progress indicator was
+			TAY				; *** unfortunately, no STZ abs, Y
+brk_clean:
+				STA $7F00, Y; *** clear last line, thus progress remains
+				INY			; ***
+				BNE brk_clean;*** until the end of screen
 			JMP vecload		; ** ...restart with same _interface_
 cont_load:					; ** or continue as usual
 		JSR progress
@@ -1462,7 +1467,7 @@ sd_ok:
 sd_err:
 	.asc	" ", 14, "FAIL!", 15, 7, 13, 13, 0
 sd_inv:
-	.asc	" ", 14, "No ROM image found", 15, 7, 0
+	.asc	" ", 14, "No executable found", 15, 7, 0
 sd_sel:
 	.asc	" selected", 1, 0
 sd_load:
@@ -1476,7 +1481,7 @@ sd_splash:
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
-	.asc	" -STOPPED!", 7, 15, 13, 13, 0
+	.asc	"-STOPPED!", 7, 15, 13, 13, 0
 sd_mnt:
 	.asc	"Mount", 0
 sd_fat32:
