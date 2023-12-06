@@ -1,9 +1,9 @@
 ; Durango-X devcart SD multi-boot loader
 ; now with sidecar/fast SPI support
-; v2.1.2 with volume-into-FAT32 and Pocket support!
+; v2.1.3 with volume-into-FAT32 and Pocket support!
 ; (c) 2023 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231205-0948
+; last modified 20231206-1819
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -178,10 +178,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$21C2			; 2.1f2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$21C3			; 2.1f3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$4E00			; time, 9.48		%0100 1-110 000-0 0000
-	.word	$5785			; date, 2023/12/05	%0101 011-1 100-0 0101
+	.word	$52C0			; time, 18.22		%1001 0-010 110-0 0000
+	.word	$5786			; date, 2023/12/06	%0101 011-1 100-0 0110
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -379,8 +379,10 @@ pr_load:
 		INX
 		BNE pr_load			; no need for BRA
 prl_ok:
-	LDY #13
-	JSR conio				; leave some space for the progress indicator
+	LDY #10					; cursor down...
+	JSR conio
+	LDY #11					; ...and cursor back up...
+	JSR conio				; ...leave some space for the progress indicator
 ; check size, determine ptr towards end of 64K space (or select screen address right now)
 ; but if pX format, begin from specified address AND end as required
 #ifdef	SCREEN
@@ -1488,7 +1490,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.1f2-3
+#echo	2.1f3
 
 ; offset table for the above messages
 msg_ix:
