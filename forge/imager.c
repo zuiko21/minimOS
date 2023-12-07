@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
  * (C)2023 Carlos J. Santisteban
- * last modified 20231204-1334
+ * last modified 20231207-1639
  * */
 
 /* Libraries */
@@ -224,6 +224,7 @@ void	open(void) {					// Open volume
 		}
 		if ((ptr[used] = malloc(h.size)) == NULL) {				// Allocate dynamic memory
 			printf("\n\t*** Out of memory! ***\n");
+			fclose(file);				// eeek
 			return;
 		}
 		printf(", Header");
