@@ -1,11 +1,12 @@
 ; 4-bit PCM audio player for PSG and bankswitching cartridge! (16K banks)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231210-1208
+; last modified 20231210-1216
 
 ; *** definitions ***
 IO_PSG	= $DFDB				; PSG
 IOBank	= $DFFC				; Bankswitching register
 pb_buf	= $8000				; play back from mirrored ROM, no I/O page between $8000-$BFFF!
+end_buf	= $BC00
 
 ; *** zeropage usage ***
 sample	= $FE				; indirect pointer to audio sample
@@ -64,7 +65,7 @@ first:
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
 		INC sample+1		; -1+5 next page
 		LDA sample+1		; 3
-		CMP #$FC			; 2 already at code page?
+		CMP #>end_buf		; 2 already at code page? eeeek
 		BNE h_nobank		; 3 nope, next page = 32t (lacking 38t eeek)
 	LDA #nxt_bnk			; -1+2 next bank address
 	JMP switch				; 3+9 then 10+3 after switching = 58t (lacking just 12t)
@@ -186,7 +187,7 @@ first:
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
 		INC sample+1		; -1+5 next page
 		LDA sample+1		; 3
-		CMP #$FC			; 2 already at code page?
+		CMP #>end_buf		; 2 already at code page?
 		BNE h_nobank		; 3 nope, next page = 32t (lacking 38t eeek)
 	LDA #nxt_bnk			; -1+2 next bank address
 	JMP switch				; 3+9 then 10+3 after switching = 58t (lacking just 12t)
@@ -308,7 +309,7 @@ first:
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
 		INC sample+1		; -1+5 next page
 		LDA sample+1		; 3
-		CMP #$FC			; 2 already at code page?
+		CMP #>end_buf		; 2 already at code page?
 		BNE h_nobank		; 3 nope, next page = 32t (lacking 38t eeek)
 	LDA #nxt_bnk			; -1+2 next bank address
 	JMP switch				; 3+9 then 10+3 after switching = 58t (lacking just 12t)
@@ -430,7 +431,7 @@ first:
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
 		INC sample+1		; -1+5 next page
 		LDA sample+1		; 3
-		CMP #$FC			; 2 already at code page?
+		CMP #>end_buf		; 2 already at code page?
 		BNE h_nobank		; 3 nope, next page = 32t (lacking 38t eeek)
 	LDA #nxt_bnk			; -1+2 next bank address
 	JMP switch				; 3+9 then 10+3 after switching = 58t (lacking just 12t)
@@ -552,7 +553,7 @@ first:
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
 		INC sample+1		; -1+5 next page
 		LDA sample+1		; 3
-		CMP #$FC			; 2 already at code page?
+		CMP #>end_buf		; 2 already at code page?
 		BNE h_nobank		; 3 nope, next page = 32t (lacking 38t eeek)
 	LDA #nxt_bnk			; -1+2 next bank address
 	JMP switch				; 3+9 then 10+3 after switching = 58t (lacking just 12t)
@@ -674,7 +675,7 @@ first:
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
 		INC sample+1		; -1+5 next page
 		LDA sample+1		; 3
-		CMP #$FC			; 2 already at code page?
+		CMP #>end_buf		; 2 already at code page?
 		BNE h_nobank		; 3 nope, next page = 32t (lacking 38t eeek)
 	LDA #nxt_bnk			; -1+2 next bank address
 	JMP switch				; 3+9 then 10+3 after switching = 58t (lacking just 12t)
@@ -796,7 +797,7 @@ first:
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
 		INC sample+1		; -1+5 next page
 		LDA sample+1		; 3
-		CMP #$FC			; 2 already at code page?
+		CMP #>end_buf		; 2 already at code page?
 		BNE h_nobank		; 3 nope, next page = 32t (lacking 38t eeek)
 	LDA #nxt_bnk			; -1+2 next bank address
 	JMP switch				; 3+9 then 10+3 after switching = 58t (lacking just 12t)
@@ -918,7 +919,7 @@ first:
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
 		INC sample+1		; -1+5 next page
 		LDA sample+1		; 3
-		CMP #$FC			; 2 already at code page?
+		CMP #>end_buf		; 2 already at code page?
 		BNE h_nobank		; 3 nope, next page = 32t (lacking 38t eeek)
 	LDA #nxt_bnk			; -1+2 next bank address
 ;	JMP switch				; 3+9 then 10+3 after switching = 58t (lacking just 12t)
