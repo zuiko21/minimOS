@@ -1,6 +1,6 @@
 ; 4-bit PCM audio player for PSG and bankswitching cartridge! (16K banks)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231210-1216
+; last modified 20231210-1410
 
 ; *** definitions ***
 IO_PSG	= $DFDB				; PSG
@@ -61,6 +61,17 @@ first:
 			LDA hi_nyb, X	; 4 get PSG value from high nybble
 			JSR delay		; 12t minimal delay section
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
+; ditto for the low nybble! always 70t
+			LDA (sample), Y	; 5
+			TAX				; 2
+			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
+			JSR delay2		; 24
+			JSR delay2		; 24
+			STA temp		; 3
+			NOP
+			NOP				; 2+2
+			STA IO_PSG		; 4
+; go for next byte
 			INY				; 2
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
 		INC sample+1		; -1+5 next page
@@ -183,6 +194,17 @@ first:
 			LDA hi_nyb, X	; 4 get PSG value from high nybble
 			JSR delay		; 12t minimal delay section
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
+; ditto for the low nybble! always 70t
+			LDA (sample), Y	; 5
+			TAX				; 2
+			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
+			JSR delay2		; 24
+			JSR delay2		; 24
+			STA temp		; 3
+			NOP
+			NOP				; 2+2
+			STA IO_PSG		; 4
+; go for next byte
 			INY				; 2
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
 		INC sample+1		; -1+5 next page
@@ -305,6 +327,17 @@ first:
 			LDA hi_nyb, X	; 4 get PSG value from high nybble
 			JSR delay		; 12t minimal delay section
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
+; ditto for the low nybble! always 70t
+			LDA (sample), Y	; 5
+			TAX				; 2
+			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
+			JSR delay2		; 24
+			JSR delay2		; 24
+			STA temp		; 3
+			NOP
+			NOP				; 2+2
+			STA IO_PSG		; 4
+; go for next byte
 			INY				; 2
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
 		INC sample+1		; -1+5 next page
@@ -383,7 +416,7 @@ switch:
 ; *** audio data ***
 * = $C000
 
-;	.bin	0, 0, "audio3.4bit"			; 15 KiB 4-bit PCM audio chunk!
+	.bin	0, 0, "audio3.4bit"			; 15 KiB 4-bit PCM audio chunk!
 
 ; ***************************
 ; *** player code ($FC00) ***
@@ -427,6 +460,17 @@ first:
 			LDA hi_nyb, X	; 4 get PSG value from high nybble
 			JSR delay		; 12t minimal delay section
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
+; ditto for the low nybble! always 70t
+			LDA (sample), Y	; 5
+			TAX				; 2
+			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
+			JSR delay2		; 24
+			JSR delay2		; 24
+			STA temp		; 3
+			NOP
+			NOP				; 2+2
+			STA IO_PSG		; 4
+; go for next byte
 			INY				; 2
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
 		INC sample+1		; -1+5 next page
@@ -549,6 +593,17 @@ first:
 			LDA hi_nyb, X	; 4 get PSG value from high nybble
 			JSR delay		; 12t minimal delay section
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
+; ditto for the low nybble! always 70t
+			LDA (sample), Y	; 5
+			TAX				; 2
+			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
+			JSR delay2		; 24
+			JSR delay2		; 24
+			STA temp		; 3
+			NOP
+			NOP				; 2+2
+			STA IO_PSG		; 4
+; go for next byte
 			INY				; 2
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
 		INC sample+1		; -1+5 next page
@@ -671,6 +726,17 @@ first:
 			LDA hi_nyb, X	; 4 get PSG value from high nybble
 			JSR delay		; 12t minimal delay section
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
+; ditto for the low nybble! always 70t
+			LDA (sample), Y	; 5
+			TAX				; 2
+			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
+			JSR delay2		; 24
+			JSR delay2		; 24
+			STA temp		; 3
+			NOP
+			NOP				; 2+2
+			STA IO_PSG		; 4
+; go for next byte
 			INY				; 2
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
 		INC sample+1		; -1+5 next page
@@ -793,6 +859,17 @@ first:
 			LDA hi_nyb, X	; 4 get PSG value from high nybble
 			JSR delay		; 12t minimal delay section
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
+; ditto for the low nybble! always 70t
+			LDA (sample), Y	; 5
+			TAX				; 2
+			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
+			JSR delay2		; 24
+			JSR delay2		; 24
+			STA temp		; 3
+			NOP
+			NOP				; 2+2
+			STA IO_PSG		; 4
+; go for next byte
 			INY				; 2
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
 		INC sample+1		; -1+5 next page
@@ -915,6 +992,17 @@ first:
 			LDA hi_nyb, X	; 4 get PSG value from high nybble
 			JSR delay		; 12t minimal delay section
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
+; ditto for the low nybble! always 70t
+			LDA (sample), Y	; 5
+			TAX				; 2
+			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
+			JSR delay2		; 24
+			JSR delay2		; 24
+			STA temp		; 3
+			NOP
+			NOP				; 2+2
+			STA IO_PSG		; 4
+; go for next byte
 			INY				; 2
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
 		INC sample+1		; -1+5 next page
@@ -927,6 +1015,7 @@ first:
 	JSR delay2
 	LDA #%10011111			; max. attenuation for channel 1
 	STA IO_PSG
+	STA $DFA0				; turn off LED
 lock:
 	JMP lock				; THIS IS THE LAST ONE
 ; *** auxiliary code ***
