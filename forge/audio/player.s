@@ -1,6 +1,6 @@
 ; 4-bit PCM audio player for PSG and bankswitching cartridge! (16K banks)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231210-1410
+; last modified 20231210-1716
 
 ; *** definitions ***
 IO_PSG	= $DFDB				; PSG
@@ -28,19 +28,22 @@ reset:
 ; first playing bank has PSG initialising code
 #ifndef PSGINIT
 #define	PSGINIT
-	CLC
-	LDA #%10111111			; channel 2 max. attenuation
-init:
-		STA IO_PSG			; shut off all channels (except 1)
-		JSR delay2
-		NOP					; to be safe (35t total delay)
-		ADC #32
-		BMI init
-	LDA #%10000001			; channel 1 freq. to 1 => DC output
+	SEC
+	CLD						; just in case
+	LDA #%11111111			; noise channel max. attenuation
 	STA IO_PSG
-	JSR delay2
-	JSR delay
-	STZ IO_PSG				; set MSB to zero
+	JSR delay				; 12t
+	LDA #%10000001			; channel 1 freq. to 1 => DC output
+init:
+		JSR delay2
+		STA IO_PSG
+		JSR delay
+		JSR delay2			; 36t minimal delay section
+		STZ IO_PSG			; set MSB to zero
+		JSR delay
+		ADC #32				; next channel
+		CMP #%11100001		; already at noise?
+		BNE init
 #else
 	-nxt_bnk = nxt_bnk + 1	; just compute next bank number
 #endif
@@ -59,17 +62,24 @@ first:
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA hi_nyb, X	; 4 get PSG value from high nybble
-			JSR delay		; 12t minimal delay section
+			CLC				; 2
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
 ; ditto for the low nybble! always 70t
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
 			JSR delay2		; 24
-			JSR delay2		; 24
+			JSR delay		; 12t minimal delay section
 			STA temp		; 3
-			NOP
-			NOP				; 2+2
+			NOP				; 2
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
 			STA IO_PSG		; 4
 ; go for next byte
 			INY				; 2
@@ -161,19 +171,22 @@ reset:
 ; first playing bank has PSG initialising code
 #ifndef PSGINIT
 #define	PSGINIT
-	CLC
-	LDA #%10111111			; channel 2 max. attenuation
-init:
-		STA IO_PSG			; shut off all channels (except 1)
-		JSR delay2
-		NOP					; to be safe (35t total delay)
-		ADC #32
-		BMI init
-	LDA #%10000001			; channel 1 freq. to 1 => DC output
+	SEC
+	CLD						; just in case
+	LDA #%11111111			; noise channel max. attenuation
 	STA IO_PSG
-	JSR delay2
-	JSR delay
-	STZ IO_PSG				; set MSB to zero
+	JSR delay				; 12t
+	LDA #%10000001			; channel 1 freq. to 1 => DC output
+init:
+		JSR delay2
+		STA IO_PSG
+		JSR delay
+		JSR delay2			; 36t minimal delay section
+		STZ IO_PSG			; set MSB to zero
+		JSR delay
+		ADC #32				; next channel
+		CMP #%11100001		; already at noise?
+		BNE init
 #else
 	-nxt_bnk = nxt_bnk + 1	; just compute next bank number
 #endif
@@ -192,17 +205,24 @@ first:
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA hi_nyb, X	; 4 get PSG value from high nybble
-			JSR delay		; 12t minimal delay section
+			CLC				; 2
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
 ; ditto for the low nybble! always 70t
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
 			JSR delay2		; 24
-			JSR delay2		; 24
+			JSR delay		; 12t minimal delay section
 			STA temp		; 3
-			NOP
-			NOP				; 2+2
+			NOP				; 2
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
 			STA IO_PSG		; 4
 ; go for next byte
 			INY				; 2
@@ -294,19 +314,22 @@ reset:
 ; first playing bank has PSG initialising code
 #ifndef PSGINIT
 #define	PSGINIT
-	CLC
-	LDA #%10111111			; channel 2 max. attenuation
-init:
-		STA IO_PSG			; shut off all channels (except 1)
-		JSR delay2
-		NOP					; to be safe (35t total delay)
-		ADC #32
-		BMI init
-	LDA #%10000001			; channel 1 freq. to 1 => DC output
+	SEC
+	CLD						; just in case
+	LDA #%11111111			; noise channel max. attenuation
 	STA IO_PSG
-	JSR delay2
-	JSR delay
-	STZ IO_PSG				; set MSB to zero
+	JSR delay				; 12t
+	LDA #%10000001			; channel 1 freq. to 1 => DC output
+init:
+		JSR delay2
+		STA IO_PSG
+		JSR delay
+		JSR delay2			; 36t minimal delay section
+		STZ IO_PSG			; set MSB to zero
+		JSR delay
+		ADC #32				; next channel
+		CMP #%11100001		; already at noise?
+		BNE init
 #else
 	-nxt_bnk = nxt_bnk + 1	; just compute next bank number
 #endif
@@ -325,17 +348,24 @@ first:
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA hi_nyb, X	; 4 get PSG value from high nybble
-			JSR delay		; 12t minimal delay section
+			CLC				; 2
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
 ; ditto for the low nybble! always 70t
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
 			JSR delay2		; 24
-			JSR delay2		; 24
+			JSR delay		; 12t minimal delay section
 			STA temp		; 3
-			NOP
-			NOP				; 2+2
+			NOP				; 2
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
 			STA IO_PSG		; 4
 ; go for next byte
 			INY				; 2
@@ -427,19 +457,22 @@ reset:
 ; first playing bank has PSG initialising code
 #ifndef PSGINIT
 #define	PSGINIT
-	CLC
-	LDA #%10111111			; channel 2 max. attenuation
-init:
-		STA IO_PSG			; shut off all channels (except 1)
-		JSR delay2
-		NOP					; to be safe (35t total delay)
-		ADC #32
-		BMI init
-	LDA #%10000001			; channel 1 freq. to 1 => DC output
+	SEC
+	CLD						; just in case
+	LDA #%11111111			; noise channel max. attenuation
 	STA IO_PSG
-	JSR delay2
-	JSR delay
-	STZ IO_PSG				; set MSB to zero
+	JSR delay				; 12t
+	LDA #%10000001			; channel 1 freq. to 1 => DC output
+init:
+		JSR delay2
+		STA IO_PSG
+		JSR delay
+		JSR delay2			; 36t minimal delay section
+		STZ IO_PSG			; set MSB to zero
+		JSR delay
+		ADC #32				; next channel
+		CMP #%11100001		; already at noise?
+		BNE init
 #else
 	-nxt_bnk = nxt_bnk + 1	; just compute next bank number
 #endif
@@ -458,17 +491,24 @@ first:
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA hi_nyb, X	; 4 get PSG value from high nybble
-			JSR delay		; 12t minimal delay section
+			CLC				; 2
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
 ; ditto for the low nybble! always 70t
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
 			JSR delay2		; 24
-			JSR delay2		; 24
+			JSR delay		; 12t minimal delay section
 			STA temp		; 3
-			NOP
-			NOP				; 2+2
+			NOP				; 2
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
 			STA IO_PSG		; 4
 ; go for next byte
 			INY				; 2
@@ -560,19 +600,22 @@ reset:
 ; first playing bank has PSG initialising code
 #ifndef PSGINIT
 #define	PSGINIT
-	CLC
-	LDA #%10111111			; channel 2 max. attenuation
-init:
-		STA IO_PSG			; shut off all channels (except 1)
-		JSR delay2
-		NOP					; to be safe (35t total delay)
-		ADC #32
-		BMI init
-	LDA #%10000001			; channel 1 freq. to 1 => DC output
+	SEC
+	CLD						; just in case
+	LDA #%11111111			; noise channel max. attenuation
 	STA IO_PSG
-	JSR delay2
-	JSR delay
-	STZ IO_PSG				; set MSB to zero
+	JSR delay				; 12t
+	LDA #%10000001			; channel 1 freq. to 1 => DC output
+init:
+		JSR delay2
+		STA IO_PSG
+		JSR delay
+		JSR delay2			; 36t minimal delay section
+		STZ IO_PSG			; set MSB to zero
+		JSR delay
+		ADC #32				; next channel
+		CMP #%11100001		; already at noise?
+		BNE init
 #else
 	-nxt_bnk = nxt_bnk + 1	; just compute next bank number
 #endif
@@ -591,17 +634,24 @@ first:
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA hi_nyb, X	; 4 get PSG value from high nybble
-			JSR delay		; 12t minimal delay section
+			CLC				; 2
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
 ; ditto for the low nybble! always 70t
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
 			JSR delay2		; 24
-			JSR delay2		; 24
+			JSR delay		; 12t minimal delay section
 			STA temp		; 3
-			NOP
-			NOP				; 2+2
+			NOP				; 2
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
 			STA IO_PSG		; 4
 ; go for next byte
 			INY				; 2
@@ -693,19 +743,22 @@ reset:
 ; first playing bank has PSG initialising code
 #ifndef PSGINIT
 #define	PSGINIT
-	CLC
-	LDA #%10111111			; channel 2 max. attenuation
-init:
-		STA IO_PSG			; shut off all channels (except 1)
-		JSR delay2
-		NOP					; to be safe (35t total delay)
-		ADC #32
-		BMI init
-	LDA #%10000001			; channel 1 freq. to 1 => DC output
+	SEC
+	CLD						; just in case
+	LDA #%11111111			; noise channel max. attenuation
 	STA IO_PSG
-	JSR delay2
-	JSR delay
-	STZ IO_PSG				; set MSB to zero
+	JSR delay				; 12t
+	LDA #%10000001			; channel 1 freq. to 1 => DC output
+init:
+		JSR delay2
+		STA IO_PSG
+		JSR delay
+		JSR delay2			; 36t minimal delay section
+		STZ IO_PSG			; set MSB to zero
+		JSR delay
+		ADC #32				; next channel
+		CMP #%11100001		; already at noise?
+		BNE init
 #else
 	-nxt_bnk = nxt_bnk + 1	; just compute next bank number
 #endif
@@ -724,17 +777,24 @@ first:
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA hi_nyb, X	; 4 get PSG value from high nybble
-			JSR delay		; 12t minimal delay section
+			CLC				; 2
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
 ; ditto for the low nybble! always 70t
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
 			JSR delay2		; 24
-			JSR delay2		; 24
+			JSR delay		; 12t minimal delay section
 			STA temp		; 3
-			NOP
-			NOP				; 2+2
+			NOP				; 2
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
 			STA IO_PSG		; 4
 ; go for next byte
 			INY				; 2
@@ -826,19 +886,22 @@ reset:
 ; first playing bank has PSG initialising code
 #ifndef PSGINIT
 #define	PSGINIT
-	CLC
-	LDA #%10111111			; channel 2 max. attenuation
-init:
-		STA IO_PSG			; shut off all channels (except 1)
-		JSR delay2
-		NOP					; to be safe (35t total delay)
-		ADC #32
-		BMI init
-	LDA #%10000001			; channel 1 freq. to 1 => DC output
+	SEC
+	CLD						; just in case
+	LDA #%11111111			; noise channel max. attenuation
 	STA IO_PSG
-	JSR delay2
-	JSR delay
-	STZ IO_PSG				; set MSB to zero
+	JSR delay				; 12t
+	LDA #%10000001			; channel 1 freq. to 1 => DC output
+init:
+		JSR delay2
+		STA IO_PSG
+		JSR delay
+		JSR delay2			; 36t minimal delay section
+		STZ IO_PSG			; set MSB to zero
+		JSR delay
+		ADC #32				; next channel
+		CMP #%11100001		; already at noise?
+		BNE init
 #else
 	-nxt_bnk = nxt_bnk + 1	; just compute next bank number
 #endif
@@ -857,17 +920,24 @@ first:
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA hi_nyb, X	; 4 get PSG value from high nybble
-			JSR delay		; 12t minimal delay section
+			CLC				; 2
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
 ; ditto for the low nybble! always 70t
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
 			JSR delay2		; 24
-			JSR delay2		; 24
+			JSR delay		; 12t minimal delay section
 			STA temp		; 3
-			NOP
-			NOP				; 2+2
+			NOP				; 2
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
 			STA IO_PSG		; 4
 ; go for next byte
 			INY				; 2
@@ -959,19 +1029,22 @@ reset:
 ; first playing bank has PSG initialising code
 #ifndef PSGINIT
 #define	PSGINIT
-	CLC
-	LDA #%10111111			; channel 2 max. attenuation
-init:
-		STA IO_PSG			; shut off all channels (except 1)
-		JSR delay2
-		NOP					; to be safe (35t total delay)
-		ADC #32
-		BMI init
-	LDA #%10000001			; channel 1 freq. to 1 => DC output
+	SEC
+	CLD						; just in case
+	LDA #%11111111			; noise channel max. attenuation
 	STA IO_PSG
-	JSR delay2
-	JSR delay
-	STZ IO_PSG				; set MSB to zero
+	JSR delay				; 12t
+	LDA #%10000001			; channel 1 freq. to 1 => DC output
+init:
+		JSR delay2
+		STA IO_PSG
+		JSR delay
+		JSR delay2			; 36t minimal delay section
+		STZ IO_PSG			; set MSB to zero
+		JSR delay
+		ADC #32				; next channel
+		CMP #%11100001		; already at noise?
+		BNE init
 #else
 	-nxt_bnk = nxt_bnk + 1	; just compute next bank number
 #endif
@@ -990,17 +1063,24 @@ first:
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA hi_nyb, X	; 4 get PSG value from high nybble
-			JSR delay		; 12t minimal delay section
+			CLC				; 2
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
 ; ditto for the low nybble! always 70t
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
 			JSR delay2		; 24
-			JSR delay2		; 24
+			JSR delay		; 12t minimal delay section
 			STA temp		; 3
-			NOP
-			NOP				; 2+2
+			NOP				; 2
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
+			STA IO_PSG		; 4
+			ADC #32			; 2 for next channel
 			STA IO_PSG		; 4
 ; go for next byte
 			INY				; 2
