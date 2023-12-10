@@ -1,6 +1,6 @@
 ; 4-bit PCM audio player for PSG and bankswitching cartridge! (16K banks)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231210-1159
+; last modified 20231210-1208
 
 ; *** definitions ***
 IO_PSG	= $DFDB				; PSG
@@ -16,7 +16,7 @@ nxt_bnk	= 1					; increment this between banks!
 ; *** audio data ***
 * = $C000
 
-;	.bin	0, 0, "audio0.4bit"			; 15 KiB 4-bit PCM audio chunk!
+	.bin	0, 0, "audio0.4bit"			; 15 KiB 4-bit PCM audio chunk!
 
 ; ***************************
 ; *** player code ($FC00) ***
@@ -138,7 +138,7 @@ switch:
 ; *** audio data ***
 * = $C000
 
-;	.bin	0, 0, "audio1.4bit"			; 15 KiB 4-bit PCM audio chunk!
+	.bin	0, 0, "audio1.4bit"			; 15 KiB 4-bit PCM audio chunk!
 
 ; ***************************
 ; *** player code ($FC00) ***
@@ -260,7 +260,7 @@ switch:
 ; *** audio data ***
 * = $C000
 
-;	.bin	0, 0, "audio2.4bit"			; 15 KiB 4-bit PCM audio chunk!
+	.bin	0, 0, "audio2.4bit"			; 15 KiB 4-bit PCM audio chunk!
 
 ; ***************************
 ; *** player code ($FC00) ***
@@ -504,7 +504,7 @@ switch:
 ; *** audio data ***
 * = $C000
 
-;	.bin	0, 0, "audio4.4bit"			; 15 KiB 4-bit PCM audio chunk!
+	.bin	0, 0, "audio4.4bit"			; 15 KiB 4-bit PCM audio chunk!
 
 ; ***************************
 ; *** player code ($FC00) ***
@@ -626,7 +626,7 @@ switch:
 ; *** audio data ***
 * = $C000
 
-;	.bin	0, 0, "audio5.4bit"			; 15 KiB 4-bit PCM audio chunk!
+	.bin	0, 0, "audio5.4bit"			; 15 KiB 4-bit PCM audio chunk!
 
 ; ***************************
 ; *** player code ($FC00) ***
@@ -748,7 +748,7 @@ switch:
 ; *** audio data ***
 * = $C000
 
-;	.bin	0, 0, "audio6.4bit"			; 15 KiB 4-bit PCM audio chunk!
+	.bin	0, 0, "audio6.4bit"			; 15 KiB 4-bit PCM audio chunk!
 
 ; ***************************
 ; *** player code ($FC00) ***
@@ -870,7 +870,7 @@ switch:
 ; *** audio data ***
 * = $C000
 
-;	.bin	0, 0, "audio7.4bit"			; 15 KiB 4-bit PCM audio chunk!
+	.bin	0, 0, "audio7.4bit"			; 15 KiB 4-bit PCM audio chunk!
 
 ; ***************************
 ; *** player code ($FC00) ***
