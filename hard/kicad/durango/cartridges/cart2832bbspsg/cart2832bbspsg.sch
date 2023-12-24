@@ -1048,7 +1048,7 @@ L Jumper:Jumper_2_Open JP6
 U 1 1 658F413E
 P 875 4075
 F 0 "JP6" H 875 4310 50  0000 C CNN
-F 1 "29F" H 875 4219 50  0000 C CNN
+F 1 "29F040" H 875 4219 50  0000 C CNN
 F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 875 4075 50  0001 C CNN
 F 3 "~" H 875 4075 50  0001 C CNN
 	1    875  4075
@@ -1142,6 +1142,8 @@ Wire Wire Line
 Wire Wire Line
 	7000 4700 7000 2850
 Connection ~ 5500 4700
+Text Notes 950  7725 0    89   ~ 0
+24-pin: 27c16, 27c32  (change JP4)\n28-pin: 27c64, 27c128, 27c256 (change JP5)\n28-pin in 16K blocks: 27c256, 27c512 (change JP5, JP1; use U12, U33)\n28-pin in 32K blocks: 27c512 (change JP5; use U12, U33)\n28-pin EEPROM: 28C64 (change JP5, JP7; -CUT- JP8)\n28-pin EEPROM: 28C256 (change JP5, JP7, JP8)\n32-pin: 27C1001, 27C010, 27C020 (use U12, U33)*\n32-pin: 27C040 (change JP2; use U12, U33)*\n32-pin: 27C080  (change JP2, JP3; use U12, U33)*\n32-pin Flash: 28F512, 29F010, 29F020 (use U12, U33)*\n32-pin Flash: 29F040 (bridge JP6; -CUT- JP3; do NOT change JP2; use U12, U33)*\n\n*) change JP1 as needed\n\n2508/2708/2532/2564/27C1000 NOT compatible\nEEPROM 28c16 needs JP4 *and* wiring pin 21 to +5V outside board!
 Wire Bus Line
 	6250 1000 6250 2150
 Wire Bus Line
@@ -1150,6 +1152,4 @@ Wire Bus Line
 	4750 950  4750 2650
 Wire Bus Line
 	1600 950  1600 4100
-Text Notes 950  7725 0    100  ~ 0
-24-pin: 27c16, 27c32  (change JP4)\n28-pin: 27c64, 27c128, 27c256 (change JP5)\n28-pin in 16K blocks: 27c256, 27c512 (change JP5, JP1; use U12, U33)\n28-pin in 32K blocks: 27c512 (change JP5; use U12, U33)\n28-pin EEPROM: 28C64 (change JP5, JP7; -CUT- JP8)\n28-pin EEPROM: 28C256 (change JP5, JP7, JP8)\n32-pin: 27C1001, 27C010, 27C020 (use U12, U33)*\n32-pin: 27C040 (change JP2; use U12, U33)*\n32-pin: 27C080  (change JP2, JP3; use U12, U33)*\n32-pin Flash: 29F010, 29F020, 29F040 (bridge JP6; do NOT change JP2)*\n\n*) change JP1 as needed\n\n2508/2708/2532/2564/27C1000 NOT compatible\nEEPROM 28c16 needs JP4 *and* wiring pin 21 to +5V outside board!
 $EndSCHEMATC
