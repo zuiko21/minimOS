@@ -900,67 +900,67 @@ Y
 $Comp
 L Mechanical:MountingHole_Pad H1
 U 1 1 631FC739
-P 10800 800
-F 0 "H1" V 10800 950 50  0000 L CNN
-F 1 " " V 10845 950 50  0001 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10800 800 50  0001 C CNN
-F 3 "~" H 10800 800 50  0001 C CNN
-	1    10800 800 
+P 10900 5550
+F 0 "H1" V 10900 5700 50  0000 L CNN
+F 1 " " V 10945 5700 50  0001 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10900 5550 50  0001 C CNN
+F 3 "~" H 10900 5550 50  0001 C CNN
+	1    10900 5550
 	0    1    1    0   
 $EndComp
 $Comp
 L Mechanical:MountingHole_Pad H2
 U 1 1 631FCA14
-P 10800 1050
-F 0 "H2" V 10800 1200 50  0000 L CNN
-F 1 " " V 10845 1200 50  0001 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10800 1050 50  0001 C CNN
-F 3 "~" H 10800 1050 50  0001 C CNN
-	1    10800 1050
+P 10900 5800
+F 0 "H2" V 10900 5950 50  0000 L CNN
+F 1 " " V 10945 5950 50  0001 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10900 5800 50  0001 C CNN
+F 3 "~" H 10900 5800 50  0001 C CNN
+	1    10900 5800
 	0    1    1    0   
 $EndComp
 $Comp
 L Mechanical:MountingHole_Pad H3
 U 1 1 631FD31E
-P 10800 1300
-F 0 "H3" V 10800 1450 50  0000 L CNN
-F 1 " " V 10845 1450 50  0001 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10800 1300 50  0001 C CNN
-F 3 "~" H 10800 1300 50  0001 C CNN
-	1    10800 1300
+P 10900 6050
+F 0 "H3" V 10900 6200 50  0000 L CNN
+F 1 " " V 10945 6200 50  0001 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10900 6050 50  0001 C CNN
+F 3 "~" H 10900 6050 50  0001 C CNN
+	1    10900 6050
 	0    1    1    0   
 $EndComp
 $Comp
 L Mechanical:MountingHole_Pad H4
 U 1 1 631FD67B
-P 10800 1550
-F 0 "H4" V 10800 1700 50  0000 L CNN
-F 1 " " V 10845 1700 50  0001 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10800 1550 50  0001 C CNN
-F 3 "~" H 10800 1550 50  0001 C CNN
-	1    10800 1550
+P 10900 6300
+F 0 "H4" V 10900 6450 50  0000 L CNN
+F 1 " " V 10945 6450 50  0001 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10900 6300 50  0001 C CNN
+F 3 "~" H 10900 6300 50  0001 C CNN
+	1    10900 6300
 	0    1    1    0   
 $EndComp
 $Comp
 L power:GND #PWR0152
 U 1 1 6321A7E5
-P 10700 1550
-F 0 "#PWR0152" H 10700 1300 50  0001 C CNN
-F 1 "GND" H 10705 1377 50  0000 C CNN
-F 2 "" H 10700 1550 50  0001 C CNN
-F 3 "" H 10700 1550 50  0001 C CNN
-	1    10700 1550
+P 10800 6300
+F 0 "#PWR0152" H 10800 6050 50  0001 C CNN
+F 1 "GND" H 10805 6127 50  0000 C CNN
+F 2 "" H 10800 6300 50  0001 C CNN
+F 3 "" H 10800 6300 50  0001 C CNN
+	1    10800 6300
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	10700 800  10700 1050
-Connection ~ 10700 1050
+	10800 5550 10800 5800
+Connection ~ 10800 5800
 Wire Wire Line
-	10700 1050 10700 1300
-Connection ~ 10700 1300
+	10800 5800 10800 6050
+Connection ~ 10800 6050
 Wire Wire Line
-	10700 1300 10700 1550
-Connection ~ 10700 1550
+	10800 6050 10800 6300
+Connection ~ 10800 6300
 $Comp
 L Graphic:Logo_Open_Hardware_Large LOGO1
 U 1 1 63275510
@@ -1867,25 +1867,221 @@ Wire Wire Line
 	1150 1100 1400 1100
 Wire Wire Line
 	1400 950  1400 1100
+Connection ~ 1400 1100
 Wire Wire Line
-	850  5100 1350 5100
+	1400 1100 1700 1100
+Wire Wire Line
+	9700 1000 9500 1000
+Wire Wire Line
+	9700 1100 9500 1100
+Wire Wire Line
+	9700 1200 9500 1200
+Wire Wire Line
+	9700 1400 9500 1400
+Wire Wire Line
+	9700 1500 9500 1500
+Wire Wire Line
+	9700 1600 9500 1600
+Wire Wire Line
+	9700 1700 9500 1700
+Wire Wire Line
+	9700 1800 9500 1800
+Wire Wire Line
+	9700 1900 9500 1900
+Wire Wire Line
+	9700 2000 9500 2000
+Wire Wire Line
+	9700 2100 9500 2100
+Wire Wire Line
+	9700 2200 9500 2200
+Text Label 9700 2400 2    50   ~ 0
+MA0
+Text Label 9700 2200 2    50   ~ 0
+MA1
+Text Label 9700 1700 2    50   ~ 0
+MA2
+Text Label 9700 1600 2    50   ~ 0
+MA3
+Text Label 9700 1500 2    50   ~ 0
+MA4
+Text Label 9700 1300 2    50   ~ 0
+MA5
+Text Label 9700 1400 2    50   ~ 0
+MA6
+Text Label 9700 1200 2    50   ~ 0
+MA7
+Text Label 9700 2000 2    50   ~ 0
+MA8
+Text Label 9700 1100 2    50   ~ 0
+MA9
+Text Label 9700 1000 2    50   ~ 0
+MA10
+Text Label 9700 2100 2    50   ~ 0
+MA11
+Text Label 9700 1800 2    50   ~ 0
+MA12
+Text Label 9700 1900 2    50   ~ 0
+MA13
+Text Label 10900 1700 0    50   ~ 0
+D0
+Text Label 10900 1600 0    50   ~ 0
+D1
+Text Label 10900 1500 0    50   ~ 0
+D2
+Text Label 10900 1400 0    50   ~ 0
+D3
+Text Label 10900 1200 0    50   ~ 0
+D4
+Text Label 10900 1300 0    50   ~ 0
+D5
+Text Label 10900 1100 0    50   ~ 0
+D7
+Text Label 9700 2300 2    50   ~ 0
+MA14
+$Comp
+L power:GND #PWR?
+U 1 1 6500E44F
+P 10300 3100
+AR Path="/6500E44F" Ref="#PWR?"  Part="1" 
+AR Path="/6310B9C7/6500E44F" Ref="#PWR0174"  Part="1" 
+F 0 "#PWR0174" H 10300 2850 50  0001 C CNN
+F 1 "GND" H 10305 2927 50  0000 C CNN
+F 2 "" H 10300 3100 50  0001 C CNN
+F 3 "" H 10300 3100 50  0001 C CNN
+	1    10300 3100
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9700 2700 9650 2700
+Wire Wire Line
+	9650 2700 9650 3100
+Wire Wire Line
+	9650 3100 10300 3100
+Text Label 10900 1000 0    50   ~ 0
+D6
+$Comp
+L power:+5V #PWR0175
+U 1 1 650F616A
+P 10300 700
+F 0 "#PWR0175" H 10300 550 50  0001 C CNN
+F 1 "+5V" H 10315 873 50  0000 C CNN
+F 2 "" H 10300 700 50  0001 C CNN
+F 3 "" H 10300 700 50  0001 C CNN
+	1    10300 700 
+	1    0    0    -1  
+$EndComp
+Text Notes 10200 700  2    50   ~ 0
+Alternative narrow SRAM footprint
+Wire Wire Line
+	9700 2300 9500 2300
+Wire Wire Line
+	9700 2400 9500 2400
+Wire Wire Line
+	10900 1000 11000 1000
+Wire Wire Line
+	10900 1100 11000 1100
+Wire Wire Line
+	10900 1200 11000 1200
+Wire Wire Line
+	10900 1300 11000 1300
+Wire Wire Line
+	10900 1400 11000 1400
+Wire Wire Line
+	10900 1500 11000 1500
+Wire Wire Line
+	10900 1600 11000 1600
+Wire Wire Line
+	10900 1700 11000 1700
+Entry Wire Line
+	11000 1000 11100 900 
+Entry Wire Line
+	11000 1100 11100 1000
+Entry Wire Line
+	11000 1200 11100 1100
+Entry Wire Line
+	11000 1300 11100 1200
+Entry Wire Line
+	11000 1400 11100 1300
+Entry Wire Line
+	11000 1500 11100 1400
+Entry Wire Line
+	11000 1600 11100 1500
+Entry Wire Line
+	11000 1700 11100 1600
+Text GLabel 11100 900  1    50   Input ~ 0
+D[0..7]
+Entry Wire Line
+	9400 900  9500 1000
+Entry Wire Line
+	9400 1000 9500 1100
+Entry Wire Line
+	9400 1100 9500 1200
+Entry Wire Line
+	9400 1200 9500 1300
+Entry Wire Line
+	9400 1300 9500 1400
+Entry Wire Line
+	9400 1400 9500 1500
+Entry Wire Line
+	9400 1500 9500 1600
+Entry Wire Line
+	9400 1600 9500 1700
+Entry Wire Line
+	9400 1700 9500 1800
+Entry Wire Line
+	9400 1800 9500 1900
+Entry Wire Line
+	9400 1900 9500 2000
+Entry Wire Line
+	9400 2000 9500 2100
+Entry Wire Line
+	9400 2100 9500 2200
+Entry Wire Line
+	9400 2200 9500 2300
+Entry Wire Line
+	9400 2300 9500 2400
+Text GLabel 9400 900  0    50   Input ~ 0
+MA[0..14]
+Text GLabel 9700 2800 0    50   Input ~ 0
+~DWE
+Connection ~ 10300 3100
+Wire Bus Line
+	9400 900  9400 2300
+Wire Bus Line
+	11100 900  11100 1600
+Wire Bus Line
+	2150 6300 2150 7000
 Wire Bus Line
 	1050 6400 1050 6900
 Wire Bus Line
 	5650 4400 5650 4850
 Wire Bus Line
-	3700 2150 3700 2700
-Wire Bus Line
-	2300 5200 2300 5700
-Wire Bus Line
 	2450 4400 2450 5750
 Wire Bus Line
-	2150 6300 2150 7000
+	2300 5200 2300 5700
+Wire Wire Line
+	850  5100 1350 5100
+Wire Bus Line
+	3700 2150 3700 2700
 Wire Bus Line
 	900  2150 900  5700
 Wire Bus Line
 	750  2150 750  5750
-Connection ~ 1400 1100
 Wire Wire Line
-	1400 1100 1700 1100
+	9700 1300 9500 1300
+$Comp
+L 62256:62256 U?
+U 1 1 6500E3FF
+P 10300 1900
+AR Path="/6500E3FF" Ref="U?"  Part="1" 
+AR Path="/6310B9C7/6500E3FF" Ref="U003"  Part="1" 
+F 0 "U003" H 10050 3000 50  0000 C CNN
+F 1 "62256" H 10500 3000 50  0000 C CNN
+F 2 "Package_DIP:DIP-28_W7.62mm_Socket" H 10300 1900 50  0001 C CNN
+F 3 "http://www.6502.org/users/alexis/62256.pdf" H 10300 1900 50  0001 C CNN
+	1    10300 1900
+	1    0    0    -1  
+$EndComp
+Text GLabel 9700 2600 0    50   Input ~ 0
+~MCS
 $EndSCHEMATC
