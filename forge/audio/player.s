@@ -3,14 +3,6 @@
 ; last modified 20231230-1807
 
 ; *** definitions ***
-IO_PSG	= $DFDB				; PSG
-IOBank	= $DFFC				; Bankswitching register
-pb_buf	= $8000				; play back from mirrored ROM, no I/O page between $8000-$BFFF!
-end_buf	= $BC00
-
-; *** zeropage usage ***
-sample	= $FE				; indirect pointer to audio sample
-temp	= $FD				; temporary usage for delays
 nxt_bnk	= 1					; increment this between banks!
 
 ; * BANK 0 *

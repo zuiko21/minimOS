@@ -1,6 +1,6 @@
 ; Bankswitching PSM player via PSG on Durango·X
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231230-1809
+; last modified 20231230-1811
 ; ***************************
 ; *** player code ($FC00) ***
 ; ***************************
@@ -15,7 +15,6 @@ end_buf	= $BC00
 ; *** zeropage usage ***
 sample	= $FE				; indirect pointer to audio sample
 temp	= $FD				; temporary usage for delays
-nxt_bnk	= 1					; increment this between banks!
 
 reset:
 ; first playing bank has PSG initialising code
@@ -72,8 +71,17 @@ first:
 		CMP #>end_buf		; 2 already at code page? eeeek
 		BNE h_nobank		; 3 nope, next page = 32t (lacking 38t eeek)
 	LDA #nxt_bnk			; -1+2 next bank address
+#if	nxt_bnk<8
 	JMP switch				; 3+9 then 10+3 after switching = 58t (lacking just 12t)
-
+#else
+; *** *** playback ends here, do not switch banks *** ***
+	JSR delay2
+	LDA #%10011111			; max. attenuation for channel 1
+	STA IO_PSG
+	STA $DFA0				; turn off LED
+lock:
+	JMP lock				; THIS IS THE LAST ONE
+#endif
 ; *** auxiliary code ***
 delay2:						; 24 calling this
 	JSR delay
