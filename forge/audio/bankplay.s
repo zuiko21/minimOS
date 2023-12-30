@@ -1,6 +1,6 @@
 ; Bankswitching PSM player via PSG on Durango·X
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231230-1857
+; last modified 20231230-2242
 ; ***************************
 ; *** player code ($FC00) ***
 ; ***************************
@@ -43,8 +43,6 @@ set:
 		NOP					; 26t of delay
 		ADC #32
 		BMI set				; complete cycle +2+3+4, total 35t
-
-	JSR delay;CHECK
 #else
 	-nxt_bnk = nxt_bnk + 1	; just compute next bank number
 #endif
@@ -56,15 +54,16 @@ set:
 ; CHECK THESE DELAYS
 	JMP first				; 3 skip extra delay
 h_nopage:
-	JSR delay				; 12 delays up to 38+12=50t
+	JSR delay				; 12
 h_nobank:
-		JSR delay2			; 24
-		NOP					; 2 delays up to 12+26=38t
+		NOP					; 2
 first:
 ; *** new code ***
+; get sample from high nybble (11)
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA hi_nyb, X	; 4 get PSG value (ch1) from high nybble
+; store it into the three channels (34+34+4)
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
 			JSR delay2		; 24
 			NOP				; 2
@@ -76,13 +75,15 @@ first:
 			NOP				; 2
 			AND #%11011111	; 2 turn into ch2
 			STA IO_PSG		; 4 next output (after 34t)
-; ditto for the low nybble! always 102t
+; ditto for the low nybble (11)
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
+; add suitable delay (19, already at 30)
 			JSR delay		; 12
 			INC temp		; 5
 			NOP				; 2
+; store second sample into three channels (34+34+4)
 			STA IO_PSG		; 4 goes after 34t
 			JSR delay2		; 24
 			NOP				; 2
@@ -96,14 +97,14 @@ first:
 			STA IO_PSG		; 4 next output (after 34t)
 ; go for next byte
 			INY				; 2
-			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
+			BNE h_nopage	; 3 must add 30-5-11=14t before first
 		INC sample+1		; -1+5 next page
 		LDA sample+1		; 3
 		CMP #>end_buf		; 2 already at code page? eeeek
-		BNE h_nobank		; 3 nope, next page = 32t (lacking 38t eeek)
+		BNE h_nobank		; 3 nope, must add 30-4-5-3-2-3-11=2!
 	LDA #nxt_bnk			; -1+2 next bank address
 #if	nxt_bnk<lst_bnk
-	JMP switch				; 3+9 then 10+3 after switching = 58t (lacking just 12t)
+	JMP switch				; 31 then 10+3+11 after switching, total 55 instead of 30 (25 late every ~2 s)
 #else
 ; *** *** playback ends here, do not switch banks *** ***
 	CLC
@@ -173,7 +174,7 @@ nmi_hndl:
 ; *** bankswitching code ***
 	.dsb	$FFDE-*, $FF
 switch:
-	STA IOBank				; 3 set bank from A...
+	STA IOBank				; 4 set bank from A...
 	JMP ($FFFC)				; 6 ...and restart from it!
 
 	.dsb	$FFFA-*, $FF
