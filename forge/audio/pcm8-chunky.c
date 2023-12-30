@@ -1,7 +1,7 @@
 /*
  * 4-bit PCB dither and bankswitching	*
  * (c) 2023 Carlos J. Santisteban		*
- * last modified 20231230-1052			*
+ * last modified 20231230-1117			*
  * */
 
 #include <stdio.h>
@@ -9,7 +9,7 @@
 #include <math.h>
 
 #define	SAMPLES	30720
-#define	EFFECT	1.0
+#define	EFFECT	0.0
 
 typedef	u_int8_t	byte;
 
@@ -33,6 +33,7 @@ int main(void) {
 	if (f==NULL)	return -1;
 	else			printf("open OK\n");
 	fseek(f, 44, SEEK_SET);				// skip WAV header
+	printf("Compressing effect: %1.2f\n", EFFECT);
 
 	while(!feof(f)) {
 		if (fread(b, SAMPLES, 1, f) != 1)	return -1;	// fill buffer until the end
@@ -40,6 +41,7 @@ int main(void) {
 		for (i=0; i<SAMPLES; i+=2) {
 			first  = dither(nr(b[i],  EFFECT));			// compute high nybble
 			second = dither(nr(b[i+1],EFFECT));			// compute low nybble
+//printf("%x%x",first,second);
 			b[i>>1] = (first<<4) | second;				// combine into single byte
 		}
 		name[5]='0'+ c++;
@@ -67,22 +69,27 @@ float	db(float n) {
 }
 
 byte	nr(byte sample, float effect) {
-	float s, t, c;
+	float	s, t, c;
+	byte	e;
 
 	s = (sample-128)/127.0;				// convert into normalised float
 	if (s < -1)		s = -1;				// beware of underflow!
-	t = (s<0) ? -sqrt(s) : sqrt(s);		// square root with original sign
-	c = effect*t + (1-effect)*s;		// adjust effect (0..1)
+	t = (s<0) ? -sqrt(-s) : sqrt(s);	// square root with original sign EEEEEK
+	c = effect*t + (1.0-effect)*s;		// adjust effect (0..1)
+	e = 128+c*127;						// back into unsigned integer
 
-	return	128+c*127;					// back into unsigned integer
+	return	e;
 }
 
 byte	dither(byte sample) {
 	byte	r, i = 0;
 
+//printf("%d ",sample);
 	while (sample > q[i])	i++;			// find such i that q[i] <= sample < q[i+1]
+//printf("%x",i);
 	if (sample == q[i])		return 15-i;	// spot-on value
 	r = rand() % (q[i+1]-q[i]);				// assume i<15 because of above!
 
 	return	(r >= sample) ? 15-i : 14-i;	// round accordingly
+//	return	(r >= sample) ? i : i+1;	// round accordingly
 }
