@@ -1,10 +1,22 @@
 ; Bankswitching PSM player via PSG on Durango·X
 ; (c) 2023 Carlos J. Santisteban
+; last modified 20231230-1809
 ; ***************************
 ; *** player code ($FC00) ***
 ; ***************************
 ; aim to 70 cycles/sample for 22.05 kHz rate (actually 0.6% slower)
 .(
+; *** definitions ***
+IO_PSG	= $DFDB				; PSG
+IOBank	= $DFFC				; Bankswitching register
+pb_buf	= $8000				; play back from mirrored ROM, no I/O page between $8000-$BFFF!
+end_buf	= $BC00
+
+; *** zeropage usage ***
+sample	= $FE				; indirect pointer to audio sample
+temp	= $FD				; temporary usage for delays
+nxt_bnk	= 1					; increment this between banks!
+
 reset:
 ; first playing bank has PSG initialising code
 #ifndef PSGINIT
