@@ -1,9 +1,10 @@
 ; 4-bit PCM audio player for PSG and bankswitching cartridge! (16K banks)
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231230-1807
+; last modified 20231230-1824
 
 ; *** definitions ***
 nxt_bnk	= 1					; increment this between banks!
+lst_bnk	= 8					; number of banks
 
 ; * BANK 0 *
 ; *** audio data ***

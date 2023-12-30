@@ -1,6 +1,6 @@
 ; Bankswitching PSM player via PSG on Durango·X
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231230-1811
+; last modified 20231230-1824
 ; ***************************
 ; *** player code ($FC00) ***
 ; ***************************
@@ -71,7 +71,7 @@ first:
 		CMP #>end_buf		; 2 already at code page? eeeek
 		BNE h_nobank		; 3 nope, next page = 32t (lacking 38t eeek)
 	LDA #nxt_bnk			; -1+2 next bank address
-#if	nxt_bnk<8
+#if	nxt_bnk<lst_bnk
 	JMP switch				; 3+9 then 10+3 after switching = 58t (lacking just 12t)
 #else
 ; *** *** playback ends here, do not switch banks *** ***
