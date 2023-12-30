@@ -1,7 +1,7 @@
 /*
  * 4-bit PCB dither and bankswitching	*
  * (c) 2023 Carlos J. Santisteban		*
- * last modified 20231230-1117			*
+ * last modified 20231230-1756			*
  * */
 
 #include <stdio.h>
@@ -9,7 +9,7 @@
 #include <math.h>
 
 #define	SAMPLES	30720
-#define	EFFECT	0.0
+#define	EFFECT	1.0
 
 typedef	u_int8_t	byte;
 
@@ -33,7 +33,7 @@ int main(void) {
 	if (f==NULL)	return -1;
 	else			printf("open OK\n");
 	fseek(f, 44, SEEK_SET);				// skip WAV header
-	printf("Compressing effect: %1.2f\n", EFFECT);
+	printf("Compression effect: %1.2f\n", EFFECT);
 
 	while(!feof(f)) {
 		if (fread(b, SAMPLES, 1, f) != 1)	return -1;	// fill buffer until the end
@@ -60,8 +60,8 @@ void	init(void) {
 	byte	i;
 
 	q[0] = 0;
-	for (i=1; i<16; i++)
-		q[i] = 255 * db(-2.0*(15-i));	// preload thresholds for PSG's attenuation values
+	for (i=1; i<16; i++)	q[i] = i*17;
+//		q[i] = 255 * db(-2.0*(15-i));	// preload thresholds for PSG's attenuation values
 }
 
 float	db(float n) {
