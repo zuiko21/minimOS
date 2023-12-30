@@ -4,7 +4,10 @@
 ; ***************************
 ; *** player code ($FC00) ***
 ; ***************************
-; aim to 70 cycles/sample for 22.05 kHz rate (actually 0.6% slower)
+; aim to 102 cycles/sample for 15 kHz rate (actually 15059 Hz)
+; loading PSG every 34 cycles makes a three-times oversampling digital filter!
+; some jitter is acceptable, as long as the main samples are loaded every 102t
+
 .(
 ; *** definitions ***
 IO_PSG	= $DFDB				; PSG
@@ -21,18 +24,27 @@ reset:
 #ifndef PSGINIT
 #define	PSGINIT
 	CLC
-	LDA #%10111111			; channel 2 max. attenuation
+	LDA #%10011111			; channel 1 max. attenuation
 init:
-		STA IO_PSG			; shut off all channels (except 1)
+		STA IO_PSG			; shut off all channels
 		JSR delay2
 		NOP					; to be safe (35t total delay)
 		ADC #32
 		BMI init
+	CLC
 	LDA #%10000001			; channel 1 freq. to 1 => DC output
-	STA IO_PSG
-	JSR delay2
-	JSR delay
-	STZ IO_PSG				; set MSB to zero
+set:
+		STA IO_PSG			; make all channels play
+		JSR delay2
+		INC temp
+		NOP					; some more delay (24+5+2)
+		STZ IO_PSG			; set MSB to zero (total 35 between writes)
+		JSR delay2
+		NOP					; 26t of delay
+		ADC #32
+		BMI set				; complete cycle +2+3+4, total 35t
+
+	JSR delay;CHECK
 #else
 	-nxt_bnk = nxt_bnk + 1	; just compute next bank number
 #endif
@@ -41,6 +53,7 @@ init:
 	STY sample				; 3 eeeek
 	LDA #>pb_buf			; 2 eeeek
 	STA sample+1			; 3 eeeek
+; CHECK THESE DELAYS
 	JMP first				; 3 skip extra delay
 h_nopage:
 	JSR delay				; 12 delays up to 38+12=50t
@@ -48,12 +61,24 @@ h_nobank:
 		JSR delay2			; 24
 		NOP					; 2 delays up to 12+26=38t
 first:
+; *** new code ***
 			LDA (sample), Y	; 5
 			TAX				; 2
-			LDA hi_nyb, X	; 4 get PSG value from high nybble
-			JSR delay		; 12t minimal delay section
+			LDA hi_nyb, X	; 4 get PSG value (ch1) from high nybble
 			STA IO_PSG		; 4 send sample to output (avoiding jitter)
-; ditto for the low nybble! always 70t
+			JSR delay2		; 24
+			NOP				; 2
+			NOP				; 2
+			ORA #%01000000	; 2 turn into ch3
+			STA IO_PSG		; 4 next output
+			JSR delay2		; 24
+			NOP				; 2
+			NOP				; 2
+			AND #%11011111	; 2 turn into ch2
+			STA IO_PSG		; 4 next output
+; ditto for the low nybble! always 102t
+
+
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
@@ -75,9 +100,14 @@ first:
 	JMP switch				; 3+9 then 10+3 after switching = 58t (lacking just 12t)
 #else
 ; *** *** playback ends here, do not switch banks *** ***
-	JSR delay2
+	CLC
 	LDA #%10011111			; max. attenuation for channel 1
-	STA IO_PSG
+quiet:
+		JSR delay2
+		NOP					; suitable delay
+		STA IO_PSG			; shut this channel down
+		ADC #32				; next channel
+		BMI quiet
 	STA $DFA0				; turn off LED
 lock:
 	JMP lock				; THIS IS THE LAST ONE
