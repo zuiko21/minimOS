@@ -1,6 +1,6 @@
 ; Bankswitching PSM player via PSG on Durango·X
 ; (c) 2023 Carlos J. Santisteban
-; last modified 20231230-1824
+; last modified 20231230-1857
 ; ***************************
 ; *** player code ($FC00) ***
 ; ***************************
@@ -70,24 +70,30 @@ first:
 			NOP				; 2
 			NOP				; 2
 			ORA #%01000000	; 2 turn into ch3
-			STA IO_PSG		; 4 next output
+			STA IO_PSG		; 4 next output (after 34t)
 			JSR delay2		; 24
 			NOP				; 2
 			NOP				; 2
 			AND #%11011111	; 2 turn into ch2
-			STA IO_PSG		; 4 next output
+			STA IO_PSG		; 4 next output (after 34t)
 ; ditto for the low nybble! always 102t
-
-
 			LDA (sample), Y	; 5
 			TAX				; 2
 			LDA lo_nyb, X	; 4 get PSG value from low nybble eeeeek
+			JSR delay		; 12
+			INC temp		; 5
+			NOP				; 2
+			STA IO_PSG		; 4 goes after 34t
 			JSR delay2		; 24
+			NOP				; 2
+			NOP				; 2
+			ORA #%01000000	; 2 turn into ch3
+			STA IO_PSG		; 4 next output (after 34t)
 			JSR delay2		; 24
-			STA temp		; 3
-			NOP
-			NOP				; 2+2
-			STA IO_PSG		; 4
+			NOP				; 2
+			NOP				; 2
+			AND #%11011111	; 2 turn into ch2
+			STA IO_PSG		; 4 next output (after 34t)
 ; go for next byte
 			INY				; 2
 			BNE h_nopage	; 3 total for non-page = 20t (lacking 50t)
