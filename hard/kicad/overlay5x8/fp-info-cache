@@ -1,4 +1,4 @@
-16730501438908041
+16737265414990041
 Battery
 BatteryHolder_Bulgin_BX0036_1xC
 Bulgin Battery Holder, BX0036, Battery Type C (https://www.bulgin.com/products/pub/media/bulgin/data/Battery_holders.pdf)
@@ -28791,6 +28791,13 @@ Surface mounted pin header SMD 2x03 2.54mm double row
 6
 6
 Connector_PinHeader_2.54mm
+PinHeader_2x03_StereoPot
+
+
+0
+6
+6
+Connector_PinHeader_2.54mm
 PinHeader_2x04_P2.54mm_Horizontal
 Through hole angled pin header, 2x04, 2.54mm pitch, 6mm pin length, double rows
 Through hole angled pin header THT 2x04 2.54mm double row
@@ -47341,6 +47348,13 @@ single digit 7 segemnt red/green LED
 10
 10
 durango
+2xRCA_vertical
+SCART socket, Tyco P/N 1483465-1
+
+0
+3
+3
+durango
 3xRCA
 SCART socket, Tyco P/N 1483465-1
 
@@ -47369,6 +47383,13 @@ durango-x90
 0
 0
 durango
+j300
+
+
+0
+0
+0
+durango
 jaqueria
 
 
@@ -47382,6 +47403,13 @@ NES gamepad
 0
 9
 8
+durango
+PowerSwitch
+SK12D07
+switch SPDT
+0
+3
+3
 durango
 SCART
 SCART socket, Tyco P/N 1483465-1
