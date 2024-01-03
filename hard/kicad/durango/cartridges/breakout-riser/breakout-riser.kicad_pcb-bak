@@ -2,7 +2,7 @@
 
   (general
     (thickness 1.6)
-    (drawings 34)
+    (drawings 35)
     (tracks 249)
     (zones 0)
     (modules 6)
@@ -34,7 +34,7 @@
   )
 
   (setup
-    (last_trace_width 0.4)
+    (last_trace_width 0.25)
     (user_trace_width 0.4)
     (trace_clearance 0.2)
     (zone_clearance 0.508)
@@ -887,6 +887,7 @@
     )
   )
 
+  (gr_line (start 71.12 67.945) (end 73.66 67.945) (layer F.SilkS) (width 1))
   (gr_arc (start 32.385 68.58) (end 32.385 69.215) (angle -90) (layer Edge.Cuts) (width 0.05))
   (gr_arc (start 32.385 67.31) (end 33.02 67.31) (angle -90) (layer Edge.Cuts) (width 0.05))
   (gr_arc (start 26.035 66.04) (end 25.4 66.04) (angle -90) (layer Edge.Cuts) (width 0.05))

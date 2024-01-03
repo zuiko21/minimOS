@@ -1143,7 +1143,7 @@
   (gr_text @zuiko21 (at 124.46 109.22 270) (layer F.SilkS) (tstamp 628DEEC5)
     (effects (font (size 1.8 1.8) (thickness 0.4)))
   )
-  (gr_text "Durango·X 32 KiB ShadowRAM+SD  v1" (at 62.23 99.06 270) (layer F.SilkS)
+  (gr_text "Durango·X 32 KiB ShadowRAM+SD  v1.1" (at 62.23 99.06 270) (layer F.SilkS)
     (effects (font (size 1.8 1.5) (thickness 0.3)))
   )
 

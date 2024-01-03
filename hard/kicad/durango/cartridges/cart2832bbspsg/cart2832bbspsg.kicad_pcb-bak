@@ -1628,7 +1628,7 @@
   (gr_line (start 26.924 54.61) (end 33.274 54.61) (layer F.SilkS) (width 0.12))
   (gr_line (start 26.924 53.848) (end 26.924 54.61) (layer F.SilkS) (width 0.12))
   (gr_line (start 44.196 59.69) (end 44.196 58.928) (layer F.SilkS) (width 0.12))
-  (gr_line (start 41.91 59.69) (end 44.196 59.69) (layer F.SilkS) (width 0.12))
+  (gr_line (start 41.656 59.69) (end 44.196 59.69) (layer F.SilkS) (width 0.12))
   (gr_line (start 26.924 59.69) (end 26.924 58.928) (layer F.SilkS) (width 0.12))
   (gr_line (start 31.496 59.69) (end 26.924 59.69) (layer F.SilkS) (width 0.12))
   (gr_arc (start 36.322 59.69) (end 37.338 59.69) (angle -180) (layer F.SilkS) (width 0.12))
