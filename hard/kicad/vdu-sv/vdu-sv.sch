@@ -37,17 +37,6 @@ F 3 "~" H 1025 1075 50  0001 C CNN
 	-1   0    0    -1  
 $EndComp
 $Comp
-L Connector_Generic:Conn_01x15 J2
-U 1 1 65A43FC9
-P 11100 5700
-F 0 "J2" H 11050 6600 50  0000 L CNN
-F 1 "(S)VGA" H 10950 6525 50  0000 L CNN
-F 2 "Connector_Dsub:DSUB-15-HD_Female_Horizontal_P2.29x1.98mm_EdgePinOffset3.03mm_Housed_MountingHolesOffset4.94mm" H 11100 5700 50  0001 C CNN
-F 3 "~" H 11100 5700 50  0001 C CNN
-	1    11100 5700
-	1    0    0    -1  
-$EndComp
-$Comp
 L 4xxx:4040 U7
 U 1 1 65A4539C
 P 2025 3150
@@ -78,7 +67,7 @@ F 1 "74HC21" V 5000 4150 50  0000 C CNN
 F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 5100 4150 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS21" H 5100 4150 50  0001 C CNN
 	1    5100 4150
-	0    1    1    0   
+	0    -1   1    0   
 $EndComp
 $Comp
 L 74xx:74LS21 U4
@@ -190,88 +179,6 @@ F 3 "http://www.6502.org/users/alexis/62256.pdf" H 9625 1775 50  0001 C CNN
 	1    9625 1775
 	1    0    0    -1  
 $EndComp
-$Comp
-L Device:R R1
-U 1 1 65AA0EB0
-P 10450 5200
-F 0 "R1" V 10400 5350 50  0000 C CNN
-F 1 "680" V 10450 5200 50  0000 C CIN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5200 50  0001 C CNN
-F 3 "~" H 10450 5200 50  0001 C CNN
-	1    10450 5200
-	0    1    1    0   
-$EndComp
-$Comp
-L Device:R R2
-U 1 1 65AA38B7
-P 10450 5100
-F 0 "R2" V 10400 5250 50  0000 C CNN
-F 1 "680" V 10450 5100 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5100 50  0001 C CNN
-F 3 "~" H 10450 5100 50  0001 C CNN
-	1    10450 5100
-	0    1    1    0   
-$EndComp
-$Comp
-L Device:R R3
-U 1 1 65AA4881
-P 10450 5300
-F 0 "R3" V 10400 5450 50  0000 C CNN
-F 1 "1K2" V 10450 5300 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5300 50  0001 C CNN
-F 3 "~" H 10450 5300 50  0001 C CNN
-	1    10450 5300
-	0    1    1    0   
-$EndComp
-$Comp
-L Device:R R4
-U 1 1 65AA5A23
-P 10450 5400
-F 0 "R4" V 10400 5550 50  0000 C CNN
-F 1 "560" V 10450 5400 50  0000 C CIN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5400 50  0001 C CNN
-F 3 "~" H 10450 5400 50  0001 C CNN
-	1    10450 5400
-	0    1    1    0   
-$EndComp
-Wire Wire Line
-	10600 5400 10800 5400
-Wire Wire Line
-	10800 5400 10800 5200
-Text Label 10900 5100 2    50   ~ 0
-GREEN
-Text Label 10900 5000 2    50   ~ 0
-RED
-Wire Wire Line
-	10100 5100 10300 5100
-Wire Wire Line
-	10100 5700 10300 5700
-Text Label 10125 5200 0    50   ~ 0
-D_RH
-Text Label 10125 5100 0    50   ~ 0
-D_GH
-Text Label 10125 5300 0    50   ~ 0
-D_GM
-Text Label 10125 5400 0    50   ~ 0
-D_BH
-NoConn ~ 10900 5300
-NoConn ~ 10900 6400
-NoConn ~ 10900 6000
-NoConn ~ 10900 6100
-Wire Wire Line
-	10900 5400 10900 5500
-Connection ~ 10900 5500
-Wire Wire Line
-	10900 5500 10900 5600
-Connection ~ 10900 5600
-Wire Wire Line
-	10900 5600 10900 5700
-Connection ~ 10900 5700
-Wire Wire Line
-	10900 5700 10900 5800
-Connection ~ 10900 5800
-Wire Wire Line
-	10900 5800 10900 5900
 $Comp
 L power:GND #PWR0101
 U 1 1 65AC961E
@@ -385,22 +292,6 @@ F 3 "http://www.ti.com/lit/gpn/sn74HC245" H 7950 1375 50  0001 C CNN
 	1    7950 1375
 	1    0    0    -1  
 $EndComp
-Text Label 4225 875  0    50   ~ 0
-MA0
-Text Label 4225 975  0    50   ~ 0
-MA1
-Text Label 4225 1075 0    50   ~ 0
-MA2
-Text Label 4225 1175 0    50   ~ 0
-MA3
-Text Label 4225 1275 0    50   ~ 0
-MA4
-Text Label 4225 1375 0    50   ~ 0
-MA5
-Text Label 4225 1475 0    50   ~ 0
-MA6
-Text Label 4225 1575 0    50   ~ 0
-MA7
 Text Label 5650 875  0    50   ~ 0
 MA8
 Text Label 5650 975  0    50   ~ 0
@@ -481,22 +372,6 @@ Text Label 4650 1275 2    50   ~ 0
 PD4
 Text Label 4650 1375 2    50   ~ 0
 PD5
-Text Label 3225 875  2    50   ~ 0
-PD0
-Text Label 3225 975  2    50   ~ 0
-PD1
-Text Label 3225 1075 2    50   ~ 0
-PD2
-Text Label 3225 1175 2    50   ~ 0
-PD3
-Text Label 3225 1275 2    50   ~ 0
-PD4
-Text Label 3225 1375 2    50   ~ 0
-PD5
-Text Label 3225 1475 2    50   ~ 0
-PD6
-Text Label 3225 1575 2    50   ~ 0
-PD7
 Text Label 3225 1775 2    50   ~ 0
 ~LATCH_L
 Text Label 4650 1775 2    50   ~ 0
@@ -532,35 +407,35 @@ Text Label 7450 1475 2    50   ~ 0
 VA14
 Text Label 8450 1475 0    50   ~ 0
 MA14
-Text Label 9025 975  2    50   ~ 0
-MA8
-Text Label 9025 1075 2    50   ~ 0
-MA9
-Text Label 9025 1275 2    50   ~ 0
-MA10
-Text Label 9025 1775 2    50   ~ 0
-MA11
 Text Label 9025 1975 2    50   ~ 0
-MA12
+MA8
+Text Label 9025 1275 2    50   ~ 0
+MA9
 Text Label 9025 1175 2    50   ~ 0
-MA13
+MA10
 Text Label 9025 1875 2    50   ~ 0
-MA14
-Text Label 9025 1375 2    50   ~ 0
-MA0
-Text Label 9025 1675 2    50   ~ 0
-MA1
-Text Label 9025 1475 2    50   ~ 0
-MA2
-Text Label 9025 2075 2    50   ~ 0
-MA3
-Text Label 9025 2275 2    50   ~ 0
-MA4
-Text Label 9025 1575 2    50   ~ 0
-MA5
-Text Label 9025 2175 2    50   ~ 0
-MA6
+MA11
+Text Label 9025 1075 2    50   ~ 0
+MA12
+Text Label 9025 975  2    50   ~ 0
+MA13
 Text Label 9025 875  2    50   ~ 0
+MA14
+Text Label 9025 2275 2    50   ~ 0
+MA0
+Text Label 9025 2075 2    50   ~ 0
+MA1
+Text Label 9025 2175 2    50   ~ 0
+MA2
+Text Label 9025 1575 2    50   ~ 0
+MA3
+Text Label 9025 1675 2    50   ~ 0
+MA4
+Text Label 9025 1475 2    50   ~ 0
+MA5
+Text Label 9025 1775 2    50   ~ 0
+MA6
+Text Label 9025 1375 2    50   ~ 0
 MA7
 Text Label 10225 1575 0    50   ~ 0
 VD0
@@ -636,18 +511,6 @@ Text Label 8625 4075 0    50   ~ 0
 L_GL
 Text Label 8625 4375 0    50   ~ 0
 L_B
-Text Label 10900 6200 2    50   ~ 0
-~HSYNC
-Text Label 10900 6300 2    50   ~ 0
-VSYNC
-Text Label 9100 5100 2    50   ~ 0
-I_GH
-Text Label 9100 5200 2    50   ~ 0
-I_RH
-Text Label 9100 5300 2    50   ~ 0
-I_GM
-Text Label 9100 5400 2    50   ~ 0
-I_BH
 $Comp
 L 74xx:74HC86 U15
 U 5 1 65D15C32
@@ -671,14 +534,6 @@ Text Label 3875 4700 0    50   ~ 0
 ~HSYNC
 Text Label 3875 4450 0    50   ~ 0
 FEND
-Wire Wire Line
-	10600 5300 10750 5300
-Wire Wire Line
-	10600 5200 10700 5200
-Wire Wire Line
-	10700 5200 10700 5000
-Wire Wire Line
-	10700 5000 10900 5000
 Wire Wire Line
 	9625 4675 10125 4675
 Wire Wire Line
@@ -824,13 +679,7 @@ Wire Wire Line
 Wire Wire Line
 	4950 3550 4850 3550
 Wire Wire Line
-	5050 3850 5050 3250
-Wire Wire Line
-	5050 3250 4850 3250
-Wire Wire Line
-	5150 3850 5150 3050
-Wire Wire Line
-	5150 3050 4850 3050
+	5050 3850 5050 3050
 Wire Wire Line
 	5250 3850 5250 2850
 Wire Wire Line
@@ -877,16 +726,9 @@ Text Label 4850 3550 0    50   ~ 0
 Text Label 5500 4450 3    50   ~ 0
 VSYNC
 Wire Wire Line
-	4850 2950 5650 2950
-Wire Wire Line
-	5650 2950 5650 3850
-Connection ~ 5150 3050
-Text Label 5450 3450 1    50   ~ 0
+	4850 2950 5550 2950
+Text Label 5650 3850 0    50   ~ 0
 ~VA11
-Wire Wire Line
-	5550 3050 5550 3850
-Wire Wire Line
-	5150 3050 5550 3050
 Wire Wire Line
 	4950 3550 5350 3550
 Wire Wire Line
@@ -968,14 +810,7 @@ F 3 "" H 5025 6025 50  0001 C CNN
 $EndComp
 Text Label 9100 6100 2    50   ~ 0
 ~DEN
-Wire Wire Line
-	9600 6400 10625 6400
-Wire Wire Line
-	10625 6400 10625 5900
-Wire Wire Line
-	10625 5900 10900 5900
 Connection ~ 9600 6400
-Connection ~ 10900 5900
 Connection ~ 8125 4975
 $Comp
 L 74xx:74HC86 U15
@@ -991,34 +826,34 @@ $EndComp
 $Comp
 L 74xx:74HC86 U15
 U 4 1 65D0C799
-P 7650 4625
-F 0 "U15" V 7675 4625 50  0000 C CNN
-F 1 "74HC86" V 7600 4625 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7650 4625 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 7650 4625 50  0001 C CNN
-	4    7650 4625
-	0    -1   1    0   
-$EndComp
-$Comp
-L 74xx:74HC86 U15
-U 3 1 65D0A331
-P 7300 4625
-F 0 "U15" V 7325 4625 50  0000 C CNN
-F 1 "74HC86" V 7250 4625 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7300 4625 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 7300 4625 50  0001 C CNN
-	3    7300 4625
-	0    -1   1    0   
-$EndComp
-$Comp
-L 74xx:74HC86 U15
-U 2 1 65D092C8
 P 6950 4625
 F 0 "U15" V 6975 4625 50  0000 C CNN
 F 1 "74HC86" V 6900 4625 50  0000 C CNN
 F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 6950 4625 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 6950 4625 50  0001 C CNN
-	2    6950 4625
+	4    6950 4625
+	0    -1   1    0   
+$EndComp
+$Comp
+L 74xx:74HC86 U15
+U 3 1 65D0A331
+P 7650 4625
+F 0 "U15" V 7675 4625 50  0000 C CNN
+F 1 "74HC86" V 7600 4625 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7650 4625 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 7650 4625 50  0001 C CNN
+	3    7650 4625
+	0    -1   1    0   
+$EndComp
+$Comp
+L 74xx:74HC86 U15
+U 2 1 65D092C8
+P 7300 4625
+F 0 "U15" V 7325 4625 50  0000 C CNN
+F 1 "74HC86" V 7250 4625 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7300 4625 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 7300 4625 50  0001 C CNN
+	2    7300 4625
 	0    -1   1    0   
 $EndComp
 Text Label 6700 4325 1    50   ~ 0
@@ -1039,10 +874,6 @@ Wire Wire Line
 	6500 4325 6500 3375
 Wire Wire Line
 	6500 3375 7625 3375
-Wire Wire Line
-	6950 4925 6950 5200
-Wire Wire Line
-	7650 4925 7650 5400
 Wire Wire Line
 	9625 3075 10400 3075
 Wire Wire Line
@@ -1115,7 +946,7 @@ Wire Wire Line
 	1525 4050 2025 4050
 Connection ~ 2025 4050
 Wire Wire Line
-	4850 3150 5725 3150
+	4850 3150 5650 3150
 $Comp
 L power:GND #PWR0113
 U 1 1 65C551DB
@@ -1158,7 +989,7 @@ F 1 "74HC32" V 4575 4775 50  0000 C CNN
 F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 4625 4775 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS32" H 4625 4775 50  0001 C CNN
 	4    4625 4775
-	0    -1   1    0   
+	0    1    1    0   
 $EndComp
 Wire Wire Line
 	7450 2875 7450 2675
@@ -1287,13 +1118,13 @@ $EndComp
 $Comp
 L 74xx:74HC04 U18
 U 5 1 65AF115C
-P 6025 3150
-F 0 "U18" H 6000 3150 50  0000 C CNN
-F 1 "74HC04" H 6125 3000 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 6025 3150 50  0001 C CNN
-F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 6025 3150 50  0001 C CNN
-	5    6025 3150
-	1    0    0    -1  
+P 5650 3450
+F 0 "U18" V 5550 3450 50  0000 C CNN
+F 1 "74HC04" V 5450 3275 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 5650 3450 50  0001 C CNN
+F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 5650 3450 50  0001 C CNN
+	5    5650 3450
+	0    -1   1    0   
 $EndComp
 $Comp
 L 74xx:74HC04 U18
@@ -1331,12 +1162,6 @@ Wire Wire Line
 	3275 3350 2525 3350
 Wire Wire Line
 	3275 3350 3275 4000
-Wire Wire Line
-	5450 2775 6325 2775
-Wire Wire Line
-	6325 2775 6325 3150
-Wire Wire Line
-	5450 2775 5450 3850
 Wire Wire Line
 	2225 6625 1775 6625
 Connection ~ 2225 6625
@@ -1611,10 +1436,6 @@ Wire Wire Line
 Connection ~ 875  7625
 Connection ~ 1325 7625
 Wire Wire Line
-	9100 5100 6600 5100
-Wire Wire Line
-	6600 5100 6600 4925
-Wire Wire Line
 	6700 4325 6700 4300
 Wire Wire Line
 	6700 4300 7050 4300
@@ -1790,124 +1611,11 @@ Wire Wire Line
 Wire Wire Line
 	5850 6400 5850 6625
 Wire Wire Line
-	9100 5200 6950 5200
-Wire Wire Line
-	9100 5300 7300 5300
-Wire Wire Line
-	7300 5300 7300 4925
-Wire Wire Line
-	9100 5400 7650 5400
-Wire Wire Line
 	9100 5700 6950 5700
-Wire Wire Line
-	6950 5700 6950 5800
 Wire Wire Line
 	9100 5600 6600 5600
 Wire Wire Line
-	6600 5600 6600 5800
-Wire Wire Line
 	9100 5500 6250 5500
-Wire Wire Line
-	6250 5500 6250 5800
-Wire Wire Line
-	10600 5100 10750 5100
-Wire Wire Line
-	10750 5300 10750 5100
-Connection ~ 10750 5100
-Wire Wire Line
-	10750 5100 10900 5100
-Wire Wire Line
-	10300 5400 10100 5400
-Wire Wire Line
-	10300 5300 10100 5300
-Wire Wire Line
-	10300 5200 10100 5200
-Text Label 9100 5600 2    50   ~ 0
-I_GL
-Text Label 9100 5500 2    50   ~ 0
-I_RM
-Text Label 9100 5700 2    50   ~ 0
-I_RL
-Text Label 9100 5800 2    50   ~ 0
-I_BL
-Text Label 10125 5500 0    50   ~ 0
-D_RM
-Text Label 10125 5600 0    50   ~ 0
-D_GL
-Text Label 10125 5700 0    50   ~ 0
-D_RL
-Text Label 10125 5800 0    50   ~ 0
-D_BL
-$Comp
-L Device:R R20
-U 1 1 65F1C3AC
-P 10450 5500
-F 0 "R20" V 10400 5675 50  0000 C CNN
-F 1 "1K2" V 10450 5500 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5500 50  0001 C CNN
-F 3 "~" H 10450 5500 50  0001 C CNN
-	1    10450 5500
-	0    1    1    0   
-$EndComp
-$Comp
-L Device:R R21
-U 1 1 65F1DA21
-P 10450 5600
-F 0 "R21" V 10400 5775 50  0000 C CNN
-F 1 "2K2" V 10450 5600 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5600 50  0001 C CNN
-F 3 "~" H 10450 5600 50  0001 C CNN
-	1    10450 5600
-	0    1    1    0   
-$EndComp
-$Comp
-L Device:R R22
-U 1 1 65F1EFAB
-P 10450 5700
-F 0 "R22" V 10400 5875 50  0000 C CNN
-F 1 "2K2" V 10450 5700 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5700 50  0001 C CNN
-F 3 "~" H 10450 5700 50  0001 C CNN
-	1    10450 5700
-	0    1    1    0   
-$EndComp
-$Comp
-L Device:R R23
-U 1 1 65F219EF
-P 10450 5800
-F 0 "R23" V 10400 5975 50  0000 C CNN
-F 1 "1K" V 10450 5800 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5800 50  0001 C CNN
-F 3 "~" H 10450 5800 50  0001 C CNN
-	1    10450 5800
-	0    1    1    0   
-$EndComp
-Wire Wire Line
-	10100 5500 10300 5500
-Wire Wire Line
-	10300 5600 10100 5600
-Wire Wire Line
-	10100 5800 10300 5800
-Wire Wire Line
-	10600 5500 10700 5500
-Wire Wire Line
-	10700 5500 10700 5200
-Connection ~ 10700 5200
-Wire Wire Line
-	10600 5700 10700 5700
-Wire Wire Line
-	10700 5700 10700 5500
-Connection ~ 10700 5500
-Wire Wire Line
-	10600 5600 10750 5600
-Wire Wire Line
-	10750 5600 10750 5300
-Connection ~ 10750 5300
-Wire Wire Line
-	10800 5400 10800 5800
-Wire Wire Line
-	10800 5800 10600 5800
-Connection ~ 10800 5400
 Text Label 5850 6625 1    50   ~ 0
 X_RM
 Text Label 6175 6625 1    50   ~ 0
@@ -1942,10 +1650,6 @@ Text Label 6400 7225 3    50   ~ 0
 L_GL
 Text Label 6725 7225 3    50   ~ 0
 L_B
-Text Label 10900 5200 2    50   ~ 0
-BLUE
-Wire Wire Line
-	10800 5200 10900 5200
 $Comp
 L Connector_Generic:Conn_02x08_Odd_Even J3
 U 1 1 65AB675D
@@ -1999,4 +1703,296 @@ Text Label 1250 3950 0    50   ~ 0
 Wire Wire Line
 	1250 4050 1525 4050
 Connection ~ 1525 4050
+Text Label 4225 875  0    50   ~ 0
+MA0
+Text Label 4225 975  0    50   ~ 0
+MA1
+Text Label 4225 1075 0    50   ~ 0
+MA2
+Text Label 4225 1175 0    50   ~ 0
+MA3
+Text Label 4225 1275 0    50   ~ 0
+MA4
+Text Label 4225 1375 0    50   ~ 0
+MA5
+Text Label 4225 1475 0    50   ~ 0
+MA6
+Text Label 4225 1575 0    50   ~ 0
+MA7
+Text Label 3225 875  2    50   ~ 0
+PD0
+Text Label 3225 975  2    50   ~ 0
+PD1
+Text Label 3225 1075 2    50   ~ 0
+PD2
+Text Label 3225 1175 2    50   ~ 0
+PD3
+Text Label 3225 1275 2    50   ~ 0
+PD4
+Text Label 3225 1375 2    50   ~ 0
+PD5
+Text Label 3225 1475 2    50   ~ 0
+PD6
+Text Label 3225 1575 2    50   ~ 0
+PD7
+Wire Wire Line
+	4850 3050 5050 3050
+Connection ~ 5050 3050
+Wire Wire Line
+	5050 3050 5450 3050
+Wire Wire Line
+	4850 3250 5150 3250
+Wire Wire Line
+	5150 3250 5150 3850
+Wire Wire Line
+	5450 3850 5450 3050
+Wire Wire Line
+	5550 2950 5550 3850
+Wire Wire Line
+	5650 3750 5650 3850
+Wire Wire Line
+	9100 5400 7650 5400
+Wire Wire Line
+	9100 5300 7300 5300
+Wire Wire Line
+	9100 5200 6950 5200
+Wire Wire Line
+	9100 5100 6600 5100
+Wire Wire Line
+	10100 5800 10300 5800
+Wire Wire Line
+	10300 5600 10100 5600
+Wire Wire Line
+	10100 5500 10300 5500
+$Comp
+L Device:R R23
+U 1 1 65F219EF
+P 10450 5800
+F 0 "R23" V 10400 5975 50  0000 C CNN
+F 1 "1K" V 10450 5800 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5800 50  0001 C CNN
+F 3 "~" H 10450 5800 50  0001 C CNN
+	1    10450 5800
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R22
+U 1 1 65F1EFAB
+P 10450 5700
+F 0 "R22" V 10400 5875 50  0000 C CNN
+F 1 "2K2" V 10450 5700 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5700 50  0001 C CNN
+F 3 "~" H 10450 5700 50  0001 C CNN
+	1    10450 5700
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R21
+U 1 1 65F1DA21
+P 10450 5600
+F 0 "R21" V 10400 5775 50  0000 C CNN
+F 1 "2K2" V 10450 5600 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5600 50  0001 C CNN
+F 3 "~" H 10450 5600 50  0001 C CNN
+	1    10450 5600
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R20
+U 1 1 65F1C3AC
+P 10450 5500
+F 0 "R20" V 10400 5675 50  0000 C CNN
+F 1 "1K2" V 10450 5500 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5500 50  0001 C CNN
+F 3 "~" H 10450 5500 50  0001 C CNN
+	1    10450 5500
+	0    1    1    0   
+$EndComp
+Text Label 10125 5800 0    50   ~ 0
+D_BL
+Text Label 10125 5700 0    50   ~ 0
+D_RL
+Text Label 10125 5600 0    50   ~ 0
+D_GL
+Text Label 10125 5500 0    50   ~ 0
+D_RM
+Wire Wire Line
+	10100 5700 10300 5700
+Text Label 10900 6300 2    50   ~ 0
+VSYNC
+Text Label 10900 6200 2    50   ~ 0
+~HSYNC
+Text Label 10900 5200 2    50   ~ 0
+BLUE
+Text Label 10900 5000 2    50   ~ 0
+RED
+Text Label 10900 5100 2    50   ~ 0
+GREEN
+Connection ~ 10900 5800
+Wire Wire Line
+	10900 5700 10900 5800
+Connection ~ 10900 5700
+Wire Wire Line
+	10900 5600 10900 5700
+Connection ~ 10900 5600
+Wire Wire Line
+	10900 5500 10900 5600
+Connection ~ 10900 5500
+Wire Wire Line
+	10900 5400 10900 5500
+NoConn ~ 10900 5300
+NoConn ~ 10900 6400
+NoConn ~ 10900 6100
+NoConn ~ 10900 6000
+Connection ~ 10900 5900
+Wire Wire Line
+	10900 5800 10900 5900
+$Comp
+L Connector_Generic:Conn_01x15 J2
+U 1 1 65A43FC9
+P 11100 5700
+F 0 "J2" H 11050 6600 50  0000 L CNN
+F 1 "(S)VGA" H 10950 6525 50  0000 L CNN
+F 2 "Connector_Dsub:DSUB-15-HD_Female_Horizontal_P2.29x1.98mm_EdgePinOffset3.03mm_Housed_MountingHolesOffset4.94mm" H 11100 5700 50  0001 C CNN
+F 3 "~" H 11100 5700 50  0001 C CNN
+	1    11100 5700
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9600 6400 10625 6400
+Wire Wire Line
+	10625 5900 10900 5900
+Wire Wire Line
+	10625 6400 10625 5900
+Wire Wire Line
+	10300 5200 10100 5200
+Wire Wire Line
+	10300 5300 10100 5300
+Text Label 10125 5300 0    50   ~ 0
+D_GM
+Text Label 10125 5200 0    50   ~ 0
+D_RH
+$Comp
+L Device:R R3
+U 1 1 65AA4881
+P 10450 5300
+F 0 "R3" V 10400 5450 50  0000 C CNN
+F 1 "1K2" V 10450 5300 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5300 50  0001 C CNN
+F 3 "~" H 10450 5300 50  0001 C CNN
+	1    10450 5300
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R1
+U 1 1 65AA0EB0
+P 10450 5200
+F 0 "R1" V 10400 5350 50  0000 C CNN
+F 1 "680" V 10450 5200 50  0000 C CIN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5200 50  0001 C CNN
+F 3 "~" H 10450 5200 50  0001 C CNN
+	1    10450 5200
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	10300 5400 10100 5400
+Text Label 10125 5400 0    50   ~ 0
+D_BH
+$Comp
+L Device:R R4
+U 1 1 65AA5A23
+P 10450 5400
+F 0 "R4" V 10400 5550 50  0000 C CNN
+F 1 "560" V 10450 5400 50  0000 C CIN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5400 50  0001 C CNN
+F 3 "~" H 10450 5400 50  0001 C CNN
+	1    10450 5400
+	0    1    1    0   
+$EndComp
+Text Label 10125 5100 0    50   ~ 0
+D_GH
+Wire Wire Line
+	10100 5100 10300 5100
+$Comp
+L Device:R R2
+U 1 1 65AA38B7
+P 10450 5100
+F 0 "R2" V 10400 5250 50  0000 C CNN
+F 1 "680" V 10450 5100 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5100 50  0001 C CNN
+F 3 "~" H 10450 5100 50  0001 C CNN
+	1    10450 5100
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	10800 5800 10600 5800
+Wire Wire Line
+	10600 5700 10700 5700
+Wire Wire Line
+	10600 5600 10750 5600
+Wire Wire Line
+	10600 5500 10700 5500
+Wire Wire Line
+	10600 5400 10800 5400
+Wire Wire Line
+	10600 5300 10750 5300
+Wire Wire Line
+	10600 5200 10700 5200
+Wire Wire Line
+	10700 5000 10900 5000
+Wire Wire Line
+	10800 5200 10900 5200
+Wire Wire Line
+	10800 5400 10800 5800
+Connection ~ 10800 5400
+Wire Wire Line
+	10800 5400 10800 5200
+Wire Wire Line
+	10700 5700 10700 5500
+Connection ~ 10700 5500
+Wire Wire Line
+	10700 5500 10700 5200
+Wire Wire Line
+	10750 5600 10750 5300
+Wire Wire Line
+	10750 5100 10900 5100
+Wire Wire Line
+	10600 5100 10750 5100
+Connection ~ 10750 5100
+Connection ~ 10750 5300
+Wire Wire Line
+	10750 5300 10750 5100
+Connection ~ 10700 5200
+Wire Wire Line
+	10700 5200 10700 5000
+Wire Wire Line
+	6950 5700 6950 5800
+Wire Wire Line
+	6600 5600 6600 5800
+Wire Wire Line
+	6250 5500 6250 5800
+Wire Wire Line
+	6600 5100 6600 4925
+Wire Wire Line
+	6950 4925 6950 5200
+Wire Wire Line
+	7300 5300 7300 4925
+Wire Wire Line
+	7650 4925 7650 5400
+Text Label 9100 5800 2    50   ~ 0
+I_BL
+Text Label 9100 5700 2    50   ~ 0
+I_RL
+Text Label 9100 5600 2    50   ~ 0
+I_GL
+Text Label 9100 5500 2    50   ~ 0
+I_RM
+Text Label 9100 5300 2    50   ~ 0
+I_GM
+Text Label 9100 5400 2    50   ~ 0
+I_BH
+Text Label 9100 5200 2    50   ~ 0
+I_RH
+Text Label 9100 5100 2    50   ~ 0
+I_GH
 $EndSCHEMATC
