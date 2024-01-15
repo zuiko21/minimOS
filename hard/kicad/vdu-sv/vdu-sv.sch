@@ -195,7 +195,7 @@ L Device:R R1
 U 1 1 65AA0EB0
 P 10450 5200
 F 0 "R1" V 10400 5350 50  0000 C CNN
-F 1 "680" V 10450 5200 50  0000 C CNN
+F 1 "680" V 10450 5200 50  0000 C CIN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5200 50  0001 C CNN
 F 3 "~" H 10450 5200 50  0001 C CNN
 	1    10450 5200
@@ -228,7 +228,7 @@ L Device:R R4
 U 1 1 65AA5A23
 P 10450 5400
 F 0 "R4" V 10400 5550 50  0000 C CNN
-F 1 "560" V 10450 5400 50  0000 C CNN
+F 1 "560" V 10450 5400 50  0000 C CIN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 10380 5400 50  0001 C CNN
 F 3 "~" H 10450 5400 50  0001 C CNN
 	1    10450 5400
@@ -532,51 +532,51 @@ Text Label 7450 1475 2    50   ~ 0
 VA14
 Text Label 8450 1475 0    50   ~ 0
 MA14
-Text Label 9025 1675 2    50   ~ 0
-MA8
-Text Label 9025 1775 2    50   ~ 0
-MA9
-Text Label 9025 1875 2    50   ~ 0
-MA10
-Text Label 9025 1975 2    50   ~ 0
-MA11
-Text Label 9025 2075 2    50   ~ 0
-MA12
-Text Label 9025 2175 2    50   ~ 0
-MA13
-Text Label 9025 2275 2    50   ~ 0
-MA14
-Text Label 9025 875  2    50   ~ 0
-MA0
 Text Label 9025 975  2    50   ~ 0
-MA1
+MA8
 Text Label 9025 1075 2    50   ~ 0
-MA2
-Text Label 9025 1175 2    50   ~ 0
-MA3
+MA9
 Text Label 9025 1275 2    50   ~ 0
-MA4
+MA10
+Text Label 9025 1775 2    50   ~ 0
+MA11
+Text Label 9025 1975 2    50   ~ 0
+MA12
+Text Label 9025 1175 2    50   ~ 0
+MA13
+Text Label 9025 1875 2    50   ~ 0
+MA14
 Text Label 9025 1375 2    50   ~ 0
-MA5
+MA0
+Text Label 9025 1675 2    50   ~ 0
+MA1
 Text Label 9025 1475 2    50   ~ 0
-MA6
+MA2
+Text Label 9025 2075 2    50   ~ 0
+MA3
+Text Label 9025 2275 2    50   ~ 0
+MA4
 Text Label 9025 1575 2    50   ~ 0
+MA5
+Text Label 9025 2175 2    50   ~ 0
+MA6
+Text Label 9025 875  2    50   ~ 0
 MA7
-Text Label 10225 875  0    50   ~ 0
-VD0
-Text Label 10225 975  0    50   ~ 0
-VD1
-Text Label 10225 1075 0    50   ~ 0
-VD2
-Text Label 10225 1175 0    50   ~ 0
-VD3
-Text Label 10225 1275 0    50   ~ 0
-VD4
-Text Label 10225 1375 0    50   ~ 0
-VD5
-Text Label 10225 1475 0    50   ~ 0
-VD6
 Text Label 10225 1575 0    50   ~ 0
+VD0
+Text Label 10225 1475 0    50   ~ 0
+VD1
+Text Label 10225 1375 0    50   ~ 0
+VD2
+Text Label 10225 1275 0    50   ~ 0
+VD3
+Text Label 10225 1075 0    50   ~ 0
+VD4
+Text Label 10225 1175 0    50   ~ 0
+VD5
+Text Label 10225 875  0    50   ~ 0
+VD6
+Text Label 10225 975  0    50   ~ 0
 VD7
 $Comp
 L power:GND #PWR0106
@@ -1946,4 +1946,57 @@ Text Label 10900 5200 2    50   ~ 0
 BLUE
 Wire Wire Line
 	10800 5200 10900 5200
+$Comp
+L Connector_Generic:Conn_02x08_Odd_Even J3
+U 1 1 65AB675D
+P 1050 3650
+F 0 "J3" H 1100 4167 50  0000 C CNN
+F 1 "IOx" H 1100 4076 50  0000 C CNN
+F 2 "Connector_IDC:IDC-Header_2x08_P2.54mm_Vertical" H 1050 3650 50  0001 C CNN
+F 3 "~" H 1050 3650 50  0001 C CNN
+	1    1050 3650
+	-1   0    0    -1  
+$EndComp
+$Comp
+L power:+5V #PWR0114
+U 1 1 65AB6767
+P 1250 3350
+F 0 "#PWR0114" H 1250 3200 50  0001 C CNN
+F 1 "+5V" H 1375 3400 50  0000 C CNN
+F 2 "" H 1250 3350 50  0001 C CNN
+F 3 "" H 1250 3350 50  0001 C CNN
+	1    1250 3350
+	1    0    0    -1  
+$EndComp
+Text Label 750  3350 2    50   ~ 0
+PD0
+Text Label 750  3450 2    50   ~ 0
+PD1
+Text Label 750  3550 2    50   ~ 0
+PD2
+Text Label 750  3650 2    50   ~ 0
+PD3
+Text Label 750  3750 2    50   ~ 0
+PD4
+Text Label 750  3850 2    50   ~ 0
+PD5
+Text Label 750  3950 2    50   ~ 0
+PD6
+Text Label 750  4050 2    50   ~ 0
+PD7
+Text Label 1250 3450 0    50   ~ 0
+BA0
+Text Label 1250 3550 0    50   ~ 0
+BA1
+Text Label 1250 3650 0    50   ~ 0
+BA2
+Text Label 1250 3750 0    50   ~ 0
+BA3
+Text Label 1250 3850 0    50   ~ 0
+BR~W
+Text Label 1250 3950 0    50   ~ 0
+~IOX
+Wire Wire Line
+	1250 4050 1525 4050
+Connection ~ 1525 4050
 $EndSCHEMATC
