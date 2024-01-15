@@ -1372,7 +1372,7 @@ U 1 1 65A9750F
 P 5975 5375
 F 0 "D20" H 5975 5475 50  0000 C CNN
 F 1 "BAT85" H 5975 5275 50  0000 C CNN
-F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 5975 5200 50  0001 C CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_KathodeUp" H 5975 5200 50  0001 C CNN
 F 3 "https://assets.nexperia.com/documents/data-sheet/BAT85.pdf" H 5975 5375 50  0001 C CNN
 	1    5975 5375
 	1    0    0    -1  
@@ -1995,4 +1995,16 @@ Text Label 9100 5200 2    50   ~ 0
 I_RH
 Text Label 9100 5100 2    50   ~ 0
 I_GH
+$Comp
+L power:+5V #PWR0115
+U 1 1 65A6B7BC
+P 7800 5900
+F 0 "#PWR0115" H 7800 5750 50  0001 C CNN
+F 1 "+5V" V 7800 6100 50  0000 C CNN
+F 2 "" H 7800 5900 50  0001 C CNN
+F 3 "" H 7800 5900 50  0001 C CNN
+	1    7800 5900
+	0    -1   -1   0   
+$EndComp
+Connection ~ 7800 5900
 $EndSCHEMATC

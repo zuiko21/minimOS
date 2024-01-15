@@ -826,34 +826,34 @@ $EndComp
 $Comp
 L 74xx:74HC86 U15
 U 4 1 65D0C799
-P 7650 4625
-F 0 "U15" V 7675 4625 50  0000 C CNN
-F 1 "74HC86" V 7600 4625 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7650 4625 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 7650 4625 50  0001 C CNN
-	4    7650 4625
-	0    -1   1    0   
-$EndComp
-$Comp
-L 74xx:74HC86 U15
-U 3 1 65D0A331
-P 7300 4625
-F 0 "U15" V 7325 4625 50  0000 C CNN
-F 1 "74HC86" V 7250 4625 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7300 4625 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 7300 4625 50  0001 C CNN
-	3    7300 4625
-	0    -1   1    0   
-$EndComp
-$Comp
-L 74xx:74HC86 U15
-U 2 1 65D092C8
 P 6950 4625
 F 0 "U15" V 6975 4625 50  0000 C CNN
 F 1 "74HC86" V 6900 4625 50  0000 C CNN
 F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 6950 4625 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 6950 4625 50  0001 C CNN
-	2    6950 4625
+	4    6950 4625
+	0    -1   1    0   
+$EndComp
+$Comp
+L 74xx:74HC86 U15
+U 3 1 65D0A331
+P 7650 4625
+F 0 "U15" V 7675 4625 50  0000 C CNN
+F 1 "74HC86" V 7600 4625 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7650 4625 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 7650 4625 50  0001 C CNN
+	3    7650 4625
+	0    -1   1    0   
+$EndComp
+$Comp
+L 74xx:74HC86 U15
+U 2 1 65D092C8
+P 7300 4625
+F 0 "U15" V 7325 4625 50  0000 C CNN
+F 1 "74HC86" V 7250 4625 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7300 4625 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 7300 4625 50  0001 C CNN
+	2    7300 4625
 	0    -1   1    0   
 $EndComp
 Text Label 6700 4325 1    50   ~ 0
@@ -1995,4 +1995,16 @@ Text Label 9100 5200 2    50   ~ 0
 I_RH
 Text Label 9100 5100 2    50   ~ 0
 I_GH
+$Comp
+L power:+5V #PWR?
+U 1 1 65A6B7BC
+P 7800 5900
+F 0 "#PWR?" H 7800 5750 50  0001 C CNN
+F 1 "+5V" V 7800 6100 50  0000 C CNN
+F 2 "" H 7800 5900 50  0001 C CNN
+F 3 "" H 7800 5900 50  0001 C CNN
+	1    7800 5900
+	0    -1   -1   0   
+$EndComp
+Connection ~ 7800 5900
 $EndSCHEMATC
