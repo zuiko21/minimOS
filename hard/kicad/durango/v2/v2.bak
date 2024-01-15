@@ -516,8 +516,6 @@ Text Label 6000 1150 0    50   ~ 0
 A15
 Wire Wire Line
 	9400 2650 9200 2650
-Text Label 9200 2650 0    50   ~ 0
-~MCS
 Entry Wire Line
 	7500 4000 7600 4100
 Entry Wire Line
@@ -1414,8 +1412,6 @@ Wire Wire Line
 	9300 4200 9300 4800
 Wire Wire Line
 	9400 3600 9400 2850
-Text Label 9400 3600 0    50   ~ 0
-~DWE
 $Comp
 L power:GND #PWR0148
 U 1 1 60F399C8
@@ -2775,4 +2771,10 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
+Text GLabel 9100 2350 0    50   Input ~ 0
+MA[0..14]
+Text GLabel 9000 2700 1    50   Input ~ 0
+~MCS
+Text GLabel 9400 3600 2    50   Input ~ 0
+~DWE
 $EndSCHEMATC

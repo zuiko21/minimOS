@@ -1870,27 +1870,12 @@ Wire Wire Line
 Connection ~ 1400 1100
 Wire Wire Line
 	1400 1100 1700 1100
-$Comp
-L 62256:62256 U?
-U 1 1 6500E3FF
-P 10300 1900
-AR Path="/6500E3FF" Ref="U?"  Part="1" 
-AR Path="/6310B9C7/6500E3FF" Ref="U003"  Part="1" 
-F 0 "U003" H 10050 3000 50  0000 C CNN
-F 1 "62256" H 10500 3000 50  0000 C CNN
-F 2 "Package_DIP:DIP-28_W7.62mm_Socket" H 10300 1900 50  0001 C CNN
-F 3 "http://www.6502.org/users/alexis/62256.pdf" H 10300 1900 50  0001 C CNN
-	1    10300 1900
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	9700 1000 9500 1000
 Wire Wire Line
 	9700 1100 9500 1100
 Wire Wire Line
 	9700 1200 9500 1200
-Wire Wire Line
-	9700 1300 9500 1300
 Wire Wire Line
 	9700 1400 9500 1400
 Wire Wire Line
@@ -1953,8 +1938,6 @@ Text Label 10900 1100 0    50   ~ 0
 D7
 Text Label 9700 2300 2    50   ~ 0
 MA14
-Text Label 9700 2600 2    50   ~ 0
-~MCS
 $Comp
 L power:GND #PWR?
 U 1 1 6500E44F
@@ -1974,11 +1957,8 @@ Wire Wire Line
 	9650 2700 9650 3100
 Wire Wire Line
 	9650 3100 10300 3100
-Connection ~ 10300 3100
 Text Label 10900 1000 0    50   ~ 0
 D6
-Text Label 9700 2800 2    50   ~ 0
-~DWE
 $Comp
 L power:+5V #PWR0175
 U 1 1 650F616A
@@ -2060,28 +2040,48 @@ Entry Wire Line
 	9400 2200 9500 2300
 Entry Wire Line
 	9400 2300 9500 2400
-Wire Wire Line
-	850  5100 1350 5100
+Text GLabel 9400 900  0    50   Input ~ 0
+MA[0..14]
+Text GLabel 9700 2800 0    50   Input ~ 0
+~DWE
+Connection ~ 10300 3100
+Wire Bus Line
+	9400 900  9400 2300
+Wire Bus Line
+	11100 900  11100 1600
+Wire Bus Line
+	2150 6300 2150 7000
 Wire Bus Line
 	1050 6400 1050 6900
 Wire Bus Line
 	5650 4400 5650 4850
 Wire Bus Line
-	3700 2150 3700 2700
-Wire Bus Line
-	2300 5200 2300 5700
-Wire Bus Line
 	2450 4400 2450 5750
 Wire Bus Line
-	2150 6300 2150 7000
+	2300 5200 2300 5700
+Wire Wire Line
+	850  5100 1350 5100
 Wire Bus Line
-	11100 900  11100 1600
+	3700 2150 3700 2700
 Wire Bus Line
 	900  2150 900  5700
 Wire Bus Line
 	750  2150 750  5750
-Wire Bus Line
-	9400 900  9400 2300
-Text GLabel 9400 900  0    50   Input ~ 0
-MA[0..14]
+Wire Wire Line
+	9700 1300 9500 1300
+$Comp
+L 62256:62256 U?
+U 1 1 6500E3FF
+P 10300 1900
+AR Path="/6500E3FF" Ref="U?"  Part="1" 
+AR Path="/6310B9C7/6500E3FF" Ref="U003"  Part="1" 
+F 0 "U003" H 10050 3000 50  0000 C CNN
+F 1 "62256" H 10500 3000 50  0000 C CNN
+F 2 "Package_DIP:DIP-28_W7.62mm_Socket" H 10300 1900 50  0001 C CNN
+F 3 "http://www.6502.org/users/alexis/62256.pdf" H 10300 1900 50  0001 C CNN
+	1    10300 1900
+	1    0    0    -1  
+$EndComp
+Text GLabel 9700 2600 0    50   Input ~ 0
+~MCS
 $EndSCHEMATC

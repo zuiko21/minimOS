@@ -2045,28 +2045,6 @@ MA[0..14]
 Text GLabel 9700 2800 0    50   Input ~ 0
 ~DWE
 Connection ~ 10300 3100
-Wire Bus Line
-	9400 900  9400 2300
-Wire Bus Line
-	11100 900  11100 1600
-Wire Bus Line
-	2150 6300 2150 7000
-Wire Bus Line
-	1050 6400 1050 6900
-Wire Bus Line
-	5650 4400 5650 4850
-Wire Bus Line
-	2450 4400 2450 5750
-Wire Bus Line
-	2300 5200 2300 5700
-Wire Wire Line
-	850  5100 1350 5100
-Wire Bus Line
-	3700 2150 3700 2700
-Wire Bus Line
-	900  2150 900  5700
-Wire Bus Line
-	750  2150 750  5750
 Wire Wire Line
 	9700 1300 9500 1300
 $Comp
@@ -2084,4 +2062,26 @@ F 3 "http://www.6502.org/users/alexis/62256.pdf" H 10300 1900 50  0001 C CNN
 $EndComp
 Text GLabel 9700 2600 0    50   Input ~ 0
 ~MCS
+Wire Wire Line
+	850  5100 1350 5100
+Wire Bus Line
+	1050 6400 1050 6900
+Wire Bus Line
+	5650 4400 5650 4850
+Wire Bus Line
+	3700 2150 3700 2700
+Wire Bus Line
+	2300 5200 2300 5700
+Wire Bus Line
+	2450 4400 2450 5750
+Wire Bus Line
+	2150 6300 2150 7000
+Wire Bus Line
+	11100 900  11100 1600
+Wire Bus Line
+	900  2150 900  5700
+Wire Bus Line
+	750  2150 750  5750
+Wire Bus Line
+	9400 900  9400 2300
 $EndSCHEMATC
