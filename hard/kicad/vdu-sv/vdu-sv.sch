@@ -1085,46 +1085,46 @@ $EndComp
 $Comp
 L 74xx:74HC04 U18
 U 3 1 65AEE968
-P 1825 5250
-F 0 "U18" H 1700 5250 50  0000 L CNN
-F 1 "74HC04" H 1700 5075 50  0000 L CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1825 5250 50  0001 C CNN
-F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 1825 5250 50  0001 C CNN
-	3    1825 5250
+P 2975 4800
+F 0 "U18" H 2850 4800 50  0000 L CNN
+F 1 "74HC04" H 2850 4625 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 2975 4800 50  0001 C CNN
+F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 2975 4800 50  0001 C CNN
+	3    2975 4800
 	1    0    0    -1  
 $EndComp
 $Comp
 L 74xx:74HC04 U18
 U 4 1 65AEFD06
-P 2975 4800
-F 0 "U18" H 2950 4800 50  0000 C CNN
-F 1 "74HC04" H 3000 4625 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 2975 4800 50  0001 C CNN
-F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 2975 4800 50  0001 C CNN
-	4    2975 4800
+P 1825 4625
+F 0 "U18" H 1800 4625 50  0000 C CNN
+F 1 "74HC04" H 1850 4450 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1825 4625 50  0001 C CNN
+F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 1825 4625 50  0001 C CNN
+	4    1825 4625
 	1    0    0    -1  
 $EndComp
 $Comp
 L 74xx:74HC04 U18
 U 5 1 65AF115C
-P 5650 3450
-F 0 "U18" V 5550 3450 50  0000 C CNN
-F 1 "74HC04" V 5450 3275 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 5650 3450 50  0001 C CNN
-F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 5650 3450 50  0001 C CNN
-	5    5650 3450
-	0    -1   1    0   
+P 1825 5250
+F 0 "U18" H 1800 5250 50  0000 C CNN
+F 1 "74HC04" H 1875 5425 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1825 5250 50  0001 C CNN
+F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 1825 5250 50  0001 C CNN
+	5    1825 5250
+	1    0    0    1   
 $EndComp
 $Comp
 L 74xx:74HC04 U18
 U 6 1 65AF2AF3
-P 1825 4625
-F 0 "U18" H 1800 4625 50  0000 C CNN
-F 1 "74HC04" H 1825 4851 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1825 4625 50  0001 C CNN
-F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 1825 4625 50  0001 C CNN
-	6    1825 4625
-	1    0    0    -1  
+P 5650 3450
+F 0 "U18" V 5550 3450 50  0000 C CNN
+F 1 "74HC04" V 5450 3625 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 5650 3450 50  0001 C CNN
+F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 5650 3450 50  0001 C CNN
+	6    5650 3450
+	0    1    1    0   
 $EndComp
 $Comp
 L 74xx:74HC04 U18
@@ -1380,12 +1380,12 @@ $Comp
 L Device:R R5
 U 1 1 65A6028D
 P 9400 4750
-F 0 "R5" V 9500 4750 50  0000 C CNN
+F 0 "R5" V 9300 4750 50  0000 C CNN
 F 1 "680" V 9400 4750 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 9330 4750 50  0001 C CNN
 F 3 "~" H 9400 4750 50  0001 C CNN
 	1    9400 4750
-	0    1    1    0   
+	0    -1   -1   0   
 $EndComp
 Text Label 6125 5375 0    50   ~ 0
 ~DDOT
