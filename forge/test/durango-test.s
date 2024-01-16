@@ -40,7 +40,7 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2081			; 2.0b1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2082			; 2.0b2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$9060			; time, 18.03
@@ -606,9 +606,9 @@ it_1:
 		BEQ it_slow			; did not respond at all! eeeeeek
 	LDA #$01				; nice mid green value in all modes
 	STA $6FDF				; place index dot @32 eeeeeek
-	STA $6FDD				; ** v2 ** @28 too
+	STA $6FDB				; ** v2 ** @28 too
 	ASL						; ** v2 ** turn into red
-	STA $6FD6				; ** v2 ** mark for TURBO
+	STA $6FCD				; ** v2 ** mark for TURBO
 	LDA #$0F				; nice white value in all modes
 it_2:
 		STA $703F, X		; place 'dot', note offsets
