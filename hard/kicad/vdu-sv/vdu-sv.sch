@@ -2015,4 +2015,65 @@ Wire Wire Line
 	6950 5100 6950 4925
 Wire Wire Line
 	6600 5200 6600 4925
+$Comp
+L Mechanical:MountingHole_Pad H1
+U 1 1 65AC552F
+P 10850 2800
+F 0 "H1" V 10804 2950 50  0000 L CNN
+F 1 "M3" V 10895 2950 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10850 2800 50  0001 C CNN
+F 3 "~" H 10850 2800 50  0001 C CNN
+	1    10850 2800
+	0    1    1    0   
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H2
+U 1 1 65ADC50B
+P 10850 2975
+F 0 "H2" V 10804 3125 50  0000 L CNN
+F 1 "M3" V 10895 3125 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10850 2975 50  0001 C CNN
+F 3 "~" H 10850 2975 50  0001 C CNN
+	1    10850 2975
+	0    1    1    0   
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H3
+U 1 1 65ADDD4B
+P 10850 3150
+F 0 "H3" V 10804 3300 50  0000 L CNN
+F 1 "M3" V 10895 3300 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10850 3150 50  0001 C CNN
+F 3 "~" H 10850 3150 50  0001 C CNN
+	1    10850 3150
+	0    1    1    0   
+$EndComp
+Connection ~ 10750 2975
+Wire Wire Line
+	10750 2975 10750 3150
+$Comp
+L power:GND #PWR0116
+U 1 1 65AF2BC5
+P 10750 3150
+F 0 "#PWR0116" H 10750 2900 50  0001 C CNN
+F 1 "GND" H 10755 2977 50  0000 C CNN
+F 2 "" H 10750 3150 50  0001 C CNN
+F 3 "" H 10750 3150 50  0001 C CNN
+	1    10750 3150
+	1    0    0    -1  
+$EndComp
+$Comp
+L Graphic:Logo_Open_Hardware_Small LOGO1
+U 1 1 65AF78F3
+P 10875 2000
+F 0 "LOGO1" H 10875 2275 50  0001 C CNN
+F 1 "La Jaquería" H 10875 1775 50  0001 C CNN
+F 2 "durango:jaqueria" H 10875 2000 50  0001 C CNN
+F 3 "~" H 10875 2000 50  0001 C CNN
+	1    10875 2000
+	1    0    0    -1  
+$EndComp
+Connection ~ 10750 3150
+Wire Wire Line
+	10750 2800 10750 2975
 $EndSCHEMATC
