@@ -94,45 +94,34 @@ $EndComp
 $Comp
 L 74xx:74LS00 U3
 U 1 1 65A53EB2
-P 1225 5875
-F 0 "U3" H 1200 5875 50  0000 C CNN
-F 1 "74HC00" H 1200 5675 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1225 5875 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 1225 5875 50  0001 C CNN
-	1    1225 5875
+P 1225 5250
+F 0 "U3" H 1200 5250 50  0000 C CNN
+F 1 "74HC00" H 1200 5050 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1225 5250 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 1225 5250 50  0001 C CNN
+	1    1225 5250
 	1    0    0    -1  
 $EndComp
 $Comp
 L 74xx:74LS00 U3
 U 2 1 65A55B68
-P 3575 4700
-F 0 "U3" H 3550 4700 50  0000 C CNN
-F 1 "74HC00" H 3575 4500 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3575 4700 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 3575 4700 50  0001 C CNN
-	2    3575 4700
-	1    0    0    -1  
-$EndComp
-$Comp
-L 74xx:74LS00 U3
-U 3 1 65A56322
 P 2675 4500
-F 0 "U3" V 2650 4500 50  0000 C CNN
-F 1 "74HC00" V 2575 4500 50  0000 C CNN
+F 0 "U3" H 2650 4500 50  0000 C CNN
+F 1 "74HC00" H 2675 4300 50  0000 C CNN
 F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 2675 4500 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 2675 4500 50  0001 C CNN
-	3    2675 4500
-	0    -1   1    0   
+	2    2675 4500
+	0    1    1    0   
 $EndComp
 $Comp
 L 74xx:74LS00 U3
 U 4 1 65A58ED5
-P 1225 5250
-F 0 "U3" H 1200 5250 50  0000 C CNN
-F 1 "74HC00" H 1225 5450 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1225 5250 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 1225 5250 50  0001 C CNN
-	4    1225 5250
+P 1225 5875
+F 0 "U3" H 1200 5875 50  0000 C CNN
+F 1 "74HC00" H 1225 6075 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1225 5875 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 1225 5875 50  0001 C CNN
+	4    1225 5875
 	1    0    0    1   
 $EndComp
 $Comp
@@ -2007,4 +1996,15 @@ F 3 "" H 7800 5900 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 Connection ~ 7800 5900
+$Comp
+L 74xx:74LS00 U3
+U 3 1 65A56322
+P 3575 4700
+F 0 "U3" V 3550 4700 50  0000 C CNN
+F 1 "74HC00" V 3475 4700 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3575 4700 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 3575 4700 50  0001 C CNN
+	3    3575 4700
+	1    0    0    1   
+$EndComp
 $EndSCHEMATC

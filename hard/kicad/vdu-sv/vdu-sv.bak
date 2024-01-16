@@ -94,45 +94,34 @@ $EndComp
 $Comp
 L 74xx:74LS00 U3
 U 1 1 65A53EB2
-P 1225 5875
-F 0 "U3" H 1200 5875 50  0000 C CNN
-F 1 "74HC00" H 1200 5675 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1225 5875 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 1225 5875 50  0001 C CNN
-	1    1225 5875
+P 1225 5250
+F 0 "U3" H 1200 5250 50  0000 C CNN
+F 1 "74HC00" H 1200 5050 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1225 5250 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 1225 5250 50  0001 C CNN
+	1    1225 5250
 	1    0    0    -1  
 $EndComp
 $Comp
 L 74xx:74LS00 U3
 U 2 1 65A55B68
-P 3575 4700
-F 0 "U3" H 3550 4700 50  0000 C CNN
-F 1 "74HC00" H 3575 4500 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3575 4700 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 3575 4700 50  0001 C CNN
-	2    3575 4700
-	1    0    0    -1  
-$EndComp
-$Comp
-L 74xx:74LS00 U3
-U 3 1 65A56322
 P 2675 4500
-F 0 "U3" V 2650 4500 50  0000 C CNN
-F 1 "74HC00" V 2575 4500 50  0000 C CNN
+F 0 "U3" H 2650 4500 50  0000 C CNN
+F 1 "74HC00" H 2675 4300 50  0000 C CNN
 F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 2675 4500 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 2675 4500 50  0001 C CNN
-	3    2675 4500
-	0    -1   1    0   
+	2    2675 4500
+	0    1    1    0   
 $EndComp
 $Comp
 L 74xx:74LS00 U3
 U 4 1 65A58ED5
-P 1225 5250
-F 0 "U3" H 1200 5250 50  0000 C CNN
-F 1 "74HC00" H 1225 5450 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1225 5250 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 1225 5250 50  0001 C CNN
-	4    1225 5250
+P 1225 5875
+F 0 "U3" H 1200 5875 50  0000 C CNN
+F 1 "74HC00" H 1225 6075 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1225 5875 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 1225 5875 50  0001 C CNN
+	4    1225 5875
 	1    0    0    1   
 $EndComp
 $Comp
@@ -1072,12 +1061,12 @@ NoConn ~ 8450 1575
 $Comp
 L 74xx:74HC04 U18
 U 1 1 65AB5531
-P 1825 5875
-F 0 "U18" H 1800 5875 50  0000 C CNN
-F 1 "74HC04" H 1850 5700 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1825 5875 50  0001 C CNN
-F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 1825 5875 50  0001 C CNN
-	1    1825 5875
+P 1825 5250
+F 0 "U18" H 1800 5250 50  0000 C CNN
+F 1 "74HC04" H 1850 5075 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1825 5250 50  0001 C CNN
+F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 1825 5250 50  0001 C CNN
+	1    1825 5250
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
@@ -1096,12 +1085,12 @@ $EndComp
 $Comp
 L 74xx:74HC04 U18
 U 3 1 65AEE968
-P 1825 5250
-F 0 "U18" H 1700 5250 50  0000 L CNN
-F 1 "74HC04" H 1700 5075 50  0000 L CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1825 5250 50  0001 C CNN
-F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 1825 5250 50  0001 C CNN
-	3    1825 5250
+P 1825 5875
+F 0 "U18" H 1700 5875 50  0000 L CNN
+F 1 "74HC04" H 1700 5700 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1825 5875 50  0001 C CNN
+F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 1825 5875 50  0001 C CNN
+	3    1825 5875
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1372,7 +1361,7 @@ U 1 1 65A9750F
 P 5975 5375
 F 0 "D20" H 5975 5475 50  0000 C CNN
 F 1 "BAT85" H 5975 5275 50  0000 C CNN
-F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" H 5975 5200 50  0001 C CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_KathodeUp" H 5975 5200 50  0001 C CNN
 F 3 "https://assets.nexperia.com/documents/data-sheet/BAT85.pdf" H 5975 5375 50  0001 C CNN
 	1    5975 5375
 	1    0    0    -1  
@@ -1996,10 +1985,10 @@ I_RH
 Text Label 9100 5100 2    50   ~ 0
 I_GH
 $Comp
-L power:+5V #PWR?
+L power:+5V #PWR0115
 U 1 1 65A6B7BC
 P 7800 5900
-F 0 "#PWR?" H 7800 5750 50  0001 C CNN
+F 0 "#PWR0115" H 7800 5750 50  0001 C CNN
 F 1 "+5V" V 7800 6100 50  0000 C CNN
 F 2 "" H 7800 5900 50  0001 C CNN
 F 3 "" H 7800 5900 50  0001 C CNN
@@ -2007,4 +1996,15 @@ F 3 "" H 7800 5900 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 Connection ~ 7800 5900
+$Comp
+L 74xx:74LS00 U3
+U 3 1 65A56322
+P 3575 4700
+F 0 "U3" V 3550 4700 50  0000 C CNN
+F 1 "74HC00" V 3475 4700 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3575 4700 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 3575 4700 50  0001 C CNN
+	3    3575 4700
+	1    0    0    1   
+$EndComp
 $EndSCHEMATC
