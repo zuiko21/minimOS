@@ -1,5 +1,6 @@
 ; FULL test of Durango-X/S/R (ROMmable version, NMOS-savvy)
-; (c) 2021-2023 Carlos J. Santisteban
+; now with v2 & TURBO support!
+; (c) 2021-2024 Carlos J. Santisteban
 ; last modified 20230323-1820
 
 ; ****************************
@@ -27,16 +28,23 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"Hardware test", 0	; C-string with filename @ [8], max 238 chars
-;	.asc	"(comment)"		; optional C-string with comment after filename, filename+comment up to 238 chars
+	.asc	"Hardware test v2", 0	; C-string with filename @ [8], max 220 chars
+;	.asc	"(comment)"		; optional C-string with comment after filename, filename+comment up to 220 chars
 	.byt	0				; second terminator for optional comment, just in case
 
 ; advance to end of header
-	.dsb	rom_start + $F8 - *, $FF
+	.dsb	rom_start + $E6 - *, $FF
+
+; NEW library commit (user field 2)
+	.asc	"$$$$$$$$"
+; NEW main commit (user field 1)
+	.asc	"$$$$$$$$"
+; NEW coded version number
+	.word	$2081			; 2.0b1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$B380			; time, 22.28
-	.word	$5673			; date, 2023/3/19
+	.word	$9060			; time, 18.03
+	.word	$5830			; date, 2024/1/16
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -371,7 +379,7 @@ mt_bitok:
 		DEX
 		BPL mt_disp
 
-; ** next is testing for HSYNC and VSYNC **
+; ** next is testing for HSYNC and VSYNC ** must adapt to v1, v2, TURBO and EIA!
 ; print initial GREEN banner
 	LDX #2					; max. offset
 lf_l:
@@ -576,7 +584,7 @@ it_b:
 	LDY #0					; initial value and inner counter reset
 	STY test
 ; assume HW interrupt is on
-	LDX #154				; about 129 ms, time for 32 interrupts
+	LDX #154				; about 129 ms, time for 32 interrupts v1 (28 for v2, 14 for TURBO)
 	CLI						; start counting!
 ; this provides timeout
 it_1:
@@ -598,6 +606,9 @@ it_1:
 		BEQ it_slow			; did not respond at all! eeeeeek
 	LDA #$01				; nice mid green value in all modes
 	STA $6FDF				; place index dot @32 eeeeeek
+	STA $6FDD				; ** v2 ** @28 too
+	ASL						; ** v2 ** turn into red
+	STA $6FD6				; ** v2 ** mark for TURBO
 	LDA #$0F				; nice white value in all modes
 it_2:
 		STA $703F, X		; place 'dot', note offsets
@@ -605,17 +616,23 @@ it_2:
 		BNE it_2
 ; compare results
 	LDA test
-	CMP #31					; one less is aceptable
-	BCS it_3				; <31 is slow 
+	CMP #13					; one less (for TURBO) is acceptable ** v2
+	BCS it_3				; <13 is slow ** v2
 it_slow:
 		LDA #%00011111		; *** slow IRQ, LED code = %1 11100000 ***
 		JMP panic
 it_3:
-	CMP #34					; up to 33 is fine
-	BCC it_ok				; 31-33 accepted, >33 is fast
+	CMP #34					; up to 33 is fine (for v1)
+	BCC it_wt				; 13-33 accepted, >33 is fast
 it_fast:
 		LDA #%10101011		; *** fast IRQ, LED code = %1 01010100 ***
-		JMP panic 
+		JMP panic
+it_wt:
+	CMP #16					; 15 is max count for TURBO ** v2
+	BCC it_ok				; TURBO is OK ** v2
+		CMP #27				; 27 is min count ** for v2
+		BCS it_ok			; OK ** for v2
+			LDA #%00110011	; *** between ** TURBO and standard values, LED code = %1 11001100 ***
 it_ok:
 
 ; ***************************
