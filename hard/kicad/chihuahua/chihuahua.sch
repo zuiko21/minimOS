@@ -10,9 +10,9 @@ Date "2023-10-07"
 Rev "v1"
 Comp "@zuiko21"
 Comment1 "(c) 2012-2023 Carlos J. Santisteban"
-Comment2 ""
-Comment3 ""
-Comment4 ""
+Comment2 "D mode: 32K RAM, 16K ROM, IO=$800x-$BFFx"
+Comment3 "C mode: 16K RAM, 32K ROM, IO=$400x-$7FFx"
+Comment4 "/IOC signal is NOT available!"
 $EndDescr
 $Comp
 L w65c02s:W65C02S U1
@@ -326,7 +326,7 @@ $Comp
 L Jumper:SolderJumper_3_Bridged12 JP1
 U 1 1 652B7D41
 P 5800 1300
-F 0 "JP1" H 5950 1400 50  0000 C CNN
+F 0 "JP1" H 5900 1400 50  0000 C CNN
 F 1 "D" H 5750 1400 50  0000 C CNN
 F 2 "Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm" H 5800 1300 50  0001 C CNN
 F 3 "~" H 5800 1300 50  0001 C CNN
@@ -2005,7 +2005,7 @@ L Device:R R5
 U 1 1 66AEBC30
 P 5900 6600
 F 0 "R5" H 5970 6646 50  0000 L CNN
-F 1 "1K" V 5900 6550 50  0000 L CNN
+F 1 "1K" V 5900 6550 50  0000 L CIN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 5830 6600 50  0001 C CNN
 F 3 "~" H 5900 6600 50  0001 C CNN
 	1    5900 6600
