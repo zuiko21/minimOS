@@ -2281,10 +2281,10 @@ $EndComp
 Wire Wire Line
 	750  5250 1050 5250
 $Comp
-L power:+5V #PWR?
+L power:+5V #PWR0131
 U 1 1 652EE0F4
 P 9300 5350
-F 0 "#PWR?" H 9300 5200 50  0001 C CNN
+F 0 "#PWR0131" H 9300 5200 50  0001 C CNN
 F 1 "+5V" V 9315 5478 50  0000 L CNN
 F 2 "" H 9300 5350 50  0001 C CNN
 F 3 "" H 9300 5350 50  0001 C CNN
@@ -2292,6 +2292,56 @@ F 3 "" H 9300 5350 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 Connection ~ 9300 5350
+$Comp
+L Mechanical:MountingHole_Pad H1
+U 1 1 65AE728F
+P 10250 1025
+F 0 "H1" V 10204 1175 50  0000 L CNN
+F 1 "MountingHole_Pad" V 10295 1175 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10250 1025 50  0001 C CNN
+F 3 "~" H 10250 1025 50  0001 C CNN
+	1    10250 1025
+	0    1    1    0   
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H2
+U 1 1 65AE7CE7
+P 10250 1250
+F 0 "H2" V 10204 1400 50  0000 L CNN
+F 1 "MountingHole_Pad" V 10295 1400 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10250 1250 50  0001 C CNN
+F 3 "~" H 10250 1250 50  0001 C CNN
+	1    10250 1250
+	0    1    1    0   
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H3
+U 1 1 65AE8CBA
+P 10250 1475
+F 0 "H3" V 10204 1625 50  0000 L CNN
+F 1 "MountingHole_Pad" V 10295 1625 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10250 1475 50  0001 C CNN
+F 3 "~" H 10250 1475 50  0001 C CNN
+	1    10250 1475
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	10150 1025 10150 1250
+Connection ~ 10150 1250
+Wire Wire Line
+	10150 1250 10150 1475
+$Comp
+L power:GND #PWR0132
+U 1 1 65B0B18F
+P 10150 1475
+F 0 "#PWR0132" H 10150 1225 50  0001 C CNN
+F 1 "GND" H 10155 1302 50  0000 C CNN
+F 2 "" H 10150 1475 50  0001 C CNN
+F 3 "" H 10150 1475 50  0001 C CNN
+	1    10150 1475
+	1    0    0    -1  
+$EndComp
+Connection ~ 10150 1475
 Wire Bus Line
 	3650 1600 5600 1600
 Wire Bus Line
