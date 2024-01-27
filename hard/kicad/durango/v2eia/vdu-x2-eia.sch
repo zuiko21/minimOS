@@ -524,13 +524,13 @@ F 3 "~" H 6800 5700 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 Wire Wire Line
-	6650 5800 7200 5800
+	6650 5800 7000 5800
 Wire Wire Line
-	6650 6000 7200 6000
+	6650 6000 7000 6000
 Wire Wire Line
-	6650 6200 7200 6200
+	6650 6200 7000 6200
 Wire Wire Line
-	7200 6400 6650 6400
+	7325 6400 7000 6400
 $Comp
 L Device:CP C5
 U 1 1 60C049B1
@@ -678,7 +678,7 @@ $Comp
 L Device:R R21
 U 1 1 60E10F90
 P 7100 5500
-F 0 "R21" V 7000 5500 50  0000 C CNN
+F 0 "R21" V 7175 5500 50  0000 C CNN
 F 1 "470" V 7100 5500 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7030 5500 50  0001 C CNN
 F 3 "~" H 7100 5500 50  0001 C CNN
@@ -1360,7 +1360,7 @@ Wire Wire Line
 	10450 6200 10450 4400
 Text Label 7050 4250 0    50   ~ 0
 FEND
-Text Notes 7725 6450 1    50   ~ 10
+Text Notes 7800 6300 1    50   ~ 10
 *) R15: may use 330 ohm\n   if single video output
 $Comp
 L Device:R R107
@@ -1575,7 +1575,7 @@ Wire Wire Line
 	10950 1850 10750 1850
 Connection ~ 3050 3450
 Wire Wire Line
-	7250 5500 7500 5500
+	7250 5500 7300 5500
 Wire Wire Line
 	6950 5000 7400 5000
 Connection ~ 6950 5000
@@ -1805,8 +1805,6 @@ Wire Wire Line
 Wire Wire Line
 	4950 3400 4950 3300
 Wire Wire Line
-	5150 3300 5150 3400
-Wire Wire Line
 	5550 3350 5550 3400
 Wire Wire Line
 	5550 3350 6050 3350
@@ -1963,20 +1961,18 @@ Text Notes 6800 2250 0    50   ~ 0
 or 74HC4040
 Text GLabel 2750 1300 2    50   Input ~ 0
 FCLK
-Text GLabel 7200 5800 2    50   Input ~ 0
+Text GLabel 7325 5800 2    50   Input ~ 0
 DBLU
-Text GLabel 7200 6000 2    50   Input ~ 0
+Text GLabel 7325 6000 2    50   Input ~ 0
 DGLO
-Text GLabel 7200 6200 2    50   Input ~ 0
+Text GLabel 7325 6200 2    50   Input ~ 0
 DRED
-Text GLabel 7200 6400 2    50   Input ~ 0
+Text GLabel 7325 6400 2    50   Input ~ 0
 DGHI
 Text Label 6600 5500 0    50   ~ 0
 VIN
 Text Label 9250 4700 0    50   ~ 0
 ~CSYNC
-Wire Wire Line
-	5150 3300 4950 3300
 Wire Wire Line
 	4850 5100 4850 4950
 Wire Wire Line
@@ -2171,12 +2167,6 @@ $EndComp
 NoConn ~ 1800 6950
 Wire Wire Line
 	1700 7550 1800 7550
-Wire Bus Line
-	8800 550  10750 550 
-Wire Bus Line
-	4100 550  8050 550 
-Wire Bus Line
-	800  4350 3700 4350
 $Comp
 L power:GND #PWR0178
 U 1 1 66731E12
@@ -2191,4 +2181,93 @@ $EndComp
 Connection ~ 1800 7550
 Wire Wire Line
 	1800 7550 1900 7550
+$Comp
+L Device:R R114
+U 1 1 65BB1D73
+P 7150 5700
+F 0 "R114" V 7075 5700 50  0000 C CNN
+F 1 "330" V 7150 5700 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7080 5700 50  0001 C CNN
+F 3 "~" H 7150 5700 50  0001 C CNN
+	1    7150 5700
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R113
+U 1 1 65BB4FC8
+P 7150 5900
+F 0 "R113" V 7075 5900 50  0000 C CNN
+F 1 "330" V 7150 5900 50  0000 C CIN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7080 5900 50  0001 C CNN
+F 3 "~" H 7150 5900 50  0001 C CNN
+	1    7150 5900
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R112
+U 1 1 65BB7467
+P 7150 6100
+F 0 "R112" V 7075 6100 50  0000 C CNN
+F 1 "330" V 7150 6100 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7080 6100 50  0001 C CNN
+F 3 "~" H 7150 6100 50  0001 C CNN
+	1    7150 6100
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R111
+U 1 1 65BB86DA
+P 7150 6300
+F 0 "R111" V 7075 6300 50  0000 C CNN
+F 1 "330" V 7150 6300 50  0000 C CIN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7080 6300 50  0001 C CNN
+F 3 "~" H 7150 6300 50  0001 C CNN
+	1    7150 6300
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	7000 6300 7000 6400
+Connection ~ 7000 6400
+Wire Wire Line
+	7000 6400 6650 6400
+Wire Wire Line
+	7000 6100 7000 6200
+Connection ~ 7000 6200
+Wire Wire Line
+	7000 6200 7325 6200
+Wire Wire Line
+	7000 5900 7000 6000
+Connection ~ 7000 6000
+Wire Wire Line
+	7000 6000 7325 6000
+Wire Wire Line
+	7000 5700 7000 5800
+Connection ~ 7000 5800
+Wire Wire Line
+	7000 5800 7325 5800
+Wire Wire Line
+	7300 6300 7300 6100
+Connection ~ 7300 5500
+Wire Wire Line
+	7300 5500 7500 5500
+Connection ~ 7300 5700
+Wire Wire Line
+	7300 5700 7300 5500
+Connection ~ 7300 5900
+Wire Wire Line
+	7300 5900 7300 5700
+Connection ~ 7300 6100
+Wire Wire Line
+	7300 6100 7300 5900
+Wire Wire Line
+	5550 3350 5150 3350
+Wire Wire Line
+	5150 3350 5150 3400
+Connection ~ 5550 3350
+Wire Bus Line
+	8800 550  10750 550 
+Wire Bus Line
+	4100 550  8050 550 
+Wire Bus Line
+	800  4350 3700 4350
 $EndSCHEMATC

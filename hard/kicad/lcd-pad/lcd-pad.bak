@@ -20,7 +20,7 @@ U 1 1 652CE392
 P 1250 3000
 F 0 "J1" H 1300 4117 50  0000 C CNN
 F 1 "VIAport" H 1300 4026 50  0000 C CNN
-F 2 "Connector_IDC:IDC-Header_2x20_P2.54mm_Vertical" H 1250 3000 50  0001 C CNN
+F 2 "Connector_PinSocket_2.54mm:PinSocket_2x20_P2.54mm_Vertical" H 1250 3000 50  0001 C CNN
 F 3 "~" H 1250 3000 50  0001 C CNN
 	1    1250 3000
 	1    0    0    -1  
@@ -244,101 +244,70 @@ Entry Wire Line
 	800  2500 900  2600
 Wire Bus Line
 	800  1800 1950 1800
-Connection ~ 1950 1800
-Text Label 2350 3450 2    50   ~ 0
+Text Label 2075 3900 0    50   ~ 0
 PB0
-Text Label 2350 3550 2    50   ~ 0
+Text Label 2050 3700 0    50   ~ 0
 PB1
-Text Label 2350 3650 2    50   ~ 0
+Text Label 2050 3800 0    50   ~ 0
 PB2
-Text Label 2350 3750 2    50   ~ 0
-PB3
-Text Label 2350 3850 2    50   ~ 0
+Text Label 2050 4600 0    50   ~ 0
 PB4
-Text Label 2350 3950 2    50   ~ 0
+Text Label 2050 4700 0    50   ~ 0
 PB5
-Text Label 2350 4050 2    50   ~ 0
+Text Label 2050 4800 0    50   ~ 0
 PB6
-Text Label 2350 4150 2    50   ~ 0
+Text Label 2050 4900 0    50   ~ 0
 PB7
 Entry Wire Line
-	1950 4250 2050 4150
+	2050 4900 1950 4800
 Entry Wire Line
-	1950 4150 2050 4050
+	2050 4800 1950 4700
 Entry Wire Line
-	1950 4050 2050 3950
+	2050 4700 1950 4600
 Entry Wire Line
-	1950 3950 2050 3850
+	2050 4600 1950 4500
 Entry Wire Line
-	1950 3850 2050 3750
+	2050 3900 1950 3800
 Entry Wire Line
-	1950 3750 2050 3650
+	2050 3800 1950 3700
 Entry Wire Line
-	1950 3650 2050 3550
+	2050 3700 1950 3600
 Entry Wire Line
-	1950 3550 2050 3450
+	2050 3900 1950 3800
 Wire Wire Line
-	2050 3450 2350 3450
-Wire Wire Line
-	2350 3550 2050 3550
-Wire Wire Line
-	2050 3650 2350 3650
-Wire Wire Line
-	2350 3750 2050 3750
-Wire Wire Line
-	2050 3850 2350 3850
-Wire Wire Line
-	2350 3950 2050 3950
-Wire Wire Line
-	2050 4050 2350 4050
-Text Label 2350 2150 2    50   ~ 0
+	2050 3900 2500 3900
+Text Label 2050 2600 0    50   ~ 0
 PA0
-Text Label 2350 2250 2    50   ~ 0
+Text Label 2050 2500 0    50   ~ 0
 PA1
-Text Label 2350 2350 2    50   ~ 0
+Text Label 2050 2400 0    50   ~ 0
 PA2
-Text Label 2350 2450 2    50   ~ 0
+Text Label 2050 2300 0    50   ~ 0
 PA3
-Text Label 2350 2550 2    50   ~ 0
+Text Label 2050 2200 0    50   ~ 0
 PA4
-Text Label 2350 2650 2    50   ~ 0
+Text Label 2050 2100 0    50   ~ 0
 PA5
-Text Label 2350 2750 2    50   ~ 0
+Text Label 2050 2000 0    50   ~ 0
 PA6
-Text Label 2350 2850 2    50   ~ 0
+Text Label 2050 1900 0    50   ~ 0
 PA7
 Entry Wire Line
-	1950 2050 2050 2150
-Wire Wire Line
-	2050 2150 2350 2150
+	1950 1800 2050 1900
 Entry Wire Line
-	1950 2150 2050 2250
+	1950 1900 2050 2000
 Entry Wire Line
-	1950 2250 2050 2350
+	1950 2000 2050 2100
 Entry Wire Line
-	1950 2350 2050 2450
+	1950 2100 2050 2200
 Entry Wire Line
-	1950 2450 2050 2550
+	1950 2200 2050 2300
 Entry Wire Line
-	1950 2550 2050 2650
+	1950 2300 2050 2400
 Entry Wire Line
-	1950 2650 2050 2750
+	1950 2400 2050 2500
 Entry Wire Line
-	1950 2750 2050 2850
-Wire Wire Line
-	2050 2250 2350 2250
-Wire Wire Line
-	2350 2350 2050 2350
-Wire Wire Line
-	2050 2450 2350 2450
-Wire Wire Line
-	2350 2550 2050 2550
-Wire Wire Line
-	2050 2650 2350 2650
-Wire Wire Line
-	2350 2750 2050 2750
-Wire Wire Line
-	2050 2850 2350 2850
+	1950 2500 2050 2600
 Wire Wire Line
 	1550 3900 1750 3900
 Wire Wire Line
@@ -360,23 +329,16 @@ Wire Wire Line
 Wire Wire Line
 	800  2900 1050 2900
 Wire Wire Line
-	1550 2500 1800 2500
-Wire Wire Line
-	1800 2500 1800 3050
-Wire Wire Line
 	1550 2600 1750 2600
 Wire Wire Line
 	1750 2600 1750 3150
 Wire Wire Line
-	1750 3150 2350 3150
-Wire Wire Line
 	1750 3150 1050 3150
 Wire Wire Line
 	1050 3150 1050 3100
-Connection ~ 1750 3150
-Text GLabel 1950 900  1    50   Input ~ 0
+Text GLabel 1950 1800 1    50   Input ~ 0
 PA[0..7]
-Text GLabel 650  1000 1    50   Input ~ 0
+Text GLabel 650  1800 1    50   Input ~ 0
 PB[0..7]
 $Comp
 L Graphic:Logo_Open_Hardware_Large LOGO1
@@ -422,17 +384,6 @@ F 3 "~" H 10250 1250 50  0001 C CNN
 	1    10250 1250
 	0    1    1    0   
 $EndComp
-$Comp
-L Mechanical:MountingHole_Pad H3
-U 1 1 65AE8CBA
-P 10250 1475
-F 0 "H3" V 10204 1625 50  0000 L CNN
-F 1 "MountingHole_Pad" V 10295 1625 50  0000 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 10250 1475 50  0001 C CNN
-F 3 "~" H 10250 1475 50  0001 C CNN
-	1    10250 1475
-	0    1    1    0   
-$EndComp
 Wire Wire Line
 	10150 1025 10150 1250
 Connection ~ 10150 1250
@@ -449,19 +400,520 @@ F 3 "" H 10150 1475 50  0001 C CNN
 	1    10150 1475
 	1    0    0    -1  
 $EndComp
-Connection ~ 10150 1475
+Text Notes 2200 2600 0    50   ~ 0
+ROW0
+Text Notes 2200 2500 0    50   ~ 0
+ROW1
+Text Notes 2200 2400 0    50   ~ 0
+ROW2
+Text Notes 2200 2300 0    50   ~ 0
+ROW3
+Text Notes 2200 2200 0    50   ~ 0
+COL0
+Text Notes 2200 2100 0    50   ~ 0
+COL1
+Text Notes 2200 2000 0    50   ~ 0
+COL2
+Text Notes 2200 1900 0    50   ~ 0
+COL3
+Text Notes 2275 3900 0    50   ~ 0
+LCD_E
+Text Notes 2225 3700 0    50   ~ 0
+RS
+Text Notes 2225 3800 0    50   ~ 0
+R~W
+Text Notes 2225 4600 0    50   ~ 0
+D4
+Text Notes 2225 4700 0    50   ~ 0
+D5
+Text Notes 2225 4800 0    50   ~ 0
+D6
+Text Notes 2225 4900 0    50   ~ 0
+D7
+Text Notes 1500 4450 0    50   ~ 0
+LED
+Text Notes 1700 2500 0    50   ~ 0
+SLCT
+$Comp
+L Display_Character:NHD-0420H1Z U1
+U 1 1 65AD4109
+P 2900 4300
+F 0 "U1" H 2525 5150 50  0000 C CNN
+F 1 "LCD 20x4" H 2625 5050 50  0000 C CNN
+F 2 "Display:JHD204AO_LCD20x4" H 2900 3400 50  0001 C CNN
+F 3 "http://www.newhavendisplay.com/specs/NHD-0420H1Z-FSW-GBW-33V3.pdf" H 3000 4200 50  0001 C CNN
+	1    2900 4300
+	1    0    0    -1  
+$EndComp
+Connection ~ 1950 4250
+Wire Wire Line
+	2050 4900 2500 4900
+Wire Wire Line
+	2050 4800 2500 4800
+Wire Wire Line
+	2050 4700 2500 4700
+Wire Wire Line
+	2050 4600 2500 4600
+Wire Wire Line
+	2050 3700 2500 3700
+Wire Wire Line
+	2050 3800 2500 3800
+NoConn ~ 2500 4200
+NoConn ~ 2500 4300
+NoConn ~ 2500 4400
+NoConn ~ 2500 4500
+Text Label 1950 5600 0    50   ~ 0
+BUF_LED
+$Comp
+L power:GND #PWR0101
+U 1 1 65AFEC84
+P 2900 5100
+F 0 "#PWR0101" H 2900 4850 50  0001 C CNN
+F 1 "GND" H 2905 4927 50  0000 C CNN
+F 2 "" H 2900 5100 50  0001 C CNN
+F 3 "" H 2900 5100 50  0001 C CNN
+	1    2900 5100
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+5V #PWR0102
+U 1 1 65AFF2F3
+P 2900 3400
+F 0 "#PWR0102" H 2900 3250 50  0001 C CNN
+F 1 "+5V" H 2915 3573 50  0000 C CNN
+F 2 "" H 2900 3400 50  0001 C CNN
+F 3 "" H 2900 3400 50  0001 C CNN
+	1    2900 3400
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2900 3400 2900 3500
+Wire Wire Line
+	2900 3400 3450 3400
+Wire Wire Line
+	3450 3400 3450 4600
+Wire Wire Line
+	3450 4600 3300 4600
+Connection ~ 2900 3400
+$Comp
+L Jumper:Jumper_3_Bridged12 JP1
+U 1 1 65B020D8
+P 2500 5350
+F 0 "JP1" V 2454 5417 50  0000 L CNN
+F 1 "AUTO/ON" V 2545 5417 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Horizontal" H 2500 5350 50  0001 C CNN
+F 3 "~" H 2500 5350 50  0001 C CNN
+	1    2500 5350
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	3500 4500 3300 4500
+Text Label 3475 5350 2    50   ~ 0
+LED_K
+$Comp
+L Transistor_BJT:BC558 Q1
+U 1 1 65AD5F6C
+P 1750 5500
+F 0 "Q1" V 1985 5500 50  0000 C CNN
+F 1 "BC558" V 2076 5500 50  0000 C CNN
+F 2 "Package_TO_SOT_THT:TO-92_Inline" H 1950 5425 50  0001 L CIN
+F 3 "http://www.fairchildsemi.com/ds/BC/BC557.pdf" H 1750 5500 50  0001 L CNN
+	1    1750 5500
+	0    -1   1    0   
+$EndComp
+Wire Wire Line
+	1750 4450 1750 5300
+Connection ~ 1750 4450
+$Comp
+L power:GND #PWR0111
+U 1 1 65AD980A
+P 1550 5600
+F 0 "#PWR0111" H 1550 5350 50  0001 C CNN
+F 1 "GND" H 1555 5427 50  0000 C CNN
+F 2 "" H 1550 5600 50  0001 C CNN
+F 3 "" H 1550 5600 50  0001 C CNN
+	1    1550 5600
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	2500 5100 2900 5100
+Connection ~ 2900 5100
+Wire Wire Line
+	2650 5350 3500 5350
+Wire Wire Line
+	3500 5350 3500 4500
+Wire Wire Line
+	2500 5600 1950 5600
+Wire Wire Line
+	2900 3400 2350 3400
+Text Notes 4300 2050 1    50   ~ 0
+COL0
+Text Label 4300 2200 1    50   ~ 0
+PA4
+Text Notes 4550 2050 1    50   ~ 0
+COL1
+Text Label 4550 2200 1    50   ~ 0
+PA5
+Text Notes 4800 2050 1    50   ~ 0
+COL2
+Text Label 4800 2200 1    50   ~ 0
+PA6
+Text Notes 5100 2050 1    50   ~ 0
+COL3
+Text Label 5100 2200 1    50   ~ 0
+PA7
+Text Notes 4100 4050 2    50   ~ 0
+ROW3
+Text Label 4250 4000 2    50   ~ 0
+PA3
+Text Notes 4100 3600 2    50   ~ 0
+ROW2
+Text Label 4250 3550 2    50   ~ 0
+PA2
+Text Notes 4100 3150 2    50   ~ 0
+ROW1
+Text Label 4250 3100 2    50   ~ 0
+PA1
+Text Notes 4100 2700 2    50   ~ 0
+ROW0
+Text Label 4250 2650 2    50   ~ 0
+PA0
+Wire Wire Line
+	5100 3350 5100 2900
+Connection ~ 5100 3350
+Wire Wire Line
+	5100 2900 5100 2450
+Connection ~ 5100 2900
+Wire Wire Line
+	5100 3800 5100 3350
+Wire Wire Line
+	4800 3350 4800 2900
+Connection ~ 4800 3350
+Wire Wire Line
+	4800 2900 4800 2450
+Connection ~ 4800 2900
+Wire Wire Line
+	4800 3800 4800 3350
+Wire Wire Line
+	4550 3350 4550 2900
+Connection ~ 4550 3350
+Wire Wire Line
+	4550 2900 4550 2450
+Connection ~ 4550 2900
+Wire Wire Line
+	4550 3800 4550 3350
+Wire Wire Line
+	4300 3350 4300 2900
+Connection ~ 4300 3350
+Wire Wire Line
+	4300 2900 4300 2450
+Connection ~ 4300 2900
+Wire Wire Line
+	4300 3800 4300 3350
+Wire Wire Line
+	5000 2650 4750 2650
+Connection ~ 5000 2650
+Wire Wire Line
+	4750 2650 4500 2650
+Connection ~ 4750 2650
+Connection ~ 4500 2650
+Wire Wire Line
+	5300 2650 5000 2650
+Wire Wire Line
+	5000 3100 4750 3100
+Connection ~ 5000 3100
+Wire Wire Line
+	4750 3100 4500 3100
+Connection ~ 4750 3100
+Connection ~ 4500 3100
+Wire Wire Line
+	5300 3100 5000 3100
+Wire Wire Line
+	5000 3550 4750 3550
+Connection ~ 5000 3550
+Wire Wire Line
+	4750 3550 4500 3550
+Connection ~ 4750 3550
+Connection ~ 4500 3550
+Wire Wire Line
+	5300 3550 5000 3550
+Wire Wire Line
+	5000 4000 4750 4000
+Connection ~ 5000 4000
+Wire Wire Line
+	4750 4000 4500 4000
+Connection ~ 4750 4000
+Connection ~ 4500 4000
+Wire Wire Line
+	5300 4000 5000 4000
+$Comp
+L Switch:SW_Push_45deg SW16
+U 1 1 65AEF77F
+P 5200 3900
+F 0 "SW16" H 5200 4181 50  0000 C CNN
+F 1 "Up" H 5200 4090 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 5200 3900 50  0001 C CNN
+F 3 "~" H 5200 3900 50  0001 C CNN
+	1    5200 3900
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW15
+U 1 1 65AEF775
+P 4900 3900
+F 0 "SW15" H 4900 4181 50  0000 C CNN
+F 1 "#" H 4900 4090 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4900 3900 50  0001 C CNN
+F 3 "~" H 4900 3900 50  0001 C CNN
+	1    4900 3900
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW14
+U 1 1 65AEF76B
+P 4650 3900
+F 0 "SW14" H 4650 4181 50  0000 C CNN
+F 1 "0" H 4650 4090 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4650 3900 50  0001 C CNN
+F 3 "~" H 4650 3900 50  0001 C CNN
+	1    4650 3900
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW13
+U 1 1 65AEF761
+P 4400 3900
+F 0 "SW13" H 4400 4181 50  0000 C CNN
+F 1 "*" H 4400 4090 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4400 3900 50  0001 C CNN
+F 3 "~" H 4400 3900 50  0001 C CNN
+	1    4400 3900
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW12
+U 1 1 65AEF757
+P 5200 3450
+F 0 "SW12" H 5200 3731 50  0000 C CNN
+F 1 "Left" H 5200 3640 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 5200 3450 50  0001 C CNN
+F 3 "~" H 5200 3450 50  0001 C CNN
+	1    5200 3450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW11
+U 1 1 65AEF74D
+P 4900 3450
+F 0 "SW11" H 4900 3731 50  0000 C CNN
+F 1 "9" H 4900 3640 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4900 3450 50  0001 C CNN
+F 3 "~" H 4900 3450 50  0001 C CNN
+	1    4900 3450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW10
+U 1 1 65AEF743
+P 4650 3450
+F 0 "SW10" H 4650 3731 50  0000 C CNN
+F 1 "8" H 4650 3640 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4650 3450 50  0001 C CNN
+F 3 "~" H 4650 3450 50  0001 C CNN
+	1    4650 3450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW9
+U 1 1 65AEF739
+P 4400 3450
+F 0 "SW9" H 4400 3731 50  0000 C CNN
+F 1 "7" H 4400 3640 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4400 3450 50  0001 C CNN
+F 3 "~" H 4400 3450 50  0001 C CNN
+	1    4400 3450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW8
+U 1 1 65AE74B9
+P 5200 3000
+F 0 "SW8" H 5200 3281 50  0000 C CNN
+F 1 "Down" H 5200 3190 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 5200 3000 50  0001 C CNN
+F 3 "~" H 5200 3000 50  0001 C CNN
+	1    5200 3000
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW7
+U 1 1 65AE74AF
+P 4900 3000
+F 0 "SW7" H 4900 3281 50  0000 C CNN
+F 1 "6" H 4900 3190 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4900 3000 50  0001 C CNN
+F 3 "~" H 4900 3000 50  0001 C CNN
+	1    4900 3000
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW6
+U 1 1 65AE74A5
+P 4650 3000
+F 0 "SW6" H 4650 3281 50  0000 C CNN
+F 1 "5" H 4650 3190 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4650 3000 50  0001 C CNN
+F 3 "~" H 4650 3000 50  0001 C CNN
+	1    4650 3000
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW5
+U 1 1 65AE749B
+P 4400 3000
+F 0 "SW5" H 4400 3281 50  0000 C CNN
+F 1 "4" H 4400 3190 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4400 3000 50  0001 C CNN
+F 3 "~" H 4400 3000 50  0001 C CNN
+	1    4400 3000
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW4
+U 1 1 65AE49E8
+P 5200 2550
+F 0 "SW4" H 5200 2831 50  0000 C CNN
+F 1 "Right" H 5200 2740 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 5200 2550 50  0001 C CNN
+F 3 "~" H 5200 2550 50  0001 C CNN
+	1    5200 2550
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW3
+U 1 1 65AE3EF3
+P 4900 2550
+F 0 "SW3" H 4900 2831 50  0000 C CNN
+F 1 "3" H 4900 2740 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4900 2550 50  0001 C CNN
+F 3 "~" H 4900 2550 50  0001 C CNN
+	1    4900 2550
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW2
+U 1 1 65AE316F
+P 4650 2550
+F 0 "SW2" H 4650 2831 50  0000 C CNN
+F 1 "2" H 4650 2740 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4650 2550 50  0001 C CNN
+F 3 "~" H 4650 2550 50  0001 C CNN
+	1    4650 2550
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW1
+U 1 1 65AE0B63
+P 4400 2550
+F 0 "SW1" H 4400 2831 50  0000 C CNN
+F 1 "1" H 4400 2740 50  0000 C CNN
+F 2 "Button_Switch_THT:SW_PUSH_6mm" H 4400 2550 50  0001 C CNN
+F 3 "~" H 4400 2550 50  0001 C CNN
+	1    4400 2550
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2050 2200 4300 2200
+Wire Wire Line
+	2050 2100 4550 2100
+Wire Wire Line
+	2050 2000 4800 2000
+Wire Wire Line
+	2050 1900 5100 1900
+Connection ~ 5100 2450
+Wire Wire Line
+	5100 1900 5100 2450
+Connection ~ 4800 2450
+Wire Wire Line
+	4800 2000 4800 2450
+Connection ~ 4550 2450
+Wire Wire Line
+	4550 2100 4550 2450
+Connection ~ 4300 2450
+Wire Wire Line
+	4300 2450 4300 2200
+Wire Wire Line
+	3500 4000 3500 2300
+Wire Wire Line
+	3500 4000 4500 4000
+Wire Wire Line
+	3550 3550 3550 2400
+Wire Wire Line
+	3550 3550 4500 3550
+Wire Wire Line
+	3600 3100 3600 2500
+Wire Wire Line
+	3600 3100 4500 3100
+Wire Wire Line
+	3650 2650 3650 2600
+Wire Wire Line
+	3650 2650 4500 2650
+Text Label 2050 4500 0    50   ~ 0
+PB3
+Entry Wire Line
+	2050 4500 1950 4400
+NoConn ~ 2275 4500
+Wire Wire Line
+	2275 4500 2050 4500
+$Comp
+L Device:R_Network04 RN1
+U 1 1 65AD55E8
+P 2550 2850
+F 0 "RN1" H 2270 2804 50  0000 R CNN
+F 1 "4K7" H 2270 2895 50  0000 R CNN
+F 2 "Resistor_THT:R_Array_SIP5" V 2825 2850 50  0001 C CNN
+F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 2550 2850 50  0001 C CNN
+	1    2550 2850
+	1    0    0    1   
+$EndComp
+Wire Wire Line
+	2350 3050 2350 3400
+Wire Wire Line
+	2050 2600 2350 2600
+Wire Wire Line
+	2050 2500 2450 2500
+Wire Wire Line
+	2050 2400 2550 2400
+Wire Wire Line
+	2050 2300 2650 2300
+Wire Wire Line
+	2350 2650 2350 2600
+Connection ~ 2350 2600
+Wire Wire Line
+	2350 2600 3650 2600
+Wire Wire Line
+	2450 2650 2450 2500
+Connection ~ 2450 2500
+Wire Wire Line
+	2450 2500 3600 2500
+Wire Wire Line
+	2550 2650 2550 2400
+Connection ~ 2550 2400
+Wire Wire Line
+	2550 2400 3550 2400
+Wire Wire Line
+	2650 2650 2650 2300
 Wire Bus Line
-	1950 900  1950 1800
-Wire Wire Line
-	1800 3050 2350 3050
-Wire Wire Line
-	2050 4150 2350 4150
+	1950 3600 1950 4250
 Wire Bus Line
 	800  1800 800  2500
 Wire Bus Line
-	650  1000 650  4250
+	650  1800 650  4250
 Wire Bus Line
-	1950 3550 1950 4250
+	1950 4250 1950 4800
 Wire Bus Line
-	1950 1800 1950 2750
+	1950 1800 1950 2500
+Connection ~ 2650 2300
+Wire Wire Line
+	2650 2300 3500 2300
 $EndSCHEMATC
