@@ -6,10 +6,10 @@ $Descr A4 11693 8268
 encoding utf-8
 Sheet 2 3
 Title "DURANGO-X computer"
-Date "2023-08-28"
-Rev "v2"
+Date "2024-01-27"
+Rev "v2.2"
 Comp "@zuiko21"
-Comment1 "(c) 2021-2023 Carlos J. Santisteban"
+Comment1 "(c) 2021-2024 Carlos J. Santisteban"
 Comment2 ""
 Comment3 ""
 Comment4 ""
@@ -377,7 +377,6 @@ F 3 "" H 11050 3900 50  0001 C CNN
 $EndComp
 NoConn ~ 10550 4400
 NoConn ~ 10350 4400
-NoConn ~ 10150 4400
 Text Label 10450 4950 3    50   ~ 0
 ~CDE
 Text Label 10750 4950 3    50   ~ 0
@@ -553,33 +552,33 @@ Wire Wire Line
 Wire Wire Line
 	7200 6400 6650 6400
 $Comp
-L Device:R R912
+L Device:R R112
 U 1 1 60B908BB
 P 7350 6200
-F 0 "R912" V 7250 6200 50  0000 C CNN
-F 1 "470" V 7350 6200 50  0000 C CNN
+F 0 "R112" V 7250 6200 50  0000 C CNN
+F 1 "470" V 7350 6200 50  0000 C CIN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7280 6200 50  0001 C CNN
 F 3 "~" H 7350 6200 50  0001 C CNN
 	1    7350 6200
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:R R913
+L Device:R R113
 U 1 1 60B90BF0
 P 7350 6000
-F 0 "R913" V 7250 6000 50  0000 C CNN
-F 1 "1K2" V 7350 6000 50  0000 C CNN
+F 0 "R113" V 7250 6000 50  0000 C CNN
+F 1 "1K2" V 7350 6000 50  0000 C CIN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7280 6000 50  0001 C CNN
 F 3 "~" H 7350 6000 50  0001 C CNN
 	1    7350 6000
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:R R914
+L Device:R R114
 U 1 1 60B90F46
 P 7350 5800
-F 0 "R914" V 7250 5800 50  0000 C CNN
-F 1 "470" V 7350 5800 50  0000 C CNN
+F 0 "R114" V 7250 5800 50  0000 C CNN
+F 1 "470" V 7350 5800 50  0000 C CIN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7280 5800 50  0001 C CNN
 F 3 "~" H 7350 5800 50  0001 C CNN
 	1    7350 5800
@@ -1720,7 +1719,7 @@ Wire Wire Line
 	7500 4500 7500 4400
 Wire Wire Line
 	7500 4400 6200 4400
-Text Label 7050 4400 0    50   ~ 0
+Text Label 7500 4500 0    50   ~ 0
 ~VS
 Wire Wire Line
 	4650 3300 4950 3300
@@ -1747,11 +1746,11 @@ $EndComp
 Text Notes 2200 6000 0    50   ~ 0
 OR ~IO8Q
 $Comp
-L Device:R R911
+L Device:R R111
 U 1 1 60B9031C
 P 7350 6400
-F 0 "R911" V 7250 6400 50  0000 C CNN
-F 1 "680" V 7350 6400 50  0000 C CNN
+F 0 "R111" V 7250 6400 50  0000 C CNN
+F 1 "680" V 7350 6400 50  0000 C CIN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7280 6400 50  0001 C CNN
 F 3 "~" H 7350 6400 50  0001 C CNN
 	1    7350 6400
@@ -2010,17 +2009,13 @@ Wire Wire Line
 Wire Wire Line
 	4950 3400 4950 3300
 Wire Wire Line
-	5150 3300 5150 3400
-Wire Wire Line
 	5550 3350 5550 3400
 Wire Wire Line
 	5550 3350 6050 3350
 Wire Wire Line
 	6200 4400 6200 3250
 Wire Wire Line
-	5250 3250 6200 3250
-Wire Wire Line
-	5250 3400 5250 3250
+	5150 3250 6200 3250
 Wire Wire Line
 	5050 3400 5050 2550
 Wire Wire Line
@@ -2190,7 +2185,7 @@ Wire Wire Line
 Connection ~ 10050 4500
 Text Label 10250 4600 0    50   ~ 0
 ~HS
-Text Label 10050 4600 0    50   ~ 0
+Text Label 10050 4450 1    50   ~ 0
 ~VS
 Text Label 8150 6450 0    50   ~ 0
 Y_CMP
@@ -2259,8 +2254,6 @@ Connection ~ 5550 2350
 Wire Wire Line
 	5550 2350 5550 3150
 Wire Wire Line
-	5150 3300 4950 3300
-Wire Wire Line
 	4850 5100 4850 4950
 Wire Wire Line
 	4850 4950 5000 4950
@@ -2277,6 +2270,94 @@ Wire Wire Line
 Wire Wire Line
 	10300 6200 10450 6200
 Connection ~ 10450 6200
+Wire Wire Line
+	5150 3250 5150 3400
+Wire Wire Line
+	5250 3400 5250 3275
+Wire Wire Line
+	5250 3275 6175 3275
+Wire Wire Line
+	6175 3275 6175 4425
+Wire Wire Line
+	6175 4425 7475 4425
+Wire Wire Line
+	7475 4425 7475 4525
+Wire Wire Line
+	7475 4525 10150 4525
+Wire Wire Line
+	10150 4525 10150 4400
+Text Label 10150 4525 3    50   ~ 0
+VS
+Text Label 7475 4525 2    50   ~ 0
+VS
+Text Label 5150 3250 0    50   ~ 0
+~VS
+Text Label 5250 3400 0    50   ~ 0
+VS
+Text Notes 8425 6325 0    50   ~ 10
+R111-R114: may be down to 330ohm\nif Component Video output is used
+$Comp
+L Device:Jumper_NC_Small JP?
+U 1 1 65FD43CA
+P 10925 6125
+AR Path="/65FD43CA" Ref="JP?"  Part="1" 
+AR Path="/60C42E7C/65FD43CA" Ref="JP608"  Part="1" 
+F 0 "JP608" H 11100 6200 50  0000 C CNN
+F 1 "CV" H 10875 6200 39  0000 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 10925 6125 50  0001 C CNN
+F 3 "~" H 10925 6125 50  0001 C CNN
+	1    10925 6125
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:Jumper_NC_Small JP?
+U 1 1 660061A1
+P 10925 5975
+AR Path="/660061A1" Ref="JP?"  Part="1" 
+AR Path="/60C42E7C/660061A1" Ref="JP607"  Part="1" 
+F 0 "JP607" H 11100 6050 50  0000 C CNN
+F 1 "CV" H 10875 6050 39  0000 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 10925 5975 50  0001 C CNN
+F 3 "~" H 10925 5975 50  0001 C CNN
+	1    10925 5975
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:Jumper_NC_Small JP?
+U 1 1 660072BF
+P 10925 5825
+AR Path="/660072BF" Ref="JP?"  Part="1" 
+AR Path="/60C42E7C/660072BF" Ref="JP606"  Part="1" 
+F 0 "JP606" H 11100 5900 50  0000 C CNN
+F 1 "bridge for Component Video" H 10775 5950 39  0000 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 10925 5825 50  0001 C CNN
+F 3 "~" H 10925 5825 50  0001 C CNN
+	1    10925 5825
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	11025 5825 11025 5975
+Connection ~ 11025 5975
+Wire Wire Line
+	11025 5975 11025 6125
+$Comp
+L power:GND #PWR0177
+U 1 1 6606EE63
+P 11025 6125
+F 0 "#PWR0177" H 11025 5875 50  0001 C CNN
+F 1 "GND" H 11030 5952 50  0000 C CNN
+F 2 "" H 11025 6125 50  0001 C CNN
+F 3 "" H 11025 6125 50  0001 C CNN
+	1    11025 6125
+	1    0    0    -1  
+$EndComp
+Connection ~ 11025 6125
+Text Label 10825 5825 2    50   ~ 0
+RED
+Text Label 10825 5975 2    50   ~ 0
+GRN
+Text Label 10825 6125 2    50   ~ 0
+BLUE
 Wire Bus Line
 	8800 550  10750 550 
 Wire Bus Line

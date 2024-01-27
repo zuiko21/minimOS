@@ -2737,6 +2737,12 @@ $EndComp
 Connection ~ 2150 1650
 Text GLabel 1850 1650 0    50   Input ~ 0
 ~NMIREQ
+Text GLabel 9100 2350 0    50   Input ~ 0
+MA[0..14]
+Text GLabel 9000 2700 1    50   Input ~ 0
+~MCS
+Text GLabel 9400 3600 2    50   Input ~ 0
+~DWE
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Bus Line
@@ -2771,10 +2777,4 @@ Wire Bus Line
 	9100 950  9100 5050
 Wire Bus Line
 	4250 700  4250 6450
-Text GLabel 9100 2350 0    50   Input ~ 0
-MA[0..14]
-Text GLabel 9000 2700 1    50   Input ~ 0
-~MCS
-Text GLabel 9400 3600 2    50   Input ~ 0
-~DWE
 $EndSCHEMATC
