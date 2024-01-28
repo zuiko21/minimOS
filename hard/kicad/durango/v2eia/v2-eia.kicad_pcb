@@ -2,7 +2,7 @@
 
   (general
     (thickness 1.6)
-    (drawings 35)
+    (drawings 37)
     (tracks 3663)
     (zones 0)
     (modules 156)
@@ -28,7 +28,7 @@
     (44 Edge.Cuts user)
     (45 Margin user)
     (46 B.CrtYd user)
-    (47 F.CrtYd user hide)
+    (47 F.CrtYd user)
     (48 B.Fab user)
     (49 F.Fab user)
   )
@@ -8865,6 +8865,12 @@
     )
   )
 
+  (gr_text K (at 14.605 19.685 270) (layer F.SilkS) (tstamp 65B5998C)
+    (effects (font (size 1 1) (thickness 0.15)))
+  )
+  (gr_text K (at 14.605 136.525 270) (layer F.SilkS)
+    (effects (font (size 1 1) (thickness 0.15)))
+  )
   (gr_text "EIA\n(NTSC)\n60 Hz" (at 183.515 118.11 90) (layer F.SilkS) (tstamp 6590FFCF)
     (effects (font (size 2.54 2.4) (thickness 0.6)))
   )
