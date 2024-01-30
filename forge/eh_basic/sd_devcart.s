@@ -79,7 +79,7 @@ fsize	= buffer+252		; file size INCLUDING 256-byte header
 ; **********************
 ; ********************************************************************************
 ; *** driver info string NEW ***
-driver_id:
++driver_id:
 	.asc	"devCart storage (raw)", $0D, 0
 
 +aux_in:					; *** device input (MUST restore devices upon EOF) ***
