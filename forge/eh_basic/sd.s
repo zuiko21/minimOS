@@ -1,8 +1,8 @@
 ; SD-card driver module for EhBASIC
 ; supports both the devCart and the Fast SPI interface (ID=0-3)
 ; now with FAT32 host filesystem support!
-; (c) 2023 Carlos J. Santisteban
-; last modified 20231204-2359
+; (c) 2023-2024 Carlos J. Santisteban
+; last modified 20240130-1345
 
 ; uncomment DEBUG version below, does actually write to the card, but also display sector number and contents
 ;#define	DEBUG
@@ -117,6 +117,10 @@ fsize	= buffer+252		; file size INCLUDING 256-byte header
 ; *** driver package ***
 ; **********************
 ; ********************************************************************************
+; *** driver info string NEW ***
+driver_id:
+	.asc	"devCart & FastSPI in FAT32", $0D, 0
+
 +aux_in:					; *** device input (MUST restore devices upon EOF) ***
 	LDA f_cur+2				; just in case
 	CMP f_eof+2
