@@ -13,7 +13,7 @@
 80 :FOR j=1 TO 3
 90 ::READ r(i,j):READ bt(i,j)
 100 NEXT j, i
-105 DATA ** base resistors interleaved with BT601 coeff. **
+105 REM ** base resistors interleaved with BT601 coeff. **
 110 DATA 12000, 0.279125, 22000, 0.139563, 56000, 0.081312
 120 DATA 15000, 0.220843, 27000, 0.110421, 33000, 0.168736
 130 REM ** bias resistors ** R638=R648, R639=R649
