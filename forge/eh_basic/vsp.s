@@ -1,6 +1,6 @@
 ; Virtual Serial Port driver module for EhBASIC (under perdita)
-; (c) 2023 Carlos J. Santisteban
-; last modified 20230414-1751
+; (c) 2023-2024 Carlos J. Santisteban
+; last modified 20240130-1343
 
 #echo Using Virtual Serial Port for LOAD/SAVE, interactive filename prompt
 
@@ -8,6 +8,10 @@
 #define	PSV_FREAD	$12
 #define	PSV_FWRITE	$13
 #define	PSV_FCLOSE	$1F
+
+; *** driver info string NEW ***
+driver_id:
+	.asc	"VSP storage", $0D, 0
 
 ; *** redefine placeholders for EhBASIC LOAD/SAVE routines ***
 -aux_in:					; *** device input (MUST restore devices upon EOF) ***
