@@ -1,11 +1,13 @@
 ; *** adapted version of EhBASIC for Durango-X (standalone) ***
-; (c) 2015-2023 Carlos J. Santisteban
-; last modified 20231205-0915
+; (c) 2015-2024 Carlos J. Santisteban
+; last modified 20240130-1312
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
 
 ; $E7E1 $E7CF $E7C6 $E7D3 $E7D1 $E7D5 $E7CF $E81E $E825
+
+#define	VERSION	4
 
 ; 2.00	new revision numbers start here
 ; 2.01	fixed LCASE$() and UCASE$()
@@ -126,11 +128,11 @@ rom_start:
 ; NEW main commit (user field 1) *** currently the hash BEFORE actual commit on multi.s
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$26D3			; 2.22f3
+	.word	$26D0+VERSION			; 2.22f4
 
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5800			; time, 11.00
-	.word	$5673			; date, 2023/3/19
+	.word	$6A00			; time, 13.16		0110 1-010 000-0 0000 
+	.word	$583E			; date, 2024/01/30	0101 100-0 001-1 1110
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -720,6 +722,11 @@ LAB_2E05
 	LDA	#<LAB_SMSG		; point to sign-on message (low addr)
 	LDY	#>LAB_SMSG		; point to sign-on message (high addr)
 	JSR	LAB_18C3		; print null terminated string from memory
+; *** new, display storage driver info ***
+	LDA	#<driver_id		; point to driver info (low addr)
+	LDY	#>driver_id		; point to driver info (high addr)
+	JSR	LAB_18C3		; print null terminated string from memory
+; ***
 	JMP	LAB_1274		; go do warm start (non vectored)
 
 ; open up space in memory
@@ -8283,7 +8290,7 @@ LAB_MSZM
 
 LAB_SMSG
 	.byte	" Bytes free",$0D,$0D
-	.byte	"Enhanced BASIC 2.22",$0D
+	.byte	"Enhanced BASIC 2.22f", VERSION+'0', $0D
 	.byte	"for Durango-X",$0D,$00	; *** do not know why this was $0A ***
 
 ; numeric constants and series
