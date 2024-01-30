@@ -3,7 +3,7 @@
 ; v2.1.4 with volume-into-FAT32 and Pocket support!
 ; (c) 2023-2024 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20240130-1434
+; last modified 20240130-1650
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -534,7 +534,7 @@ mosi_set:
 		DEC IOCart			; digitalWrite(SCK, 0);	** assume SD_CLK  is   1 **
 		DEY					; x--;
 		BNE tr_l			; (worst case, 8*43 = 344t)
-	LDA miso				; return in; (total including call overhead = 372t, ~242 Âµs)
+	LDA miso				; return in; (total including call overhead = 372t, ~242 µs)
 	RTS
 
 ; *** enable card transfer ***
@@ -1178,7 +1178,7 @@ rd_wtok:
 			LDA #$FF
 			JSR spi_tr
 			CMP #$FF
-			BEQ rd_wtok		; if((read = SPI_transfer(0xFF)) != 0xFF)		break; (759t ~494Âµs)
+			BEQ rd_wtok		; if((read = SPI_transfer(0xFF)) != 0xFF)		break; (759t ~494µs)
 chk_tok:
 		STA res				; read = ...
 		CMP #$FE
@@ -1481,7 +1481,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"DurangoÂ·X", 15, " SD bootloader 2.1.2", 13, 13, 0
+	.asc	14,"Durango·X", 15, " SD bootloader 2.1.4", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1491,7 +1491,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.1f3
+#echo	2.1f4
 
 ; offset table for the above messages
 msg_ix:
@@ -1641,7 +1641,7 @@ end_sd:
 
 ; ************************
 ; ************************
-; *** firmware support *** for DurangoÂ·X
+; *** firmware support *** for Durango·X
 ; ************************
 ; ************************
 reset:
@@ -1688,7 +1688,7 @@ jf_res:
 nes_init:
 		STA IO9nes1			; send clock pulse
 		DEX
-		BNE nes_init		; all bits read @Â IO9nes0
+		BNE nes_init		; all bits read @ IO9nes0
 	LDA IO9nes0				; get bits
 	LDX IO9nes1				; get bits for pad 2
 	STA GAMEPAD_MASK1		; * MUST have a standard address, and MUST be initialised! *
@@ -1753,7 +1753,7 @@ irq_sup:
 nes_loop:
 		STA IO9nes1			; send clock pulse
 		DEX
-		BNE nes_loop		; all bits read @Â IO9nes0/1
+		BNE nes_loop		; all bits read @ IO9nes0/1
 ; done, but check GAMEPAD_MASK1 & GAMEPAD_MASK2 after reading ports in BASIC!
 	LDA IO9nes0
 	EOR GAMEPAD_MASK1
