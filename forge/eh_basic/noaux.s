@@ -1,8 +1,12 @@
 ; dummy driver module for EhBASIC (under perdita)
-; (c) 2023 Carlos J. Santisteban
-; last modified 20230209-0012
+; (c) 2023-2024 Carlos J. Santisteban
+; last modified 20240130-1349
 
 #echo "No device for LOAD/SAVE!"
+
+; *** driver info string NEW ***
+driver_id:
+	.asc	14, "No storage!", 15, $0D, 0
 
 ; *** redefine placeholders for EhBASIC LOAD/SAVE routines ***
 -aux_in:					; *** device input (MUST restore devices upon EOF) ***
