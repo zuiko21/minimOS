@@ -1,6 +1,6 @@
 ; devCart SD-card driver module for EhBASIC
-; (c) 2023 Carlos J. Santisteban
-; last modified 20230504-1748
+; (c) 2023-2024 Carlos J. Santisteban
+; last modified 20240130-1347
 
 ; uncomment DEBUG version below, does actually write to the card, but also display sector number and contents
 ;#define	DEBUG
@@ -78,6 +78,10 @@ fsize	= buffer+252		; file size INCLUDING 256-byte header
 ; *** driver package ***
 ; **********************
 ; ********************************************************************************
+; *** driver info string NEW ***
+driver_id:
+	.asc	"devCart storage (raw)", $0D, 0
+
 +aux_in:					; *** device input (MUST restore devices upon EOF) ***
 	LDA f_cur+2				; just in case
 	CMP f_eof+2
