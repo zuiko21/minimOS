@@ -30,14 +30,14 @@
 ; xa ehbasic_sa.s -I ../../OS/firmware -l labels 
 ; may add -DDEF=KBBYPAD for optional keyboad-by-pad
 ; add -DDEF KBDMAT for generic matrix keyboard support (instead of PASK)
-; add -DAUXIO=aux_io.s for LOAD SAVE device (replace aux_io.s by suitable file)
+; add -DAUXIO="aux_io.s" for LOAD SAVE device (replace aux_io.s by suitable file)
 
 ;#define	KBBYPAD
 #define		KBDMAT
 
 ; default AUX I/O is Virtual Serial Port
 #ifndef	AUXIO
-#define	AUXIO	vsp.s
+#define	AUXIO	"vsp.s"
 #endif
 
 ; *****************************************************
@@ -7919,8 +7919,8 @@ call_out
 	LDX stdout
 	JMP (dev_out, X)	; *** indexed call ***
 
-; *** device-dependent AUX I/O driver pack *** -DAUXIO=aux_io.s or suitable file
-#include "AUXIO"
+; *** device-dependent AUX I/O driver pack *** -DAUXIO="aux_io.s" or suitable file
+#include AUXIO
 
 ; *** standard LOAD & SAVE for Durango-X ***
 V_LOAD					; load BASIC program *** now implemented via aux_io.s ***
