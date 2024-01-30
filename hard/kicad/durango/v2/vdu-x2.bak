@@ -2329,7 +2329,7 @@ P 10925 5825
 AR Path="/660072BF" Ref="JP?"  Part="1" 
 AR Path="/60C42E7C/660072BF" Ref="JP606"  Part="1" 
 F 0 "JP606" H 11100 5900 50  0000 C CNN
-F 1 "Component Video" H 10725 5925 39  0000 C CNN
+F 1 "bridge for Component Video" H 10775 5950 39  0000 C CNN
 F 2 "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm" H 10925 5825 50  0001 C CNN
 F 3 "~" H 10925 5825 50  0001 C CNN
 	1    10925 5825
