@@ -1,9 +1,9 @@
 ; Durango-X devcart SD multi-boot loader
 ; now with sidecar/fast SPI support
-; v2.1.3 with volume-into-FAT32 and Pocket support!
-; (c) 2023 Carlos J. Santisteban
+; v2.1.4 with volume-into-FAT32 and Pocket support!
+; (c) 2023-2024 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20231206-1819
+; last modified 20240130-1434
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -178,10 +178,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$21C3			; 2.1f3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$21C4			; 2.1f4		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$52C0			; time, 18.22		%1001 0-010 110-0 0000
-	.word	$5786			; date, 2023/12/06	%0101 011-1 100-0 0110
+	.word	$7440			; time, 14.34		%0111 0-100 010-0 0000
+	.word	$5837			; date, 2024/1/30	%0101 100-0 001-1 1110
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -534,7 +534,7 @@ mosi_set:
 		DEC IOCart			; digitalWrite(SCK, 0);	** assume SD_CLK  is   1 **
 		DEY					; x--;
 		BNE tr_l			; (worst case, 8*43 = 344t)
-	LDA miso				; return in; (total including call overhead = 372t, ~242 µs)
+	LDA miso				; return in; (total including call overhead = 372t, ~242 Âµs)
 	RTS
 
 ; *** enable card transfer ***
@@ -1178,7 +1178,7 @@ rd_wtok:
 			LDA #$FF
 			JSR spi_tr
 			CMP #$FF
-			BEQ rd_wtok		; if((read = SPI_transfer(0xFF)) != 0xFF)		break; (759t ~494µs)
+			BEQ rd_wtok		; if((read = SPI_transfer(0xFF)) != 0xFF)		break; (759t ~494Âµs)
 chk_tok:
 		STA res				; read = ...
 		CMP #$FE
@@ -1249,6 +1249,7 @@ full_pg:
 	BNE below64		; **
 		INC fsize+2	; **
 below64:
+	CLC				; EEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 	LDA fsize+1
 	ADC arg+3		; add to current sector, note big-endian!
 	STA arg+3
@@ -1480,7 +1481,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 2.1.2", 13, 13, 0
+	.asc	14,"DurangoÂ·X", 15, " SD bootloader 2.1.2", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1640,7 +1641,7 @@ end_sd:
 
 ; ************************
 ; ************************
-; *** firmware support *** for Durango·X
+; *** firmware support *** for DurangoÂ·X
 ; ************************
 ; ************************
 reset:
@@ -1687,7 +1688,7 @@ jf_res:
 nes_init:
 		STA IO9nes1			; send clock pulse
 		DEX
-		BNE nes_init		; all bits read @ IO9nes0
+		BNE nes_init		; all bits read @Â IO9nes0
 	LDA IO9nes0				; get bits
 	LDX IO9nes1				; get bits for pad 2
 	STA GAMEPAD_MASK1		; * MUST have a standard address, and MUST be initialised! *
@@ -1752,7 +1753,7 @@ irq_sup:
 nes_loop:
 		STA IO9nes1			; send clock pulse
 		DEX
-		BNE nes_loop		; all bits read @ IO9nes0/1
+		BNE nes_loop		; all bits read @Â IO9nes0/1
 ; done, but check GAMEPAD_MASK1 & GAMEPAD_MASK2 after reading ports in BASIC!
 	LDA IO9nes0
 	EOR GAMEPAD_MASK1
