@@ -2596,21 +2596,16 @@ Wire Wire Line
 	650  2800 550  2800
 Wire Wire Line
 	550  2800 550  3950
-NoConn ~ 1650 3450
-NoConn ~ 1650 3550
-NoConn ~ 1650 3850
-NoConn ~ 1650 4050
+NoConn ~ 1650 3950
 NoConn ~ 1650 4350
-Text Label 1650 3650 2    50   ~ 0
-CNT4
+Text Label 1650 3450 2    50   ~ 0
+CNT1
+Text Label 1650 3550 2    50   ~ 0
+CNT2
 Text Label 1650 3750 2    50   ~ 0
 CNT8
-Text Label 1650 3950 2    50   ~ 0
-CNT32
-Text Label 1650 4150 2    50   ~ 0
-CNT128
-Text Label 1650 4250 2    50   ~ 0
-CNT256
+Text Label 1650 4050 2    50   ~ 0
+CNT64
 Text Label 1650 4450 2    50   ~ 0
 CNT1K
 Text Label 1650 4550 2    50   ~ 0
@@ -2682,47 +2677,7 @@ Wire Wire Line
 Wire Wire Line
 	1200 4550 1650 4550
 Wire Wire Line
-	1150 3750 1300 3750
-Wire Wire Line
-	1300 3750 1300 3950
-Wire Wire Line
-	1300 3950 1650 3950
-Wire Wire Line
-	1150 3850 1350 3850
-Wire Wire Line
-	1350 3850 1350 4450
-Wire Wire Line
-	1350 4450 1650 4450
-Wire Wire Line
-	1150 3950 1250 3950
-Wire Wire Line
-	1250 3950 1250 3700
-Wire Wire Line
-	1250 3700 1350 3700
-Wire Wire Line
-	1350 3700 1350 3750
-Wire Wire Line
-	1350 3750 1650 3750
-Wire Wire Line
-	1150 4050 1400 4050
-Wire Wire Line
-	1400 4050 1400 3650
-Wire Wire Line
-	1400 3650 1650 3650
-Wire Wire Line
-	1150 4150 1250 4150
-Wire Wire Line
-	1250 4150 1250 5100
-Wire Wire Line
 	1250 5100 5750 5100
-Wire Wire Line
-	1150 4350 1300 4350
-Wire Wire Line
-	1300 4350 1300 4150
-Wire Wire Line
-	1300 4150 1650 4150
-Wire Wire Line
-	1150 4250 1650 4250
 $Comp
 L Diode:1N4148 D8
 U 1 1 6519950E
@@ -2743,6 +2698,57 @@ Text GLabel 9000 2700 1    50   Input ~ 0
 ~MCS
 Text GLabel 9400 3600 2    50   Input ~ 0
 ~DWE
+NoConn ~ 1650 3650
+NoConn ~ 1650 3850
+NoConn ~ 1650 4150
+NoConn ~ 1650 4250
+Wire Wire Line
+	1150 3750 1300 3750
+Wire Wire Line
+	1300 3750 1300 4450
+Wire Wire Line
+	1300 4450 1650 4450
+Wire Wire Line
+	1650 3750 1350 3750
+Wire Wire Line
+	1350 3750 1350 3950
+Wire Wire Line
+	1350 3950 1150 3950
+Wire Wire Line
+	1250 4050 1150 4050
+Wire Wire Line
+	1250 4050 1250 5100
+Wire Wire Line
+	1150 4350 1350 4350
+Wire Wire Line
+	1350 4350 1350 4050
+Wire Wire Line
+	1350 4050 1650 4050
+Wire Wire Line
+	1150 4250 1400 4250
+$Comp
+L power:+5V #PWR?
+U 1 1 65DD1D3F
+P 1400 4250
+F 0 "#PWR?" H 1400 4100 50  0001 C CNN
+F 1 "+5V" V 1325 4300 50  0000 L CNN
+F 2 "" H 1400 4250 50  0001 C CNN
+F 3 "" H 1400 4250 50  0001 C CNN
+	1    1400 4250
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	1150 4150 1400 4150
+Wire Wire Line
+	1400 4150 1400 3550
+Wire Wire Line
+	1400 3550 1650 3550
+Wire Wire Line
+	1150 3850 1250 3850
+Wire Wire Line
+	1250 3850 1250 3450
+Wire Wire Line
+	1250 3450 1650 3450
 Wire Bus Line
 	2500 5250 2800 5250
 Wire Bus Line
