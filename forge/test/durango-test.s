@@ -1,7 +1,7 @@
 ; FULL test of Durango-X/S/R (ROMmable version, NMOS-savvy)
 ; now with v2 & TURBO support!
 ; (c) 2021-2024 Carlos J. Santisteban
-; last modified 20230323-1820
+; last modified 20240131-101
 
 ; ****************************
 ; *** standard definitions ***
@@ -28,7 +28,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"Hardware test v2", 0	; C-string with filename @ [8], max 220 chars
+	.asc	"Hardware test v2.1", 0	; C-string with filename @ [8], max 220 chars
 ;	.asc	"(comment)"		; optional C-string with comment after filename, filename+comment up to 220 chars
 	.byt	0				; second terminator for optional comment, just in case
 
@@ -40,11 +40,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2082			; 2.0b2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2181			; 2.1b1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$9060			; time, 18.03
-	.word	$5830			; date, 2024/1/16
+	.word	$4800			; time, 9.00		0100 1-000 000-0 0000
+	.word	$583F			; date, 2024/1/31	0101 100-0 001-1 1111
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -68,7 +68,11 @@ reset:
 #endif
 	STA IO8mode				; set colour mode
 	STA IOAen				; disable hardware interrupt (LED turns on)
-
+; disable NMI for safety
+	LDY #<exit
+	LDA #>exit
+	STY fw_nmi
+	STA fw_nmi+1
 ; ** zeropage test **
 ; make high pitched chirp during test
 	LDX #<test				; 6510-savvy...
@@ -92,7 +96,7 @@ zp_2:
 		CPY #1				; expected value after 9 shifts (2+2)
 			BNE zp_bad
 		INX					; next address (2+4)
-		STX IOBeep			; make beep at 158t ~4.86 kHz
+		STX IOBeep			; make beep at 158t ~4.86 kHz, over 11 kHz in TURBO!
 		BNE zp_1			; complete page (3, post 13t)
 	BEQ zp_ok
 zp_bad:
@@ -323,7 +327,7 @@ ck_b:
 			DEX
 			BPL ck_b		; no offset!
 		LDA #%10100000		; *** bad ROM, LED code = %1 01011111 ***
-;		JMP panic
+;		JMP panic			; comment for unsigned ROM
 
 rom_ok:
 ; show banner if ROM checked OK (worth using RLE?)
@@ -379,7 +383,7 @@ mt_bitok:
 		DEX
 		BPL mt_disp
 
-; ** next is testing for HSYNC and VSYNC ** must adapt to v1, v2, TURBO and EIA!
+; ** next is testing for HSYNC and VSYNC ** must adapt to v1, v2, TURBO and EIA! 
 ; print initial GREEN banner
 	LDX #2					; max. offset
 lf_l:
@@ -393,6 +397,25 @@ lf_l:
 		STA $6740, X
 		DEX
 		BPL lf_l			; note offset-avoiding BPL
+; ** new blanking timing **
+; HBLANK is 34/98t in v1, 48/112t in v2 (96/224t in TURBO mode) and 36/100t in EIA (72/200 with TURBO)
+; VBLANK is 56 rasters for CCIR and 70 for EIA (5488t v1, 6272t v2, 12544t TURBO; 7000t EIA, 14000t EIA TURBO)
+; if counting 700t blocks that's ~8, 9, 18, 10 & 20 times (timeout 21?)
+; active V is 256 for CCIR and 192 for EIA (25088t v1, 28672t v2, 57344t TURBO; 19200t EIA, 38400t EIA TURBO)
+; if counting 1200t blocks that's ~21, 24, 48, 16 & 32 times (timeout 49?)
+	LDX #21					; VBLANK timeout
+ vb_skip:
+ 		JSR dly700			; suitable delay
+   		BIT IO8lf			; check blanking
+	BVC vb_active			; pulse ended
+   		DEX					; otherwise wait for it to end
+	 	BNE vb_skip
+; timeout here, VB is always on!
+vb_active:
+
+
+
+; ** old code **
 ; is there any detected VSYNC?
 	LDX #25					; each iteration is 12t, X cycles every 3075t ~2 ms
 	LDY #2					; VBLANK takes ~3.6 ms, so one iteration is ~10% shorter for ~3.8 ms
@@ -584,7 +607,7 @@ it_b:
 	LDY #0					; initial value and inner counter reset
 	STY test
 ; assume HW interrupt is on
-	LDX #154				; about 129 ms, time for 32 interrupts v1 (28 for v2, 14 for TURBO)
+	LDX #154				; about 129 ms, time for 32 interrupts v1 (28 for v2, 14 for TURBO, 31 for EIA)
 	CLI						; start counting!
 ; this provides timeout
 it_1:
