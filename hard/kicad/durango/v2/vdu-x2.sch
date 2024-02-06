@@ -1479,7 +1479,7 @@ L 4xxx:4040 U15
 U 1 1 617B535F
 P 2000 1600
 F 0 "U15" H 2000 2581 50  0000 C CNN
-F 1 "74HC4040" H 2000 2490 50  0000 C CNN
+F 1 "74AC4040" H 2000 2490 50  0000 C CNN
 F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 2000 1600 50  0001 C CNN
 F 3 "http://www.intersil.com/content/dam/Intersil/documents/cd40/cd4020bms-24bms-40bms.pdf" H 2000 1600 50  0001 C CNN
 	1    2000 1600
