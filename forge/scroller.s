@@ -1,6 +1,6 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240212-1209
+; last modified 20240212-1307
 
 ; uncomment for bankswitching version! (128 KB)
 ;#define	BANKSWITCH
