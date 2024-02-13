@@ -1,6 +1,6 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240213-1722
+; last modified 20240213-1745
 
 ; number of ~seconds (250/256) between images
 #define	DELAY	3
@@ -72,6 +72,40 @@ pic1:
 pic2:
 	;.bin	512, 7680, "images/image2.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
 .bin	0,7680,"../other/data/elvira.sv"
+
+; **************************
+; *** interrupt handlers ***
+; **************************
+irq:
+	JMP (fw_irq)				; standard $0200 vector
+nmi:
+	JMP (fw_nmi)				; standard $0202 vector
+; *** interrupt service routines ***
+; so far, just count interrupt for timing purposes
+isr:
+	INC ticks					; standard interrupt counter at $0206-$209
+	BNE i_exit
+ 		INC ticks+1
+	BNE i_exit
+		INC ticks+2
+	BNE i_exit
+		INC ticks+3
+i_exit:
+	RTI
+
+; *** scroll library entry point ***
+scroll:
+	TAX							; use A as animation index (0=right, 2=down, 4=left, 6=up)
+	JMP (scr_tab, X)
+
+scr_tab:						; *** pointer table ***
+	.word	sc_right
+	.word	sc_down
+	.word	sc_left
+	.word	sc_up
+
+; *** continue with pictures ***
+
 	.dsb	$C100-*, $FF
 pic3:
 	;.bin	512, 7680, "images/image3.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
@@ -166,19 +200,11 @@ nxt_bnk:
 	LDA bnk
 	JMP switch					; execute reset from new bank!
 #endif
+
 ; ************************
 ; *** scroller library ***
 ; ************************
 ; *** note images MUST be stored at $x100-$yEFF, where y = x+1 ***
-scroll:
-	TAX							; use A as animation index (0=right, 2=down, 4=left, 6=up)
-	JMP (scr_tab, X)
-
-scr_tab:						; *** pointer table ***
-	.word	sc_right
-	.word	sc_down
-	.word	sc_left
-	.word	sc_up
 
 ; *** scrolling routines *** assume next picture pointed by scr
 sc_left:
@@ -199,14 +225,29 @@ sl_loop:
 		CPX #$7F
 		BNE sl_pg
 ; now add another column from next image at the rightmost byte column
-
-	RTS
+	LDA #63						; rightmost byte in column
+	STA src
+	STA ptr
+	LDA #61						; screen top page
+	STA ptr+1
+	LDY #0
+fl_loop:
+			LDA (src), Y
+			STA (ptr), Y
+			TYA
+			CLC
+			ADC #64				; next raster
+			TAY
+			BNE fl_loop
+		INC src+1
+		INC ptr+1
+		BPL fl_loop
+	BRA fix						; fix base address and return
 
 sc_right:
 ; * shift existing screen one byte to the right *
 	LDX #$61					; first screen page
 	LDY #0						; first byte offset (will pick last in page anyway)
-	STY ptr
 sr_pg:
 		STX ptr+1				; set page
 sr_loop:
@@ -219,14 +260,28 @@ sr_loop:
 		CPX #$7F
 		BNE sl_pg
 ; now add another column from next image at the leftmost byte column
-
-	RTS
+	STZ src						; just in case
+	LDA #61						; screen top page
+	STA ptr+1
+	LDY #0
+	STY ptr
+fr_loop:
+			LDA (src), Y
+			STA (ptr), Y
+			TYA
+			CLC
+			ADC #64				; next raster
+			TAY
+			BNE fr_loop
+		INC src+1
+		INC ptr+1
+		BPL fr_loop
+	BRA fix						; fix base address and return
 
 sc_up:
 ; * shift existing screen two lines up *
 	LDX #$61					; first screen page
 	LDY #0						; first byte offset
-	STY ptr
 	LDA #128					; half-page offset
 	STA tmp						; for temporary source, two lines ahead
 su_pg:
@@ -256,6 +311,9 @@ su_add:
 		CMP #%00111110			; displayed page is already the last one?
 	BNE sc_up
 ; fix base address?
+fix:
+	STZ ptr
+	STZ src						; just in case
 	LDA src+1
 	SEC
 	SBC #$1D
@@ -313,26 +371,7 @@ sd_add:
 	INC src+1					; fix global counter eeek
 	STZ src						; eeek?
 	RTS
-
-; **************************
-; *** interrupt handlers ***
-; **************************
-irq:
-	JMP (fw_irq)				; standard $0200 vector
-nmi:
-	JMP (fw_nmi)				; standard $0202 vector
-; *** interrupt service routines ***
-; so far, just count interrupt for timing purposes
-isr:
-	INC ticks					; standard interrupt counter at $0206-$209
-	BNE i_exit
- 		INC ticks+1
-	BNE i_exit
-		INC ticks+2
-	BNE i_exit
-		INC ticks+3
-i_exit:
-	RTI
+lib_end:
 
 ; ******************
 ; *** end of ROM ***
