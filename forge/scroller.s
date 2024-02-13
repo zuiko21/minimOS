@@ -1,6 +1,6 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240213-2304
+; last modified 20240214-0037
 
 ; number of ~seconds (250/256) between images
 #define	DELAY	3
@@ -77,8 +77,7 @@ code1:
 
 ; *** scrolling routines ***
 sc_left:
-	LDA #63						; will load rightmost byte in column
-	STA src
+;	STZ src						; will pick LEFTmost byte in column
 sl_do:
 ; * shift existing screen one byte to the left *
 	LDX #$61					; first screen page
@@ -99,7 +98,7 @@ sl_loop:
 ; now add another column from next image at the rightmost byte column
 	LDA #63						; rightmost byte on screen
 	STA ptr
-	LDA #61						; screen top page
+	LDA #$61					; screen top page eeeek
 	STA ptr+1
 	LDY #0
 fl_loop:
@@ -112,21 +111,26 @@ fl_loop:
 			BNE fl_loop
 		INC src+1
 		INC ptr+1
-		BPL fl_loop
+		LDA ptr+1
+		CMP #$7F				; eeeek
+		BNE fl_loop
 	LDX index
 	LDA pages, X
 	STA src+1					; reset origin page, just vertically
+	INC src						; eeeeeek
 	DEC cnt						; 64 times!
 	BNE sl_do
 	RTS
 
 sc_right:
-;	STZ src						; will load leftmost byte in column
+	LDA #63						; will load leftmost byte in column
+	STA src
 sr_do:
 ; * shift existing screen one byte to the right *
-	LDX #$61					; first screen page
-	LDY #0						; first byte offset (will pick last in page anyway)
+	LDX #$7E					; LAST screen page
+	STZ ptr						; eeeek
 sr_pg:
+		LDY #$FF				; will pick last in page
 		STX ptr+1				; set page
 sr_loop:
 			DEY					; pick byte to the left
@@ -135,10 +139,11 @@ sr_loop:
 			STA (ptr), Y
 			DEY
 			BNE sr_loop
-		CPX #$7F
+		DEX						; eeeeeek
+		CPX #$5F
 		BNE sr_pg
 ; now add another column from next image at the leftmost byte column
-	LDA #61						; screen top page
+	LDA #$61					; screen top page eeeeek
 	STA ptr+1
 	LDY #0
 	STY ptr
@@ -152,8 +157,13 @@ fr_loop:
 			BNE fr_loop
 		INC src+1
 		INC ptr+1
-		BPL fr_loop
-	INC src						; next byte eeek
+		LDA ptr+1
+		CMP #$7F				; eeeek
+		BNE fr_loop
+	LDX index
+	LDA pages, X
+	STA src+1					; reset origin page, just vertically
+	DEC src						; next byte eeek
 	DEC cnt						; 64 times!
 	BNE sr_do
 	RTS
@@ -193,7 +203,7 @@ su_add:
 		AND #%00111111			; remove image position in ROM
 		CMP #%00111110			; displayed page is already the last one?
 	BNE sc_up
-	JSR fix						; fix base address
+;	JSR fix						; fix base address
 	DEC cnt						; 64 times!
 	BNE su_do
 	RTS
@@ -303,9 +313,9 @@ scroll:
 
 scr_tab:						; *** pointer table ***
 	.word	sc_right
-.word	sc_right
+.word	sc_left
 ;	.word	sc_down
-	.word	sc_left
+	.word	sc_right
 .word	sc_left
 ;	.word	sc_up
 
@@ -351,12 +361,14 @@ t_res:
 		STZ ticks, X			; clear byte
 		DEX
 		BPL t_res				; base-0
+	CLI							; eeeeeeeek
 #ifndef	INITED
 #define	INITED
 	STZ bnk						; reset bank counter
 ; clear screen for good measure
 	LDX #$60					; initial page for screen 3
 	LDY #0						; LSB
+	STY ptr						; eeeeeek
 	TYA							; also black screen
 r_pg:
 		STX ptr+1				; set current page pointer
