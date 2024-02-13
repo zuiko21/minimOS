@@ -4,10 +4,28 @@
 
 ; uncomment for bankswitching version! (32 KB banks)
 ;#define	BANKSWITCH
+	bank	= 0
 
-* = $8000
+; *** Durango·X hardware definitions ***
+	IO8attr	= $DF80
+ 	IOAien	= $DFA0
+	IOBank	= $DFFC			; for bankswitching only
 
-; *** place standard header here ***
+; *** memory usage ***
+	src		= $FA
+	ptr		= $FC
+	tmp		= $FE
+	fw_irq	= $0200
+	fw_nmi	= $0202
+	ticks	= $0206
+
+; **************************
+; *** standard bank code ***
+; **************************
+.(
+*		= $8000
+
+; *** standard header ***
 rom_start:
 ; header ID
 	.byt	0				; [0]=NUL, first magic number
@@ -39,20 +57,24 @@ rom_start:
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
 
+; ****************************************************************************************
 ; *** include image files (128x120, 30 pages in order to skip I/O and standard header) ***
-
-; *** Durango·X hardware definitions ***
-	IO8attr	= $DF80
- 	IOAien	= $DFA0
-	IOBank	= $DFFC			; for bankswitching only
-
-; *** memory usage ***
-	src		= $FA
-	ptr		= $FC
-	tmp		= $FE
-	fw_irq	= $0200
-	fw_nmi	= $0202
-	ticks	= $0206
+; ****************************************************************************************
+#ifndef	BANKSWITCH
+pic1:
+	;.bin	512, 7680, "images/image1.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
+	.dsb	$A100-*, $FF
+pic2:
+ 	;.bin	512, 7680, "images/image2.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
+	.dsb	$C100-*, $FF
+pic3:
+ 	;.bin	512, 7680, "images/image3.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
+	.dsb	$E100-*, $FF					; this will skip I/O area at $DFxx
+pic4:
+	;.bin	512, 7680, "images/image4.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
+#else
+#echo Please add pictures to source file!
+#endif
 
 ; *****************
 ; *** init code ***
@@ -267,6 +289,7 @@ switch:
 	.word	nmi					; 6502 hard vectors
 	.word	reset
 	.word	irq
+.)
 ; ***************************************************
 ; *** *** may continue here for bankswitching *** ***
 ; ***************************************************
