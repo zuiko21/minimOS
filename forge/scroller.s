@@ -1,21 +1,22 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240213-1315
+; last modified 20240213-1406
 
 ; uncomment for bankswitching version! (32 KB banks)
 ;#define	BANKSWITCH
 	bank	= 0
 
 ; *** Durango·X hardware definitions ***
-	IO8attr	= $DF80
- 	IOAien	= $DFA0
+	IO8attr	= $DF80			; video mode register
+ 	IOAien	= $DFA0			; interrupt enable register
 	IOBank	= $DFFC			; for bankswitching only
 
 ; *** memory usage ***
-	src		= $FA
-	ptr		= $FC
-	tmp		= $FE
-	fw_irq	= $0200
+	bnk		= $F9			; stored bank (even number)
+	src		= $FA			; pointer to image to be displayed ($81/$A1/$C1/$E1 only!)
+	ptr		= $FC			; screen pointer (local)
+	tmp		= $FE			; temporary usage (local for vertical scroll)
+	fw_irq	= $0200			; standard firmware vectors and counters
 	fw_nmi	= $0202
 	ticks	= $0206
 
@@ -118,17 +119,57 @@ r_loop:
 			BNE r_loop
 		INX						; next page
 		BPL r_pg				; until end of screen memory
+#ifdef	BANKSWITCH
+#ifndef	INITED
+#define	INITED
+	STZ bnk						; reset bank counter
+#endif
+#endif
 ; *****************
 ; *** main code ***
 ; *****************
-
+	LDA #$81					; page of first image
+	CLC
+	BRA display
+slide:
+	LDA src+1					; check current image number
+	CLC
+	ADC #%00100000				; advance to next image
+display:
+	STA src+1					; update for next time
+	STZ src
+#ifdef	BANKSWITCH
+	BCS nxt_bnk					; all 4 images done, switch to next bank
+#endif
+	AND #%01100000				; 4 images per ROM/bank
+	LSR
+	LSR
+	LSR
+	LSR							; make it suitable index for animation (times two)
+	JSR scroll					; display new image according to index
+	BRA slide					; next slide
+#ifdef	BANKSWITCH
+nxt_bnk:
+	INC bnk
+ 	INC bnk						; 32K banks use even numbers
+	LDA bnk
+	JMP switch					; execute reset from new bank!
+#endif
 ; ************************
 ; *** scroller library ***
 ; ************************
 ; *** note images MUST be stored at $x100-$yEFF, where y = x+1 ***
-
+scroll:
+	TAX							; use A as animation index (0=right, 2=down, 4=left, 6=up)
+	JMP (scr_tab, X)
+scr_tab:						; *** pointer table ***
+	.word	sc_right
+	.word	sc_down
+	.word	sc_left
+	.word	sc_up
+; *** scrolling routines *** assume next picture pointed by scr
 sc_left:
-; shift existing screen one byte to the left
+; * shift existing screen one byte to the left *
 	LDX #$61					; first screen page
 	LDY #0						; first byte offset
 	STY ptr
@@ -149,7 +190,7 @@ sl_loop:
 	RTS
 
 sc_right:
-; shift existing screen one byte to the right
+; * shift existing screen one byte to the right *
 	LDX #$61					; first screen page
 	LDY #0						; first byte offset (will pick last in page anyway)
 	STY ptr
@@ -169,7 +210,7 @@ sr_loop:
 	RTS
 
 sc_up:
-; shift existing screen two lines up
+; * shift existing screen two lines up *
 	LDX #$61					; first screen page
 	LDY #0						; first byte offset
 	STY ptr
@@ -204,7 +245,7 @@ su_add:
 	RTS
 
 sc_down:
-; first of all, correct base address as will be scanned backwards
+; * first of all, correct base address as will be scanned backwards *
 	LDA src+1
 	CLC
 	ADC #$1D					; make it point to last page in image
@@ -251,6 +292,7 @@ sd_add:
 		AND #%00111111			; remove image position in ROM
 		CMP #%00000001			; displayed page is already the first one?
 	BNE scd_rpt
+	INC src+1					; fix global counter eeek
 	RTS
 
 ; **************************
@@ -289,7 +331,11 @@ switch:
 	.word	nmi					; 6502 hard vectors
 	.word	reset
 	.word	irq
+
+	bank	= bank + 1			; switch bank for generated code
 .)
 ; ***************************************************
 ; *** *** may continue here for bankswitching *** ***
 ; ***************************************************
+#ifdef	BANKSWITCH
+#endif
