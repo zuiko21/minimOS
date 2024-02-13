@@ -1,9 +1,9 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240213-1434
+; last modified 20240213-1722
 
 ; number of ~seconds (250/256) between images
-#define	DELAY	7
+#define	DELAY	3
 
 ; uncomment for bankswitching version! (32 KB banks)
 ;#define	BANKSWITCH
@@ -67,19 +67,23 @@ rom_start:
 #ifndef	BANKSWITCH
 pic1:
 	;.bin	512, 7680, "images/image1.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
+.bin	0,7680,"../other/data/col_start.sv"
 	.dsb	$A100-*, $FF
 pic2:
- 	;.bin	512, 7680, "images/image2.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
+	;.bin	512, 7680, "images/image2.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
+.bin	0,7680,"../other/data/elvira.sv"
 	.dsb	$C100-*, $FF
 pic3:
- 	;.bin	512, 7680, "images/image3.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
+	;.bin	512, 7680, "images/image3.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
+.bin	0,7680,"../other/data/fafa.sv"
 	.dsb	$E100-*, $FF					; this will skip I/O area at $DFxx
 pic4:
+.bin	0,7552,"../other/data/jaqueria.sv";EEEEEK
 	;.bin	512, 7680, "images/image4.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
 #else
 #echo Please add pictures to source file!
 #endif
-
+endish:
 ; *****************
 ; *** init code ***
 ; *****************
@@ -169,11 +173,13 @@ nxt_bnk:
 scroll:
 	TAX							; use A as animation index (0=right, 2=down, 4=left, 6=up)
 	JMP (scr_tab, X)
+
 scr_tab:						; *** pointer table ***
 	.word	sc_right
 	.word	sc_down
 	.word	sc_left
 	.word	sc_up
+
 ; *** scrolling routines *** assume next picture pointed by scr
 sc_left:
 ; * shift existing screen one byte to the left *
@@ -249,6 +255,11 @@ su_add:
 		AND #%00111111			; remove image position in ROM
 		CMP #%00111110			; displayed page is already the last one?
 	BNE sc_up
+; fix base address?
+	LDA src+1
+	SEC
+	SBC #$1D
+	STA src+1
 	RTS
 
 sc_down:
@@ -300,6 +311,7 @@ sd_add:
 		CMP #%00000001			; displayed page is already the first one?
 	BNE scd_rpt
 	INC src+1					; fix global counter eeek
+	STZ src						; eeek?
 	RTS
 
 ; **************************
