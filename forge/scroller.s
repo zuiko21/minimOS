@@ -1,6 +1,6 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240213-1406
+; last modified 20240213-1434
 
 ; uncomment for bankswitching version! (32 KB banks)
 ;#define	BANKSWITCH
@@ -332,7 +332,7 @@ switch:
 	.word	reset
 	.word	irq
 
-	bank	= bank + 1			; switch bank for generated code
+	-bank	= bank + 1			; switch bank for generated code
 .)
 ; ***************************************************
 ; *** *** may continue here for bankswitching *** ***
