@@ -2,6 +2,9 @@
 ; (C) 2024 Carlos J. Santisteban
 ; last modified 20240213-1434
 
+; number of ~seconds (250/256) between images
+#define	DELAY	7
+
 ; uncomment for bankswitching version! (32 KB banks)
 ;#define	BANKSWITCH
 	bank	= 0
@@ -107,6 +110,9 @@ t_res:
 		STZ ticks, X			; clear byte
 		DEX
 		BPL t_res				; base-0
+#ifndef	INITED
+#define	INITED
+	STZ bnk						; reset bank counter
 ; clear screen for good measure
 	LDX #$60					; initial page for screen 3
 	LDY #0						; LSB
@@ -119,11 +125,6 @@ r_loop:
 			BNE r_loop
 		INX						; next page
 		BPL r_pg				; until end of screen memory
-#ifdef	BANKSWITCH
-#ifndef	INITED
-#define	INITED
-	STZ bnk						; reset bank counter
-#endif
 #endif
 ; *****************
 ; *** main code ***
@@ -147,6 +148,12 @@ display:
 	LSR
 	LSR							; make it suitable index for animation (times two)
 	JSR scroll					; display new image according to index
+; *** add delay between pictures ***
+	LDA ticks+1					; check current second (250/256)
+	ADC #DELAY					; compute next target
+wait:
+		CMP ticks+1				; wait until target
+		BNE wait
 	BRA slide					; next slide
 #ifdef	BANKSWITCH
 nxt_bnk:
