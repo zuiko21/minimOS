@@ -1,6 +1,6 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240213-1745
+; last modified 20240213-2304
 
 ; number of ~seconds (250/256) between images
 #define	DELAY	3
@@ -15,7 +15,8 @@
 	IOBank	= $DFFC			; for bankswitching only
 
 ; *** memory usage ***
-	bnk		= $F8			; stored bank (even number)
+	bnk		= $F7			; stored bank (even number)
+	index	= $F8			; image index 0...3
 	cnt		= $F9			; scroll cycle counter
 	src		= $FA			; pointer to image to be displayed ($81/$A1/$C1/$E1 only!)
 	ptr		= $FC			; screen pointer (local)
@@ -56,161 +57,29 @@ rom_start:
 ; NEW coded version number
 	.word	$1001			; 1.0a1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$6BC0			; time, 13.30		%0110 1-011 110-0 0000
+	.word	$B800			; time, 23.00		%1011 1-000 000-0 0000
 	.word	$584D			; date, 2024/2/13	%0101 100-0 010-0 1101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
 
-; ****************************************************************************************
-; *** include image files (128x120, 30 pages in order to skip I/O and standard header) ***
-; ****************************************************************************************
-#ifndef	BANKSWITCH
+; ********************************************************************************
+; *** image files (128x120, 30 pages in order to skip I/O and standard header) *** interleaved with code
+; ********************************************************************************
 pic1:
 	;.bin	512, 7680, "images/image1.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
 .bin	0,7680,"../other/data/col_start.sv"
-	.dsb	$A100-*, $FF
-pic2:
-	;.bin	512, 7680, "images/image2.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
-.bin	0,7680,"../other/data/elvira.sv"
 
-; **************************
-; *** interrupt handlers ***
-; **************************
-irq:
-	JMP (fw_irq)				; standard $0200 vector
-nmi:
-	JMP (fw_nmi)				; standard $0202 vector
-; *** interrupt service routines ***
-; so far, just count interrupt for timing purposes
-isr:
-	INC ticks					; standard interrupt counter at $0206-$209
-	BNE i_exit
- 		INC ticks+1
-	BNE i_exit
-		INC ticks+2
-	BNE i_exit
-		INC ticks+3
-i_exit:
-	RTI
-
-; *** scroll library entry point ***
-scroll:
-	TAX							; use A as animation index (0=right, 2=down, 4=left, 6=up)
-	LDA #64						; scroll cycle counter
-	STA cnt
-	JMP (scr_tab, X)
-
-scr_tab:						; *** pointer table ***
-	.word	sc_right
-	.word	sc_down
-	.word	sc_left
-	.word	sc_up
-
-; *** continue with pictures ***
-
-	.dsb	$C100-*, $FF
-pic3:
-	;.bin	512, 7680, "images/image3.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
-.bin	0,7680,"../other/data/fafa.sv"
-	.dsb	$E100-*, $FF					; this will skip I/O area at $DFxx
-pic4:
-.bin	0,7552,"../other/data/jaqueria.sv";EEEEEK
-	;.bin	512, 7680, "images/image4.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
-#else
-#echo Please add pictures to source file!
-#endif
-endish:
-; *****************
-; *** init code ***
-; *****************
-	.dsb	$FE80-*, $FF		; last ONE-AND-A-HALF pages for code
-; may actually install some code between images
-reset:
-	SEI							; standard 6502 init
-	CLD
-	LDX #$FF
-	TXS
-; *** Durango specifics ***
-	STX IOAien					; turn error LED off (assume X = odd value)
-	LDA #$38					; standard screen 3, colour mode, RGB
-	STA IO8attr
-; set interrupt vectors
-	LDA #>isr
- 	LDY #<isr
-	STY fw_irq
-	STA fw_irq+1				; standard $0200 vector
-; this far, NMI just does warm reset
-	LDA #>reset
-	LDY #<reset					; actually $FE80
-	STY fw_nmi
-	STA fw_nmi+1				; standard $0202 vector
-; reset interrupt counter
-	LDX #3						; max offset
-t_res:
-		STZ ticks, X			; clear byte
-		DEX
-		BPL t_res				; base-0
-#ifndef	INITED
-#define	INITED
-	STZ bnk						; reset bank counter
-; clear screen for good measure
-	LDX #$60					; initial page for screen 3
-	LDY #0						; LSB
-	TYA							; also black screen
-r_pg:
-		STX ptr+1				; set current page pointer
-r_loop:
-			STA (ptr), Y		; clear byte
-			INY
-			BNE r_loop
-		INX						; next page
-		BPL r_pg				; until end of screen memory
-#endif
-; *****************
-; *** main code ***
-; *****************
-	LDA #$81					; page of first image
-	CLC
-	BRA display
-slide:
-	LDA src+1					; check current image number
-	CLC
-	ADC #%00100000				; advance to next image
-display:
-	STA src+1					; update for next time
-	STZ src
-#ifdef	BANKSWITCH
-	BCS nxt_bnk					; all 4 images done, switch to next bank
-#endif
-	AND #%01100000				; 4 images per ROM/bank
-	LSR
-	LSR
-	LSR
-	LSR							; make it suitable index for animation (times two)
-	JSR scroll					; display new image according to index
-; *** add delay between pictures ***
-	LDA ticks+1					; check current second (250/256)
-	ADC #DELAY					; compute next target
-wait:
-		CMP ticks+1				; wait until target
-		BNE wait
-	BRA slide					; next slide
-#ifdef	BANKSWITCH
-nxt_bnk:
-	INC bnk
- 	INC bnk						; 32K banks use even numbers
-	LDA bnk
-	JMP switch					; execute reset from new bank!
-#endif
-
+code1:
 ; ************************
 ; *** scroller library ***
 ; ************************
-; *** note images MUST be stored at $x100-$yEFF, where y = x+1 ***
 
-; *** scrolling routines *** assume next picture pointed by scr
+; *** scrolling routines ***
 sc_left:
+	LDA #63						; will load rightmost byte in column
+	STA src
+sl_do:
 ; * shift existing screen one byte to the left *
 	LDX #$61					; first screen page
 	LDY #0						; first byte offset
@@ -228,8 +97,7 @@ sl_loop:
 		CPX #$7F
 		BNE sl_pg
 ; now add another column from next image at the rightmost byte column
-	LDA #63						; rightmost byte in column
-	STA src
+	LDA #63						; rightmost byte on screen
 	STA ptr
 	LDA #61						; screen top page
 	STA ptr+1
@@ -245,12 +113,16 @@ fl_loop:
 		INC src+1
 		INC ptr+1
 		BPL fl_loop
-	JSR fix						; fix base address
+	LDX index
+	LDA pages, X
+	STA src+1					; reset origin page, just vertically
 	DEC cnt						; 64 times!
-	BNE sc_left
+	BNE sl_do
 	RTS
 
 sc_right:
+;	STZ src						; will load leftmost byte in column
+sr_do:
 ; * shift existing screen one byte to the right *
 	LDX #$61					; first screen page
 	LDY #0						; first byte offset (will pick last in page anyway)
@@ -264,9 +136,8 @@ sr_loop:
 			DEY
 			BNE sr_loop
 		CPX #$7F
-		BNE sl_pg
+		BNE sr_pg
 ; now add another column from next image at the leftmost byte column
-	STZ src						; just in case
 	LDA #61						; screen top page
 	STA ptr+1
 	LDY #0
@@ -282,12 +153,14 @@ fr_loop:
 		INC src+1
 		INC ptr+1
 		BPL fr_loop
-	JSR fix						; fix base address
+	INC src						; next byte eeek
 	DEC cnt						; 64 times!
-	BNE sc_right
+	BNE sr_do
 	RTS
 
 sc_up:
+;	STZ src						; will start at leftmost byte in row
+su_do:
 ; * shift existing screen two lines up *
 	LDX #$61					; first screen page
 	LDY #0						; first byte offset
@@ -302,7 +175,7 @@ su_loop:
 			INY
 			BNE su_loop
 		CPX #$7F
-		BNE sl_pg
+		BNE su_pg
 ; now add another row from next image at the bottom two lines
 	LDY #$7F					; max offset
 su_add:
@@ -314,6 +187,7 @@ su_add:
 	EOR #$80					; toggle D7 = add 128
 	STA src
 	BMI sc_up					; if negative, will do second half of the page next
+
 		LDA src+1				; check 8K-alignment (with two guard pages!)
 		INC src+1				; just in case, get ready to enter next page
 		AND #%00111111			; remove image position in ROM
@@ -321,17 +195,7 @@ su_add:
 	BNE sc_up
 	JSR fix						; fix base address
 	DEC cnt						; 64 times!
-	BNE sc_up
-	RTS
-
-; fix base address?
-fix:
-	STZ ptr
-	STZ src						; just in case???
-	LDA src+1
-	SEC
-	SBC #$1D
-	STA src+1
+	BNE su_do
 	RTS
 
 sc_down:
@@ -342,7 +206,7 @@ sc_down:
 	STA src+1
 	LDA #128
 	STA src						; actually starting at bottom half page
-scd_rpt:
+sd_do:
 ; shift existing screen two lines down
 	LDX #$7E					; last screen page
 	LDY #0						; first byte offset
@@ -373,19 +237,161 @@ sd_add:
 		STA $6100, Y
 		DEY
 		BPL sd_add
+
+
 	LDA src
 	EOR #$80					; toggle D7 = subtract 128
 	STA src
-	BPL scd_rpt					; if POSITIVE, will do FIRST half of the page next time
+	BPL sd_do					; if POSITIVE, will do FIRST half of the page next time
 		LDA src+1				; check 8K-alignment (with two guard pages!)
 		DEC src+1				; just in case, get ready to enter next page
 		AND #%00111111			; remove image position in ROM
 		CMP #%00000001			; displayed page is already the first one?
-	BNE scd_rpt
+	BNE sd_do
 	INC src+1					; fix global counter eeek
 	STZ src						; eeek?
 	RTS
 lib_end:
+
+	.dsb	$A100-*, $FF
+pic2:
+	;.bin	512, 7680, "images/image2.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
+.bin	0,7680,"../other/data/elvira.sv"
+
+code2:
+
+	.dsb	$C100-*, $FF
+pic3:
+	;.bin	512, 7680, "images/image3.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
+.bin	0,7680,"../other/data/fafa.sv"
+
+	.dsb	$E000-*, $FF					; this will skip I/O area at $DFxx
+
+code3:
+; **************************
+; *** interrupt handlers ***
+; **************************
+irq:
+	JMP (fw_irq)				; standard $0200 vector
+nmi:
+	JMP (fw_nmi)				; standard $0202 vector
+; *** interrupt service routines ***
+; so far, just count interrupt for timing purposes
+isr:
+	INC ticks					; standard interrupt counter at $0206-$209
+	BNE i_exit
+ 		INC ticks+1
+	BNE i_exit
+		INC ticks+2
+	BNE i_exit
+		INC ticks+3
+i_exit:
+	RTI
+
+; *** scroll library entry point ***
+scroll:
+	LDY index
+	LDA pages, Y
+	STA src+1					; initial image location
+	STZ src
+	TXA							; original value
+	ASL							; make suitable index (times two)
+	TAX							; use X as animation index (0=right, 1=down, 2=left, 3=up)
+	LDA #64						; scroll cycle counter
+	STA cnt
+	JMP (scr_tab, X)			; jump to routine
+
+scr_tab:						; *** pointer table ***
+	.word	sc_right
+.word	sc_right
+;	.word	sc_down
+	.word	sc_left
+.word	sc_left
+;	.word	sc_up
+
+; *** data tables ***
+pages:
+	.byt	>pic1, >pic2, >pic3, >pic4	; initial pages (will be read backwards)
+tab_end:
+; *** continue with last picture ***
+
+	.dsb	$E100-*, $FF
+pic4:
+.bin	0,7680,"../other/data/jaqueria.sv";EEEEEK
+	;.bin	512, 7680, "images/image4.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
+endish:
+
+; *****************
+; *** init code ***
+; *****************
+;	.dsb	$FF00-*, $FF		; last page for code
+reset:
+	SEI							; standard 6502 init
+	CLD
+	LDX #$FF
+	TXS
+; *** Durango specifics ***
+	STX IOAien					; turn error LED off (assume X = odd value)
+	LDA #$38					; standard screen 3, colour mode, RGB
+	STA IO8attr
+; set interrupt vectors
+	LDA #>isr
+ 	LDY #<isr
+	STY fw_irq
+	STA fw_irq+1				; standard $0200 vector
+; this far, NMI just does warm reset
+	LDA #>reset
+	LDY #<reset					; actually $FE80
+	STY fw_nmi
+	STA fw_nmi+1				; standard $0202 vector
+; reset interrupt counter
+	LDX #3						; max offset
+	STX index
+t_res:
+		STZ ticks, X			; clear byte
+		DEX
+		BPL t_res				; base-0
+#ifndef	INITED
+#define	INITED
+	STZ bnk						; reset bank counter
+; clear screen for good measure
+	LDX #$60					; initial page for screen 3
+	LDY #0						; LSB
+	TYA							; also black screen
+r_pg:
+		STX ptr+1				; set current page pointer
+r_loop:
+			STA (ptr), Y		; clear byte
+			INY
+			BNE r_loop
+		INX						; next page
+		BPL r_pg				; until end of screen memory
+#endif
+; *****************
+; *** main code ***
+; *****************
+slide:
+	LDX index
+	JSR scroll					; display new image according to index (and scroll type by X)
+; *** add delay between pictures ***
+	LDA ticks+1					; check current second (250/256)
+	ADC #DELAY					; compute next target
+wait:
+		CMP ticks+1				; wait until target
+		BNE wait
+	DEC index
+	BPL slide					; next slide
+#ifdef	BANKSWITCH
+nxt_bnk:
+	INC bnk
+ 	INC bnk						; 32K banks use even numbers
+	LDA bnk
+	JMP switch					; execute reset from new bank!
+#endif
+	LDA #3
+	STA index					; if no more banks, reset index and begin again
+	BRA slide
+code_end:
 
 ; ******************
 ; *** end of ROM ***
