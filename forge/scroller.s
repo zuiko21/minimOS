@@ -15,7 +15,8 @@
 	IOBank	= $DFFC			; for bankswitching only
 
 ; *** memory usage ***
-	bnk		= $F9			; stored bank (even number)
+	bnk		= $F8			; stored bank (even number)
+	cnt		= $F9			; scroll cycle counter
 	src		= $FA			; pointer to image to be displayed ($81/$A1/$C1/$E1 only!)
 	ptr		= $FC			; screen pointer (local)
 	tmp		= $FE			; temporary usage (local for vertical scroll)
@@ -96,6 +97,8 @@ i_exit:
 ; *** scroll library entry point ***
 scroll:
 	TAX							; use A as animation index (0=right, 2=down, 4=left, 6=up)
+	LDA #64						; scroll cycle counter
+	STA cnt
 	JMP (scr_tab, X)
 
 scr_tab:						; *** pointer table ***
@@ -242,7 +245,10 @@ fl_loop:
 		INC src+1
 		INC ptr+1
 		BPL fl_loop
-	BRA fix						; fix base address and return
+	JSR fix						; fix base address
+	DEC cnt						; 64 times!
+	BNE sc_left
+	RTS
 
 sc_right:
 ; * shift existing screen one byte to the right *
@@ -276,7 +282,10 @@ fr_loop:
 		INC src+1
 		INC ptr+1
 		BPL fr_loop
-	BRA fix						; fix base address and return
+	JSR fix						; fix base address
+	DEC cnt						; 64 times!
+	BNE sc_right
+	RTS
 
 sc_up:
 ; * shift existing screen two lines up *
@@ -310,10 +319,15 @@ su_add:
 		AND #%00111111			; remove image position in ROM
 		CMP #%00111110			; displayed page is already the last one?
 	BNE sc_up
+	JSR fix						; fix base address
+	DEC cnt						; 64 times!
+	BNE sc_up
+	RTS
+
 ; fix base address?
 fix:
 	STZ ptr
-	STZ src						; just in case
+	STZ src						; just in case???
 	LDA src+1
 	SEC
 	SBC #$1D
