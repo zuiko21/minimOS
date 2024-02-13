@@ -1,15 +1,58 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240213-1044
+; last modified 20240213-1315
 
-; uncomment for bankswitching version! (128 KB)
+; uncomment for bankswitching version! (32 KB banks)
 ;#define	BANKSWITCH
 
 * = $8000
 
 ; *** place standard header here ***
+rom_start:
+; header ID
+	.byt	0				; [0]=NUL, first magic number
+	.asc	"dX"			; bootable ROM for Durango-X devCart
+	.asc	"****"			; reserved
+	.byt	13				; [7]=NEWLINE, second magic number
+; filename
+	.asc	"Scroller (Gloria Fuertes)"		; C-string with filename @ [8], max 220 chars
+; note terminator below
+#ifdef	BANKSWITCH
+	.asc	" for 32K bankswitching cartridge, bank ", '0'+bank
+#endif
+; optional C-string with comment after filename, filename+comment up to 220 chars
+	.asc	0, 0
+
+; advance to end of header *** NEW format
+	.dsb	rom_start + $E6 - *, $FF
+
+; NEW library commit (user field 2)
+	.asc	"$$$$$$$$"
+; NEW main commit (user field 1)
+	.asc	"$$$$$$$$"
+; NEW coded version number
+	.word	$1001			; 1.0a1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+; date & time in MS-DOS format at byte 248 ($F8)
+	.word	$6BC0			; time, 13.30		%0110 1-011 110-0 0000
+	.word	$584D			; date, 2024/2/13	%0101 100-0 010-0 1101
+; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
+	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
+	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
 
 ; *** include image files (128x120, 30 pages in order to skip I/O and standard header) ***
+
+; *** Durango·X hardware definitions ***
+	IO8attr	= $DF80
+ 	IOAien	= $DFA0
+	IOBank	= $DFFC			; for bankswitching only
+
+; *** memory usage ***
+	src		= $FA
+	ptr		= $FC
+	tmp		= $FE
+	fw_irq	= $0200
+	fw_nmi	= $0202
+	ticks	= $0206
 
 ; *****************
 ; *** init code ***
@@ -209,14 +252,17 @@ i_exit:
 	RTI
 
 ; ******************
-; *** end of ROM *** (for non-bankswitching)
+; *** end of ROM ***
 ; ******************
 	.dsb	$FFD6-*, $FF
 	.asc	"DmOS"				; standard signature
 
-	.dsb	$FFE1-*, $FF
+	.dsb	$FFDE-*, $FF
+switch:
+	STA IOBank					; bankswitching support
 	JMP ($FFFC)					; shadow-RAM support
 
+; standard ROM end
 	.dsb	$FFFA-*, $FF
 	.word	nmi					; 6502 hard vectors
 	.word	reset
