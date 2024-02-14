@@ -1,6 +1,6 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240214-0037
+; last modified 20240214-0716
 
 ; number of ~seconds (250/256) between images
 #define	DELAY	3
@@ -82,7 +82,7 @@ sl_do:
 ; * shift existing screen one byte to the left *
 	LDX #$61					; first screen page
 	LDY #0						; first byte offset
-	STY ptr
+;	STY ptr
 sl_pg:
 		STX ptr+1				; set page
 sl_loop:
@@ -128,7 +128,7 @@ sc_right:
 sr_do:
 ; * shift existing screen one byte to the right *
 	LDX #$7E					; LAST screen page
-	STZ ptr						; eeeek
+;	STZ ptr						; eeeek
 sr_pg:
 		LDY #$FF				; will pick last in page
 		STX ptr+1				; set page
@@ -140,7 +140,7 @@ sr_loop:
 			DEY
 			BNE sr_loop
 		DEX						; eeeeeek
-		CPX #$5F
+		CPX #$60				; over screen top?
 		BNE sr_pg
 ; now add another column from next image at the leftmost byte column
 	LDA #$61					; screen top page eeeeek
@@ -203,7 +203,6 @@ su_add:
 		AND #%00111111			; remove image position in ROM
 		CMP #%00111110			; displayed page is already the last one?
 	BNE sc_up
-;	JSR fix						; fix base address
 	DEC cnt						; 64 times!
 	BNE su_do
 	RTS
@@ -220,7 +219,7 @@ sd_do:
 ; shift existing screen two lines down
 	LDX #$7E					; last screen page
 	LDY #0						; first byte offset
-	STY ptr
+;	STY ptr
 	LDA #128					; half-page offset
 	STA tmp						; actually destination, two lines ahead
 sd_pg:
@@ -300,10 +299,8 @@ i_exit:
 
 ; *** scroll library entry point ***
 scroll:
-	LDY index
-	LDA pages, Y
-	STA src+1					; initial image location
-	STZ src
+	STZ ptr
+	STZ src						; worth it as commonly used
 	TXA							; original value
 	ASL							; make suitable index (times two)
 	TAX							; use X as animation index (0=right, 1=down, 2=left, 3=up)
