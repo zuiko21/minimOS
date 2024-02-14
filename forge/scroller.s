@@ -171,6 +171,8 @@ sc_up:
 	LDX index
 	LDA pages, X
 	STA src+1
+	LDA #60						; vertical scroll is done 60 times only!
+	STA cnt
 su_do:
 ; * shift existing screen two lines up *
 	LDX #$61					; first screen page
@@ -205,7 +207,7 @@ su_add:
 		AND #%00011111			; remove image position in ROM
 		CMP #%00011111			; displayed page is PAST the last one?
 	BNE su_line
-	DEC cnt						; 64 times!
+	DEC cnt						; 60 times! eeek
 	BNE su_do
 	RTS
 ; ************************
@@ -218,11 +220,13 @@ sc_down:
 	STA src+1
 	LDA #128
 	STA src						; actually starting at bottom half page
+	LDA #60						; vertical scroll is done 60 times only!
+	STA cnt
 sd_do:
 ; shift existing screen two lines down
 	LDX #$7E					; last screen page
 	LDY #0						; first byte offset
-	STY ptr
+;	STY ptr
 	LDA #128					; half-page offset
 	STA tmp						; actually destination, two lines ahead
 sd_pg:
@@ -258,7 +262,7 @@ sd_add:
 		LDA src+1				; check 8K-alignment (with two guard pages!)
 		AND #%00011111			; remove image position in ROM, will be zero if previous page was the first one
 	BNE sd_line*/
-	DEC cnt						; 64 times!
+	DEC cnt						; 60 times! eeeek
 	BNE sd_do
  	RTS
 lib_end:
