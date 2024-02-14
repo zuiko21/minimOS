@@ -1,6 +1,6 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240214-0957
+; last modified 20240214-1851
 
 ; number of ~seconds (250/256) between images
 #define	DELAY	3
@@ -222,12 +222,12 @@ sd_do:
 ; shift existing screen two lines down
 	LDX #$7E					; last screen page
 	LDY #0						; first byte offset
-;	STY ptr
+	STY ptr
 	LDA #128					; half-page offset
 	STA tmp						; actually destination, two lines ahead
 sd_pg:
 		STX ptr+1				; set page(s)
-		STX src+1
+		STX tmp+1				; eeeeeeek
 sd_loop:
 			LDA (ptr), Y		; pick byte from two lines above
 			STA (tmp), Y		; write back two lines down
