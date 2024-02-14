@@ -1,6 +1,6 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240214-0716
+; last modified 20240214-0957
 
 ; number of ~seconds (250/256) between images
 #define	DELAY	3
@@ -55,10 +55,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1001			; 1.0a1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1041			; 1.0b1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$B800			; time, 23.00		%1011 1-000 000-0 0000
-	.word	$584D			; date, 2024/2/13	%0101 100-0 010-0 1101
+	.word	$5000			; time, 10.00		%0101 0-000 000-0 0000
+	.word	$584E			; date, 2024/2/14	%0101 100-0 010-0 1110
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -68,21 +68,22 @@ rom_start:
 ; ********************************************************************************
 pic1:
 	;.bin	512, 7680, "images/image1.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
-.bin	0,7680,"../other/data/col_start.sv"
+.bin	256,7680,"../other/data/col_start.sv"
 
 code1:
 ; ************************
 ; *** scroller library ***
 ; ************************
-
-; *** scrolling routines ***
 sc_left:
 ;	STZ src						; will pick LEFTmost byte in column
 sl_do:
+	LDX index
+	LDA pages, X
+	STA src+1					; reset origin page, just vertically
 ; * shift existing screen one byte to the left *
 	LDX #$61					; first screen page
 	LDY #0						; first byte offset
-;	STY ptr
+	STY ptr
 sl_pg:
 		STX ptr+1				; set page
 sl_loop:
@@ -114,18 +115,18 @@ fl_loop:
 		LDA ptr+1
 		CMP #$7F				; eeeek
 		BNE fl_loop
-	LDX index
-	LDA pages, X
-	STA src+1					; reset origin page, just vertically
 	INC src						; eeeeeek
 	DEC cnt						; 64 times!
 	BNE sl_do
 	RTS
-
+; ************************
 sc_right:
 	LDA #63						; will load leftmost byte in column
 	STA src
 sr_do:
+	LDX index
+	LDA pages, X
+	STA src+1					; reset origin page, just vertically
 ; * shift existing screen one byte to the right *
 	LDX #$7E					; LAST screen page
 ;	STZ ptr						; eeeek
@@ -146,7 +147,7 @@ sr_loop:
 	LDA #$61					; screen top page eeeeek
 	STA ptr+1
 	LDY #0
-	STY ptr
+;	STY ptr
 fr_loop:
 			LDA (src), Y
 			STA (ptr), Y
@@ -160,16 +161,16 @@ fr_loop:
 		LDA ptr+1
 		CMP #$7F				; eeeek
 		BNE fr_loop
-	LDX index
-	LDA pages, X
-	STA src+1					; reset origin page, just vertically
 	DEC src						; next byte eeek
 	DEC cnt						; 64 times!
 	BNE sr_do
 	RTS
-
+; ************************
 sc_up:
 ;	STZ src						; will start at leftmost byte in row
+	LDX index
+	LDA pages, X
+	STA src+1
 su_do:
 ; * shift existing screen two lines up *
 	LDX #$61					; first screen page
@@ -184,9 +185,11 @@ su_loop:
 			STA (ptr), Y		; write back two lines up
 			INY
 			BNE su_loop
-		CPX #$7F
+		INX						; eeeeeeeeeek
+		CPX #$7F				; exit at last screen page
 		BNE su_pg
 ; now add another row from next image at the bottom two lines
+su_line:
 	LDY #$7F					; max offset
 su_add:
 		LDA (src), Y
@@ -196,20 +199,20 @@ su_add:
 	LDA src
 	EOR #$80					; toggle D7 = add 128
 	STA src
-	BMI sc_up					; if negative, will do second half of the page next
-
+	BMI su_line					; if negative, will do second half of the page next
+		INC src+1				; otherwise advance to next page
 		LDA src+1				; check 8K-alignment (with two guard pages!)
-		INC src+1				; just in case, get ready to enter next page
-		AND #%00111111			; remove image position in ROM
-		CMP #%00111110			; displayed page is already the last one?
-	BNE sc_up
+		AND #%00011111			; remove image position in ROM
+		CMP #%00011111			; displayed page is PAST the last one?
+	BNE su_line
 	DEC cnt						; 64 times!
 	BNE su_do
 	RTS
-
+; ************************
 sc_down:
 ; * first of all, correct base address as will be scanned backwards *
-	LDA src+1
+	LDX index
+	LDA pages, X
 	CLC
 	ADC #$1D					; make it point to last page in image
 	STA src+1
@@ -240,39 +243,40 @@ sd_clear:
 		DEX
 		BPL sd_clear
 ; now add another row from next image at the top two lines
+sd_line:
 	LDY #$7F					; max offset
 sd_add:
 		LDA (src), Y
 		STA $6100, Y
 		DEY
 		BPL sd_add
-
-
 	LDA src
 	EOR #$80					; toggle D7 = subtract 128
 	STA src
-	BPL sd_do					; if POSITIVE, will do FIRST half of the page next time
+	BPL sd_line					; if POSITIVE, will do FIRST half of the page next time
+		DEC src+1				; or enter next page
 		LDA src+1				; check 8K-alignment (with two guard pages!)
-		DEC src+1				; just in case, get ready to enter next page
-		AND #%00111111			; remove image position in ROM
-		CMP #%00000001			; displayed page is already the first one?
+		AND #%00011111			; remove image position in ROM, will be zero if previous page was the first one
+	BNE sd_line
+	DEC cnt						; 64 times!
 	BNE sd_do
-	INC src+1					; fix global counter eeek
-	STZ src						; eeek?
-	RTS
+ 	RTS
 lib_end:
-
+; ********************************
+; *** end of scrolling library ***
+; ********************************
 	.dsb	$A100-*, $FF
 pic2:
 	;.bin	512, 7680, "images/image2.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
-.bin	0,7680,"../other/data/elvira.sv"
+.bin	256,7680,"../other/data/elvira.sv"
 
 code2:
+; *** *** empty code space *** ***
 
 	.dsb	$C100-*, $FF
 pic3:
 	;.bin	512, 7680, "images/image3.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
-.bin	0,7680,"../other/data/fafa.sv"
+.bin	256,7680,"../other/data/fafa.sv"
 
 	.dsb	$E000-*, $FF					; this will skip I/O area at $DFxx
 
@@ -308,25 +312,26 @@ scroll:
 	STA cnt
 	JMP (scr_tab, X)			; jump to routine
 
-scr_tab:						; *** pointer table ***
+; *** pointer table ***
+scr_tab:
 	.word	sc_right
-.word	sc_left
-;	.word	sc_down
-	.word	sc_right
-.word	sc_left
-;	.word	sc_up
+	.word	sc_down
+	.word	sc_left
+	.word	sc_up
 
 ; *** data tables ***
 pages:
-	.byt	>pic1, >pic2, >pic3, >pic4	; initial pages (will be read backwards)
+	.byt	>pic4, >pic3, >pic2, >pic1	; initial pages (will be read backwards)
 tab_end:
+; **********************************
 ; *** continue with last picture ***
-
+; **********************************
 	.dsb	$E100-*, $FF
 pic4:
-.bin	0,7680,"../other/data/jaqueria.sv";EEEEEK
 	;.bin	512, 7680, "images/image4.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
-endish:
+.bin	256,7680,"../other/data/jaqueria.sv"
+
+pics_end:
 
 ; *****************
 ; *** init code ***
@@ -351,16 +356,18 @@ reset:
 	LDY #<reset					; actually $FE80
 	STY fw_nmi
 	STA fw_nmi+1				; standard $0202 vector
-; reset interrupt counter
+; resume interrupts!
+	CLI							; eeeeeeeek
+; reset image counter
 	LDX #3						; max offset
 	STX index
+#ifndef	INITED
+#define	INITED
+; reset interrupt counter
 t_res:
 		STZ ticks, X			; clear byte
 		DEX
 		BPL t_res				; base-0
-	CLI							; eeeeeeeek
-#ifndef	INITED
-#define	INITED
 	STZ bnk						; reset bank counter
 ; clear screen for good measure
 	LDX #$60					; initial page for screen 3
