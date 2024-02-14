@@ -1,6 +1,6 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240214-1851
+; last modified 20240214-1854
 
 ; number of ~seconds (250/256) between images
 #define	DELAY	3
@@ -243,7 +243,7 @@ sd_clear:
 		DEX
 		BPL sd_clear
 ; now add another row from next image at the top two lines
-sd_line:
+/*sd_line:
 	LDY #$7F					; max offset
 sd_add:
 		LDA (src), Y
@@ -257,7 +257,7 @@ sd_add:
 		DEC src+1				; or enter next page
 		LDA src+1				; check 8K-alignment (with two guard pages!)
 		AND #%00011111			; remove image position in ROM, will be zero if previous page was the first one
-	BNE sd_line
+	BNE sd_line*/
 	DEC cnt						; 64 times!
 	BNE sd_do
  	RTS
