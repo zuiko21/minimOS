@@ -1,6 +1,6 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240215-1843
+; last modified 20240215-1848
 
 ; number of ~seconds (256/250) between images
 #define	DELAY	3
@@ -68,7 +68,8 @@ rom_start:
 ; ********************************************************************************
 pic1:
 	;.bin	512, 7680, "images/image1.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
-.bin	256,7680,"../other/data/col_start.sv"
+;.bin	256,7680,"../other/data/col_start.sv"
+.bin	256,7680,"../other/data/fafa.sv"
 
 code1:
 ; ************************
@@ -131,17 +132,19 @@ sr_do:
 ; * shift existing screen one byte to the right *
 	LDX #$7E					; LAST screen page
 ;	STZ ptr						; eeeek
+	LDA #1						; first byte to be picked, one to the left
+	STA tmp						; now destination pointer
 sr_pg:
-		LDY #$FE				; one to the left of last in page
-		STY tmp					; source pointer
-		INY						; will store at last in page
+		LDY #$FE				; one to the left of last in page (destination, two from right for origin)
 		STX ptr+1				; set page
 		STX tmp+1
 sr_loop:
-			LDA (tmp), Y		; pick byte from the left
-			STA (ptr), Y		; write to byte to the right
+			LDA (ptr), Y		; pick byte from the left
+			STA (tmp), Y		; write to byte to the right
 			DEY
 			BNE sr_loop
+		LDA (ptr), Y			; once more
+		STA (tmp), Y
 		DEX						; eeeeeek
 		CPX #$60				; over screen top?
 		BNE sr_pg
@@ -242,12 +245,6 @@ sd_loop:
 		DEX						; next page
 		CPX #$60				; beyond first picture page?
 		BNE sd_pg
-; must re-clear bottom two lines!
-	LDX #$7F
-sd_clear:
-		STZ $7F00, X
-		DEX
-		BPL sd_clear
 ; now add another row from next image at the top two lines
 	LDY #$7F					; max offset
 sd_add:
@@ -263,6 +260,12 @@ sd_add:
 sd_rpt:
 	DEC cnt						; 60 times! eeeek
 	BNE sd_do
+; must re-clear bottom two lines!
+	LDX #$7F
+sd_clear:
+		STZ $7F00, X
+		DEX
+		BPL sd_clear
  	RTS
 lib_end:
 ; ********************************
@@ -271,7 +274,8 @@ lib_end:
 	.dsb	$A100-*, $FF
 pic2:
 	;.bin	512, 7680, "images/image2.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
-.bin	256,7680,"../other/data/elvira.sv"
+;.bin	256,7680,"../other/data/elvira.sv"
+.bin	256,7680,"../other/data/fafa.sv"
 
 code2:
 ; *** *** empty code space *** ***
@@ -332,7 +336,8 @@ tab_end:
 	.dsb	$E100-*, $FF
 pic4:
 	;.bin	512, 7680, "images/image4.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
-.bin	256,7680,"../other/data/jaqueria.sv"
+;.bin	256,7680,"../other/data/jaqueria.sv"
+.bin	256,7680,"../other/data/fafa.sv"
 
 pics_end:
 
