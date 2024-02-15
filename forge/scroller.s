@@ -1,13 +1,13 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240214-1854
+; last modified 20240215-1106
 
-; number of ~seconds (250/256) between images
+; number of ~seconds (256/250) between images
 #define	DELAY	3
 
 ; uncomment for bankswitching version! (32 KB banks)
 ;#define	BANKSWITCH
-	bank	= 0
+	bank	= 0				; will allow mere copy of the standard code for each bank!
 
 ; *** Durango·X hardware definitions ***
 	IO8attr	= $DF80			; video mode register
@@ -18,7 +18,7 @@
 	bnk		= $F7			; stored bank (even number)
 	index	= $F8			; image index 0...3
 	cnt		= $F9			; scroll cycle counter
-	src		= $FA			; pointer to image to be displayed ($81/$A1/$C1/$E1 only!)
+	src		= $FA			; pointer to image to be displayed ($81/$A1/$C1/$E1 only?)
 	ptr		= $FC			; screen pointer (local)
 	tmp		= $FE			; temporary usage (local for vertical scroll)
 	fw_irq	= $0200			; standard firmware vectors and counters
@@ -26,7 +26,7 @@
 	ticks	= $0206
 
 ; **************************
-; *** standard bank code ***
+; *** standard bank code *** copy as needed
 ; **************************
 .(
 *		= $8000
@@ -42,7 +42,7 @@ rom_start:
 	.asc	"Scroller (Gloria Fuertes)"		; C-string with filename @ [8], max 220 chars
 ; note terminator below
 #ifdef	BANKSWITCH
-	.asc	" for 32K bankswitching cartridge, bank ", '0'+bank
+	.asc	" 32K bank ", '0'+bank
 #endif
 ; optional C-string with comment after filename, filename+comment up to 220 chars
 	.asc	0, 0
@@ -55,10 +55,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1041			; 1.0b1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1042			; 1.0b2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5000			; time, 10.00		%0101 0-000 000-0 0000
-	.word	$584E			; date, 2024/2/14	%0101 100-0 010-0 1110
+	.word	$5400			; time, 10.32		%0101 0-100 000-0 0000
+	.word	$584F			; date, 2024/2/15	%0101 100-0 010-0 1111
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -201,12 +201,9 @@ su_add:
 	LDA src
 	EOR #$80					; toggle D7 = add 128
 	STA src
-	BMI su_line					; if negative, will do second half of the page next
+	BMI su_rpt					; if negative, will do second half of the page next
 		INC src+1				; otherwise advance to next page
-		LDA src+1				; check 8K-alignment (with two guard pages!)
-		AND #%00011111			; remove image position in ROM
-		CMP #%00011111			; displayed page is PAST the last one?
-	BNE su_line
+su_rpt:
 	DEC cnt						; 60 times! eeek
 	BNE su_do
 	RTS
@@ -222,21 +219,24 @@ sc_down:
 	STA src						; actually starting at bottom half page
 	LDA #60						; vertical scroll is done 60 times only!
 	STA cnt
-sd_do:
 ; shift existing screen two lines down
-	LDX #$7E					; last screen page
-	LDY #0						; first byte offset
-;	STY ptr
 	LDA #128					; half-page offset
 	STA tmp						; actually destination, two lines ahead
+;	LDY #0						; first byte offset
+;	STY ptr
+sd_do:
+	LDX #$7E					; last screen page
 sd_pg:
 		STX ptr+1				; set page(s)
 		STX tmp+1				; eeeeeeek
+		LDY #$FF				; backwards all the way! eeeeek
 sd_loop:
 			LDA (ptr), Y		; pick byte from two lines above
 			STA (tmp), Y		; write back two lines down
-			INY
+			DEY					; let's try this...
 			BNE sd_loop
+		LDA (ptr), Y			; must do zero as well
+		STA (tmp), Y
 		DEX						; next page
 		CPX #$60				; beyond first picture page?
 		BNE sd_pg
@@ -247,7 +247,6 @@ sd_clear:
 		DEX
 		BPL sd_clear
 ; now add another row from next image at the top two lines
-/*sd_line:
 	LDY #$7F					; max offset
 sd_add:
 		LDA (src), Y
@@ -257,11 +256,9 @@ sd_add:
 	LDA src
 	EOR #$80					; toggle D7 = subtract 128
 	STA src
-	BPL sd_line					; if POSITIVE, will do FIRST half of the page next time
+	BPL sd_rpt					; if POSITIVE, will do FIRST half of the page next time
 		DEC src+1				; or enter next page
-		LDA src+1				; check 8K-alignment (with two guard pages!)
-		AND #%00011111			; remove image position in ROM, will be zero if previous page was the first one
-	BNE sd_line*/
+sd_rpt:
 	DEC cnt						; 60 times! eeeek
 	BNE sd_do
  	RTS
