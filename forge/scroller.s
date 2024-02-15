@@ -1,6 +1,6 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240215-1106
+; last modified 20240215-1843
 
 ; number of ~seconds (256/250) between images
 #define	DELAY	3
@@ -55,9 +55,9 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1042			; 1.0b2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1043			; 1.0b3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5400			; time, 10.32		%0101 0-100 000-0 0000
+	.word	$9560			; time, 18.43		%1001 0-101 011-0 0000
 	.word	$584F			; date, 2024/2/15	%0101 100-0 010-0 1111
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -82,15 +82,16 @@ sl_do:
 	STA src+1					; reset origin page, just vertically
 ; * shift existing screen one byte to the left *
 	LDX #$61					; first screen page
-	LDY #0						; first byte offset
+	LDY #1						; first byte to be picked, one to the right
+	STY tmp						; origin pointer
+	DEY							; first byte offset
 	STY ptr
 sl_pg:
 		STX ptr+1				; set page
+		STX tmp+1
 sl_loop:
-			INY					; pick byte to the right
-			LDA (ptr), Y
-			DEY					; write to byte to the left
-			STA (ptr), Y
+			LDA (tmp), Y		; pick byte from the right
+			STA (ptr), Y		; write to byte on the left
 			INY
 			BNE sl_loop
 		INX						; next page
@@ -131,13 +132,14 @@ sr_do:
 	LDX #$7E					; LAST screen page
 ;	STZ ptr						; eeeek
 sr_pg:
-		LDY #$FF				; will pick last in page
+		LDY #$FE				; one to the left of last in page
+		STY tmp					; source pointer
+		INY						; will store at last in page
 		STX ptr+1				; set page
+		STX tmp+1
 sr_loop:
-			DEY					; pick byte to the left
-			LDA (ptr), Y
-			INY					; write to byte to the right
-			STA (ptr), Y
+			LDA (tmp), Y		; pick byte from the left
+			STA (ptr), Y		; write to byte to the right
 			DEY
 			BNE sr_loop
 		DEX						; eeeeeek
