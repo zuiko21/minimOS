@@ -1,7 +1,7 @@
 10 REM generador de versos para EhBASIC
 20 REM (c) 2024 Carlos J. Santisteban
 30 REM ** valores límite **
-40 categ=5:palabras=10
+40 categ=6:palabras=10
 50 REM ** estructuras **
 60 DIM w$(categ-1,palabras-1)
 70 REM ** palabras por categoría **
@@ -9,12 +9,12 @@
 90 REM ** carga de datos **
 100 nc=0:REM categoría 
 110 DO
-120 :DO
-130 ::i=0:REM palabra en curso
+130 :i=0:REM palabra en curso
+130 :DO
 140 ::READ a$
 150 ::IF a$<>"*" AND a$<>"#" THEN w$(nc,i)=a$:INC i
 160 :LOOP UNTIL a$="*" OR a$="#"
-170 :np(nc)=i-1:REM no cuento el delimitador
+170 :np(nc)=i
 180 :INC nc
 190 LOOP UNTIL ca="#":DEC nc
 200 REM *** base de datos ***
@@ -36,12 +36,12 @@
 1005 :gen=INT(RND(0)*2):REM masc/fem
 1007 :tra=INT(RND(0)*2):REM trans/intrans
 1010 :FOR i=0 TO nc
-1012 ::IF gen=0 AND (i=1 OR i=3) THEN NEXT i
-1014 ::IF gen=1 AND (i=0 OR i=2) THEN NEXT i
-1016 ::IF tra=0 AND i=5 THEN NEXT i
-1018 ::IF tra=1 AND i=4 THEN NEXT i
+1012 ::IF gen=0 AND (i=1 OR i=3) THEN 1030
+1014 ::IF gen=1 AND (i=0 OR i=2) THEN 1030
+1016 ::IF tra=0 AND i=5 THEN 1030
+1018 ::IF tra=1 AND i=4 THEN 1030
 1020 ::PRINT w$(i,INT(RND(0)*np(i)));" ";
 1030 :NEXT i
-1032 :IF tra=0 THEN gen=INT(RND(0)*2):PRINT w$(2+gen,INT(RND(0)*np(2+gen)));
+1032 IF tr=0 THEN ge=INT(RND(0)*2):?w$(2+ge,INT(RND(0)*np(2+ge)));
 1035 PRINT
 1040 LOOP
