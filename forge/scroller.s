@@ -69,7 +69,7 @@ rom_start:
 pic1:
 	;.bin	512, 7680, "images/image1.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
 ;.bin	256,7680,"../other/data/col_start.sv"
-.bin	256,7680,"../other/data/fafa.sv"
+.bin	256,7680,"../other/data/gf1.sv"
 
 code1:
 ; ************************
@@ -275,7 +275,7 @@ lib_end:
 pic2:
 	;.bin	512, 7680, "images/image2.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
 ;.bin	256,7680,"../other/data/elvira.sv"
-.bin	256,7680,"../other/data/fafa.sv"
+.bin	256,7680,"../other/data/gf2.sv"
 
 code2:
 ; *** *** empty code space *** ***
@@ -283,7 +283,7 @@ code2:
 	.dsb	$C100-*, $FF
 pic3:
 	;.bin	512, 7680, "images/image3.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
-.bin	256,7680,"../other/data/fafa.sv"
+.bin	256,7680,"../other/data/gf3.sv"
 
 	.dsb	$E000-*, $FF					; this will skip I/O area at $DFxx
 
@@ -337,7 +337,7 @@ tab_end:
 pic4:
 	;.bin	512, 7680, "images/image4.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
 ;.bin	256,7680,"../other/data/jaqueria.sv"
-.bin	256,7680,"../other/data/fafa.sv"
+.bin	256,7680,"../other/data/gf4.sv"
 
 pics_end:
 
