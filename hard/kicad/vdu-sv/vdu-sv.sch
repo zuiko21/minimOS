@@ -9,8 +9,8 @@ Title "VDU·SV 4/8"
 Date "2024-01-11"
 Rev "v1"
 Comp "@zuiko21"
-Comment1 "$DF91: W=Latch Address Low, R=set 256-colour mode"
-Comment2 "$DF90: W=Latch Address High (D7=invert), R=set 16-colour mode"
+Comment1 "$DF91: W=Latch Address Low, R=set invert mode"
+Comment2 "$DF90: W=Latch Address High (D7=256 colour mode), R=clear invert mode"
 Comment3 "for IOx expansion bus: $DF92=data I/O"
 Comment4 "256x256-16 colour/128X256-256 colour display card"
 $EndDescr
@@ -89,50 +89,6 @@ F 1 "74HC21" H 2525 7075 50  0000 L CNN
 F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 2675 7125 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74LS21" H 2675 7125 50  0001 C CNN
 	3    2675 7125
-	1    0    0    -1  
-$EndComp
-$Comp
-L 74xx:74LS00 U3
-U 1 1 65A53EB2
-P 1225 5250
-F 0 "U3" H 1200 5250 50  0000 C CNN
-F 1 "74HC00" H 1200 5050 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1225 5250 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 1225 5250 50  0001 C CNN
-	1    1225 5250
-	1    0    0    -1  
-$EndComp
-$Comp
-L 74xx:74LS00 U3
-U 2 1 65A55B68
-P 2675 4500
-F 0 "U3" H 2650 4500 50  0000 C CNN
-F 1 "74HC00" H 2675 4300 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 2675 4500 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 2675 4500 50  0001 C CNN
-	2    2675 4500
-	0    1    1    0   
-$EndComp
-$Comp
-L 74xx:74LS00 U3
-U 4 1 65A58ED5
-P 1225 5875
-F 0 "U3" H 1200 5875 50  0000 C CNN
-F 1 "74HC00" H 1225 6075 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1225 5875 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 1225 5875 50  0001 C CNN
-	4    1225 5875
-	1    0    0    1   
-$EndComp
-$Comp
-L 74xx:74LS00 U3
-U 5 1 65A5BB8B
-P 2225 7125
-F 0 "U3" H 2150 7175 50  0000 L CNN
-F 1 "74HC00" H 2075 7075 50  0000 L CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 2225 7125 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 2225 7125 50  0001 C CNN
-	5    2225 7125
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -391,7 +347,7 @@ PD7
 Text Label 5650 1475 0    50   ~ 0
 MA14
 Text Label 5650 1575 0    50   ~ 0
-INVERT
+MODE8
 Text Label 7450 1475 2    50   ~ 0
 VA14
 Text Label 8450 1475 0    50   ~ 0
@@ -484,21 +440,21 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS157" H 8125 3975 50  0001 C CNN
 	1    8125 3975
 	-1   0    0    -1  
 $EndComp
-Text Label 8625 3375 0    50   ~ 0
-R_GH
-Text Label 8625 3675 0    50   ~ 0
-R_R
-Text Label 8625 3975 0    50   ~ 0
-R_GL
-Text Label 8625 4275 0    50   ~ 0
-R_B
 Text Label 8625 3475 0    50   ~ 0
-L_GH
-Text Label 8625 3875 0    50   ~ 0
-L_R
+R_GH
+Text Label 8625 3775 0    50   ~ 0
+R_R
 Text Label 8625 4075 0    50   ~ 0
-L_GL
+R_GL
 Text Label 8625 4375 0    50   ~ 0
+R_B
+Text Label 8625 3375 0    50   ~ 0
+L_GH
+Text Label 8625 3675 0    50   ~ 0
+L_R
+Text Label 8625 3975 0    50   ~ 0
+L_GL
+Text Label 8625 4275 0    50   ~ 0
 L_B
 $Comp
 L 74xx:74HC86 U15
@@ -519,7 +475,7 @@ Text Label 7625 3975 2    50   ~ 0
 X_GM
 Text Label 7625 4275 2    50   ~ 0
 X_BH
-Text Label 3875 4700 0    50   ~ 0
+Text Label 3875 5300 3    50   ~ 0
 ~HSYNC
 Text Label 3875 4450 0    50   ~ 0
 FEND
@@ -634,16 +590,16 @@ Text Label 925  5775 2    50   ~ 0
 ~VRAM_WR
 Text Label 925  5975 2    50   ~ 0
 ~VRAM_RD
-Text Label 1525 5875 3    50   ~ 0
-CPU
 Text Label 2125 5875 0    50   ~ 0
+CPU
+Text Label 1525 5875 3    50   ~ 0
 ~CPU
 Text Label 1525 4625 2    50   ~ 0
 BA2
 Text Label 2125 4625 0    50   ~ 0
 ~BA2
 Text Label 8625 4575 0    50   ~ 0
-~DDOT
+DDOT
 Text Label 1525 2650 1    50   ~ 0
 MCLK
 Connection ~ 1525 2950
@@ -765,16 +721,12 @@ Wire Wire Line
 Connection ~ 8625 4675
 Wire Wire Line
 	2025 4050 4350 4050
-Wire Wire Line
-	2225 7625 2675 7625
 Connection ~ 2675 7625
 Wire Wire Line
 	2675 7625 3125 7625
 Wire Wire Line
 	3125 6625 2675 6625
 Connection ~ 2675 6625
-Wire Wire Line
-	2675 6625 2225 6625
 $Comp
 L power:GND #PWR0110
 U 1 1 65ABAF5D
@@ -845,8 +797,6 @@ F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 7300 4625 50  0001 C CNN
 	2    7300 4625
 	0    -1   1    0   
 $EndComp
-Text Label 6700 4325 1    50   ~ 0
-INVERT
 Wire Wire Line
 	7550 4325 7550 4275
 Wire Wire Line
@@ -876,12 +826,6 @@ Wire Wire Line
 Wire Wire Line
 	10400 4800 10400 3075
 Connection ~ 10400 3075
-Wire Wire Line
-	8625 4275 8925 4275
-Wire Wire Line
-	8925 4275 8925 3675
-Wire Wire Line
-	8925 3675 9125 3675
 $Comp
 L 74xx:74LS32 U16
 U 5 1 65BFC2CB
@@ -1049,9 +993,9 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS574" H 9625 3875 50  0001 C CNN
 $EndComp
 Text Label 2525 2650 0    50   ~ 0
 Q0
-Text Label 2125 5250 0    50   ~ 0
-~DOT
 Text Label 1525 5250 3    50   ~ 0
+~DOT
+Text Label 2125 5250 0    50   ~ 0
 DOT
 Text Label 925  5150 2    50   ~ 0
 Q0
@@ -1085,13 +1029,13 @@ $EndComp
 $Comp
 L 74xx:74HC04 U18
 U 3 1 65AEE968
-P 2975 4800
-F 0 "U18" H 2850 4800 50  0000 L CNN
-F 1 "74HC04" H 2850 4625 50  0000 L CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 2975 4800 50  0001 C CNN
-F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 2975 4800 50  0001 C CNN
-	3    2975 4800
-	1    0    0    -1  
+P 3875 5000
+F 0 "U18" H 3750 5000 50  0000 L CNN
+F 1 "74HC04" H 3750 4825 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3875 5000 50  0001 C CNN
+F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 3875 5000 50  0001 C CNN
+	3    3875 5000
+	0    1    1    0   
 $EndComp
 $Comp
 L 74xx:74HC04 U18
@@ -1139,10 +1083,8 @@ F 3 "https://assets.nexperia.com/documents/data-sheet/74HC_HCT04.pdf" H 1775 712
 $EndComp
 Text Label 3275 4600 3    50   ~ 0
 ~VA6
-Text Label 3275 4800 3    50   ~ 0
+Text Label 3025 4800 2    50   ~ 0
 C320
-Text Label 2675 4800 3    50   ~ 0
-~C320
 Wire Wire Line
 	2525 3250 2775 3250
 Wire Wire Line
@@ -1151,12 +1093,6 @@ Wire Wire Line
 	3275 3350 2525 3350
 Wire Wire Line
 	3275 3350 3275 4000
-Wire Wire Line
-	2225 6625 1775 6625
-Connection ~ 2225 6625
-Wire Wire Line
-	1775 7625 2225 7625
-Connection ~ 2225 7625
 Connection ~ 3575 6625
 Wire Wire Line
 	3575 6625 3575 6025
@@ -1183,16 +1119,12 @@ L Device:R_POT_TRIM RV1
 U 1 1 65C07E83
 P 8900 4750
 F 0 "RV1" V 9000 4825 50  0000 C CNN
-F 1 "10K" V 8775 4750 50  0000 C CNN
+F 1 "10K" V 8900 4750 50  0000 C CNN
 F 2 "Potentiometer_THT:Potentiometer_Piher_PT-6-V_Vertical" H 8900 4750 50  0001 C CNN
 F 3 "~" H 8900 4750 50  0001 C CNN
 	1    8900 4750
 	0    1    1    0   
 $EndComp
-Wire Wire Line
-	10175 4750 10175 4275
-Wire Wire Line
-	10175 4275 10125 4275
 Wire Wire Line
 	8750 4750 8750 4575
 Wire Wire Line
@@ -1202,40 +1134,6 @@ Wire Wire Line
 Wire Wire Line
 	8750 4900 8900 4900
 Connection ~ 8750 4750
-Wire Wire Line
-	8625 4375 9125 4375
-Wire Wire Line
-	9125 4075 9125 4375
-Wire Wire Line
-	9125 3975 8950 3975
-Wire Wire Line
-	8950 3975 8950 4075
-Wire Wire Line
-	8950 4075 8625 4075
-Wire Wire Line
-	8625 3975 8900 3975
-Wire Wire Line
-	8900 3975 8900 3575
-Wire Wire Line
-	8900 3575 9125 3575
-Wire Wire Line
-	8625 3675 8875 3675
-Wire Wire Line
-	8875 3675 8875 3475
-Wire Wire Line
-	8875 3475 9125 3475
-Wire Wire Line
-	8625 3875 8625 3775
-Wire Wire Line
-	8625 3875 9125 3875
-Wire Wire Line
-	8625 3375 9125 3375
-Wire Wire Line
-	8625 3475 8850 3475
-Wire Wire Line
-	8850 3475 8850 3775
-Wire Wire Line
-	8850 3775 9125 3775
 $Comp
 L power:PWR_FLAG #FLG0102
 U 1 1 65CCE467
@@ -1334,9 +1232,9 @@ Wire Wire Line
 	8650 6250 8800 6250
 Connection ~ 8650 6100
 Text Label 2600 1275 0    50   ~ 0
-~SET4B
+~CLR_I
 Text Label 2600 1375 0    50   ~ 0
-~SET8B
+~SET_I
 Wire Wire Line
 	5225 5175 5225 5275
 $Comp
@@ -1352,43 +1250,11 @@ F 3 "" H 5225 5175 50  0001 C CNN
 $EndComp
 Connection ~ 5225 5175
 Text Label 5525 4975 0    50   ~ 0
-~SET8B
+~SET_I
 Text Label 5525 5575 3    50   ~ 0
-~SET4B
-$Comp
-L Diode:BAT85 D20
-U 1 1 65A9750F
-P 5975 5375
-F 0 "D20" H 5975 5475 50  0000 C CNN
-F 1 "BAT85" H 5975 5275 50  0000 C CNN
-F 2 "Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_KathodeUp" H 5975 5200 50  0001 C CNN
-F 3 "https://assets.nexperia.com/documents/data-sheet/BAT85.pdf" H 5975 5375 50  0001 C CNN
-	1    5975 5375
-	1    0    0    -1  
-$EndComp
-Text Label 5825 5375 3    50   ~ 0
-~MODE8
-Text Label 9250 4750 2    50   ~ 0
-~RDOT
-Wire Wire Line
-	9250 4750 9050 4750
-Wire Wire Line
-	9550 4750 10175 4750
+~CLR_I
 Text Label 10125 4275 0    50   ~ 0
 ~DOT
-$Comp
-L Device:R R5
-U 1 1 65A6028D
-P 9400 4750
-F 0 "R5" V 9300 4750 50  0000 C CNN
-F 1 "680" V 9400 4750 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 9330 4750 50  0001 C CNN
-F 3 "~" H 9400 4750 50  0001 C CNN
-	1    9400 4750
-	0    -1   -1   0   
-$EndComp
-Text Label 6125 5375 0    50   ~ 0
-~DDOT
 Wire Wire Line
 	3575 6025 5025 6025
 Connection ~ 5025 6025
@@ -1440,7 +1306,7 @@ Wire Wire Line
 Connection ~ 7050 4300
 Wire Wire Line
 	7050 4300 7400 4300
-Text Label 4625 5075 0    50   ~ 0
+Text Label 4625 5075 3    50   ~ 0
 ~UDE
 Text Label 7900 6100 2    50   ~ 0
 ~UDE
@@ -1530,7 +1396,7 @@ Wire Wire Line
 Connection ~ 3575 7625
 Connection ~ 4025 7625
 Text Label 5825 5175 0    50   ~ 0
-MODE8
+INVERT
 $Comp
 L 74xx:74LS08 U20
 U 1 1 65D77053
@@ -1966,17 +1832,6 @@ F 3 "" H 7800 5900 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 Connection ~ 7800 5900
-$Comp
-L 74xx:74LS00 U3
-U 3 1 65A56322
-P 3575 4700
-F 0 "U3" V 3550 4700 50  0000 C CNN
-F 1 "74HC00" V 3475 4700 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3575 4700 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74ls00" H 3575 4700 50  0001 C CNN
-	3    3575 4700
-	1    0    0    1   
-$EndComp
 Wire Wire Line
 	10800 5400 10800 5700
 Wire Wire Line
@@ -2076,4 +1931,160 @@ $EndComp
 Connection ~ 10750 3150
 Wire Wire Line
 	10750 2800 10750 2975
+NoConn ~ 5825 5375
+Wire Wire Line
+	6700 4300 6100 4300
+Wire Wire Line
+	6100 4300 6100 5175
+Wire Wire Line
+	6100 5175 5825 5175
+Connection ~ 6700 4300
+Text Label 7475 6425 0    50   ~ 0
+INVERT
+Text Label 9425 4750 0    50   ~ 0
+DOT
+Wire Wire Line
+	1775 6625 2225 6625
+Wire Wire Line
+	1775 7625 2225 7625
+$Comp
+L 74xx:74LS08 U3
+U 1 1 660490FA
+P 1225 5250
+F 0 "U3" H 1225 5275 50  0000 C CNN
+F 1 "74HC08" H 1200 5025 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1225 5250 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS08" H 1225 5250 50  0001 C CNN
+	1    1225 5250
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74LS08 U3
+U 2 1 660553A9
+P 2675 4500
+F 0 "U3" V 2575 4425 50  0000 L CNN
+F 1 "74HC08" V 2675 4350 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 2675 4500 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS08" H 2675 4500 50  0001 C CNN
+	2    2675 4500
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	3275 4800 2675 4800
+$Comp
+L 74xx:74LS08 U3
+U 3 1 6606F106
+P 3575 4700
+F 0 "U3" V 3475 4700 50  0000 C CNN
+F 1 "74HC08" V 3575 4700 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 3575 4700 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS08" H 3575 4700 50  0001 C CNN
+	3    3575 4700
+	1    0    0    -1  
+$EndComp
+Text Label 3875 4700 0    50   ~ 0
+HSYNC
+$Comp
+L 74xx:74LS08 U3
+U 4 1 6607A0F3
+P 1225 5875
+F 0 "U3" H 1200 5875 50  0000 C CNN
+F 1 "74HC08" H 1200 6075 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1225 5875 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS08" H 1225 5875 50  0001 C CNN
+	4    1225 5875
+	1    0    0    1   
+$EndComp
+$Comp
+L 74xx:74LS08 U3
+U 5 1 66082289
+P 2225 7125
+F 0 "U3" H 2150 7175 50  0000 L CNN
+F 1 "74HC08" H 2075 7075 50  0000 L CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 2225 7125 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS08" H 2225 7125 50  0001 C CNN
+	5    2225 7125
+	1    0    0    -1  
+$EndComp
+Connection ~ 2225 6625
+Wire Wire Line
+	2225 6625 2675 6625
+Connection ~ 2225 7625
+Wire Wire Line
+	2225 7625 2675 7625
+$Comp
+L Device:R R5
+U 1 1 66087A46
+P 9275 4750
+F 0 "R5" V 9375 4750 50  0000 C CNN
+F 1 "680" V 9275 4750 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 9205 4750 50  0001 C CNN
+F 3 "~" H 9275 4750 50  0001 C CNN
+	1    9275 4750
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	9125 4750 9050 4750
+Text Label 9125 4750 3    50   ~ 0
+RDOT
+Wire Wire Line
+	8625 3475 8850 3475
+Wire Wire Line
+	8850 3475 8850 3375
+Wire Wire Line
+	8850 3375 9125 3375
+Wire Wire Line
+	8625 3775 8900 3775
+Wire Wire Line
+	8900 3775 8900 3475
+Wire Wire Line
+	8900 3475 9125 3475
+Wire Wire Line
+	8950 3575 8950 4075
+Wire Wire Line
+	8950 4075 8625 4075
+Wire Wire Line
+	8625 3975 9125 3975
+Wire Wire Line
+	8625 4275 9125 4275
+Wire Wire Line
+	9125 4275 9125 4075
+Wire Wire Line
+	8625 3675 8775 3675
+Wire Wire Line
+	8775 3675 8775 3875
+Wire Wire Line
+	8775 3875 9125 3875
+Wire Wire Line
+	9125 3575 8950 3575
+Wire Wire Line
+	8625 4375 9000 4375
+Wire Wire Line
+	9000 4375 9000 3675
+Wire Wire Line
+	9000 3675 9125 3675
+Wire Wire Line
+	9125 3775 8925 3775
+Wire Wire Line
+	8925 3775 8925 3525
+Wire Wire Line
+	8925 3525 8725 3525
+Wire Wire Line
+	8725 3525 8725 3375
+Wire Wire Line
+	8725 3375 8625 3375
+$Comp
+L Diode:1N4148 D20
+U 1 1 6625472E
+P 8900 4575
+F 0 "D20" H 8900 4675 50  0000 C CNN
+F 1 "1N4148" H 9100 4525 50  0000 C CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_AnodeUp" H 8900 4400 50  0001 C CNN
+F 3 "https://assets.nexperia.com/documents/data-sheet/1N4148_1N4448.pdf" H 8900 4575 50  0001 C CNN
+	1    8900 4575
+	1    0    0    -1  
+$EndComp
+Connection ~ 8750 4575
+Text Label 9050 4575 0    50   ~ 0
+MODE8
 $EndSCHEMATC

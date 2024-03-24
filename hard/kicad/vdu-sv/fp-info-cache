@@ -1,4 +1,4 @@
-16737265414990041
+16738971270178041
 Battery
 BatteryHolder_Bulgin_BX0036_1xC
 Bulgin Battery Holder, BX0036, Battery Type C (https://www.bulgin.com/products/pub/media/bulgin/data/Battery_holders.pdf)
@@ -46972,6 +46972,13 @@ HLCP-J100
 Display
 HY1602E
 http://www.icbank.com/data/ICBShop/board/HY1602E.pdf
+LCD 16x2 Alphanumeric 16pin
+0
+20
+16
+Display
+JHD204AO_LCD20x4
+LCD 16x2 http://www.wincomlcd.com/pdf/WC1602A-SFYLYHTC06.pdf
 LCD 16x2 Alphanumeric 16pin
 0
 20
