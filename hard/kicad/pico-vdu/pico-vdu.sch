@@ -832,22 +832,9 @@ F 3 "~" H 1000 5650 50  0001 C CNN
 	1    1000 5650
 	1    0    0    -1  
 $EndComp
-$Comp
-L Mechanical:MountingHole_Pad M3
-U 1 1 663ED7C2
-P 1300 5650
-F 0 "M3" H 1400 5699 50  0000 L CNN
-F 1 "M3" H 1400 5608 50  0000 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 1300 5650 50  0001 C CNN
-F 3 "~" H 1300 5650 50  0001 C CNN
-	1    1300 5650
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	700  5750 1000 5750
 Connection ~ 1000 5750
-Wire Wire Line
-	1000 5750 1300 5750
 $Comp
 L power:GND #PWR0117
 U 1 1 663FAFB0
