@@ -94,12 +94,12 @@ $EndComp
 $Comp
 L 74xx:74LS21 U10
 U 2 1 66052276
-P 7850 5400
-F 0 "U10" H 7850 5500 50  0000 C CNN
-F 1 "74HC21" H 7850 5400 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7850 5400 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS21" H 7850 5400 50  0001 C CNN
-	2    7850 5400
+P 6450 5000
+F 0 "U10" H 6450 5100 50  0000 C CNN
+F 1 "74HC21" H 6450 5000 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 6450 5000 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS21" H 6450 5000 50  0001 C CNN
+	2    6450 5000
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -127,23 +127,23 @@ $EndComp
 $Comp
 L 74xx:74HC74 U9
 U 1 1 66055E48
-P 6950 6150
-F 0 "U9" H 6800 6400 50  0000 C CNN
-F 1 "74HC74" H 7100 6400 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 6950 6150 50  0001 C CNN
-F 3 "74xx/74hc_hct74.pdf" H 6950 6150 50  0001 C CNN
-	1    6950 6150
+P 6150 5550
+F 0 "U9" H 6000 5800 50  0000 C CNN
+F 1 "74HC74" H 6300 5800 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 6150 5550 50  0001 C CNN
+F 3 "74xx/74hc_hct74.pdf" H 6150 5550 50  0001 C CNN
+	1    6150 5550
 	1    0    0    -1  
 $EndComp
 $Comp
 L 74xx:74HC74 U9
 U 2 1 660564B5
-P 8700 6600
-F 0 "U9" H 8550 6850 50  0000 C CNN
-F 1 "74HC74" H 8850 6850 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 8700 6600 50  0001 C CNN
-F 3 "74xx/74hc_hct74.pdf" H 8700 6600 50  0001 C CNN
-	2    8700 6600
+P 5150 5550
+F 0 "U9" H 5000 5800 50  0000 C CNN
+F 1 "74HC74" H 5300 5800 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 5150 5550 50  0001 C CNN
+F 3 "74xx/74hc_hct74.pdf" H 5150 5550 50  0001 C CNN
+	2    5150 5550
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -160,12 +160,12 @@ $EndComp
 $Comp
 L Device:R_Pack04_SIP RN1
 U 1 1 66057EB3
-P 4650 5250
-F 0 "RN1" V 4050 5050 50  0000 L CNN
-F 1 "470" V 4050 5350 50  0000 L CNN
-F 2 "Resistor_THT:R_Array_SIP8" V 5325 5250 50  0001 C CNN
-F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 4650 5250 50  0001 C CNN
-	1    4650 5250
+P 9150 1400
+F 0 "RN1" V 8550 1200 50  0000 L CNN
+F 1 "470" V 8550 1500 50  0000 L CNN
+F 2 "Resistor_THT:R_Array_SIP8" V 9825 1400 50  0001 C CNN
+F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 9150 1400 50  0001 C CNN
+	1    9150 1400
 	0    1    1    0   
 $EndComp
 Text Label 650  1100 2    50   ~ 0
@@ -566,7 +566,7 @@ Wire Wire Line
 Wire Wire Line
 	4800 6150 4850 6150
 Wire Wire Line
-	4050 5850 5350 5850
+	4050 5850 5150 5850
 Text Label 5850 6150 0    50   ~ 0
 VA5
 Text Label 5850 6250 0    50   ~ 0
@@ -603,7 +603,7 @@ Wire Wire Line
 Text Label 5850 6650 0    50   ~ 0
 VA10
 Wire Wire Line
-	5850 6950 6150 6950
+	5850 6950 6000 6950
 Wire Wire Line
 	6750 6800 6750 7600
 Wire Wire Line
@@ -813,54 +813,54 @@ Wire Wire Line
 $Comp
 L Mechanical:MountingHole_Pad H1
 U 1 1 663EC312
-P 700 5650
-F 0 "H1" H 800 5699 50  0000 L CNN
-F 1 "M3" H 800 5608 50  0000 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 700 5650 50  0001 C CNN
-F 3 "~" H 700 5650 50  0001 C CNN
-	1    700  5650
+P 900 6000
+F 0 "H1" H 1000 6049 50  0000 L CNN
+F 1 "M3" H 1000 5958 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 900 6000 50  0001 C CNN
+F 3 "~" H 900 6000 50  0001 C CNN
+	1    900  6000
 	1    0    0    -1  
 $EndComp
 $Comp
 L Mechanical:MountingHole_Pad H2
 U 1 1 663ECF9D
-P 1000 5650
-F 0 "H2" H 1100 5699 50  0000 L CNN
-F 1 "M3" H 1100 5608 50  0000 L CNN
-F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 1000 5650 50  0001 C CNN
-F 3 "~" H 1000 5650 50  0001 C CNN
-	1    1000 5650
+P 1200 6000
+F 0 "H2" H 1300 6049 50  0000 L CNN
+F 1 "M3" H 1300 5958 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965_Pad" H 1200 6000 50  0001 C CNN
+F 3 "~" H 1200 6000 50  0001 C CNN
+	1    1200 6000
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	700  5750 1000 5750
-Connection ~ 1000 5750
+	900  6100 1200 6100
+Connection ~ 1200 6100
 $Comp
 L power:GND #PWR0117
 U 1 1 663FAFB0
-P 1000 5750
-F 0 "#PWR0117" H 1000 5500 50  0001 C CNN
-F 1 "GND" H 1005 5577 50  0000 C CNN
-F 2 "" H 1000 5750 50  0001 C CNN
-F 3 "" H 1000 5750 50  0001 C CNN
-	1    1000 5750
+P 1200 6100
+F 0 "#PWR0117" H 1200 5850 50  0001 C CNN
+F 1 "GND" H 1205 5927 50  0000 C CNN
+F 2 "" H 1200 6100 50  0001 C CNN
+F 3 "" H 1200 6100 50  0001 C CNN
+	1    1200 6100
 	1    0    0    -1  
 $EndComp
-Text Label 4450 5650 2    50   ~ 0
+Text Label 8950 1800 2    50   ~ 0
 VA4
-Text Label 4450 5350 2    50   ~ 0
+Text Label 8950 1500 2    50   ~ 0
 VA3
-Text Label 4450 5050 2    50   ~ 0
+Text Label 8950 1200 2    50   ~ 0
 VA2
-Text Label 4450 4750 2    50   ~ 0
+Text Label 8950 900  2    50   ~ 0
 VA1
-Text Label 4450 4850 2    50   ~ 0
+Text Label 8950 1000 2    50   ~ 0
 MA1
-Text Label 4450 5150 2    50   ~ 0
+Text Label 8950 1300 2    50   ~ 0
 MA2
-Text Label 4450 5450 2    50   ~ 0
+Text Label 8950 1600 2    50   ~ 0
 MA3
-Text Label 4450 5750 2    50   ~ 0
+Text Label 8950 1900 2    50   ~ 0
 MA4
 Text Label 4800 1800 0    50   ~ 0
 VD0
@@ -907,17 +907,17 @@ MA12
 $Comp
 L Device:R R1
 U 1 1 66453E7F
-P 4700 4550
-F 0 "R1" V 4600 4550 50  0000 C CNN
-F 1 "470" V 4700 4550 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 4630 4550 50  0001 C CNN
-F 3 "~" H 4700 4550 50  0001 C CNN
-	1    4700 4550
+P 9200 700
+F 0 "R1" V 9100 700 50  0000 C CNN
+F 1 "470" V 9200 700 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 9130 700 50  0001 C CNN
+F 3 "~" H 9200 700 50  0001 C CNN
+	1    9200 700 
 	0    1    1    0   
 $EndComp
-Text Label 4550 4550 2    50   ~ 0
+Text Label 9050 700  2    50   ~ 0
 VA0
-Text Label 4850 4550 0    50   ~ 0
+Text Label 9350 700  0    50   ~ 0
 MA0
 Wire Wire Line
 	2550 5600 1850 5600
@@ -933,58 +933,58 @@ Wire Wire Line
 	1150 800  2550 800 
 Wire Wire Line
 	4800 7050 4800 6150
-Text Label 6150 5750 2    50   ~ 0
+Text Label 10650 1900 2    50   ~ 0
 MA12
-Text Label 6150 5450 2    50   ~ 0
+Text Label 10650 1600 2    50   ~ 0
 MA11
-Text Label 6150 5150 2    50   ~ 0
+Text Label 10650 1300 2    50   ~ 0
 MA10
-Text Label 6150 4850 2    50   ~ 0
+Text Label 10650 1000 2    50   ~ 0
 MA9
-Text Label 6150 4750 2    50   ~ 0
+Text Label 10650 900  2    50   ~ 0
 VA9
-Text Label 6150 5050 2    50   ~ 0
+Text Label 10650 1200 2    50   ~ 0
 VA10
-Text Label 6150 5350 2    50   ~ 0
+Text Label 10650 1500 2    50   ~ 0
 VA11
-Text Label 6150 5650 2    50   ~ 0
+Text Label 10650 1800 2    50   ~ 0
 VA12
-Text Label 5550 5750 2    50   ~ 0
+Text Label 10050 1900 2    50   ~ 0
 MA8
-Text Label 5550 5450 2    50   ~ 0
+Text Label 10050 1600 2    50   ~ 0
 MA7
-Text Label 5550 5150 2    50   ~ 0
+Text Label 10050 1300 2    50   ~ 0
 MA6
-Text Label 5550 4850 2    50   ~ 0
+Text Label 10050 1000 2    50   ~ 0
 MA5
-Text Label 5550 4750 2    50   ~ 0
+Text Label 10050 900  2    50   ~ 0
 VA5
-Text Label 5550 5050 2    50   ~ 0
+Text Label 10050 1200 2    50   ~ 0
 VA6
-Text Label 5550 5350 2    50   ~ 0
+Text Label 10050 1500 2    50   ~ 0
 VA7
-Text Label 5550 5650 2    50   ~ 0
+Text Label 10050 1800 2    50   ~ 0
 VA8
 $Comp
 L Device:R_Pack04_SIP RN3
 U 1 1 66058C0A
-P 6350 5250
-F 0 "RN3" V 5750 5050 50  0000 L CNN
-F 1 "470" V 5750 5350 50  0000 L CNN
-F 2 "Resistor_THT:R_Array_SIP8" V 7025 5250 50  0001 C CNN
-F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 6350 5250 50  0001 C CNN
-	1    6350 5250
+P 10850 1400
+F 0 "RN3" V 10250 1200 50  0000 L CNN
+F 1 "470" V 10250 1500 50  0000 L CNN
+F 2 "Resistor_THT:R_Array_SIP8" V 11525 1400 50  0001 C CNN
+F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 10850 1400 50  0001 C CNN
+	1    10850 1400
 	0    1    1    0   
 $EndComp
 $Comp
 L Device:R_Pack04_SIP RN2
 U 1 1 6605874B
-P 5750 5250
-F 0 "RN2" V 5150 5050 50  0000 L CNN
-F 1 "470" V 5150 5350 50  0000 L CNN
-F 2 "Resistor_THT:R_Array_SIP8" V 6425 5250 50  0001 C CNN
-F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 5750 5250 50  0001 C CNN
-	1    5750 5250
+P 10250 1400
+F 0 "RN2" V 9650 1200 50  0000 L CNN
+F 1 "470" V 9650 1500 50  0000 L CNN
+F 2 "Resistor_THT:R_Array_SIP8" V 10925 1400 50  0001 C CNN
+F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 10250 1400 50  0001 C CNN
+	1    10250 1400
 	0    1    1    0   
 $EndComp
 $Comp
@@ -1077,67 +1077,67 @@ Text Label 4550 6450 0    50   ~ 0
 $Comp
 L 74xx:74HC14 U13
 U 1 1 6631D2B2
-P 7300 3650
-F 0 "U13" H 7300 3967 50  0000 C CNN
-F 1 "74HC14" H 7300 3876 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7300 3650 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 7300 3650 50  0001 C CNN
-	1    7300 3650
+P 1800 5750
+F 0 "U13" H 1750 5750 50  0000 C CNN
+F 1 "74HC14" H 1900 5600 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1800 5750 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 1800 5750 50  0001 C CNN
+	1    1800 5750
 	1    0    0    -1  
 $EndComp
 $Comp
 L 74xx:74HC14 U13
 U 2 1 6631EAC8
-P 7350 4100
-F 0 "U13" H 7350 4417 50  0000 C CNN
-F 1 "74HC14" H 7350 4326 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7350 4100 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 7350 4100 50  0001 C CNN
-	2    7350 4100
+P 7350 6050
+F 0 "U13" H 7300 6050 50  0000 C CNN
+F 1 "74HC14" H 7450 5900 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7350 6050 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 7350 6050 50  0001 C CNN
+	2    7350 6050
 	1    0    0    -1  
 $EndComp
 $Comp
 L 74xx:74HC14 U13
 U 3 1 6631F466
-P 7400 4400
-F 0 "U13" H 7400 4717 50  0000 C CNN
-F 1 "74HC14" H 7400 4626 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7400 4400 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 7400 4400 50  0001 C CNN
-	3    7400 4400
+P 8550 6050
+F 0 "U13" H 8500 6050 50  0000 C CNN
+F 1 "74HC14" H 8650 5900 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 8550 6050 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 8550 6050 50  0001 C CNN
+	3    8550 6050
 	1    0    0    -1  
 $EndComp
 $Comp
 L 74xx:74HC14 U13
 U 4 1 6631FE3E
-P 8150 4250
-F 0 "U13" H 8150 4567 50  0000 C CNN
-F 1 "74HC14" H 8150 4476 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 8150 4250 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 8150 4250 50  0001 C CNN
-	4    8150 4250
+P 6300 7200
+F 0 "U13" H 6250 7200 50  0000 C CNN
+F 1 "74HC14" H 6400 7050 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 6300 7200 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 6300 7200 50  0001 C CNN
+	4    6300 7200
 	1    0    0    -1  
 $EndComp
 $Comp
 L 74xx:74HC14 U13
 U 5 1 66320850
-P 8050 4850
-F 0 "U13" H 8050 5167 50  0000 C CNN
-F 1 "74HC14" H 8050 5076 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 8050 4850 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 8050 4850 50  0001 C CNN
-	5    8050 4850
+P 1800 6100
+F 0 "U13" H 1750 6100 50  0000 C CNN
+F 1 "74HC14" H 1900 5950 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1800 6100 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 1800 6100 50  0001 C CNN
+	5    1800 6100
 	1    0    0    -1  
 $EndComp
 $Comp
 L 74xx:74HC14 U13
 U 6 1 66321C3E
-P 8800 5150
-F 0 "U13" H 8800 5467 50  0000 C CNN
-F 1 "74HC14" H 8800 5376 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 8800 5150 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 8800 5150 50  0001 C CNN
-	6    8800 5150
+P 7350 5450
+F 0 "U13" H 7300 5450 50  0000 C CNN
+F 1 "74HC14" H 7450 5300 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7350 5450 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 7350 5450 50  0001 C CNN
+	6    7350 5450
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1157,4 +1157,201 @@ Connection ~ 1650 6600
 Wire Wire Line
 	2100 7600 1650 7600
 Connection ~ 1650 7600
+Wire Wire Line
+	5450 5450 5850 5450
+Text Label 5500 5450 0    50   ~ 0
+~LHDE
+Wire Wire Line
+	4800 6150 4800 5450
+Wire Wire Line
+	4800 5450 4850 5450
+Connection ~ 4800 6150
+Connection ~ 5150 5850
+Wire Wire Line
+	5150 5850 5350 5850
+Wire Wire Line
+	5350 5850 6150 5850
+Connection ~ 5350 5850
+Wire Wire Line
+	4550 6450 4750 6450
+Wire Wire Line
+	4750 6450 4750 5550
+Wire Wire Line
+	4750 5550 4850 5550
+Wire Wire Line
+	5150 5250 5700 5250
+$Comp
+L power:+5V #PWR0118
+U 1 1 660A2824
+P 5700 5250
+F 0 "#PWR0118" H 5700 5100 50  0001 C CNN
+F 1 "+5V" H 5715 5423 50  0000 C CNN
+F 2 "" H 5700 5250 50  0001 C CNN
+F 3 "" H 5700 5250 50  0001 C CNN
+	1    5700 5250
+	1    0    0    -1  
+$EndComp
+Connection ~ 5700 5250
+Wire Wire Line
+	5700 5250 6150 5250
+Text Label 5850 5550 2    50   ~ 0
+VA3
+Text Label 6450 5450 0    50   ~ 0
+~DHDE
+NoConn ~ 6450 5650
+Text Label 5450 5650 0    50   ~ 0
+LHDE
+$Comp
+L Device:C C1
+U 1 1 660ADBEB
+P 6700 5450
+F 0 "C1" V 6448 5450 50  0000 C CNN
+F 1 "68p" V 6539 5450 50  0000 C CNN
+F 2 "Capacitor_THT:C_Disc_D3.8mm_W2.6mm_P2.50mm" H 6738 5300 50  0001 C CNN
+F 3 "~" H 6700 5450 50  0001 C CNN
+	1    6700 5450
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	6550 5450 6450 5450
+$Comp
+L Device:R R2
+U 1 1 660B40DF
+P 6850 5600
+F 0 "R2" H 6920 5646 50  0000 L CNN
+F 1 "68K" V 6850 5600 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 6780 5600 50  0001 C CNN
+F 3 "~" H 6850 5600 50  0001 C CNN
+	1    6850 5600
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0119
+U 1 1 660B5152
+P 6850 5750
+F 0 "#PWR0119" H 6850 5500 50  0001 C CNN
+F 1 "GND" H 7000 5700 50  0000 C CNN
+F 2 "" H 6850 5750 50  0001 C CNN
+F 3 "" H 6850 5750 50  0001 C CNN
+	1    6850 5750
+	1    0    0    -1  
+$EndComp
+Text Label 6850 5450 0    50   ~ 0
+~H_RC
+Wire Wire Line
+	7050 5450 6850 5450
+Connection ~ 6850 5450
+Text Label 7650 5450 0    50   ~ 0
+~HS
+Text Label 6150 5050 2    50   ~ 0
+LHDE
+Text Label 7650 1100 0    50   ~ 0
+VID
+Wire Wire Line
+	6000 6950 6000 7200
+Connection ~ 6000 6950
+Wire Wire Line
+	6000 6950 6150 6950
+Text Label 6600 7200 0    50   ~ 0
+VDE
+Text Label 6150 4950 2    50   ~ 0
+VDE
+Text Label 6150 4850 2    50   ~ 0
+VID
+Wire Wire Line
+	6150 5150 6150 5250
+Connection ~ 6150 5250
+Text Label 6750 5000 0    50   ~ 0
+GVID
+Text Label 7650 6050 0    50   ~ 0
+~D_VE
+$Comp
+L Device:C C3
+U 1 1 660F10CE
+P 7900 6050
+F 0 "C3" V 7648 6050 50  0000 C CNN
+F 1 "22n" V 7739 6050 50  0000 C CNN
+F 2 "Capacitor_THT:C_Rect_L7.2mm_W2.5mm_P5.00mm_FKS2_FKP2_MKS2_MKP2" H 7938 5900 50  0001 C CNN
+F 3 "~" H 7900 6050 50  0001 C CNN
+	1    7900 6050
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R4
+U 1 1 660F10D8
+P 8050 6200
+F 0 "R4" H 8120 6246 50  0000 L CNN
+F 1 "6K8" V 8050 6200 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 7980 6200 50  0001 C CNN
+F 3 "~" H 8050 6200 50  0001 C CNN
+	1    8050 6200
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0120
+U 1 1 660F10E2
+P 8050 6350
+F 0 "#PWR0120" H 8050 6100 50  0001 C CNN
+F 1 "GND" H 7900 6250 50  0000 C CNN
+F 2 "" H 8050 6350 50  0001 C CNN
+F 3 "" H 8050 6350 50  0001 C CNN
+	1    8050 6350
+	1    0    0    -1  
+$EndComp
+Text Label 8050 6050 0    50   ~ 0
+~V_RC
+Wire Wire Line
+	8250 6050 8050 6050
+Connection ~ 8050 6050
+Text Label 8850 6050 0    50   ~ 0
+~VS
+Text Label 6550 6050 2    50   ~ 0
+VDE
+$Comp
+L Device:C C2
+U 1 1 660F9BC2
+P 6850 6200
+F 0 "C2" H 7050 6200 50  0000 R CNN
+F 1 "22n" H 7000 6300 50  0000 R CNN
+F 2 "Capacitor_THT:C_Rect_L7.2mm_W2.5mm_P5.00mm_FKS2_FKP2_MKS2_MKP2" H 6888 6050 50  0001 C CNN
+F 3 "~" H 6850 6200 50  0001 C CNN
+	1    6850 6200
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:R R3
+U 1 1 660F9BCC
+P 6700 6050
+F 0 "R3" V 6600 6000 50  0000 L CNN
+F 1 "68K" V 6700 6050 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 6630 6050 50  0001 C CNN
+F 3 "~" H 6700 6050 50  0001 C CNN
+	1    6700 6050
+	0    1    1    0   
+$EndComp
+Text Label 6850 6050 0    50   ~ 0
+RC_VE
+Wire Wire Line
+	7050 6050 6850 6050
+Connection ~ 6850 6050
+Wire Wire Line
+	7650 6050 7750 6050
+Wire Wire Line
+	6850 6350 8050 6350
+Connection ~ 8050 6350
+Wire Wire Line
+	6600 7200 6800 7200
+Wire Wire Line
+	6800 7200 6800 6500
+Wire Wire Line
+	6800 6500 6550 6500
+Wire Wire Line
+	6550 6500 6550 6050
+Wire Wire Line
+	1500 5750 1500 6100
+Wire Wire Line
+	1200 6100 1500 6100
+Connection ~ 1500 6100
+NoConn ~ 2100 5750
+NoConn ~ 2100 6100
 $EndSCHEMATC
