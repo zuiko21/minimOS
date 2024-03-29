@@ -992,7 +992,7 @@ L 4xxx:4040 U6
 U 1 1 6604F960
 P 5350 6650
 F 0 "U6" H 5200 7300 50  0000 C CNN
-F 1 "(74HC)4040" H 5600 7300 50  0000 C CNN
+F 1 "(74HC)4040" V 4950 6400 50  0000 C CNN
 F 2 "Package_DIP:DIP-16_W7.62mm_Socket" H 5350 6650 50  0001 C CNN
 F 3 "http://www.intersil.com/content/dam/Intersil/documents/cd40/cd4020bms-24bms-40bms.pdf" H 5350 6650 50  0001 C CNN
 	1    5350 6650
@@ -1077,12 +1077,12 @@ Text Label 4550 6450 0    50   ~ 0
 $Comp
 L 74xx:74HC14 U13
 U 1 1 6631D2B2
-P 1800 5750
-F 0 "U13" H 1750 5750 50  0000 C CNN
-F 1 "74HC14" H 1900 5600 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 1800 5750 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 1800 5750 50  0001 C CNN
-	1    1800 5750
+P 5050 4700
+F 0 "U13" H 5000 4700 50  0000 C CNN
+F 1 "74HC14" H 5150 4550 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 5050 4700 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC14" H 5050 4700 50  0001 C CNN
+	1    5050 4700
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1157,9 +1157,7 @@ Connection ~ 1650 6600
 Wire Wire Line
 	2100 7600 1650 7600
 Connection ~ 1650 7600
-Wire Wire Line
-	5450 5450 5850 5450
-Text Label 5500 5450 0    50   ~ 0
+Text Label 5450 5450 0    50   ~ 0
 ~LHDE
 Wire Wire Line
 	4800 6150 4800 5450
@@ -1179,22 +1177,22 @@ Wire Wire Line
 Wire Wire Line
 	4750 5550 4850 5550
 Wire Wire Line
-	5150 5250 5700 5250
+	5150 5250 5600 5250
 $Comp
 L power:+5V #PWR0118
 U 1 1 660A2824
-P 5700 5250
-F 0 "#PWR0118" H 5700 5100 50  0001 C CNN
-F 1 "+5V" H 5715 5423 50  0000 C CNN
-F 2 "" H 5700 5250 50  0001 C CNN
-F 3 "" H 5700 5250 50  0001 C CNN
-	1    5700 5250
+P 5600 5250
+F 0 "#PWR0118" H 5600 5100 50  0001 C CNN
+F 1 "+5V" H 5500 5350 50  0000 C CNN
+F 2 "" H 5600 5250 50  0001 C CNN
+F 3 "" H 5600 5250 50  0001 C CNN
+	1    5600 5250
 	1    0    0    -1  
 $EndComp
-Connection ~ 5700 5250
+Connection ~ 5600 5250
 Wire Wire Line
-	5700 5250 6150 5250
-Text Label 5850 5550 2    50   ~ 0
+	5600 5250 6150 5250
+Text Label 5850 5550 3    50   ~ 0
 VA3
 Text Label 6450 5450 0    50   ~ 0
 ~DHDE
@@ -1348,10 +1346,78 @@ Wire Wire Line
 Wire Wire Line
 	6550 6500 6550 6050
 Wire Wire Line
-	1500 5750 1500 6100
-Wire Wire Line
 	1200 6100 1500 6100
-Connection ~ 1500 6100
-NoConn ~ 2100 5750
 NoConn ~ 2100 6100
+$Comp
+L Device:C C4
+U 1 1 660686A4
+P 4750 4850
+F 0 "C4" H 4850 4750 50  0000 C CNN
+F 1 "68p" H 4850 4950 50  0000 C CIN
+F 2 "Capacitor_THT:C_Disc_D3.8mm_W2.6mm_P2.50mm" H 4788 4700 50  0001 C CNN
+F 3 "~" H 4750 4850 50  0001 C CNN
+	1    4750 4850
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:R R5
+U 1 1 6606AB4D
+P 4500 4850
+F 0 "R5" H 4350 4850 50  0000 L CNN
+F 1 "680" V 4500 4850 50  0000 C CIN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 4430 4850 50  0001 C CNN
+F 3 "~" H 4500 4850 50  0001 C CNN
+	1    4500 4850
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0121
+U 1 1 6606CAFB
+P 4500 5000
+F 0 "#PWR0121" H 4500 4750 50  0001 C CNN
+F 1 "GND" H 4350 4900 50  0000 C CNN
+F 2 "" H 4500 5000 50  0001 C CNN
+F 3 "" H 4500 5000 50  0001 C CNN
+	1    4500 5000
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4750 5550 4750 5000
+Connection ~ 4750 5550
+Wire Wire Line
+	4500 4700 4750 4700
+Connection ~ 4750 4700
+Text Label 4700 4700 2    50   ~ 0
+~RC_LD
+Text Label 5450 4700 0    50   ~ 0
+~LOAD
+Text Label 6650 2100 2    50   ~ 0
+~LOAD
+Wire Wire Line
+	6150 4850 6150 3500
+Wire Wire Line
+	6150 3500 7650 3500
+Wire Wire Line
+	7650 3500 7650 1100
+Wire Wire Line
+	5450 5450 5850 5450
+Wire Wire Line
+	5450 5650 5700 5650
+Wire Wire Line
+	5700 5650 5700 5050
+Wire Wire Line
+	5700 5050 6150 5050
+Wire Wire Line
+	6550 6050 5750 6050
+Wire Wire Line
+	5750 6050 5750 4950
+Wire Wire Line
+	5750 4950 6150 4950
+Connection ~ 6550 6050
+Wire Wire Line
+	6650 2100 6400 2100
+Wire Wire Line
+	6400 2100 6400 4700
+Wire Wire Line
+	5350 4700 6400 4700
 $EndSCHEMATC
