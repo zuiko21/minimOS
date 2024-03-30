@@ -19,7 +19,7 @@ L w65c02s:W65C02S U1
 U 1 1 66044651
 P 1150 2300
 F 0 "U1" H 950 3650 50  0000 C CNN
-F 1 "65C02" H 1350 3650 50  0000 C CNN
+F 1 "To 65C02 socket" H 1500 3650 50  0000 C CNN
 F 2 "Package_DIP:DIP-40_W15.24mm_Socket" H 1150 800 50  0001 C CNN
 F 3 "https://www.westerndesigncenter.com/wdc/documentation/w65c02s.pdf" H 1150 2300 50  0001 C CNN
 	1    1150 2300
@@ -74,7 +74,7 @@ L Oscillator:ACO-xxxMHz X1
 U 1 1 660508A8
 P 3150 6150
 F 0 "X1" H 2900 6150 50  0000 R CNN
-F 1 "ACO-16MHz" H 3400 6500 50  0000 R CNN
+F 1 "16 MHz" H 3400 6500 50  0000 R CNN
 F 2 "Oscillator:Oscillator_DIP-14" H 3600 5800 50  0001 C CNN
 F 3 "http://www.conwin.com/datasheets/cx/cx030.pdf" H 3050 6150 50  0001 C CNN
 	1    3150 6150
@@ -1672,4 +1672,26 @@ Wire Wire Line
 Connection ~ 10300 6350
 Text Label 10900 5850 3    50   ~ 0
 OUT
+$Comp
+L Graphic:Logo_Open_Hardware_Large LOGO1
+U 1 1 661705D4
+P 10450 2550
+F 0 "LOGO1" H 10450 3050 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Large" H 10450 2150 50  0001 C CNN
+F 2 "Symbol:OSHW-Symbol_8.9x8mm_SilkScreen" H 10450 2550 50  0001 C CNN
+F 3 "~" H 10450 2550 50  0001 C CNN
+	1    10450 2550
+	1    0    0    -1  
+$EndComp
+$Comp
+L Graphic:Logo_Open_Hardware_Small LOGO2
+U 1 1 66171AA6
+P 10500 3450
+F 0 "LOGO2" H 10500 3725 50  0001 C CNN
+F 1 "La Jaquería" H 10500 3225 50  0001 C CNN
+F 2 "durango:jaqueria" H 10500 3450 50  0001 C CNN
+F 3 "~" H 10500 3450 50  0001 C CNN
+	1    10500 3450
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
