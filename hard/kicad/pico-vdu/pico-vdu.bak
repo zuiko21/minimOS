@@ -1659,8 +1659,8 @@ L Connector:Conn_Coaxial J1
 U 1 1 661D7B02
 P 11100 5850
 F 0 "J1" H 11100 6100 50  0000 L CNN
-F 1 "OUT" H 11050 6000 50  0000 L CNN
-F 2 "Connector_PinSocket_2.54mm:PinSocket_1x02_P2.54mm_Horizontal" H 11100 5850 50  0001 C CNN
+F 1 "VIDEO" H 11000 6000 50  0000 L CNN
+F 2 "durango:1xRCA" H 11100 5850 50  0001 C CNN
 F 3 " ~" H 11100 5850 50  0001 C CNN
 	1    11100 5850
 	1    0    0    -1  
@@ -1668,7 +1668,7 @@ $EndComp
 Wire Wire Line
 	11100 6050 11100 6350
 Wire Wire Line
-	11100 6350 10300 6350
+	11100 6350 10900 6350
 Connection ~ 10300 6350
 Text Label 10900 5850 3    50   ~ 0
 OUT
@@ -1678,7 +1678,7 @@ U 1 1 661705D4
 P 10450 2550
 F 0 "LOGO1" H 10450 3050 50  0001 C CNN
 F 1 "Logo_Open_Hardware_Large" H 10450 2150 50  0001 C CNN
-F 2 "Symbol:OSHW-Logo2_7.3x6mm_SilkScreen" H 10450 2550 50  0001 C CNN
+F 2 "Symbol:OSHW-Symbol_8.9x8mm_SilkScreen" H 10450 2550 50  0001 C CNN
 F 3 "~" H 10450 2550 50  0001 C CNN
 	1    10450 2550
 	1    0    0    -1  
@@ -1694,4 +1694,23 @@ F 3 "~" H 10500 3450 50  0001 C CNN
 	1    10500 3450
 	1    0    0    -1  
 $EndComp
+Wire Wire Line
+	10900 5850 10900 6150
+Connection ~ 10900 5850
+$Comp
+L Connector_Generic:Conn_01x02 J2
+U 1 1 660A2305
+P 10700 6150
+F 0 "J2" H 10450 6100 50  0000 C CNN
+F 1 "OUT" H 10650 5900 50  0000 C CNN
+F 2 "Connector_PinSocket_2.54mm:PinSocket_1x02_P2.54mm_Horizontal" H 10700 6150 50  0001 C CNN
+F 3 "~" H 10700 6150 50  0001 C CNN
+	1    10700 6150
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	10900 6250 10900 6350
+Connection ~ 10900 6350
+Wire Wire Line
+	10900 6350 10300 6350
 $EndSCHEMATC
