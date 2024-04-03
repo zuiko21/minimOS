@@ -1,6 +1,6 @@
 /* Durango Imager - CLI version
- * (C)2023 Carlos J. Santisteban
- * last modified 20231207-1639
+ * (C)2023-2024 Carlos J. Santisteban
+ * last modified 20240403-1223
  * */
 
 /* Libraries */
@@ -494,6 +494,8 @@ void	generate(void) {	// Generate volume
 		if (!err)	printf("OK");
 		else		printf("*** FAIL *** Do NOT use free space!!");
 	}
+	for (i=0; i<HD_BYTES; i++)
+		fwrite(&pad, 1, 1, file);				// make best effort to add an invalid 'header' at the end
 	fclose(file);
 	printf("\nDone!\n");
 }
