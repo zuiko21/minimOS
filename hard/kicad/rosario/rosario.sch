@@ -85,7 +85,7 @@ L Connector_Generic:Conn_02x20_Odd_Even J2
 U 1 1 652CE392
 P 1250 3000
 F 0 "J2" H 1300 4117 50  0000 C CNN
-F 1 "VIAport" H 1300 4026 50  0000 C CNN
+F 1 "VIAport (PB = output only)" H 1300 4026 50  0000 C CNN
 F 2 "Connector_IDC:IDC-Header_2x20_P2.54mm_Vertical" H 1250 3000 50  0001 C CNN
 F 3 "~" H 1250 3000 50  0001 C CNN
 	1    1250 3000
@@ -105,12 +105,12 @@ $EndComp
 $Comp
 L Device:Buzzer BZ1
 U 1 1 652DC822
-P 1650 7050
-F 0 "BZ1" H 1802 7079 50  0000 L CNN
-F 1 "Buzzer" H 1802 6988 50  0000 L CNN
-F 2 "Buzzer_Beeper:Buzzer_12x9.5RM7.6" V 1625 7150 50  0001 C CNN
-F 3 "~" V 1625 7150 50  0001 C CNN
-	1    1650 7050
+P 1950 7050
+F 0 "BZ1" H 2102 7079 50  0000 L CNN
+F 1 "Buzzer" H 2102 6988 50  0000 L CNN
+F 2 "Buzzer_Beeper:Buzzer_12x9.5RM7.6" V 1925 7150 50  0001 C CNN
+F 3 "~" V 1925 7150 50  0001 C CNN
+	1    1950 7050
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1763,48 +1763,28 @@ SC_RX
 $Comp
 L Device:R_Network04 RN3
 U 1 1 667CBFEE
-P 4100 1300
-F 0 "RN3" V 3800 1200 50  0000 L CNN
-F 1 "22K" V 4300 1200 50  0000 L CNN
-F 2 "Resistor_THT:R_Array_SIP5" V 4375 1300 50  0001 C CNN
-F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 4100 1300 50  0001 C CNN
-	1    4100 1300
+P 4400 950
+F 0 "RN3" V 4100 850 50  0000 L CNN
+F 1 "4K7" V 4600 850 50  0000 L CNN
+F 2 "Resistor_THT:R_Array_SIP5" V 4675 950 50  0001 C CNN
+F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 4400 950 50  0001 C CNN
+	1    4400 950 
 	0    1    1    0   
 $EndComp
 Text Label 1550 2900 0    50   ~ 0
 SC_CL
 Text Label 3350 3250 0    50   ~ 0
 SC_CL
-Text Label 3900 1200 2    50   ~ 0
+Text Label 3600 850  2    50   ~ 0
 SC_CL
-Text Label 3900 1300 2    50   Italic 0
-CA2
-Text Label 3900 1400 2    50   Italic 0
-CB2
-Wire Wire Line
-	3900 1100 3600 1100
-Connection ~ 3600 1100
 Wire Wire Line
 	3350 3250 3650 3250
 Wire Wire Line
-	3650 3250 3650 1200
-Wire Wire Line
-	3650 1200 3900 1200
+	3650 3250 3650 1500
 Text Label 3350 3550 0    50   ~ 0
 XT
 Text Label 3400 3750 3    50   ~ 0
 EXT
-$Comp
-L power:GND #PWR0114
-U 1 1 66806929
-P 4300 1100
-F 0 "#PWR0114" H 4300 850 50  0001 C CNN
-F 1 "GND" V 4200 1000 50  0000 C CNN
-F 2 "" H 4300 1100 50  0001 C CNN
-F 3 "" H 4300 1100 50  0001 C CNN
-	1    4300 1100
-	0    -1   -1   0   
-$EndComp
 Wire Wire Line
 	3500 5850 2600 5850
 Wire Wire Line
@@ -1972,13 +1952,13 @@ P21
 $Comp
 L Device:R R3
 U 1 1 66D4CE79
-P 3050 1200
-F 0 "R3" V 3150 1150 50  0000 L CNN
-F 1 "3K3" V 3050 1200 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 2980 1200 50  0001 C CNN
-F 3 "~" H 3050 1200 50  0001 C CNN
-	1    3050 1200
-	0    1    1    0   
+P 3750 850
+F 0 "R3" V 3850 800 50  0000 L CNN
+F 1 "3K3" V 3750 850 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 3680 850 50  0001 C CNN
+F 3 "~" H 3750 850 50  0001 C CNN
+	1    3750 850 
+	0    -1   -1   0   
 $EndComp
 $Comp
 L power:+5V #PWR0126
@@ -2004,7 +1984,7 @@ F 3 "~" H 3900 3550 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	2900 1100 2900 1200
-Text Label 3200 1200 0    50   ~ 0
+Text Label 4200 750  2    50   ~ 0
 P21
 $Comp
 L Device:C_Small C5
@@ -2167,47 +2147,46 @@ Wire Wire Line
 Wire Wire Line
 	10550 2350 10800 2350
 Connection ~ 10550 2150
-Connection ~ 2900 1200
 $Comp
 L Transistor_BJT:BC548 Q3
 U 1 1 661C246B
-P 1000 6750
-F 0 "Q3" H 1191 6796 50  0000 L CNN
-F 1 "BC548" H 1191 6705 50  0000 L CNN
-F 2 "Package_TO_SOT_THT:TO-92_Inline" H 1200 6675 50  0001 L CIN
-F 3 "http://www.fairchildsemi.com/ds/BC/BC547.pdf" H 1000 6750 50  0001 L CNN
-	1    1000 6750
+P 1300 6750
+F 0 "Q3" H 1491 6796 50  0000 L CNN
+F 1 "BC548" H 1491 6705 50  0000 L CNN
+F 2 "Package_TO_SOT_THT:TO-92_Inline" H 1500 6675 50  0001 L CIN
+F 3 "http://www.fairchildsemi.com/ds/BC/BC547.pdf" H 1300 6750 50  0001 L CNN
+	1    1300 6750
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR0135
 U 1 1 661C5E1B
-P 1550 7150
-F 0 "#PWR0135" H 1550 6900 50  0001 C CNN
-F 1 "GND" H 1555 6977 50  0000 C CNN
-F 2 "" H 1550 7150 50  0001 C CNN
-F 3 "" H 1550 7150 50  0001 C CNN
-	1    1550 7150
-	1    0    0    -1  
+P 600 7150
+F 0 "#PWR0135" H 600 6900 50  0001 C CNN
+F 1 "GND" V 700 7100 50  0000 C CNN
+F 2 "" H 600 7150 50  0001 C CNN
+F 3 "" H 600 7150 50  0001 C CNN
+	1    600  7150
+	0    1    1    0   
 $EndComp
 Wire Wire Line
-	1150 6950 1100 6950
-Text Label 1100 6950 3    50   ~ 0
+	1450 6950 1400 6950
+Text Label 1400 6950 3    50   ~ 0
 BZ
 Wire Wire Line
-	800  5450 800  6750
+	800  5450 800  6850
 Connection ~ 800  5450
 Wire Wire Line
 	800  5450 900  5450
 $Comp
 L power:+5V #PWR0136
 U 1 1 6620B728
-P 1100 6550
-F 0 "#PWR0136" H 1100 6400 50  0001 C CNN
-F 1 "+5V" H 1115 6723 50  0000 C CNN
-F 2 "" H 1100 6550 50  0001 C CNN
-F 3 "" H 1100 6550 50  0001 C CNN
-	1    1100 6550
+P 1400 6550
+F 0 "#PWR0136" H 1400 6400 50  0001 C CNN
+F 1 "+5V" H 1415 6723 50  0000 C CNN
+F 2 "" H 1400 6550 50  0001 C CNN
+F 3 "" H 1400 6550 50  0001 C CNN
+	1    1400 6550
 	1    0    0    -1  
 $EndComp
 NoConn ~ 1050 2900
@@ -2215,8 +2194,6 @@ NoConn ~ 1050 3000
 NoConn ~ 1050 3100
 Text Label 1550 2600 0    50   Italic 0
 CA2
-Text Label 1550 3900 0    50   Italic 0
-CB2
 Connection ~ 5550 1650
 Connection ~ 5500 1750
 Wire Wire Line
@@ -2368,18 +2345,80 @@ RAM_~WE
 $Comp
 L Device:R R4
 U 1 1 662654C3
-P 1300 6950
-F 0 "R4" V 1400 6900 50  0000 L CNN
-F 1 "33" V 1300 6950 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P2.54mm_Vertical" V 1230 6950 50  0001 C CNN
-F 3 "~" H 1300 6950 50  0001 C CNN
-	1    1300 6950
+P 1600 6950
+F 0 "R4" V 1700 6900 50  0000 L CNN
+F 1 "33" V 1600 6950 50  0000 C CIN
+F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P2.54mm_Vertical" V 1530 6950 50  0001 C CNN
+F 3 "~" H 1600 6950 50  0001 C CNN
+	1    1600 6950
 	0    -1   1    0   
 $EndComp
 Wire Wire Line
-	1450 6950 1550 6950
-Text Label 1550 6950 3    50   ~ 0
+	1750 6950 1850 6950
+Text Label 1850 6950 3    50   ~ 0
 BZR
+$Comp
+L Transistor_BJT:BC558 Q4
+U 1 1 66178C1F
+P 800 7050
+F 0 "Q4" V 1035 7050 50  0000 C CNN
+F 1 "BC558" V 1126 7050 50  0000 C CNN
+F 2 "Package_TO_SOT_THT:TO-92_Inline" H 1000 6975 50  0001 L CIN
+F 3 "http://www.fairchildsemi.com/ds/BC/BC557.pdf" H 800 7050 50  0001 L CNN
+	1    800  7050
+	0    -1   1    0   
+$EndComp
+Wire Wire Line
+	1000 7150 1850 7150
+Text Label 1100 6750 1    50   ~ 0
+SC_TX
+Text Label 1850 7150 3    50   ~ 0
+BZG
+Text Label 1550 3900 0    50   ~ 0
+SC_TX
+$Comp
+L Device:R R6
+U 1 1 662226AF
+P 3750 1100
+F 0 "R6" V 3650 1050 50  0000 L CNN
+F 1 "3K3" V 3750 1100 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 3680 1100 50  0001 C CNN
+F 3 "~" H 3750 1100 50  0001 C CNN
+	1    3750 1100
+	0    -1   1    0   
+$EndComp
+Connection ~ 3600 1100
+$Comp
+L power:GND #PWR0114
+U 1 1 662291D7
+P 3900 1100
+F 0 "#PWR0114" H 3900 850 50  0001 C CNN
+F 1 "GND" H 3905 927 50  0000 C CNN
+F 2 "" H 3900 1100 50  0001 C CNN
+F 3 "" H 3900 1100 50  0001 C CNN
+	1    3900 1100
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3900 850  3900 1100
+Connection ~ 3900 1100
+$Comp
+L power:+5V #PWR0137
+U 1 1 6628EBFF
+P 4600 750
+F 0 "#PWR0137" H 4600 600 50  0001 C CNN
+F 1 "+5V" H 4615 923 50  0000 C CNN
+F 2 "" H 4600 750 50  0001 C CNN
+F 3 "" H 4600 750 50  0001 C CNN
+	1    4600 750 
+	1    0    0    -1  
+$EndComp
+Text Label 4200 850  2    50   ~ 0
+SC_TX
+Text Label 4200 1050 2    50   ~ 0
+SC_RX
+Text Label 4200 950  2    50   Italic 0
+CA2
 Wire Bus Line
 	1850 3600 1850 4250
 Wire Bus Line
