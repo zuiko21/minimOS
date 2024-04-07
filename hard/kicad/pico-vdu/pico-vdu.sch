@@ -73,7 +73,7 @@ $Comp
 L Oscillator:ACO-xxxMHz X1
 U 1 1 660508A8
 P 3150 6150
-F 0 "X1" H 2900 6150 50  0000 R CNN
+F 0 "X1" H 3050 6300 50  0000 R CNN
 F 1 "16 MHz" H 3400 6500 50  0000 R CNN
 F 2 "Oscillator:Oscillator_DIP-14" H 3600 5800 50  0001 C CNN
 F 3 "http://www.conwin.com/datasheets/cx/cx030.pdf" H 3050 6150 50  0001 C CNN
@@ -1713,4 +1713,24 @@ Wire Wire Line
 Connection ~ 10900 6350
 Wire Wire Line
 	10900 6350 10300 6350
+$Comp
+L Device:C C7
+U 1 1 6615D2DB
+P 2800 6150
+F 0 "C7" H 3000 6150 50  0000 R CNN
+F 1 "22n" H 2950 6250 50  0000 R CNN
+F 2 "Capacitor_THT:C_Rect_L7.2mm_W2.5mm_P5.00mm_FKS2_FKP2_MKS2_MKP2" H 2838 6000 50  0001 C CNN
+F 3 "~" H 2800 6150 50  0001 C CNN
+	1    2800 6150
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	2800 6000 2800 5850
+Wire Wire Line
+	2800 5850 3150 5850
+Connection ~ 3150 5850
+Wire Wire Line
+	2800 6300 2800 6450
+Wire Wire Line
+	2800 6450 3150 6450
 $EndSCHEMATC
