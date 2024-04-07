@@ -30,7 +30,7 @@ L 62256:62256 U3
 U 1 1 6521A41A
 P 6600 3050
 F 0 "U3" H 6600 3050 50  0000 C CNN
-F 1 "62256" H 6800 4150 50  0000 C CNN
+F 1 "62256 / 27C256" H 6950 4150 50  0000 C CNN
 F 2 "Package_DIP:DIP-28_W15.24mm_Socket" H 6600 3050 50  0001 C CNN
 F 3 "http://www.6502.org/users/alexis/62256.pdf" H 6600 3050 50  0001 C CNN
 	1    6600 3050
@@ -105,12 +105,12 @@ $EndComp
 $Comp
 L Device:Buzzer BZ1
 U 1 1 652DC822
-P 1250 7050
-F 0 "BZ1" H 1402 7079 50  0000 L CNN
-F 1 "Buzzer" H 1402 6988 50  0000 L CNN
-F 2 "Buzzer_Beeper:Buzzer_12x9.5RM7.6" V 1225 7150 50  0001 C CNN
-F 3 "~" V 1225 7150 50  0001 C CNN
-	1    1250 7050
+P 1650 7050
+F 0 "BZ1" H 1802 7079 50  0000 L CNN
+F 1 "Buzzer" H 1802 6988 50  0000 L CNN
+F 2 "Buzzer_Beeper:Buzzer_12x9.5RM7.6" V 1625 7150 50  0001 C CNN
+F 3 "~" V 1625 7150 50  0001 C CNN
+	1    1650 7050
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -908,7 +908,7 @@ Wire Wire Line
 	5800 2250 6000 2250
 Wire Wire Line
 	6000 2150 5800 2150
-Text Label 7750 4600 0    50   ~ 0
+Text Label 5400 5500 0    50   ~ 0
 ~WE
 $Comp
 L power:+5V #PWR0120
@@ -934,7 +934,7 @@ F 3 "" H 6600 4250 50  0001 C CNN
 $EndComp
 Text Label 8300 5900 2    50   ~ 0
 R~W
-Text Label 8300 5000 2    50   ~ 0
+Text Label 8150 4900 0    50   ~ 0
 A15
 Text Label 8900 5800 0    50   ~ 0
 ~OE
@@ -1211,9 +1211,7 @@ Wire Wire Line
 Connection ~ 8850 2650
 Wire Wire Line
 	8350 2950 8050 2950
-Wire Wire Line
-	8050 2950 8050 4600
-Text Label 8050 5500 0    50   ~ 0
+Text Label 8100 5500 0    50   ~ 0
 ~WE
 Wire Wire Line
 	4450 6450 5050 6450
@@ -1664,13 +1662,6 @@ Wire Wire Line
 Connection ~ 3750 1750
 Text Label 2000 1750 0    50   ~ 0
 ~IRQ
-Wire Wire Line
-	8050 4600 6000 4600
-Connection ~ 8050 4600
-Wire Wire Line
-	8050 4600 8050 5500
-Wire Wire Line
-	6000 4600 6000 3950
 Text Label 8200 4650 0    50   ~ 0
 ~OE
 Wire Wire Line
@@ -2099,12 +2090,9 @@ Connection ~ 10550 3450
 Wire Wire Line
 	10550 3450 10800 3450
 Wire Wire Line
-	8150 5000 5750 5000
-Wire Wire Line
-	5750 5000 5750 3750
+	5750 4850 5750 3750
 Wire Wire Line
 	5750 3750 6000 3750
-Connection ~ 8150 5000
 Text Label 10800 2650 2    50   ~ 0
 D0
 Text Label 10800 2750 2    50   ~ 0
@@ -2194,12 +2182,12 @@ $EndComp
 $Comp
 L power:GND #PWR0135
 U 1 1 661C5E1B
-P 1150 7150
-F 0 "#PWR0135" H 1150 6900 50  0001 C CNN
-F 1 "GND" H 1155 6977 50  0000 C CNN
-F 2 "" H 1150 7150 50  0001 C CNN
-F 3 "" H 1150 7150 50  0001 C CNN
-	1    1150 7150
+P 1550 7150
+F 0 "#PWR0135" H 1550 6900 50  0001 C CNN
+F 1 "GND" H 1555 6977 50  0000 C CNN
+F 2 "" H 1550 7150 50  0001 C CNN
+F 3 "" H 1550 7150 50  0001 C CNN
+	1    1550 7150
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
@@ -2254,7 +2242,7 @@ L Connector_Generic:Conn_01x20 J5
 U 1 1 66EF7AEB
 P 5250 2850
 F 0 "J5" H 5250 3850 50  0000 C CNN
-F 1 "VDU" H 5250 1750 50  0000 C CNN
+F 1 "VDU" H 5400 1850 50  0000 C CNN
 F 2 "Connector_PinSocket_2.54mm:PinSocket_1x20_P2.54mm_Vertical" H 5250 2850 50  0001 C CNN
 F 3 "~" H 5250 2850 50  0001 C CNN
 	1    5250 2850
@@ -2317,6 +2305,81 @@ Wire Wire Line
 	5450 3750 5600 3750
 Wire Wire Line
 	5450 3850 5600 3850
+Text Label 5000 2150 0    50   ~ 0
+A0
+Text Label 5000 2250 0    50   ~ 0
+A1
+Text Label 5000 2350 0    50   ~ 0
+A2
+Text Label 5000 2450 0    50   ~ 0
+A3
+Text Label 5000 2550 0    50   ~ 0
+A4
+Text Label 5000 2650 0    50   ~ 0
+A5
+Text Label 5000 2750 0    50   ~ 0
+A6
+Text Label 5000 2850 0    50   ~ 0
+A7
+$Comp
+L Jumper:Jumper_3_Bridged12 JP1
+U 1 1 6614823B
+P 5750 5000
+F 0 "JP1" H 5750 5111 50  0000 C CNN
+F 1 "ROM" H 6000 5150 50  0000 C CNN
+F 2 "Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm" H 5750 5000 50  0001 C CNN
+F 3 "~" H 5750 5000 50  0001 C CNN
+	1    5750 5000
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	8150 5000 6000 5000
+Connection ~ 8150 5000
+Text Label 5500 5000 2    50   ~ 0
+ROM_~CS
+Text Label 5750 4800 2    50   ~ 0
+RAM_~CS
+Wire Wire Line
+	8050 2950 8050 5500
+Text Label 6000 5000 0    50   ~ 0
+A15
+$Comp
+L Jumper:Jumper_3_Bridged12 JP2
+U 1 1 66191023
+P 5150 5500
+F 0 "JP2" H 5150 5611 50  0000 C CNN
+F 1 "32K" H 5400 5650 50  0000 C CNN
+F 2 "Jumper:SolderJumper-3_P1.3mm_Bridged12_RoundedPad1.0x1.5mm" H 5150 5500 50  0001 C CNN
+F 3 "~" H 5150 5500 50  0001 C CNN
+	1    5150 5500
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	6000 3950 5150 3950
+Wire Wire Line
+	5150 3950 5150 5350
+Wire Wire Line
+	8050 5500 5400 5500
+Connection ~ 8050 5500
+Text Label 4900 5500 2    50   ~ 0
+A14
+Text Label 5150 5350 2    50   ~ 0
+RAM_~WE
+$Comp
+L Device:R R4
+U 1 1 662654C3
+P 1300 6950
+F 0 "R4" V 1400 6900 50  0000 L CNN
+F 1 "33" V 1300 6950 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P2.54mm_Vertical" V 1230 6950 50  0001 C CNN
+F 3 "~" H 1300 6950 50  0001 C CNN
+	1    1300 6950
+	0    -1   1    0   
+$EndComp
+Wire Wire Line
+	1450 6950 1550 6950
+Text Label 1550 6950 3    50   ~ 0
+BZR
 Wire Bus Line
 	1850 3600 1850 4250
 Wire Bus Line
@@ -2349,20 +2412,4 @@ Wire Bus Line
 	7500 1600 7500 3750
 Wire Bus Line
 	1950 1800 1950 4250
-Text Label 5000 2150 0    50   ~ 0
-A0
-Text Label 5000 2250 0    50   ~ 0
-A1
-Text Label 5000 2350 0    50   ~ 0
-A2
-Text Label 5000 2450 0    50   ~ 0
-A3
-Text Label 5000 2550 0    50   ~ 0
-A4
-Text Label 5000 2650 0    50   ~ 0
-A5
-Text Label 5000 2750 0    50   ~ 0
-A6
-Text Label 5000 2850 0    50   ~ 0
-A7
 $EndSCHEMATC
