@@ -12,7 +12,7 @@ Comp "@zuiko21"
 Comment1 "(c) 2012-2023 Carlos J. Santisteban"
 Comment2 "D mode: 32K RAM, 16K ROM, IO=$800x-$BFFx"
 Comment3 "C mode: 16K RAM, 32K ROM, IO=$400x-$7FFx"
-Comment4 ""
+Comment4 "/IOC signal is NOT available!"
 $EndDescr
 $Comp
 L w65c02s:W65C02S U1
@@ -1660,7 +1660,7 @@ L Device:CP C2
 U 1 1 65F59FF2
 P 3150 1150
 F 0 "C2" H 2950 1200 50  0000 L CNN
-F 1 "1µ" H 3000 1100 50  0000 C CNN
+F 1 "0" H 3000 1100 50  0000 C CNN
 F 2 "Capacitor_THT:CP_Radial_D4.0mm_P1.50mm" H 3188 1000 50  0001 C CNN
 F 3 "~" H 3150 1150 50  0001 C CNN
 	1    3150 1150
