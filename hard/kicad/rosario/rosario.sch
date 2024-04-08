@@ -1813,17 +1813,6 @@ Wire Wire Line
 Connection ~ 2600 5450
 Wire Bus Line
 	3550 1700 3800 1700
-$Comp
-L 74xx:74LS574 U5
-U 1 1 6691BB95
-P 1400 5250
-F 0 "U5" H 1400 5300 50  0000 C CNN
-F 1 "74HC574" H 1200 5900 50  0000 C CNN
-F 2 "Package_DIP:DIP-20_W7.62mm_Socket" H 1400 5250 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74LS574" H 1400 5250 50  0001 C CNN
-	1    1400 5250
-	-1   0    0    -1  
-$EndComp
 Text Label 1900 4750 0    50   ~ 0
 PA0
 Text Label 1900 4850 0    50   ~ 0
@@ -1889,7 +1878,6 @@ F 3 "" H 1400 6050 50  0001 C CNN
 	1    1400 6050
 	1    0    0    -1  
 $EndComp
-Connection ~ 1400 6050
 Wire Wire Line
 	1550 4000 1550 4450
 Wire Wire Line
@@ -2419,14 +2407,7 @@ Text Label 4200 1050 2    50   ~ 0
 SC_RX
 Text Label 4200 950  2    50   Italic 0
 CA2
-Wire Bus Line
-	1850 3600 1850 4250
-Wire Bus Line
-	9100 3950 9100 4450
-Wire Bus Line
-	10350 1600 10350 3650
-Wire Bus Line
-	800  1800 800  2500
+Connection ~ 1400 6050
 Wire Bus Line
 	10600 1700 10600 3250
 Wire Bus Line
@@ -2436,19 +2417,38 @@ Wire Bus Line
 Wire Bus Line
 	650  4250 650  5350
 Wire Bus Line
+	9100 3950 9100 4450
+Wire Bus Line
+	7500 1600 7500 3750
+Wire Bus Line
+	7400 1700 7400 4450
+Wire Bus Line
+	10350 1600 10350 3650
+Wire Bus Line
+	5700 1600 5700 3750
+Wire Bus Line
 	3800 1700 3800 2750
 Wire Bus Line
 	3550 1700 3550 2750
 Wire Bus Line
+	800  1800 800  2500
+Wire Bus Line
+	1850 3600 1850 4250
+Wire Bus Line
 	1950 900  1950 1800
 Wire Bus Line
-	650  900  650  4250
-Wire Bus Line
-	5700 1600 5700 3750
-Wire Bus Line
-	7400 1700 7400 4450
-Wire Bus Line
-	7500 1600 7500 3750
-Wire Bus Line
 	1950 1800 1950 4250
+Wire Bus Line
+	650  900  650  4250
+$Comp
+L 74xx:74LS573 U5
+U 1 1 6691BB95
+P 1400 5250
+F 0 "U5" H 1400 5300 50  0000 C CNN
+F 1 "74HC573/4" H 1150 5900 50  0000 C CNN
+F 2 "Package_DIP:DIP-20_W7.62mm_Socket" H 1400 5250 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS574" H 1400 5250 50  0001 C CNN
+	1    1400 5250
+	-1   0    0    -1  
+$EndComp
 $EndSCHEMATC
