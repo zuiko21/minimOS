@@ -1319,7 +1319,7 @@ L Device:R_Network08 RN2
 U 1 1 66C95DA0
 P 2350 1200
 F 0 "RN2" V 1733 1200 50  0000 C CNN
-F 1 "3K3" V 1824 1200 50  0000 C CNN
+F 1 "22K" V 1824 1200 50  0000 C CNN
 F 2 "Resistor_THT:R_Array_SIP9" V 2825 1200 50  0001 C CNN
 F 3 "http://www.vishay.com/docs/31509/csc.pdf" H 2350 1200 50  0001 C CNN
 	1    2350 1200
@@ -2408,38 +2408,6 @@ SC_RX
 Text Label 4200 950  2    50   Italic 0
 CA2
 Connection ~ 1400 6050
-Wire Bus Line
-	10600 1700 10600 3250
-Wire Bus Line
-	2150 4250 2150 5350
-Wire Bus Line
-	2100 1600 2100 2750
-Wire Bus Line
-	650  4250 650  5350
-Wire Bus Line
-	9100 3950 9100 4450
-Wire Bus Line
-	7500 1600 7500 3750
-Wire Bus Line
-	7400 1700 7400 4450
-Wire Bus Line
-	10350 1600 10350 3650
-Wire Bus Line
-	5700 1600 5700 3750
-Wire Bus Line
-	3800 1700 3800 2750
-Wire Bus Line
-	3550 1700 3550 2750
-Wire Bus Line
-	800  1800 800  2500
-Wire Bus Line
-	1850 3600 1850 4250
-Wire Bus Line
-	1950 900  1950 1800
-Wire Bus Line
-	1950 1800 1950 4250
-Wire Bus Line
-	650  900  650  4250
 $Comp
 L 74xx:74LS573 U5
 U 1 1 6691BB95
@@ -2451,4 +2419,36 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS574" H 1400 5250 50  0001 C CNN
 	1    1400 5250
 	-1   0    0    -1  
 $EndComp
+Wire Bus Line
+	1850 3600 1850 4250
+Wire Bus Line
+	9100 3950 9100 4450
+Wire Bus Line
+	10350 1600 10350 3650
+Wire Bus Line
+	800  1800 800  2500
+Wire Bus Line
+	10600 1700 10600 3250
+Wire Bus Line
+	2150 4250 2150 5350
+Wire Bus Line
+	2100 1600 2100 2750
+Wire Bus Line
+	650  4250 650  5350
+Wire Bus Line
+	3800 1700 3800 2750
+Wire Bus Line
+	3550 1700 3550 2750
+Wire Bus Line
+	1950 900  1950 1800
+Wire Bus Line
+	650  900  650  4250
+Wire Bus Line
+	5700 1600 5700 3750
+Wire Bus Line
+	7400 1700 7400 4450
+Wire Bus Line
+	7500 1600 7500 3750
+Wire Bus Line
+	1950 1800 1950 4250
 $EndSCHEMATC
