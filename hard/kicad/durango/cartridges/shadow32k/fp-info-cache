@@ -1,4 +1,4 @@
-16737265414990041
+16740683147915041
 Battery
 BatteryHolder_Bulgin_BX0036_1xC
 Bulgin Battery Holder, BX0036, Battery Type C (https://www.bulgin.com/products/pub/media/bulgin/data/Battery_holders.pdf)
@@ -46977,6 +46977,13 @@ LCD 16x2 Alphanumeric 16pin
 20
 16
 Display
+JHD204AO_LCD20x4
+LCD 16x2 http://www.wincomlcd.com/pdf/WC1602A-SFYLYHTC06.pdf
+LCD 16x2 Alphanumeric 16pin
+0
+20
+16
+Display
 LCD-016N002L
 16 x 2 Character LCD, http://www.vishay.com/product?docid=37299
 LCD-016N002L 16 x 2 Character LCD
@@ -47347,6 +47354,13 @@ single digit 7 segemnt red/green LED
 0
 10
 10
+durango
+1xRCA
+
+
+0
+2
+2
 durango
 2xRCA_vertical
 SCART socket, Tyco P/N 1483465-1
