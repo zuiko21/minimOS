@@ -433,35 +433,35 @@ $EndComp
 $Comp
 L 74xx:74HC86 U7
 U 2 1 661E9EDB
-P 7850 4950
-F 0 "U7" H 7850 4950 50  0000 C CNN
-F 1 "74HC86" H 7850 4700 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7850 4950 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 7850 4950 50  0001 C CNN
-	2    7850 4950
-	-1   0    0    -1  
-$EndComp
-$Comp
-L 74xx:74HC86 U7
-U 3 1 661EA441
-P 5050 5900
-F 0 "U7" V 5100 5900 50  0000 C CNN
-F 1 "74HC86" V 5000 5900 50  0000 C CNN
-F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 5050 5900 50  0001 C CNN
-F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 5050 5900 50  0001 C CNN
-	3    5050 5900
-	0    1    -1   0   
-$EndComp
-$Comp
-L 74xx:74HC86 U7
-U 4 1 661EAA90
 P 5050 6800
 F 0 "U7" V 5100 6800 50  0000 C CNN
 F 1 "74HC86" V 5000 6800 50  0000 C CNN
 F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 5050 6800 50  0001 C CNN
 F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 5050 6800 50  0001 C CNN
-	4    5050 6800
-	0    1    1    0   
+	2    5050 6800
+	0    -1   1    0   
+$EndComp
+$Comp
+L 74xx:74HC86 U7
+U 3 1 661EA441
+P 7850 4950
+F 0 "U7" H 7850 4950 50  0000 C CNN
+F 1 "74HC86" H 7850 4700 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 7850 4950 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 7850 4950 50  0001 C CNN
+	3    7850 4950
+	-1   0    0    -1  
+$EndComp
+$Comp
+L 74xx:74HC86 U7
+U 4 1 661EAA90
+P 5050 5900
+F 0 "U7" V 5100 5900 50  0000 C CNN
+F 1 "74HC86" V 5000 5900 50  0000 C CNN
+F 2 "Package_DIP:DIP-14_W7.62mm_Socket" H 5050 5900 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74HC86" H 5050 5900 50  0001 C CNN
+	4    5050 5900
+	0    1    -1   0   
 $EndComp
 $Comp
 L 74xx:74HC86 U7

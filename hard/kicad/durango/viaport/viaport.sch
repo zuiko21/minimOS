@@ -1416,7 +1416,7 @@ F 1 "6K8" V 6300 3650 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 6230 3650 50  0001 C CNN
 F 3 "~" H 6300 3650 50  0001 C CNN
 	1    6300 3650
-	0    1    1    0   
+	0    -1   1    0   
 $EndComp
 $Comp
 L Device:C C1
@@ -1491,6 +1491,7 @@ Wire Wire Line
 Connection ~ 4950 6500
 Wire Wire Line
 	5150 6500 5850 6500
+Connection ~ 5150 6500
 Wire Bus Line
 	1850 3600 1850 4250
 Wire Bus Line
@@ -1513,5 +1514,4 @@ Wire Bus Line
 	9300 4250 9300 5350
 Wire Bus Line
 	3650 2450 3650 5100
-Connection ~ 5150 6500
 $EndSCHEMATC

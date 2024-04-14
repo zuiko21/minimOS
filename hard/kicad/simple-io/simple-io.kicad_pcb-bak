@@ -2,7 +2,7 @@
 
   (general
     (thickness 1.6)
-    (drawings 36)
+    (drawings 38)
     (tracks 520)
     (zones 0)
     (modules 31)
@@ -1734,6 +1734,12 @@
     )
   )
 
+  (gr_text "(Rosario)" (at 90.17 30.48) (layer F.SilkS)
+    (effects (font (size 1 1) (thickness 0.15)) (justify left))
+  )
+  (gr_text "(Chihuahua)" (at 45.085 31.115) (layer F.SilkS)
+    (effects (font (size 1 1) (thickness 0.15)) (justify right))
+  )
   (gr_text Rx (at 78.74 26.416) (layer B.SilkS) (tstamp 661BF8D3)
     (effects (font (size 0.75 0.75) (thickness 0.15)) (justify mirror))
   )
