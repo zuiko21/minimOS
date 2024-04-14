@@ -2180,8 +2180,6 @@ $EndComp
 NoConn ~ 1050 2900
 NoConn ~ 1050 3000
 NoConn ~ 1050 3100
-Text Label 1550 2600 0    50   Italic 0
-CA2
 Connection ~ 5550 1650
 Connection ~ 5500 1750
 Wire Wire Line
@@ -2401,12 +2399,10 @@ F 3 "" H 4600 750 50  0001 C CNN
 	1    4600 750 
 	1    0    0    -1  
 $EndComp
-Text Label 4200 850  2    50   ~ 0
+Text Label 4200 950  2    50   ~ 0
 SC_TX
 Text Label 4200 1050 2    50   ~ 0
 SC_RX
-Text Label 4200 950  2    50   Italic 0
-CA2
 Connection ~ 1400 6050
 $Comp
 L 74xx:74LS573 U5
@@ -2419,6 +2415,7 @@ F 3 "http://www.ti.com/lit/gpn/sn74LS574" H 1400 5250 50  0001 C CNN
 	1    1400 5250
 	-1   0    0    -1  
 $EndComp
+NoConn ~ 4200 850 
 Wire Bus Line
 	1850 3600 1850 4250
 Wire Bus Line
@@ -2451,4 +2448,6 @@ Wire Bus Line
 	7500 1600 7500 3750
 Wire Bus Line
 	1950 1800 1950 4250
+Text Label 1550 2600 0    50   ~ 0
+~IOX
 $EndSCHEMATC
