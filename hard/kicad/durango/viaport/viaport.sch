@@ -1492,6 +1492,46 @@ Connection ~ 4950 6500
 Wire Wire Line
 	5150 6500 5850 6500
 Connection ~ 5150 6500
+$Comp
+L Device:R R2
+U 1 1 661E5D73
+P 9550 2950
+F 0 "R2" V 9450 2950 50  0000 C CNN
+F 1 "3K3" V 9550 2950 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 9480 2950 50  0001 C CNN
+F 3 "~" H 9550 2950 50  0001 C CNN
+	1    9550 2950
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R3
+U 1 1 661E73E9
+P 9550 3050
+F 0 "R3" V 9650 3050 50  0000 C CNN
+F 1 "3K3" V 9550 3050 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical" V 9480 3050 50  0001 C CNN
+F 3 "~" H 9550 3050 50  0001 C CNN
+	1    9550 3050
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	9050 2950 9400 2950
+Wire Wire Line
+	9400 3050 9050 3050
+Wire Wire Line
+	9700 3050 9700 2950
+$Comp
+L power:+5V #PWR0120
+U 1 1 66219ADA
+P 9700 2950
+F 0 "#PWR0120" H 9700 2800 50  0001 C CNN
+F 1 "+5V" H 9715 3123 50  0000 C CNN
+F 2 "" H 9700 2950 50  0001 C CNN
+F 3 "" H 9700 2950 50  0001 C CNN
+	1    9700 2950
+	1    0    0    -1  
+$EndComp
+Connection ~ 9700 2950
 Wire Bus Line
 	1850 3600 1850 4250
 Wire Bus Line
