@@ -1,6 +1,6 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240215-1848
+; last modified 20240418-0002
 
 ; number of ~seconds (256/250) between images
 #define	DELAY	3
@@ -57,8 +57,8 @@ rom_start:
 ; NEW coded version number
 	.word	$1043			; 1.0b3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$9560			; time, 18.43		%1001 0-101 011-0 0000
-	.word	$584F			; date, 2024/2/15	%0101 100-0 010-0 1111
+	.word	$0040			; time, 00.02		%0000 0-000 010-0 0000
+	.word	$5892			; date, 2024/4/18	%0101 100-0 100-1 0010
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -83,18 +83,30 @@ sl_do:
 	STA src+1					; reset origin page, just vertically
 ; * shift existing screen one byte to the left *
 	LDX #$61					; first screen page
-	LDY #1						; first byte to be picked, one to the right
-	STY tmp						; origin pointer
-	DEY							; first byte offset
-	STY ptr
 sl_pg:
+		LDY #1						; first byte to be picked, one to the right
+		STY tmp						; origin pointer
+		DEY							; first byte offset
+		STY ptr
 		STX ptr+1				; set page
 		STX tmp+1
+sl_ras:
+			LDY #0
 sl_loop:
-			LDA (tmp), Y		; pick byte from the right
-			STA (ptr), Y		; write to byte on the left
-			INY
-			BNE sl_loop
+				LDA (tmp), Y		; pick byte from the right
+				STA (ptr), Y		; write to byte on the left
+				INY
+				CPY #63
+				BNE sl_loop
+			LDA tmp
+			CLC
+			ADC #64
+			STA tmp
+			LDA ptr
+			CLC
+			ADC #64
+			STA ptr
+			BNE sl_ras
 		INX						; next page
 		CPX #$7F
 		BNE sl_pg
