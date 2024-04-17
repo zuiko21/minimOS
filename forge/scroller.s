@@ -202,7 +202,7 @@ sr_loop:
 	LDA #$61					; screen top page eeeeek
 	STA ptr+1
 	LDY #0
-;	STY ptr
+	STY ptr
 fr_loop:
 			LDA (src), Y
 			STA (ptr), Y
