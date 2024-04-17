@@ -1,6 +1,6 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240418-0002
+; last modified 20240418-0025
 
 ; number of ~seconds (256/250) between images
 #define	DELAY	3
@@ -55,7 +55,7 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1043			; 1.0b3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1044			; 1.0b4		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$0040			; time, 00.02		%0000 0-000 010-0 0000
 	.word	$5892			; date, 2024/4/18	%0101 100-0 100-1 0010
@@ -134,6 +134,7 @@ fl_loop:
 	BNE sl_do
 	RTS
 ; ************************
+; OLD CODE /*
 sc_right:
 	LDA #63						; will load leftmost byte in column
 	STA src
@@ -159,7 +160,44 @@ sr_loop:
 		STA (tmp), Y
 		DEX						; eeeeeek
 		CPX #$60				; over screen top?
+		BNE sr_pg */
+; NEW CODE
+sc_right:
+	STZ src						; will pick LEFTmost byte in column
+sr_do:
+	LDX index
+	LDA pages, X
+	STA src+1					; reset origin page, just vertically
+; * shift existing screen one byte to the right *
+	LDX #$61					; first screen page
+sr_pg:
+		LDY #1						; first byte to be picked, one to the left
+		STY tmp						; origin pointer
+		DEY							; first byte offset
+		STY ptr
+		STX ptr+1				; set page
+		STX tmp+1
+sr_ras:
+			LDY #62
+sr_loop:
+				LDA (ptr), Y		; pick byte from the left
+				STA (tmp), Y		; write to byte on the right
+				DEY
+				BNE sr_loop
+			LDA tmp
+			CLC
+			ADC #64
+			STA tmp
+			LDA ptr
+			CLC
+			ADC #64
+			STA ptr
+			BNE sr_ras
+		INX						; next page
+		CPX #$7F
 		BNE sr_pg
+
+; CONTINUE
 ; now add another column from next image at the leftmost byte column
 	LDA #$61					; screen top page eeeeek
 	STA ptr+1
