@@ -1,6 +1,6 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240418-0025
+; last modified 20240418-0704
 
 ; number of ~seconds (256/250) between images
 #define	DELAY	3
@@ -163,7 +163,8 @@ sr_loop:
 		BNE sr_pg */
 ; NEW CODE
 sc_right:
-	STZ src						; will pick LEFTmost byte in column
+	LDA #63						; will load leftmost byte in column
+	STA src
 sr_do:
 	LDX index
 	LDA pages, X
