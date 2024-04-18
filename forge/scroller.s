@@ -1,6 +1,6 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240418-0716
+; last modified 20240418-1045
 
 ; number of ~seconds (256/250) between images
 #define	DELAY	5
@@ -66,7 +66,7 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1044			; 1.0b4		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1045			; 1.0b5		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$3A00			; time, 07.16		%0011 1-010 000-0 0000
 	.word	$5892			; date, 2024/4/18	%0101 100-0 100-1 0010
@@ -84,7 +84,7 @@ pic1:
 #else
 #ifdef	BANK3
 .bin	256,7680,"../other/data/gf31.sv"
-else
+#else
 #ifdef	BANK4
 .bin	256,7680,"../other/data/gf41.sv"
 #else
@@ -322,7 +322,7 @@ pic2:
 #else
 #ifdef	BANK3
 .bin	256,7680,"../other/data/gf32.sv"
-else
+#else
 #ifdef	BANK4
 .bin	256,7680,"../other/data/gf42.sv"
 #else
@@ -342,7 +342,7 @@ pic3:
 #else
 #ifdef	BANK3
 .bin	256,7680,"../other/data/gf33.sv"
-else
+#else
 #ifdef	BANK4
 .bin	256,7680,"../other/data/gf43.sv"
 #else
@@ -407,7 +407,7 @@ pic4:
 #else
 #ifdef	BANK3
 .bin	256,7680,"../other/data/gf34.sv"
-else
+#else
 #ifdef	BANK4
 .bin	256,7680,"../other/data/gf44.sv"
 #else
