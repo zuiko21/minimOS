@@ -1,10 +1,11 @@
 ; scroller for Durango-X
 ; (C) 2024 Carlos J. Santisteban
-; last modified 20240418-0704
+; last modified 20240418-0716
 
 ; number of ~seconds (256/250) between images
-#define	DELAY	3
+#define	DELAY	5
 
+; add -DBANK2, -DBANK3, -DBANK4 for images 2*.sv, 3*.sv, 4*.sv
 ; uncomment for bankswitching version! (32 KB banks)
 ;#define	BANKSWITCH
 	bank	= 0				; will allow mere copy of the standard code for each bank!
@@ -39,10 +40,20 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"Scroller (Gloria Fuertes)"		; C-string with filename @ [8], max 220 chars
+	.asc	"Gloria Fuertes "		; C-string with filename @ [8], max 220 chars
 ; note terminator below
 #ifdef	BANKSWITCH
-	.asc	" 32K bank ", '0'+bank
+	.asc	"32K bank ", '0'+bank
+#else
+#ifdef	BANK2
+	.asc	"[2]"
+#endif
+#ifdef	BANK3
+	.asc	"[3]"
+#endif
+#ifdef	BANK4
+	.asc	"[4]"
+#endif
 #endif
 ; optional C-string with comment after filename, filename+comment up to 220 chars
 	.asc	0, 0
@@ -57,7 +68,7 @@ rom_start:
 ; NEW coded version number
 	.word	$1044			; 1.0b4		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$0040			; time, 00.02		%0000 0-000 010-0 0000
+	.word	$3A00			; time, 07.16		%0011 1-010 000-0 0000
 	.word	$5892			; date, 2024/4/18	%0101 100-0 100-1 0010
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -68,8 +79,19 @@ rom_start:
 ; ********************************************************************************
 pic1:
 	;.bin	512, 7680, "images/image1.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
-;.bin	256,7680,"../other/data/col_start.sv"
+#ifdef	BANK2
+.bin	256,7680,"../other/data/gf21.sv"
+#else
+#ifdef	BANK3
+.bin	256,7680,"../other/data/gf31.sv"
+else
+#ifdef	BANK4
+.bin	256,7680,"../other/data/gf41.sv"
+#else
 .bin	256,7680,"../other/data/gf1.sv"
+#endif
+#endif
+#endif
 
 code1:
 ; ************************
@@ -84,17 +106,17 @@ sl_do:
 ; * shift existing screen one byte to the left *
 	LDX #$61					; first screen page
 sl_pg:
-		LDY #1						; first byte to be picked, one to the right
-		STY tmp						; origin pointer
-		DEY							; first byte offset
+		LDY #1					; first byte to be picked, one to the right
+		STY tmp					; origin pointer
+		DEY						; first byte offset
 		STY ptr
 		STX ptr+1				; set page
 		STX tmp+1
 sl_ras:
 			LDY #0
 sl_loop:
-				LDA (tmp), Y		; pick byte from the right
-				STA (ptr), Y		; write to byte on the left
+				LDA (tmp), Y	; pick byte from the right
+				STA (ptr), Y	; write to byte on the left
 				INY
 				CPY #63
 				BNE sl_loop
@@ -134,34 +156,6 @@ fl_loop:
 	BNE sl_do
 	RTS
 ; ************************
-; OLD CODE /*
-sc_right:
-	LDA #63						; will load leftmost byte in column
-	STA src
-sr_do:
-	LDX index
-	LDA pages, X
-	STA src+1					; reset origin page, just vertically
-; * shift existing screen one byte to the right *
-	LDX #$7E					; LAST screen page
-;	STZ ptr						; eeeek
-	LDA #1						; first byte to be picked, one to the left
-	STA tmp						; now destination pointer
-sr_pg:
-		LDY #$FE				; one to the left of last in page (destination, two from right for origin)
-		STX ptr+1				; set page
-		STX tmp+1
-sr_loop:
-			LDA (ptr), Y		; pick byte from the left
-			STA (tmp), Y		; write to byte to the right
-			DEY
-			BNE sr_loop
-		LDA (ptr), Y			; once more
-		STA (tmp), Y
-		DEX						; eeeeeek
-		CPX #$60				; over screen top?
-		BNE sr_pg */
-; NEW CODE
 sc_right:
 	LDA #63						; will load leftmost byte in column
 	STA src
@@ -172,17 +166,17 @@ sr_do:
 ; * shift existing screen one byte to the right *
 	LDX #$61					; first screen page
 sr_pg:
-		LDY #1						; first byte to be picked, one to the left
-		STY tmp						; origin pointer
-		DEY							; first byte offset
+		LDY #1					; first byte to be picked, one to the left
+		STY tmp					; origin pointer
+		DEY						; first byte offset
 		STY ptr
 		STX ptr+1				; set page
 		STX tmp+1
 sr_ras:
 			LDY #62
 sr_loop:
-				LDA (ptr), Y		; pick byte from the left
-				STA (tmp), Y		; write to byte on the right
+				LDA (ptr), Y	; pick byte from the left
+				STA (tmp), Y	; write to byte on the right
 				DEY
 				BPL sr_loop
 			LDA tmp
@@ -197,8 +191,6 @@ sr_loop:
 		INX						; next page
 		CPX #$7F
 		BNE sr_pg
-
-; CONTINUE
 ; now add another column from next image at the leftmost byte column
 	LDA #$61					; screen top page eeeeek
 	STA ptr+1
@@ -325,8 +317,19 @@ lib_end:
 	.dsb	$A100-*, $FF
 pic2:
 	;.bin	512, 7680, "images/image2.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
-;.bin	256,7680,"../other/data/elvira.sv"
+#ifdef	BANK2
+.bin	256,7680,"../other/data/gf22.sv"
+#else
+#ifdef	BANK3
+.bin	256,7680,"../other/data/gf32.sv"
+else
+#ifdef	BANK4
+.bin	256,7680,"../other/data/gf42.sv"
+#else
 .bin	256,7680,"../other/data/gf2.sv"
+#endif
+#endif
+#endif
 
 code2:
 ; *** *** empty code space *** ***
@@ -334,7 +337,19 @@ code2:
 	.dsb	$C100-*, $FF
 pic3:
 	;.bin	512, 7680, "images/image3.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
+#ifdef	BANK2
+.bin	256,7680,"../other/data/gf23.sv"
+#else
+#ifdef	BANK3
+.bin	256,7680,"../other/data/gf33.sv"
+else
+#ifdef	BANK4
+.bin	256,7680,"../other/data/gf43.sv"
+#else
 .bin	256,7680,"../other/data/gf3.sv"
+#endif
+#endif
+#endif
 
 	.dsb	$E000-*, $FF					; this will skip I/O area at $DFxx
 
@@ -387,8 +402,19 @@ tab_end:
 	.dsb	$E100-*, $FF
 pic4:
 	;.bin	512, 7680, "images/image4.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
-;.bin	256,7680,"../other/data/jaqueria.sv"
+#ifdef	BANK2
+.bin	256,7680,"../other/data/gf24.sv"
+#else
+#ifdef	BANK3
+.bin	256,7680,"../other/data/gf34.sv"
+else
+#ifdef	BANK4
+.bin	256,7680,"../other/data/gf44.sv"
+#else
 .bin	256,7680,"../other/data/gf4.sv"
+#endif
+#endif
+#endif
 
 pics_end:
 
