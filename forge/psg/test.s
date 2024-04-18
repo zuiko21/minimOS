@@ -1,5 +1,5 @@
 ; interrupt-driven music player for PSG card in Durango-X! TEST CODE
-; (c) 2023 Carlos J. Santisteban
+; (c) 2023-2024 Carlos J. Santisteban
 ; last modified 20230707-1807
 
 ; *** hardware definitions ***
@@ -54,14 +54,14 @@ reset:
 	LDX #$FF
 	TXS
 	STX IOAen				; turn interrupts on
-;	LDY #<isr				; for DevCart compatibility
-;	LDX #>isr
-;	STY $0200
-;	STX $0201
-;	LDY #<nmi
-;	LDX #>nmi
-;	STY $0202
-;	STX $0203
+	LDY #<isr				; for DevCart compatibility
+	LDX #>isr
+	STY $0200
+	STX $0201
+	LDY #<nmi
+	LDX #>nmi
+	STY $0202
+	STX $0203
 	JSR psg_init			; clear stuff!
 
 ; init screen
@@ -130,6 +130,8 @@ carry:
 isr:
 	PHA
 	LDA IO8attr
+ 	AND #$F0
+  	ORA #$08
 	EOR #64					; inverse
 	STA IO8attr
 	PHX
@@ -138,6 +140,8 @@ isr:
 	PLY
 	PLX
 	LDA IO8attr
+ 	AND #$F0
+  	ORA #$08
 	EOR #64					; back to normal
 	STA IO8attr
 	PLA
