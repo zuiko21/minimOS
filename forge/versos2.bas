@@ -60,9 +60,8 @@
 1099 DATA *
 1100 REM [h7] verbos transitivos ** impar
 1101 DATA dice,pregunta,escribe,parece
-1102 DATA
 
-1198 DATA COME,MIRA,DICE,*
+1198 DATA COME,MIRA,DICE
 1199 DATA *
 1200 REM [i8] verbo estar (atributo es adjetivo)
 1210 DATA soy,eres,es,era,eras,fui,fuiste,fue
