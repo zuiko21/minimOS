@@ -1,5 +1,5 @@
 ; interrupt-driven music player for PSG card in Durango-X!
-; (c) 2023 Carlos J. Santisteban
+; (c) 2023-2024 Carlos J. Santisteban
 ; last modified 20230707-1833
 
 ; *** constants definition ***
@@ -9,7 +9,7 @@
 
 ; *** hardware definitions ***
 
-IO_PSG	= $DF98;DFDB				; standard mono/central PSG address
+IO_PSG	= $DFDB				; standard mono/central PSG address
 
 ; *** zeropage definitions ***
 ptr		= $FC				; shall be reloaded with current channel desired list
