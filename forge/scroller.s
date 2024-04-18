@@ -184,7 +184,7 @@ sr_loop:
 				LDA (ptr), Y		; pick byte from the left
 				STA (tmp), Y		; write to byte on the right
 				DEY
-				BNE sr_loop
+				BPL sr_loop
 			LDA tmp
 			CLC
 			ADC #64
