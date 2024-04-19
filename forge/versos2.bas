@@ -1,7 +1,7 @@
 10 REM generador de versos para EhBASIC
 20 REM (c) 2024 Carlos J. Santisteban
 30 REM ** max.ind Categ,Palab,Tipos **
-40 mc=9:mp=100:mt=100
+40 mc=11:mp=100:mt=100
 50 REM ** estructuras **
 60 DIM w$(mc,mp)
 65 DIM p$(mt):REM patrones
@@ -32,52 +32,53 @@
 501 DATA diente,amo,sirviente,cura
 502 DATA mendigo,presidente,niño
 503 DATA hombre,mundo,cielo,día
+504 DATA espejo,pasillo,preso,parado
 
-598 DATA SOL,MAR,COCHE
 599 DATA *
 600 REM [d3t] sustantivos fememinos
 601 DATA verdad,casa,familia,mosca,voz
 602 DATA poesía,frase,línea,gente
 
-698 DATA LUNA,TIERRA
 699 DATA *
 700 REM [e4u] adjetivos masculinos
 701 DATA delgado,igual,mejor
 
-798 DATA bueno,bonito,barato,grande
 799 DATA *
 800 REM [f5v] adjetivos femeninos
 801 DATA delgada,igual,mejor
 
-
-898 DATA linda,fea,grande
 899 DATA *
-1000 REM [g6] verbos intransitivos (pres. ind)
+900 REM [g6?] estativos masculinos
+901 DATA herido
+949 DATA *
+950 REM [h7?] estativos femeninos
+
+999 DATA *
+1000 REM [i8] verbos intransitivos (pres. ind)
 1001 DATA miente,desaparece,pregunta,llama
 1002 DATA contesta,"SE MUEVE",evoluciona
-1003 DATA mengua,crece,escribe,puede
+1003 DATA mengua,crece,escribe,puede,vuelve
 
 1099 DATA *
-1100 REM [h7] verbos transitivos ** impar
-1101 DATA dice,pregunta,escribe,parece
+1100 REM [j9] verbos transitivos ** impar
+1101 DATA dice,pregunta,escribe
 
-1198 DATA COME,MIRA,DICE
 1199 DATA *
-1200 REM [i8] verbo estar (atributo es adjetivo)
+1200 REM [k10] verbo estar (atributo es adjetivo)
 1210 DATA soy,eres,es,era,eras,fui,fuiste,fue
 1220 DATA seré,serás,será
 1299 DATA *
-1300 REM [j9] verbo ser (atributo es adj/sust)
+1300 REM [l11] verbo ser (atributo es adj/sust)
 1310 DATA estoy,estás,está,estaba,estabas
 1320 DATA estuve,estuviste,estuvo
 1330 DATA estaré,estarás,estará
 1399 DATA *
 1800 REM *** patrones *** objetos +16 (Q...)
-1810 DATA G,GAC,GBD,HQS,HRT,
+1810 DATA I,IAC,IBD,JQS,JRT,
 
-1995 DATA ACG,BDG,ACHQS,ACHRT,BDHQS,BDHRT
-1996 DATA AC,BD,ACEG,BDFG,ACEHQS,ACEHRT
-1997 DATA BDFHQS,BDHQSU
+1995 DATA ACI,BDI,ACJQS,ACJRT,BDJQS,BDJRT
+1996 DATA AC,BD,ACEI,BDFI,ACEJQS,ACEJRT
+1997 DATA BDFJQS,BDJQSU
 1998 DATA *
 1999 x=25:REM contador líneas
 2000 DO
@@ -87,21 +88,31 @@
 2040 ::c=(ASC(MID$(a$,i,1)) AND 239)-65:REM categoría actual
 2045 ::o=ASC(MID$(a$,i,1)) AND 16:REM flag objeto
 2049 REM si es transitiva, escoger número objeto
-2050 :IF c>5 AND (c AND 1) THEN n2=INT(RND(0)*2)
+2050 :IF c>7 AND (c AND 1) THEN n2=INT(RND(0)*2)
 2060 ::t$=w$(c,INT(RND(0)*np(c))):REM palabra
-2070 ::IF (c>5) AND n1 THEN GOSUB 9500:REM plural verbo
-2080 ::IF NOT o AND c<6 AND n1 THEN GOSUB 9000:REM plural sujeto
-2090 ::IF o AND c<6 AND n2 THEN GOSUB 9000:REM plural objeto
+2070 ::IF (c>7) AND n1 THEN GOSUB 9500:REM plural verbo
+2080 ::IF NOT o AND c<8 AND n1 THEN GOSUB 9000:REM plural sujeto
+2090 ::IF o AND c<8 AND n2 THEN GOSUB 9000:REM plural objeto
 2100 ::PRINT t$;" ";
 2110 :NEXT i
 2120 :PRINT CHR$(2);"."
 2125 :IF x THEN DEC x: GOTO 2160
 2127 :PRINT CHR$(14); 
-2130 :FOR i=1 TO 5:PAUSE 250:NEXT
-2140 :LIST:x=25
-2150 :FOR i=1 TO 5:PAUSE 250:NEXT
+2130 :d=5:GOSUB 3000
+2132 :LIST -210:GOSUB 3000
+2134 :LIST 220-699:GOSUB 3000
+2136 :LIST 700-1199:GOSUB 3000
+2138 :LIST 1200-1999:GOSUB 3000
+2140 :LIST 2000-2130:GOSUB 3000
+2142 :LIST 2132-9150:GOSUB 3000
+2144 :LIST 9200-9526:GOSUB 3000
+2146 :LIST 9800-9900:GOSUB 3000
+2150 :x=25
 2155 :PRINT CHR$(15);
 2160 LOOP
+3000 REM ** retardo 'd' segundos **
+3010 FOR i=1 TO d:PAUSE 250:NEXT
+3020 RETURN
 9000 REM poner sustantivo/artículo t$ en plural
 9100 IF c<2 THEN GOTO 9200:REM artículos
 9110 l$=RIGHT$(t$,1):REM última letra
