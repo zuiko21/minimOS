@@ -30,14 +30,14 @@
 410 DATA la,una,*
 500 REM [c2s] sustantivos masculinos
 501 DATA diente,amo,sirviente,cura
-502 DATA mendigo,presidente,gente,niño
+502 DATA mendigo,presidente,niño
 503 DATA hombre,mundo,cielo,día
 
 598 DATA SOL,MAR,COCHE
 599 DATA *
 600 REM [d3t] sustantivos fememinos
 601 DATA verdad,casa,familia,mosca,voz
-602 DATA poesía,frase,línea
+602 DATA poesía,frase,línea,gente
 
 698 DATA LUNA,TIERRA
 699 DATA *
@@ -54,7 +54,7 @@
 899 DATA *
 1000 REM [g6] verbos intransitivos (pres. ind)
 1001 DATA miente,desaparece,pregunta,llama
-1002 DATA contesta,"se mueve",evoluciona
+1002 DATA contesta,"SE MUEVE",evoluciona
 1003 DATA mengua,crece,escribe,puede
 
 1099 DATA *
