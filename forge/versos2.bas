@@ -33,35 +33,42 @@
 502 DATA mendigo,presidente,niño
 503 DATA hombre,mundo,cielo,día
 504 DATA espejo,pasillo,preso,parado
-
+505 DATA enamorado,mano,árbol,pecho,piano
+506 DATA ciempiés,corazón,soldado,ojo,año
+507 DATA bolsillo,chaquetón,guardia
 599 DATA *
 600 REM [d3t] sustantivos fememinos
 601 DATA verdad,casa,familia,mosca,voz
-602 DATA poesía,frase,línea,gente
+602 DATA poesía,frase,línea,gente,obra
+603 DATA enamorada,fruta,yedra
+604 DATA tapia,alma,cereza,
 
 699 DATA *
 700 REM [e4u] adjetivos masculinos
-701 DATA delgado,igual,mejor
+701 DATA delgado,igual,mejor,brillante
 
 799 DATA *
 800 REM [f5v] adjetivos femeninos
-801 DATA delgada,igual,mejor
+801 DATA delgada,igual,mejor,brillante
 
 899 DATA *
 900 REM [g6?] estativos masculinos
-901 DATA herido
+901 DATA herido,desaparecido,preso,parado,reunido
+
 949 DATA *
 950 REM [h7?] estativos femeninos
+951 DATA desnuda,
 
 999 DATA *
 1000 REM [i8] verbos intransitivos (pres. ind)
 1001 DATA miente,desaparece,pregunta,llama
 1002 DATA contesta,"SE MUEVE",evoluciona
 1003 DATA mengua,crece,escribe,puede,vuelve
+1003 DATA cabalga,brota,cae
 
 1099 DATA *
 1100 REM [j9] verbos transitivos ** impar
-1101 DATA dice,pregunta,escribe
+1101 DATA dice,pregunta,escribe,coge
 
 1199 DATA *
 1200 REM [k10] verbo estar (atributo es adjetivo)
@@ -74,7 +81,8 @@
 1330 DATA estaré,estarás,estará
 1399 DATA *
 1800 REM *** patrones *** objetos +16 (Q...)
-1810 DATA I,IAC,IBD,JQS,JRT,
+1810 DATA I,IAC,IBD,JQS,JRT,AC,BD,ACE,BDF
+1820 DATA CLG,DLH
 
 1995 DATA ACI,BDI,ACJQS,ACJRT,BDJQS,BDJRT
 1996 DATA AC,BD,ACEI,BDFI,ACEJQS,ACEJRT
@@ -113,7 +121,7 @@
 3000 REM ** retardo 'd' segundos **
 3010 FOR i=1 TO d:PAUSE 250:NEXT
 3020 RETURN
-9000 REM poner sustantivo/artículo t$ en plural
+9000 REM ** poner sustantivo/artículo t$ en plural **
 9100 IF c<2 THEN GOTO 9200:REM artículos
 9110 l$=RIGHT$(t$,1):REM última letra
 9120 IF l$="Z" THEN t$=LEFT$(t$,LEN(t$)-1)+"C"
@@ -124,14 +132,14 @@
 9210 IF t$="EL" THEN t$="LOS":RETURN
 9220 IF t$="UN" THEN t$="UNOS":RETURN
 9300 GOTO 9110: REM caso general
-9400 REM v indica si l$ es vocal
+9400 REM ** v indica si l$ es vocal **
 9405 v=0
 9410 IF l$="A" OR l$="E" OR l$="I" THEN v=1
 9412 IF l$="á" OR l$="é" OR l$="í" THEN v=1
 9415 IF l$="O" OR l$="U" THEN v=1
 9417 IF l$="ó" OR l$="ú" THEN v=1
 9420 RETURN 
-9500 REM poner verbo t$ en plural
+9500 REM ** poner verbo t$ en plural **
 9510 REM copulativos, cualquier persona
 9511 IF t$="SOY" THEN t$="SOMOS"
 9512 IF t$="ERES" THEN t$="SOIS"
@@ -148,7 +156,7 @@
 9526 IF t$="ESTUVO" THEN t$="ESTUVIERON"
 
 9800 REM casos generales
-9801 IF RIGHT$(t$,LEN(t$)-3)="STE" THEN t$=t$+"IS"
+9801 IF RIGHT$(t$,3)="STE" THEN t$=t$+"IS"
 9810 l$=RIGHT$(t$,1):REM última letra
 9820 REM copulativos
 9821 IF l$="á" THEN t$=t$+"N":REM muchos
