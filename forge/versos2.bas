@@ -1,7 +1,7 @@
 10 REM generador de versos para EhBASIC
 20 REM (c) 2024 Carlos J. Santisteban
 30 REM ** max.ind Categ,Palab,Tipos **
-40 mc=11:mp=100:mt=100
+40 mc=13:mp=100:mt=100
 50 REM ** estructuras **
 60 DIM w$(mc,mp)
 65 DIM p$(mt):REM patrones
@@ -30,18 +30,18 @@
 410 DATA la,una,*
 500 REM [c2s] sustantivos masculinos
 501 DATA diente,amo,sirviente,cura
-502 DATA mendigo,presidente,niño
-503 DATA hombre,mundo,cielo,día
+502 DATA mendigo,presidente,"NIÑO"
+503 DATA hombre,mundo,cielo,"DÍA",alma
 504 DATA espejo,pasillo,preso,parado
-505 DATA enamorado,mano,árbol,pecho,piano
-506 DATA ciempiés,corazón,soldado,ojo,año
-507 DATA bolsillo,chaquetón,guardia
+505 DATA enamorado,"ÁRBOL",pecho,piano
+506 DATA "CIEMPIÉS","CORAZÓN",soldado,ojo,"AÑO"
+507 DATA bolsillo,"CHAQUETÓN",guardia
 599 DATA *
 600 REM [d3t] sustantivos fememinos
 601 DATA verdad,casa,familia,mosca,voz
-602 DATA poesía,frase,línea,gente,obra
-603 DATA enamorada,fruta,yedra
-604 DATA tapia,alma,cereza,
+602 DATA "POESÍA",frase,"LÍNEA",gente,obra
+603 DATA enamorada,fruta,yedra,mano
+604 DATA tapia,cereza
 
 699 DATA *
 700 REM [e4u] adjetivos masculinos
@@ -57,7 +57,7 @@
 
 949 DATA *
 950 REM [h7?] estativos femeninos
-951 DATA desnuda,
+951 DATA desnuda
 
 999 DATA *
 1000 REM [i8] verbos intransitivos (pres. ind)
@@ -71,18 +71,23 @@
 1101 DATA dice,pregunta,escribe,coge
 
 1199 DATA *
-1200 REM [k10] verbo estar (atributo es adjetivo)
-1210 DATA soy,eres,es,era,eras,fui,fuiste,fue
-1220 DATA seré,serás,será
+1200 REM [k10] verbo ser (1ª y 2ª persona sin sujeto)
+1210 DATA soy,eres,era,eras,fui,fuiste
+1220 DATA "SERÉ","SERÁS"
 1299 DATA *
-1300 REM [l11] verbo ser (atributo es adj/sust)
-1310 DATA estoy,estás,está,estaba,estabas
-1320 DATA estuve,estuviste,estuvo
-1330 DATA estaré,estarás,estará
+1300 REM [l11] verbo estar (1ª y 2ª persona sin sujeto)
+1310 DATA estoy,"ESTÁS",estaba,estabas
+1320 DATA estuve,estuviste,"ESTARÉ","ESTARÁS"
 1399 DATA *
+1400 REM [m12] verbo ser (3ª persona con sujeto)
+1410 DATA es,era,fue,"SERÁ"
+1499 DATA *
+1500 REM [n13] verbo estar (3ª persona con sujeto)
+1510 DATA "ESTÁ",estaba,estuvo,"ESTARÁ"
+1599 DATA *
 1800 REM *** patrones *** objetos +16 (Q...)
 1810 DATA I,IAC,IBD,JQS,JRT,AC,BD,ACE,BDF
-1820 DATA CLG,DLH
+1820 DATA ACNG,BDNH,LG,LH,KE,KF
 
 1995 DATA ACI,BDI,ACJQS,ACJRT,BDJQS,BDJRT
 1996 DATA AC,BD,ACEI,BDFI,ACEJQS,ACEJRT
@@ -96,7 +101,7 @@
 2040 ::c=(ASC(MID$(a$,i,1)) AND 239)-65:REM categoría actual
 2045 ::o=ASC(MID$(a$,i,1)) AND 16:REM flag objeto
 2049 REM si es transitiva, escoger número objeto
-2050 :IF c>7 AND (c AND 1) THEN n2=INT(RND(0)*2)
+2050 ::IF c>7 AND (c AND 1) THEN n2=INT(RND(0)*2) ELSE n2=0
 2060 ::t$=w$(c,INT(RND(0)*np(c))):REM palabra
 2070 ::IF (c>7) AND n1 THEN GOSUB 9500:REM plural verbo
 2080 ::IF NOT o AND c<8 AND n1 THEN GOSUB 9000:REM plural sujeto
@@ -123,8 +128,10 @@
 3020 RETURN
 9000 REM ** poner sustantivo/artículo t$ en plural **
 9100 IF c<2 THEN GOTO 9200:REM artículos
+9105 z=LEN(t$)-1:REM muy usada
 9110 l$=RIGHT$(t$,1):REM última letra
-9120 IF l$="Z" THEN t$=LEFT$(t$,LEN(t$)-1)+"C"
+9120 IF l$="Z" THEN t$=LEFT$(t$,z)+"C"
+9125 IF RIGHT$(t$,2)="ÓN" THEN t$=LEFT$(t$,z-1)+"ONES":RETURN
 9130 GOSUB 9400:REM es vocal?
 9140 IF v THEN t$=t$+"S" ELSE t$=t$+"ES"
 9150 RETURN
@@ -135,9 +142,9 @@
 9400 REM ** v indica si l$ es vocal **
 9405 v=0
 9410 IF l$="A" OR l$="E" OR l$="I" THEN v=1
-9412 IF l$="á" OR l$="é" OR l$="í" THEN v=1
+9412 IF l$="Á" OR l$="É" OR l$="Í" THEN v=1
 9415 IF l$="O" OR l$="U" THEN v=1
-9417 IF l$="ó" OR l$="ú" THEN v=1
+9417 IF l$="Ó" OR l$="Ú" THEN v=1
 9420 RETURN 
 9500 REM ** poner verbo t$ en plural **
 9510 REM copulativos, cualquier persona
@@ -145,7 +152,7 @@
 9512 IF t$="ERES" THEN t$="SOIS"
 9513 IF t$="ES" THEN t$="SON"
 9514 IF t$="ESTOY" THEN t$="ESTAMOS"
-9515 IF t$="ESTáS" THEN t$="ESTÁIS"
+9515 IF t$="ESTÁS" THEN t$="ESTÁIS"
 9516 IF t$="ERA" AND RND(0)<0.5 THEN t$="ÉRAMOS"
 9517 IF t$="ERAS" THEN t$="ÉRAIS"
 9518 IF t$="FUI" THEN t$="FUIMOS"
@@ -157,13 +164,14 @@
 
 9800 REM casos generales
 9801 IF RIGHT$(t$,3)="STE" THEN t$=t$+"IS"
+9809 z=LEN(t$)-1:REM muy usado
 9810 l$=RIGHT$(t$,1):REM última letra
 9820 REM copulativos
-9821 IF l$="á" THEN t$=t$+"N":REM muchos
+9821 IF l$="Á" THEN t$=t$+"N":REM muchos
 9830 REM presente de indicativo
 9831 IF l$="A" THEN t$=t$+"N":REM primera conj.
 9832 IF l$="E" THEN t$=t$+"N":REM segunda y tercera
 9840 REM futuro
-9841 IF l$="é" AND c<10 THEN t$=LEFT(t$,LEN(t$)-1)+"EMOS"
-9842 IF RIGHT$(t$,2)="áS" THEN t$=LEFT(t$,LEN(t$)-2)+"ÉIS"
+9841 IF l$="É" AND c<10 THEN t$=LEFT$(t$,z)+"EMOS"
+9842 IF RIGHT$(t$,2)="ÁS" THEN t$=LEFT$(t$,z-1)+"ÉIS"
 9900 RETURN
