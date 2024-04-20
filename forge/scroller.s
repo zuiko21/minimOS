@@ -80,15 +80,15 @@ rom_start:
 pic1:
 	;.bin	512, 7680, "images/image1.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
 #ifdef	BANK2
-.bin	256,7680,"../other/data/gf21.sv"
+.bin	0,7680,"../other/data/gf21.sv"
 #else
 #ifdef	BANK3
-.bin	256,7680,"../other/data/gf31.sv"
+.bin	0,7680,"../other/data/gf31.sv"
 #else
 #ifdef	BANK4
-.bin	256,7680,"../other/data/gf41.sv"
+.bin	0,7680,"../other/data/gf41.sv"
 #else
-.bin	256,7680,"../other/data/gf1.sv"
+.bin	0,7680,"../other/data/gf1.sv"
 #endif
 #endif
 #endif
@@ -318,15 +318,15 @@ lib_end:
 pic2:
 	;.bin	512, 7680, "images/image2.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
 #ifdef	BANK2
-.bin	256,7680,"../other/data/gf22.sv"
+.bin	0,7680,"../other/data/gf22.sv"
 #else
 #ifdef	BANK3
-.bin	256,7680,"../other/data/gf32.sv"
+.bin	0,7680,"../other/data/gf32.sv"
 #else
 #ifdef	BANK4
-.bin	256,7680,"../other/data/gf42.sv"
+.bin	0,7680,"../other/data/gf42.sv"
 #else
-.bin	256,7680,"../other/data/gf2.sv"
+.bin	0,7680,"../other/data/gf2.sv"
 #endif
 #endif
 #endif
@@ -338,15 +338,15 @@ code2:
 pic3:
 	;.bin	512, 7680, "images/image3.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
 #ifdef	BANK2
-.bin	256,7680,"../other/data/gf23.sv"
+.bin	0,7680,"../other/data/gf23.sv"
 #else
 #ifdef	BANK3
-.bin	256,7680,"../other/data/gf33.sv"
+.bin	0,7680,"../other/data/gf33.sv"
 #else
 #ifdef	BANK4
-.bin	256,7680,"../other/data/gf43.sv"
+.bin	0,7680,"../other/data/gf43.sv"
 #else
-.bin	256,7680,"../other/data/gf3.sv"
+.bin	0,7680,"../other/data/gf3.sv"
 #endif
 #endif
 #endif
@@ -403,15 +403,15 @@ tab_end:
 pic4:
 	;.bin	512, 7680, "images/image4.dsv"	; note new image format with header! 128x120 4bpp (or 256x240 1bpp)
 #ifdef	BANK2
-.bin	256,7680,"../other/data/gf24.sv"
+.bin	0,7680,"../other/data/gf24.sv"
 #else
 #ifdef	BANK3
-.bin	256,7680,"../other/data/gf34.sv"
+.bin	0,7680,"../other/data/gf34.sv"
 #else
 #ifdef	BANK4
-.bin	256,7680,"../other/data/gf44.sv"
+.bin	0,7680,"../other/data/gf44.sv"
 #else
-.bin	256,7680,"../other/data/gf4.sv"
+.bin	0,7680,"../other/data/gf4.sv"
 #endif
 #endif
 #endif
