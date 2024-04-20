@@ -52,12 +52,14 @@
 801 DATA delgada,igual,mejor,brillante
 
 899 DATA *
-900 REM [g6?] estativos masculinos
+900 REM [g6] estativos masculinos
 901 DATA herido,desaparecido,preso,parado,reunido
+902 DATA desnudo
 
 949 DATA *
-950 REM [h7?] estativos femeninos
-951 DATA desnuda
+950 REM [h7] estativos femeninos
+951 DATA herida,desaparecida,presa,parada,reunida
+952 DATA desnuda
 
 999 DATA *
 1000 REM [i8] verbos intransitivos (pres. ind)
@@ -71,18 +73,19 @@
 1101 DATA dice,pregunta,escribe,coge
 
 1199 DATA *
-1200 REM [k10] verbo ser (1ª y 2ª persona sin sujeto)
+1200 REM [k10] verbo ser/parecer (1ª y 2ª persona sin sujeto)
 1210 DATA soy,eres,era,eras,fui,fuiste
-1220 DATA "SERÉ","SERÁS"
+1215 DATA parezco,pareces,"PARECÍA","PARECÍAS"
+1220 DATA "SERÉ","SERÁS","PARECERÉ","PARECERÁS"
 1299 DATA *
-1300 REM [l11] verbo estar (1ª y 2ª persona sin sujeto)
+1300 REM [l11] verbo estar (1ª y 2ª persona, estativos)
 1310 DATA estoy,"ESTÁS",estaba,estabas
 1320 DATA estuve,estuviste,"ESTARÉ","ESTARÁS"
 1399 DATA *
-1400 REM [m12] verbo ser (3ª persona con sujeto)
-1410 DATA es,era,fue,"SERÁ"
+1400 REM [m12] verbo ser/parecer (3ª persona con sujeto)
+1410 DATA es,era,fue,"SERÁ",parece,"PARECÍA","PARECERÁ"
 1499 DATA *
-1500 REM [n13] verbo estar (3ª persona con sujeto)
+1500 REM [n13] verbo estar (3ª persona, estativos)
 1510 DATA "ESTÁ",estaba,estuvo,"ESTARÁ"
 1599 DATA *
 1800 REM *** patrones *** objetos +16 (Q...)
@@ -93,7 +96,7 @@
 1996 DATA AC,BD,ACEI,BDFI,ACEJQS,ACEJRT
 1997 DATA BDFJQS,BDJQSU
 1998 DATA *
-1999 x=25:REM contador líneas
+1999 x=9925:PRINT FRE(0):REM contador líneas
 2000 DO
 2010 :a$=p$(INT(RND(0)*pt)):REM escoje patrón
 2020 :n1=INT(RND(0)*2):REM sujeto plural
@@ -153,25 +156,27 @@
 9513 IF t$="ES" THEN t$="SON"
 9514 IF t$="ESTOY" THEN t$="ESTAMOS"
 9515 IF t$="ESTÁS" THEN t$="ESTÁIS"
-9516 IF t$="ERA" AND RND(0)<0.5 THEN t$="ÉRAMOS"
+9516 IF t$="ERA" AND c=10 THEN t$="ÉRAMOS"
 9517 IF t$="ERAS" THEN t$="ÉRAIS"
-9518 IF t$="FUI" THEN t$="FUIMOS"
 9520 IF t$="FUE" THEN t$="FUERON"
-9522 IF t$="ESTABA" AND RND(0)<0.5 THEN t$="ESTÁBAMOS"
+9522 IF t$="ESTABA" AND c=11 THEN t$="ESTÁBAMOS"
 9523 IF t$="ESTABAS" THEN t$="ESTÁBAIS"
 9524 IF t$="ESTUVE" THEN t$="ESTUVIMOS"
 9526 IF t$="ESTUVO" THEN t$="ESTUVIERON"
-
+9527 IF t$="PAREZCO" THEN t$="PARECEMOS"
+9528 IF t$="PARECES" THEN t$="PARECÉIS"
 9800 REM casos generales
-9801 IF RIGHT$(t$,3)="STE" THEN t$=t$+"IS"
-9809 z=LEN(t$)-1:REM muy usado
+9805 z=LEN(t$)-1:REM muy usado
 9810 l$=RIGHT$(t$,1):REM última letra
-9820 REM copulativos
-9821 IF l$="Á" THEN t$=t$+"N":REM muchos
-9830 REM presente de indicativo
-9831 IF l$="A" THEN t$=t$+"N":REM primera conj.
-9832 IF l$="E" THEN t$=t$+"N":REM segunda y tercera
-9840 REM futuro
-9841 IF l$="É" AND c<10 THEN t$=LEFT$(t$,z)+"EMOS"
-9842 IF RIGHT$(t$,2)="ÁS" THEN t$=LEFT$(t$,z-1)+"ÉIS"
+9811 l2$=RIGHT$(t$,2):REM dos últimas
+9812 l3$=RIGHT$(t$,3):REM tres últimas
+9815 IF l3$="STE" THEN t$=t$+"IS":RETURN
+9816 IF l2$="ÍA" THEN t$=t$+"IS":RETURN
+9820 REM copulativos y presente
+9821 IF l$="Á" OR l$="A" OR l$="E" THEN t$=t$+"N":REM muchos
+9830 REM futuro
+9831 IF l$="É" THEN t$=LEFT$(t$,z)+"EMOS"
+9832 IF l2$="ÁS" THEN t$=LEFT$(t$,z-1)+"ÉIS"
+9840 REM pretérito
+9842 IF l$="I" OR l$="Í" THEN t$=LEFT$(t$,z)+"IMOS"
 9900 RETURN
