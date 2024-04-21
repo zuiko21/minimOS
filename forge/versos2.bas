@@ -25,16 +25,16 @@
 270 REM *** base de datos ***
 280 REM * acaba una categoría
 
-300 REM [a0q] artículos masculinos
+300 REM [a0q] determinantes masculinos
 310 DATA el,un,mi,tu,su,nuestro,vuestro,aquel,*
 
-400 REM [b1r] artículos femeninos
-410 DATA la,una,mi,tu,su,nuestra,vuestra,aquellas,*
+400 REM [b1r] determinantes femeninos
+410 DATA la,una,mi,tu,su,nuestra,vuestra,aquella,*
 
 500 REM [c2s] sustantivos masculinos
 501 DATA diente,amo,sirviente,cura,Dios,"ÁNGEL"
 502 DATA mendigo,presidente,"NIÑO",miedo
-503 DATA hombre,mundo,cielo,"DÍA",alma,vestido
+503 DATA hombre,mundo,cielo,"DÍA",vestido
 504 DATA espejo,pasillo,preso,parado,mago
 505 DATA enamorado,"ÁRBOL",pecho,piano,beso
 506 DATA "CIEMPIÉS","CORAZÓN",soldado,ojo,"AÑO"
@@ -112,6 +112,8 @@
 2000 DO
 2010 :a$=p$(INT(RND(0)*pt)):REM escoje patrón
 2020 :n1=INT(RND(0)*2):REM sujeto plural
+2025?"[";a$;"]";
+2026ifn1then?"1 ";
 2030 :FOR i=1 TO LEN(a$)
 2040 ::c=(ASC(MID$(a$,i,1)) AND 239)-65:REM categoría actual
 2045 ::o=ASC(MID$(a$,i,1)) AND 16:REM flag objeto
@@ -141,8 +143,8 @@
 3000 REM ** retardo 'd' segundos **
 3010 FOR i=1 TO d:PAUSE 250:NEXT
 3020 RETURN
-9000 REM ** poner sustantivo/artículo t$ en plural **
-9100 IF c<2 THEN GOTO 9200:REM artículos
+9000 REM ** poner sustantivo/determinante t$ en plural **
+9100 IF c<2 THEN GOTO 9200:REM determinantes
 9105 z=LEN(t$)-1:REM muy usada
 9110 l$=RIGHT$(t$,1):REM última letra
 9120 IF l$="Z" THEN t$=LEFT$(t$,z)+"C"
@@ -150,10 +152,10 @@
 9130 GOSUB 9400:REM es vocal?
 9140 IF v THEN t$=t$+"S" ELSE t$=t$+"ES"
 9150 RETURN
-9200 REM caso particular artículos
+9200 REM caso particular determinantes
 9210 IF t$="EL" THEN t$="LOS":RETURN
 9220 IF t$="UN" THEN t$="UNOS":RETURN
-9230 IF t$="AQUEL" THEN t$="AQUELLOS"
+9230 IF t$="AQUEL" THEN t$="AQUELLOS":RETURN
 9300 GOTO 9105: REM caso general
 9400 REM ** v indica si l$ es vocal **
 9405 v=0
