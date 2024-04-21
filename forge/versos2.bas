@@ -24,32 +24,42 @@
 250 LOOP UNTIL a$="*"
 270 REM *** base de datos ***
 280 REM * acaba una categoría
+
 300 REM [a0q] artículos masculinos
-310 DATA el,un,*
+310 DATA el,un,mi,tu,su,nuestro,vuestro,aquel,*
+
 400 REM [b1r] artículos femeninos
-410 DATA la,una,*
+410 DATA la,una,mi,tu,su,nuestra,vuestra,aquellas,*
+
 500 REM [c2s] sustantivos masculinos
-501 DATA diente,amo,sirviente,cura
-502 DATA mendigo,presidente,"NIÑO"
-503 DATA hombre,mundo,cielo,"DÍA",alma
-504 DATA espejo,pasillo,preso,parado
-505 DATA enamorado,"ÁRBOL",pecho,piano
+501 DATA diente,amo,sirviente,cura,Dios,"ÁNGEL"
+502 DATA mendigo,presidente,"NIÑO",miedo
+503 DATA hombre,mundo,cielo,"DÍA",alma,vestido
+504 DATA espejo,pasillo,preso,parado,mago
+505 DATA enamorado,"ÁRBOL",pecho,piano,beso
 506 DATA "CIEMPIÉS","CORAZÓN",soldado,ojo,"AÑO"
-507 DATA bolsillo,"CHAQUETÓN",guardia
+507 DATA bolsillo,"CHAQUETÓN",guardia,reptil
+508 DATA poder,pueblo,regalo,rey,jilguero
+509 DATA villancico,verso
+
 599 DATA *
 600 REM [d3t] sustantivos fememinos
-601 DATA verdad,casa,familia,mosca,voz
-602 DATA "POESÍA",frase,"LÍNEA",gente,obra
-603 DATA enamorada,fruta,yedra,mano
-604 DATA tapia,cereza
+601 DATA verdad,casa,familia,mosca,voz,esperanza
+602 DATA "POESÍA",frase,"LÍNEA",gente,obra,cosa
+603 DATA enamorada,fruta,yedra,mano,flor,fe,ternura
+604 DATA tapia,cereza,mentira,tumba,guerra,"UÑA"
+605 DATA garra,fuerza,cultura,"ALEGRÍA","CANCIÓN"
+606 DATA cascada,hermosura,sonrisa
 
 699 DATA *
 700 REM [e4u] adjetivos masculinos
-701 DATA delgado,igual,mejor,brillante
+701 DATA delgado,igual,mejor,brillante,culpable
+702 DATA injusto,grande
 
 799 DATA *
 800 REM [f5v] adjetivos femeninos
-801 DATA delgada,igual,mejor,brillante
+801 DATA delgada,igual,mejor,brillante,culpable
+802 DATA injusta,grande
 
 899 DATA *
 900 REM [g6] estativos masculinos
@@ -66,11 +76,13 @@
 1001 DATA miente,desaparece,pregunta,llama
 1002 DATA contesta,"SE MUEVE",evoluciona
 1003 DATA mengua,crece,escribe,puede,vuelve
-1003 DATA cabalga,brota,cae
+1003 DATA cabalga,brota,cae,"SE PONE",escupe
+1004 DATA aprende,sufre
 
 1099 DATA *
 1100 REM [j9] verbos transitivos ** impar
-1101 DATA dice,pregunta,escribe,coge
+1101 DATA dice,pregunta,escribe,coge,atrapa,tiene
+1102 DATA ama
 
 1199 DATA *
 1200 REM [k10] verbo ser/parecer (1ª y 2ª persona sin sujeto)
@@ -141,7 +153,8 @@
 9200 REM caso particular artículos
 9210 IF t$="EL" THEN t$="LOS":RETURN
 9220 IF t$="UN" THEN t$="UNOS":RETURN
-9300 GOTO 9110: REM caso general
+9230 IF t$="AQUEL" THEN t$="AQUELLOS"
+9300 GOTO 9105: REM caso general
 9400 REM ** v indica si l$ es vocal **
 9405 v=0
 9410 IF l$="A" OR l$="E" OR l$="I" THEN v=1
@@ -150,6 +163,7 @@
 9417 IF l$="Ó" OR l$="Ú" THEN v=1
 9420 RETURN 
 9500 REM ** poner verbo t$ en plural **
+9505 o$=t$:REM original
 9510 REM copulativos, cualquier persona
 9511 IF t$="SOY" THEN t$="SOMOS"
 9512 IF t$="ERES" THEN t$="SOIS"
@@ -164,7 +178,7 @@
 9524 IF t$="ESTUVE" THEN t$="ESTUVIMOS"
 9526 IF t$="ESTUVO" THEN t$="ESTUVIERON"
 9527 IF t$="PAREZCO" THEN t$="PARECEMOS"
-9528 IF t$="PARECES" THEN t$="PARECÉIS"
+9799 IF t$<>o$ THEN RETURN:REM ya en plural
 9800 REM casos generales
 9805 z=LEN(t$)-1:REM muy usado
 9810 l$=RIGHT$(t$,1):REM última letra
@@ -174,6 +188,7 @@
 9816 IF l2$="ÍA" THEN t$=t$+"IS":RETURN
 9820 REM copulativos y presente
 9821 IF l$="Á" OR l$="A" OR l$="E" THEN t$=t$+"N":REM muchos
+9822 IF l2$="ES" THEN t$=LEFT$(t$,z-1)+"ÉIS"
 9830 REM futuro
 9831 IF l$="É" THEN t$=LEFT$(t$,z)+"EMOS"
 9832 IF l2$="ÁS" THEN t$=LEFT$(t$,z-1)+"ÉIS"
