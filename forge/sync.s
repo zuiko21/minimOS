@@ -355,8 +355,8 @@
 	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
 	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
 ; EQUALISATION PULSES (310-312)
-	.byt	S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,P,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,P
-	.byt	S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,P,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,P
-	.byt	S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,P,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,P
+	.byt	S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
+	.byt	S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
+	.byt	S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
 ; RESET PULSE
 	.byt	R,R,R,R,R,R,R,R	; just in case
