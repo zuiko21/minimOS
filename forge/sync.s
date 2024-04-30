@@ -20,7 +20,7 @@
 	.byt	S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,P,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
 	.byt	S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
 	.byt	S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
-; 24 BLANK LINES (6-29)
+; 32 BLANK LINES (6-37)
 	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
 	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
 	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
@@ -45,17 +45,17 @@
 	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
 	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
 	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
-; ONE PARTIAL LINE (30)
+	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
+	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
+	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
+	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
+	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
+	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
+	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
+	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
+; ONE PARTIAL LINE (38)
 	.byt	S,S,P,P,P,P,E,E,P,P,P,P,P,P,P,P,P,P,E,P,P,P,P,P,P,P,P,P,P,E,E,P
-; ACTIVE LINES (31-39)
-	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
-	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
-	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
-	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
-	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
-	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
-	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
-	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
+; ACTIVE LINE (39)
 	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
 ; REPEAT ABOVE 40-49
 	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
@@ -321,15 +321,24 @@
 	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
 	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
 	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
-; REPEAT ABOVE 280-284
+; REPEAT ABOVE 280-289
 	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
 	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
 	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
 	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
 	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
-; ONE PARTIAL LINE (285)
+	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
+	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
+	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
+	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
+	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
+; REPEAT ABOVE 290-292
+	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
+	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
+	.byt	S,S,P,P,P,P,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,E,P
+; ONE PARTIAL LINE (293)
 	.byt	S,S,P,P,P,P,E,E,P,P,P,P,P,P,P,P,P,P,E,P,P,P,P,P,P,P,P,P,P,E,E,P
-; 24 BLANK LINES (286-309)
+; 16 BLANK LINES (294-309)
 	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
 	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
 	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
