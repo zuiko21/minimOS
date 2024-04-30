@@ -14,7 +14,7 @@
 
 * = 0
 
-; COMPOUND VERTICAL SYNC
+; COMPOUND VERTICAL SYNC (1-5)
 	.byt	S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,P,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,P
 	.byt	S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,P,S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,P
 	.byt	S,S,S,S,S,S,S,S,S,S,S,S,S,S,S,P,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
@@ -339,14 +339,6 @@
 ; ONE PARTIAL LINE (293)
 	.byt	S,S,P,P,P,P,E,E,P,P,P,P,P,P,P,P,P,P,E,P,P,P,P,P,P,P,P,P,P,E,E,P
 ; 16 BLANK LINES (294-309)
-	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
-	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
-	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
-	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
-	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
-	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
-	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
-	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
 	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
 	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
 	.byt	S,S,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P,P
