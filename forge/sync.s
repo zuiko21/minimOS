@@ -4,7 +4,7 @@
 ; d2 = RESET (@ 9984)
 ; d3...d7 = 1
 ; 500 kHz clock (32 bytes/line)
-; using 48µs window (9µs back porch, 3µs front porch)
+; using 46µs window (10µs back porch, 4µs front porch)
 ; normal sync is 2 bytes (4 µs), short is one
 
 #define	S	%11111000

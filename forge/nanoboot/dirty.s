@@ -1,6 +1,6 @@
 ; nanoBoot v2 (w/ support for Durango Cartridge & Pocket)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240501-1402
+; last modified 20240501-1911
 
 ; add -DALONE for standalone version (otherwise module after multiboot.s)
 
@@ -36,9 +36,9 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2001			; 2.0a1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2002			; 2.0a1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$70A0			; time, 14.05		%0111 0-000 101-0 0000
+	.word	$9960			; time, 19.11		%1001 1-001 011-0 0000
 	.word	$58A1			; date, 2024/5/1	%0101 100-0 101-0 0001
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -113,7 +113,7 @@ nh_rcv:
 nh_rby:
 ; inner loop is the best place for aborting
 			JSR chk_brk		; (35 in total)
-			BCS no_ab		; (usually 3)
+			BCC no_ab		; (usually 3)
 				JMP nb_error			; PLACEHOLDER
 no_ab:
 			CPX #0			; (2)
@@ -121,6 +121,7 @@ no_ab:
 		STA nb_ptr, Y		; (6) store received byte
 		DEY					; (2) next header byte (note reversed order)
 		BPL nh_rcv			; (3/2) until all 40 bits done
+
 ; check header
 	LDA nb_type				; (3) first of all, check for a valid magic number
 	CMP #$4B				; (2) below $4B?
@@ -132,6 +133,18 @@ no_ab:
 	STY nb_ex
 	STA nb_ex+1				; (3+3) ...for future use
 	STZ nb_ptr				; (4) clear offset, and we are ready!
+; display detected type
+	LDX nb_type
+	LDA type, X
+	STA $770E
+	LDA type+4, X
+	STA $772E
+	LDA type+8, X
+	STA $774E
+	LDA type+12, X
+	STA $776E
+	LDA type+16, X
+	STA $778E
 
 ; *** receive payload ***
 nb_rcv:
@@ -170,7 +183,38 @@ nb_nw:
 	STA fw_isr+1			; (3+3+3+3) all clear
 	LDA #1					; (2) this will enable IRQ generator
 	STA IOAie				; (4) turn off LED
-; now execute if possible
+	BNE nb_exec				; (3) try executing, no need for BRA
+
+; *** if no valid magic number, set null clock handler for lines on screen to mark transmission end *** moved
+nb_error:
+	LDY #<nb_dis			; (2+2) get null clock handler
+	LDA #>nb_dis
+	STY fw_nmi				; (3+3) redirect handler (might become simply STZ fw_nmi if aligned!)
+	STA fw_nmi+1
+	SEI
+; draw some feedback
+#ifdef	ALONE
+	LDX #5					; max offset
+	LDA #$FF				; whole byte
+err_loop:
+		STA $772A, X		; strike two lines
+		STA $776A, X
+		DEX
+		BPL err_loop
+#else
+; more elaborate error feedback
+#endif
+lock:
+				INX
+				BNE lock
+			INY
+			BNE lock
+		STA IOAie			; update ERROR LED
+		INC					; will keep flashing
+		BRA lock			; just press RST when transmission has ended!
+
+; *** execute if possible *** continue
+nb_exec:
 	LDA nb_type				; (3) get magic byte
 	CMP #$4B				; (2) legacy nanoBoot binary?
 	BNE not_bin				; (3/2)
@@ -204,33 +248,7 @@ not_data:
 nb_xnw:
 		JMP (nb_ex)			; (6) actual execution pointer is now here
 nb_bad:
-;	JMP nb_error
-; *** no valid magic number, set null clock handler for lines on screen to mark transmission end ***
-nb_error:
-	LDY #<nb_dis			; (2+2) get null clock handler
-	LDA #>nb_dis
-	STY fw_nmi				; (3+3) redirect handler (might become simply STZ fw_nmi if aligned!)
-	STA fw_nmi+1
-; draw some feedback
-#ifdef	ALONE
-	LDX #5					; max offset
-	LDA #$FF				; whole byte
-err_loop:
-		STA $772A, X		; strike two lines
-		STA $776A, X
-		DEX
-		BPL err_loop
-#else
-; more elaborate error feedback
-#endif
-lock:
-				INX
-				BNE lock
-			INY
-			BNE lock
-		STA IOAie			; update ERROR LED
-		INC					; will keep flashing
-		BRA lock			; just press RST when transmission has ended!
+	JMP nb_error
 
 ; ***********************************
 ; *** nanoBoot interrupt handlers ***
@@ -244,6 +262,7 @@ nb_dis:
 	AND #$F0				; filter readable bits (no need to add RGB mode)
 	EOR #64					; toggle inverse video
 	STA IO8attr				; update
+	PLA						; EEEEK
 	RTI
 ; * actual clock pulse reception *
 nb_nmi:
@@ -302,19 +321,6 @@ banner:
 	.byt	$AA, $AA, $AA, $A4
 	.byt	$AE, $A4, $C4, $42
 
-; * display detected type in X *
-s_type:
-	LDA type, X
-	STA $770F
-	LDA type+4, X
-	STA $772F
-	LDA type+8, X
-	STA $774F
-	LDA type+12, X
-	STA $776F
-	LDA type+16, X
-	STA $778F
-	RTS
 ; microfont data 'B', 'C', 'D', 'E' by rasters
 type:
 	.byt	$1C, $0C, $1C, $1E
