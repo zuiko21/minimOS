@@ -1,6 +1,6 @@
 ; nanoBoot v2 (w/ support for Durango Cartridge & Pocket)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240501-1911
+; last modified 20240503-0857
 
 ; add -DALONE for standalone version (otherwise module after multiboot.s)
 
@@ -36,10 +36,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2002			; 2.0a1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2003			; 2.0a3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$9960			; time, 19.11		%1001 1-001 011-0 0000
-	.word	$58A1			; date, 2024/5/1	%0101 100-0 101-0 0001
+	.word	$4800			; time, 09.00		%0100 1-000 000-0 0000
+	.word	$58A3			; date, 2024/5/3	%0101 100-0 101-0 0011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -92,6 +92,8 @@ sb_loop:
 		STA $778A, X
 		DEX
 		BPL sb_loop
+#else
+; display ready message thru CONIO
 #endif
 
 ; *** all inited, get ready for reception ***
@@ -116,25 +118,29 @@ nh_rby:
 			BCC no_ab		; (usually 3)
 				JMP nb_error			; PLACEHOLDER
 no_ab:
+#ifdef	ALONE
+			STA $77CA, Y	; (5) funny header display
+#endif
 			CPX #0			; (2)
 			BNE nh_rby		; (3/2) wait for complete byte
-		STA nb_ptr, Y		; (6) store received byte
+		STA nb_ptr, Y		; (5) store received byte
 		DEY					; (2) next header byte (note reversed order)
 		BPL nh_rcv			; (3/2) until all 40 bits done
 
 ; check header
-	LDA nb_type				; (3) first of all, check for a valid magic number
-	CMP #$4B				; (2) below $4B?
+	LDX nb_type				; (3) first of all, check for a valid magic number
+	CPX #$4B				; (2) below $4B?
 		BCC nb_error		; (2/3) if so, not valid
-	CMP #$4F				; (2) above $4E?
-		BCC nb_error		; (2/3) if so, not valid
+	CPX #$4F				; (2) above $4E?
+		BCS nb_error		; (2/3) if so, not valid EEEEK
 	LDY nb_ptr
 	LDA nb_ptr+1			; (3+3) copy start address...
 	STY nb_ex
 	STA nb_ex+1				; (3+3) ...for future use
 	STZ nb_ptr				; (4) clear offset, and we are ready!
 ; display detected type
-	LDX nb_type
+#ifdef	ALONE
+;	LDX nb_type
 	LDA type, X
 	STA $770E
 	LDA type+4, X
@@ -145,6 +151,9 @@ no_ab:
 	STA $776E
 	LDA type+16, X
 	STA $778E
+#else
+; display type thru CONIO
+#endif
 
 ; *** receive payload ***
 nb_rcv:
