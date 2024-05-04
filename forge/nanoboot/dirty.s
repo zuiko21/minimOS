@@ -1,9 +1,10 @@
 ; nanoBoot v2 (w/ support for Durango Cartridge & Pocket)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240504-1853
+; last modified 20240504-2248
 
 ; add -DALONE for standalone version (otherwise module after multiboot.s)
-#echo	no brk in header, now fix type
+#echo	improved feedback, module ready
+
 #ifdef ALONE
 	*		= $E000			; skip I/O, just in case
 ; standard pointers
@@ -36,9 +37,9 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2003			; 2.0a3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2041			; 2.0b1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$9700			; time, 18.56		%1001 0-111 000-0 0000
+	.word	$B600			; time, 22.48		%1011 0-110 000-0 0000
 	.word	$58A4			; date, 2024/5/4	%0101 100-0 101-0 0100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -94,6 +95,8 @@ sb_loop:
 		BPL sb_loop
 #else
 ; display ready message thru CONIO
+	LDX #banner-msg			; reset offset
+	JSR sb_loop				; and print selected message
 #endif
 
 ; *** all inited, get ready for reception ***
@@ -107,6 +110,9 @@ nb_rdy:
 	LDA #>nb_nmi			; get receiver NMI address
 	STY fw_nmi
 	STA fw_nmi+1			; standard vector
+; since we have no registers left, preselect keyboard column
+	LDA #1					; (2+4) first column has both SPACE & SHIFT
+	STA IO9kbd
 
 ; *** receive full header and set things accordingly ***
 	LDY #4					; (2) max header offset
@@ -114,20 +120,25 @@ nh_rcv:
 		LDX #8				; (2) prepare for next byte
 nh_rby:
 ; inner loop is the best place for aborting
-;			PHA				; (3) EEEEK
-;			JSR chk_brk		; (35 in total)
-;			PLA				; (4) EEEEK
-;			BCC no_ab		; (usually 3)
-;				JMP nb_error			; PLACEHOLDER
+			PHY				; (3) EEEEK
+			LDY IO9kbd		; (4) column is already selected
+			CPY #%10100000	; (2) both SHIFT & SPACE?
+			BNE no_ab		; (usually 3)
+;				PLY			; (4) EEEEK
+				JMP nb_error			; PLACEHOLDER, note stack imbalance
 no_ab:
+			PLY				; (4) EEEEEEEEEEEEEEEEEEEK
 #ifdef	ALONE
+#ifdef	DEBUG
 			STA $77CA, Y	; (5) funny header display
+#endif
 #endif
 			CPX #0			; (2)
 			BNE nh_rby		; (3/2) wait for complete byte
 		STA nb_ptr, Y		; (5) store received byte
 		DEY					; (2) next header byte (note reversed order)
 		BPL nh_rcv			; (3/2) until all 40 bits done
+	STZ IO9kbd				; (4) for good measure
 
 ; check header
 	LDX nb_type				; (3) first of all, check for a valid magic number
@@ -141,11 +152,11 @@ no_ab:
 	STA nb_ex+1				; (3+3) ...for future use
 	STZ nb_ptr				; (4) clear offset, and we are ready!
 ; display detected type
-#ifdef	ALONE
 ;	LDX nb_type
 	TXA
 	SEC
-	SBC #$4B
+	SBC #$4B				; (2+2+2) turn $4B...$4E into 0...3
+#ifdef	ALONE
 	TAX
 	LDA type, X
 	STA $770E
@@ -159,6 +170,10 @@ no_ab:
 	STA $778E
 #else
 ; display type thru CONIO
+;	CLC						; assume C is set per SBC above
+	ADC #'B'-1				; note offset via carry, will turn 0...3 into 'B'...'E'
+	TAY
+	JSR conio
 #endif
 
 ; *** receive payload ***
@@ -176,11 +191,53 @@ nb_rby:
 			BNE no_io		; (3/2)
 				INC nb_ptr+1			; (5) skip it EEEEEEK
 no_io:
-; may check for break key
-			JSR chk_brk		; (35 in total)
-				BCS nb_error			; (usually 3) PLACEHOLDER
-; add some page feedback
+; may check for break key (inlined)
+			LDA #1			; (2+2) first column has both SPACE & SHIFT
+			STA IO9kbd
+			LDA IO9kbd		; (4+4) get active rows
+			STZ IO9kbd		; (4) just for good measure
+			AND #%10100000	; (2) mask relevant keys
+			CMP #%10100000	; (2) both SHIFT & SPACE?
+			BNE no_break	; (3/2) nope, just continue
+;				JMP nb_error			; (3) PLACEHOLDER
 
+; *****************************************************************************************************
+; *** if no valid magic number, set null clock handler for lines on screen to mark transmission end *** moved
+nb_error:
+	LDY #<nb_dis			; (2+2) get null clock handler
+	LDX #>nb_dis
+	STY fw_nmi				; (3+3) redirect handler (might become simply STZ fw_nmi if aligned!)
+	STX fw_nmi+1
+	SEI
+; draw some feedback
+#ifdef	ALONE
+	LDX #5					; max offset
+	LDA #$FF				; whole byte
+err_loop:
+		STA $772A, X		; strike two lines
+		STA $776A, X
+		DEX
+		BPL err_loop
+#else
+; more elaborate error feedback
+	LDX #error-msg			; preset offset
+	JSR sb_loop				; and print selected message
+#endif
+lock:
+				INX
+				BNE lock
+			INY
+			BNE lock
+		STA IOAie			; update ERROR LED
+		INC					; will keep flashing
+		BRA lock			; just press RST when transmission has ended!
+; *****************************************************************************************************
+
+no_break:
+; add some page feedback
+			PHY				; eeeek
+			JSR progress	; generic call
+			PLY
 ; check limits
 nb_nw:
 		CPY nb_end			; (3) already finished?
@@ -198,35 +255,7 @@ nb_nw:
 	STA fw_isr+1			; (3+3+3+3) all clear
 	LDA #1					; (2) this will enable IRQ generator
 	STA IOAie				; (4) turn off LED
-	BNE nb_exec				; (3) try executing, no need for BRA
-
-; *** if no valid magic number, set null clock handler for lines on screen to mark transmission end *** moved
-nb_error:
-	LDY #<nb_dis			; (2+2) get null clock handler
-	LDA #>nb_dis
-	STY fw_nmi				; (3+3) redirect handler (might become simply STZ fw_nmi if aligned!)
-	STA fw_nmi+1
-	SEI
-; draw some feedback
-#ifdef	ALONE
-	LDX #5					; max offset
-	LDA #$FF				; whole byte
-err_loop:
-		STA $772A, X		; strike two lines
-		STA $776A, X
-		DEX
-		BPL err_loop
-#else
-; more elaborate error feedback
-#endif
-lock:
-				INX
-				BNE lock
-			INY
-			BNE lock
-		STA IOAie			; update ERROR LED
-		INC					; will keep flashing
-		BRA lock			; just press RST when transmission has ended!
+;	BNE nb_exec				; (3) try executing, no need for BRA
 
 ; *** execute if possible *** continue
 nb_exec:
@@ -264,6 +293,46 @@ nb_xnw:
 		JMP (nb_ex)			; (6) actual execution pointer is now here
 nb_bad:
 	JMP nb_error
+
+; ************************
+; *** feedback support ***
+; ************************
+#ifdef	ALONE
+; progress bar routine (already installed for SD)
+progress:
+	LDA nb_type
+	CMP #$4D
+	BEQ no_bar				; if it's generic data (could be screenshot), do not display progress
+		LDA nb_ptr+1		; check new page
+		DEC					; last completed page
+		TAY					; save!
+		LSR
+		LSR
+		LSR					; 256 pages into 32 bytes (HIRES)
+		TAX					; offset ready
+		TYA					; back
+		AND #7				; number of pixels set, after adding 1; expected EVEN
+		TAY					; as index
+		LDA prog_pat, Y		; proper bitmap
+		STA $7F80, X
+		STA $7FA0, X
+		STA $7FC0, X
+		STA $7FE0, X		; beautifully displayed
+no_bar:
+	RTS
+#else
+; print message from selected offset
+sb_loop:
+		LDY msg, X			; get char
+	BEQ sb_exit				; until end
+		PHX
+		JSR conio			; print it
+		PLX
+		INX					; next char
+		BNE sb_loop			; no need for BRA
+sb_exit:
+	RTS
+#endif
 
 ; ***********************************
 ; *** nanoBoot interrupt handlers ***
@@ -313,20 +382,6 @@ irq:
 nmi:
 	JMP (fw_nmi)
 
-; *** check for break *** total 35 incl. JSR
-chk_brk:
-	CLC
-	LDA #1			; (2+2) first column has both SPACE & SHIFT
-	STA IO9kbd
-	LDA IO9kbd		; (4+4) get active rows
-	STZ IO9kbd		; (4) just for good measure
-	AND #%10100000	; (2) mask relevant keys
-	CMP #%10100000	; (2) both SHIFT & SPACE?
-	BNE no_break	; (3/2) nope, just continue
-		SEC			; (2) ...or set C
-no_break:
-	RTS				; (6)
-
 ; * feedback data *
 ; banner data
 banner:
@@ -343,6 +398,10 @@ type:
 	.byt	$9C, $90, $92, $9E
 	.byt	$12, $12, $12, $10
 	.byt	$9C, $8C, $9C, $9E
+
+; progress bar patterns
+prog_pat:
+	.byt	%10000000, %11000000, %11100000, %11110000, %11111000, %11111100, %11111110, %11111111
 
 ; *****************************
 ; *** alignment and ROM end ***
@@ -371,4 +430,11 @@ autoreset:
 	.word	nmi
 	.word	nb_start
 	.word	irq
+#else
+; * feedback messages for CONIO *
+msg:						; base address
+banner:
+	.asc	"nanoBoot?", 1, 0			; standard banner
+error:
+	.asc	" ", 14, "FAIL!", 15, 7, 0	; error message
 #endif
