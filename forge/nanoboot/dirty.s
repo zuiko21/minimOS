@@ -1,6 +1,6 @@
 ; nanoBoot v2 (w/ support for Durango Cartridge & Pocket)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240503-0857
+; last modified 20240504-1853
 
 ; add -DALONE for standalone version (otherwise module after multiboot.s)
 
@@ -38,8 +38,8 @@ rom_start:
 ; NEW coded version number
 	.word	$2003			; 2.0a3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$4800			; time, 09.00		%0100 1-000 000-0 0000
-	.word	$58A3			; date, 2024/5/3	%0101 100-0 101-0 0011
+	.word	$9700			; time, 18.56		%1001 0-111 000-0 0000
+	.word	$58A4			; date, 2024/5/4	%0101 100-0 101-0 0100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -114,7 +114,9 @@ nh_rcv:
 		LDX #8				; (2) prepare for next byte
 nh_rby:
 ; inner loop is the best place for aborting
+			PHA				; (3) EEEEK
 			JSR chk_brk		; (35 in total)
+			PLA				; (4) EEEEK
 			BCC no_ab		; (usually 3)
 				JMP nb_error			; PLACEHOLDER
 no_ab:
