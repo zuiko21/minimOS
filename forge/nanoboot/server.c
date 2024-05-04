@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
- * (c) 2020-2023 Carlos J. Santisteban *
- * last modified 20230308-1824         */
+ * (c) 2020-2024 Carlos J. Santisteban *
+ * last modified 20240504-2335         */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,8 +23,9 @@ void useg(int x);	/* delay for specified microseconds */
 /* *** main code *** */
 int main(void) {
 	FILE*	f;
-	int		i, c, fin, ini;
+	int		i, c, tipo, fin, ini, exe, hi, hx;
 	char	nombre[80];
+	char	buffer[256];
 
 	printf("*** nanoBoot server (OC) ***\n\n");
 	printf("pin 34=GND, 36=CLK, 38=DAT\n\n");
@@ -44,12 +45,43 @@ int main(void) {
 /* compute header parameters */
 	fseek(f, 0, SEEK_END);
 	fin = ftell(f);
-	printf("It's %d bytes long ($%04X)\n\n", fin, fin);
-	printf("Address (HEX): ");
+	printf("It's %d bytes long ($%04X) ", fin, fin);
+/* check file header as well */
+	rewind(f)
+	fread(buffer, 256, 1, f);
+	if (!buffer[0] && !buffer[255] && (buffer[7]==13)) {	/* valid header */
+		printf("and has valid header!\n");
+		if (buffer[2]=='X') {
+			if (buffer[1]=='d') {
+				tipo = 0x4C;			/* ROM image */
+				printf("ROM image: Start at %04X", hi);
+			}
+			if (buffer[1]=='p') {
+				tipo = 0x4E;			/* Pocket executable */
+				printf("Pocket executable: Load at %04X, Execute at %04X", hi, hx);
+			}
+		}
+	}
+/* determine type */
+	printf("\n\nNon-executable Load Address in HEX (0=default): ");
 	scanf("%x", &ini);
+	if (!ini) {
+		printf("Execution Address in HEX (0=default): ");
+		scanf("%x", &exe);
+		if (exe)	tipo = 0x4B;		/* binary code blob (legacy) */
+	} else {
+		tipo = 0x4D;		/* generic data */
+	}
+	if (ini && exe) {
+		printf("*** Set either Load OR Execution address ***\n");
+		fclose(f);
+		return -1;
+	}
+	if (tipo == 0x4B)	ini = exe;		/* blobs start at load address */
+
 	fin += ini;				/* nanoBoot mandatory format */
 /* send header */
-	cabe(0x4B);
+	cabe(tipo);
 	cabe(fin>>8);
 	cabe(fin&255);
 	cabe(ini>>8);
