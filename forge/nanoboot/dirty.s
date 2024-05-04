@@ -3,7 +3,7 @@
 ; last modified 20240504-1853
 
 ; add -DALONE for standalone version (otherwise module after multiboot.s)
-
+#echo	no brk in header, now fix type
 #ifdef ALONE
 	*		= $E000			; skip I/O, just in case
 ; standard pointers
@@ -114,11 +114,11 @@ nh_rcv:
 		LDX #8				; (2) prepare for next byte
 nh_rby:
 ; inner loop is the best place for aborting
-			PHA				; (3) EEEEK
-			JSR chk_brk		; (35 in total)
-			PLA				; (4) EEEEK
-			BCC no_ab		; (usually 3)
-				JMP nb_error			; PLACEHOLDER
+;			PHA				; (3) EEEEK
+;			JSR chk_brk		; (35 in total)
+;			PLA				; (4) EEEEK
+;			BCC no_ab		; (usually 3)
+;				JMP nb_error			; PLACEHOLDER
 no_ab:
 #ifdef	ALONE
 			STA $77CA, Y	; (5) funny header display
@@ -143,6 +143,10 @@ no_ab:
 ; display detected type
 #ifdef	ALONE
 ;	LDX nb_type
+	TXA
+	SEC
+	SBC #$4B
+	TAX
 	LDA type, X
 	STA $770E
 	LDA type+4, X
