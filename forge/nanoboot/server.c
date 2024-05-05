@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2024 Carlos J. Santisteban *
- * last modified 20240505-1247         */
+ * last modified 20240505-1358         */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,7 +22,7 @@ typedef u_int16_t	word;
 /* prototypes */
 void cabe(byte x);	/* send header byte in a slow way */
 void dato(byte x);	/* send data byte at full speed! */
-void useg(byte x);	/* delay for specified microseconds */
+void useg(int x);	/* delay for specified microseconds */
 
 /* *** main code *** */
 int main(void) {
@@ -53,17 +53,17 @@ int main(void) {
 	fin = ftell(f);
 	printf("It's %d bytes long ($%04X) ", fin, fin);
 /* check file header as well */
-	rewind(f)
+	rewind(f);
 	fread(buffer, 256, 1, f);
 	if (!buffer[0] && !buffer[255] && (buffer[7]==13)) {	/* valid header */
 		printf("and has valid header!\n");
 		bb = 0;							/* NOT a binary blob */
-		hi = *(word*)(&buffer[1]);		/* load address stored into file header */
-		hx = *(word*)(&buffer[3]);		/* execution address stored into file header */
+		hi = *(word*)(&buffer[3]);		/* load address stored into file header */
+		hx = *(word*)(&buffer[5]);		/* execution address stored into file header */
 		if (buffer[2]=='X') {
 			if (buffer[1]=='d') {
 				tipo = 0x4C;			/* ROM image */
-				printf("ROM image starting at %04X", hi);
+				printf("ROM image starting at %04X", 0x10000-fin);
 			}
 			if (buffer[1]=='p') {
 				tipo = 0x4E;			/* Pocket executable */
@@ -77,14 +77,16 @@ int main(void) {
 /* determine type */
 	printf("\n\nNon-executable Load Address in HEX (0=default): ");
 	scanf("%x", &ini);
-	if (!ini && bb) {
-		printf("Execution Address in HEX (0=default): ");
-		scanf("%x", &exe);
-		if (exe)	tipo = 0x4B;		/* binary code blob (legacy) */
-		else {
-			printf("*** Execution address is needed! ***\n");
-			fclose(f);
-			return -1;
+	if (!ini) {
+		if (bb) {
+			printf("Execution Address in HEX (0=default): ");
+			scanf("%x", &exe);
+			if (exe)	tipo = 0x4B;		/* binary code blob (legacy) */
+			else {
+				printf("*** Execution address is needed! ***\n");
+				fclose(f);
+				return -1;
+			}
 		}
 	} else {
 		if (tipo != 0x4D)	printf("\n(will be sent as raw data, no longer executable)");
