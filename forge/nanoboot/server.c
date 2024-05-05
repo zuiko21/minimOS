@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2024 Carlos J. Santisteban *
- * last modified 20240504-2335         */
+ * last modified 20240505-1247         */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,17 +15,23 @@
 #define	CB2		20
 #define	STB		21
 
+/* type definitions */
+typedef	u_int8_t	byte;
+typedef u_int16_t	word;
+
 /* prototypes */
-void cabe(int x);	/* send header byte in a slow way */
-void dato(int x);	/* send data byte at full speed! */
-void useg(int x);	/* delay for specified microseconds */
+void cabe(byte x);	/* send header byte in a slow way */
+void dato(byte x);	/* send data byte at full speed! */
+void useg(byte x);	/* delay for specified microseconds */
 
 /* *** main code *** */
 int main(void) {
 	FILE*	f;
-	int		i, c, tipo, fin, ini, exe, hi, hx;
+	word	ini, exe, hi, hx;
+	byte	c, bb, tipo;
+	int		fin, i;
 	char	nombre[80];
-	char	buffer[256];
+	byte	buffer[256];
 
 	printf("*** nanoBoot server (OC) ***\n\n");
 	printf("pin 34=GND, 36=CLK, 38=DAT\n\n");
@@ -51,25 +57,37 @@ int main(void) {
 	fread(buffer, 256, 1, f);
 	if (!buffer[0] && !buffer[255] && (buffer[7]==13)) {	/* valid header */
 		printf("and has valid header!\n");
+		bb = 0;							/* NOT a binary blob */
+		hi = *(word*)(&buffer[1]);		/* load address stored into file header */
+		hx = *(word*)(&buffer[3]);		/* execution address stored into file header */
 		if (buffer[2]=='X') {
 			if (buffer[1]=='d') {
 				tipo = 0x4C;			/* ROM image */
-				printf("ROM image: Start at %04X", hi);
+				printf("ROM image starting at %04X", hi);
 			}
 			if (buffer[1]=='p') {
 				tipo = 0x4E;			/* Pocket executable */
 				printf("Pocket executable: Load at %04X, Execute at %04X", hi, hx);
 			}
+		} else {
+			tipo = 0x4D;				/* unrecognised header */
+			printf("(Generic, non-executable type)");
 		}
-	}
+	} else		bb = 1;					/* binary blob might be executed from start */
 /* determine type */
 	printf("\n\nNon-executable Load Address in HEX (0=default): ");
 	scanf("%x", &ini);
-	if (!ini) {
+	if (!ini && bb) {
 		printf("Execution Address in HEX (0=default): ");
 		scanf("%x", &exe);
 		if (exe)	tipo = 0x4B;		/* binary code blob (legacy) */
+		else {
+			printf("*** Execution address is needed! ***\n");
+			fclose(f);
+			return -1;
+		}
 	} else {
+		if (tipo != 0x4D)	printf("\n(will be sent as raw data, no longer executable)");
 		tipo = 0x4D;		/* generic data */
 	}
 	if (ini && exe) {
@@ -77,18 +95,27 @@ int main(void) {
 		fclose(f);
 		return -1;
 	}
-	if (tipo == 0x4B)	ini = exe;		/* blobs start at load address */
-
+	switch(tipo) {
+		case 0x4B:
+			ini = exe;		/* blobs start at load address */
+			break;
+		case 0x4C:
+			ini = 0x10000-fin;			/* load address depends on ROM length */
+			break;
+		case 0x4E:
+			ini = hi;		/* Pocket loads at pointer inside file header */
+			break;
+	}
 	fin += ini;				/* nanoBoot mandatory format */
 /* send header */
 	cabe(tipo);
-	cabe(fin>>8);
+	cabe((fin>>8)&255);		/* ROM images 'end' at $0000 */
 	cabe(fin&255);
 	cabe(ini>>8);
 	cabe(ini&255);
 /* send binary */
 	rewind(f);
-	printf("*** GO!!! ***\n");
+	printf("\n*** GO!!! ***\n");
 	for (i=ini; i<fin; i++) {
 		if ((i&255) == 0) {
 			delay(2);		/* page crossing may need some time */
@@ -105,8 +132,8 @@ int main(void) {
 
 /* *** function definitions *** */
 /* for old nanoBoot ROM, invert bit (bit^1) */
-void cabe(int x) {			/* just like dato() but with longer bit delay, whole header takes ~85 ms */
-	int bit, i = 8;
+void cabe(byte x) {			/* just like dato() but with longer bit delay, whole header takes ~85 ms */
+	byte bit, i = 8;
 
 	while(i>0) {
 		bit = x & 1;
@@ -122,8 +149,8 @@ void cabe(int x) {			/* just like dato() but with longer bit delay, whole header
 	delay(1);				/* shouldn't be needed, but won't harm anyway */
 }
 
-void dato(int x) {			/* send a byte at 'top' speed */
-	int bit, i = 8;
+void dato(byte x) {			/* send a byte at 'top' speed */
+	byte bit, i = 8;
 
 	while(i>0) {
 		bit = x & 1;
