@@ -1,14 +1,14 @@
 ; nanoBoot v2 (w/ support for Durango Cartridge & Pocket)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240505-1408
+; last modified 20240505-1756
 
 ; add -DALONE for standalone version (otherwise module after multiboot.s)
-#echo	just testing integration
+#echo	fixed Y register
 
 #ifdef ALONE
 	*		= $E000			; skip I/O, just in case
 ; standard pointers
-	fw_isr	= $0200
+	fw_irq	= $0200
 	fw_nmi	= $0202
 ; standard hardware definitions
 	IO8attr	= $DF80
@@ -37,9 +37,9 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2081			; 2.0RC1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2083			; 2.0RC3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$7100			; time, 14.08		%0111 0-001 000-0 0000
+	.word	$8F00			; time, 17.56		%1000 1-111 000-0 0000
 	.word	$58A5			; date, 2024/5/5	%0101 100-0 101-0 0101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -103,8 +103,8 @@ nb_rdy:
 	STZ $DFA0				; note we keep IRQ disabled! *CMOS
 	LDY #<nb_irq
 	LDA #>nb_irq			; get receiver ISR address
-	STY fw_isr
-	STA fw_isr+1			; standard vector
+	STY fw_irq
+	STA fw_irq+1			; standard vector
 	LDY #<nb_nmi
 	LDA #>nb_nmi			; get receiver NMI address
 	STY fw_nmi
@@ -123,7 +123,7 @@ nh_rby:
 			LDY IO9kbd		; (4) column is already selected
 			CPY #%10100000	; (2) both SHIFT & SPACE?
 			BNE no_ab		; (usually 3)
-;				PLY			; (4) EEEEK
+				PLY			; (4) EEEEK
 				JMP nb_error			; PLACEHOLDER, note stack imbalance
 no_ab:
 			PLY				; (4) EEEEEEEEEEEEEEEEEEEK
@@ -149,7 +149,6 @@ no_ab:
 	LDA nb_ptr+1			; (3+3) copy start address...
 	STY nb_ex
 	STA nb_ex+1				; (3+3) ...for future use
-	STZ nb_ptr				; (4) clear offset, and we are ready!
 ; display detected type
 ;	LDX nb_type
 	TXA
@@ -174,6 +173,8 @@ no_ab:
 	TAY
 	JSR conio
 #endif
+	LDY nb_ptr				; (3) retrieve base offset in Y
+	STZ nb_ptr				; (3) clear offset, and we are ready!
 
 ; *** receive payload ***
 nb_rcv:
@@ -197,7 +198,7 @@ no_io:
 			STZ IO9kbd		; (4) just for good measure
 			AND #%10100000	; (2) mask relevant keys
 			CMP #%10100000	; (2) both SHIFT & SPACE?
-			BNE no_break	; (3/2) nope, just continue
+			BNE nb_cont		; (3/2) nope, just continue
 ;				JMP nb_error			; (3) PLACEHOLDER
 
 ; *****************************************************************************************************
@@ -232,7 +233,7 @@ lock:
 		BRA lock			; just press RST when transmission has ended!
 ; *****************************************************************************************************
 
-no_break:
+nb_cont:
 ; add some page feedback
 			PHY				; eeeek
 			JSR progress	; generic call
@@ -249,9 +250,9 @@ nb_nw:
 	LDY #<nb_rti
 	LDA #>nb_rti			; (2+2) set null interrupt vectors, just in case
 	STY fw_nmi
-	STY fw_isr
+	STY fw_irq
 	STA fw_nmi+1
-	STA fw_isr+1			; (3+3+3+3) all clear
+	STA fw_irq+1			; (3+3+3+3) all clear
 	LDA #1					; (2) this will enable IRQ generator
 	STA IOAie				; (4) turn off LED
 ;	BNE nb_exec				; (3) try executing, no need for BRA
@@ -275,6 +276,9 @@ not_cart:
 		STZ $774E
 		STZ $776E
 		STZ $778E
+#else
+	LDX #clrtype-msg		; preset offset
+	JSR sb_loop				; and print selected message	
 #endif
 		JMP nb_rdy			; (3) back to receiving mode
 not_data:
@@ -375,7 +379,7 @@ nb_irq:
 #ifdef	ALONE
 ; *** standard interrupt handlers ***
 irq:
-	JMP (fw_isr)
+	JMP (fw_irq)
 nmi:
 	JMP (fw_nmi)
 
@@ -431,7 +435,9 @@ autoreset:
 ; * feedback messages for CONIO *
 msg:						; base address
 banner:
-	.asc	"nanoBoot?", 1, 0			; standard banner
+	.asc	"nanoBoot?", 2, 14, 0		; standard banner
+clrtype:
+	.asc	15, ' ', 2, 14, 0		; clear previously displayed type
 error:
-	.asc	" ", 14, "FAIL!", 15, 7, 0	; error message
+	.asc	15, ' ', 14, "FAIL!", 15, 7, 0		; error message
 #endif

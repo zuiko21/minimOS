@@ -1,9 +1,9 @@
 ; Durango-X devcart SD multi-boot loader
 ; now with sidecar/fast SPI support
-; v2.1.4 with volume-into-FAT32 and Pocket support!
+; v2.1.5 with volume-into-FAT32, Pocket and nanoBoot support!
 ; (c) 2023-2024 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20240130-1650
+; last modified 20240505-1740
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware 
 ; add -DSCREEN for screenshots display capability
@@ -12,7 +12,7 @@
 
 #echo	DevCart @ $DFC0
 #echo	FastSPI @ $DF96-7, SPI ID=0...3
-#echo	volume-into-FAT32 & pX support!
+#echo	volume-into-FAT32, pX and nanoBoot support!
 
 ; SD interface definitions
 #define	SD_CLK		%00000001
@@ -159,7 +159,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"devCart/FastSPI multiboot"		; C-string with filename @ [8], max 220 chars
+	.asc	"devCart/FastSPI/nanoBoot multiboot"		; C-string with filename @ [8], max 220 chars
 #ifdef	SCREEN
 	.asc	" & image browser"
 #endif
@@ -178,10 +178,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$21C4			; 2.1f4		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$21C5			; 2.1f5		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$7440			; time, 14.34		%0111 0-100 010-0 0000
-	.word	$5837			; date, 2024/1/30	%0101 100-0 001-1 1110
+	.word	$8D00			; time, 17.40		%1000 1-101 000-0 0000
+	.word	$58A5			; date, 2024/5/5	%0101 100-0 101-0 0101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -1432,7 +1432,9 @@ switch_dev:
 	JSR disp_code
 ; before locking, try another device *** NEW AND IMPROVED
 	LDA dev_id
-		BEQ was_raspi
+	BNE not_raspi
+		JMP sd_main			; restart if switching device from RasPi (placeholder)
+not_raspi:
 	DEC dev_id				; check next device
 	BEQ no_spi				; ID=0 for RasPi
 	BPL next_dev			; or continue with next SPI
@@ -1443,9 +1445,7 @@ next_dev:
 	JMP vecload				; will get back to init procedure
 no_spi:
 ; here could come the Raspberry Pi module instead (nanoBoot)
-	BRK						; just lock with error LED
-was_raspi:
-	JMP sd_main				; restart if switching device from RasPi (placeholder)
+#include "dirty.s"
 
 ; ********************
 ; *** diverse data ***
@@ -1481,7 +1481,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " SD bootloader 2.1.4", 13, 13, 0
+	.asc	14,"Durango·X", 15, " bootloader 2.1.5", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1491,7 +1491,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.1f4
+#echo	2.1f5 + nanoBoot
 
 ; offset table for the above messages
 msg_ix:
