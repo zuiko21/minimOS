@@ -1,9 +1,9 @@
 ; nanoBoot v2 (w/ support for Durango Cartridge & Pocket)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240504-2248
+; last modified 20240505-1408
 
 ; add -DALONE for standalone version (otherwise module after multiboot.s)
-#echo	improved feedback, module ready
+#echo	just testing integration
 
 #ifdef ALONE
 	*		= $E000			; skip I/O, just in case
@@ -37,10 +37,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2041			; 2.0b1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2081			; 2.0RC1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$B600			; time, 22.48		%1011 0-110 000-0 0000
-	.word	$58A4			; date, 2024/5/4	%0101 100-0 101-0 0100
+	.word	$7100			; time, 14.08		%0111 0-001 000-0 0000
+	.word	$58A5			; date, 2024/5/5	%0101 100-0 101-0 0101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -63,7 +63,6 @@ nb_start:
 	LDX #$FF
 	TXS
 	LDA #%10110000			; *** Durango·X init, HIRES mode ***
-	STA IO8attr
 ; clear screen
 	LDX #>screen3			; standard screen start address
 	LDY #<screen3			; should be zero!
@@ -271,26 +270,24 @@ not_cart:
 	CMP #$4D				; (2) generic data?
 	BNE not_data			; (3/2)
 #ifdef	ALONE
-		STZ $770F			; (20) just clear detected type on screen
-		STZ $772F
-		STZ $774F
-		STZ $776F
-		STZ $778F
+		STZ $770E			; (20) just clear detected type on screen
+		STZ $772E
+		STZ $774E
+		STZ $776E
+		STZ $778E
 #endif
 		JMP nb_rdy			; (3) back to receiving mode
 not_data:
 	CMP #$4E				; (2) Pocket executable?
 	BNE nb_bad				; (3/2) if not, bad byte *** should NEVER happen ***
-; else, point to execution address in loaded file header
-		LDA nb_ex			; (2) start of header LSB
-		CLC
-		ADC #5				; (2+2) offset to execution address
-;		LDA #5
-		STA nb_ex			; (3) modify pointer (or just write #5 here, if page-aligned)
-		BCC nb_xnw			; (3/2+5) check MSB (not needed if using trick above)
-			INC nb_ex+1
-nb_xnw:
-		JMP (nb_ex)			; (6) actual execution pointer is now here
+; else, point to execution address in loaded file header EEEEEEK
+		LDY #5				; (2) execution address offset
+		LDA (nb_ex), Y		; (5) extract LSB from header
+		STA nb_ptr			; (3) reuse this pointer for final indirect jump
+		INY					; (2) go for MSB (offset 6)
+		LDA (nb_ex), Y		; (5) extract MSB from header
+		STA nb_ptr+1		; (3) indirect pointer is complete
+		JMP (nb_ptr)		; (6) actual execution pointer is *pointed* here
 nb_bad:
 	JMP nb_error
 
