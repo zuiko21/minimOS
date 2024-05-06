@@ -21,7 +21,7 @@
 	scrl	= $7800			; top position of scrolled text
 	ptr		= sysptr
 	src		= systmp
-	colour	= himem
+	colour	= posi-1
 	count	= posi
 	text	= test
 	colidx	= test+2
@@ -286,6 +286,7 @@ it_1:
 	LDX #$38
 	STX IO8mode
 ; display dots indicating how many times IRQ happened
+	LDX test				; eeeek
 	LDA #$01				; nice mid green value in all modes
 	STA $6FDF				; place index dot @32 eeeeeek
 	LDA #$0F				; nice white value in all modes
@@ -558,7 +559,7 @@ sc_loop:
 			LDA #62					; this is rightmost column
 			STA ptr					; offset is ready
 sg_pg:
-				STX ptr				; update row page
+				STX ptr+1			; update row page EEEEK
 				LDA glyph, Y		; get current glyph raster
 				ASL					; shift to the left
 				STA glyph, Y		; update
@@ -574,6 +575,12 @@ sg_cset:
 ; * end of base update *
 ; column is done, count until 8 are done, then reload next character and store glyph into buffer
 ; maybe changing colour somehow
+wait:
+				BIT IO8lf
+				BVS wait
+sync:
+				BIT IO8lf		; wait for vertical blanking
+				BVC sync
 			DEC count			; one less column (7...0)
 			BPL sc_column		; or go to next character, forever!
 		INC text				; next char in message
@@ -634,9 +641,9 @@ cpu_16:
 
 ; *** sorted colour table ***
 coltab:
-	.byt	$FF, $77, $33, $66, $22, $88, $CC, $99, $DD
-	.byt	$55, $11, $44, $CC, $99, $DD, $77, $33, $66
-	.byt	$22, $AA, $EE, $BB, 0
+	.byt	$FF, $77, $33, $66, $CC, $99, $DD
+	.byt	$55, $11, $CC, $99, $DD, $77, $33, $66
+	.byt	$AA, $EE, $BB, 0
 
 ; *** displayed text ***
 msg:
@@ -644,7 +651,7 @@ msg:
 	.asc	"65C02 @ 1.536-3.5 MHz... 32K RAM... 32K ROM in cartridge... "
 	.asc	"128x128/16 colour, or 256x256 mono video... 1-bit audio! * * *    "
 	.asc	"Designed in Almería by @zuiko21 at LaJaquería.org   "
-	.asc	"Shootout to @emiliollbb and @zerasul, plus all the folks at 6502.org    "
+	.asc	"Big thanks to @emiliollbb and @zerasul, plus all the folks at 6502.org    "
 	.asc	"* * *    P.S.: Learn to code in assembly!    * * *    ", 0
 
 ; BIG DATA perhaps best if page-aligned?
