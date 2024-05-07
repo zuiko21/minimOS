@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240508-0010
+; Last modified 20240508-0046
 
 ; ****************************
 ; *** standard definitions ***
@@ -21,6 +21,7 @@
 	scrl	= $7800			; top position of scrolled text
 	ptr		= sysptr
 	src		= systmp
+	sh_pt	= posi-3
 	colour	= posi-1
 	count	= posi
 	text	= test
@@ -494,56 +495,46 @@ dth_sw:
 	BNE d_rpt
 
 ; make copies of Durango·X logo into SMPTE screen, both normal and shifted by one pixel
-; regular copy
+; both copies integrated!
 	LDY #<screen1			; actually 0
-	LDX #>screen1			; $20
+	LDA #>screen1			; $20
 	STY ptr
-	STX ptr+1				; set destination pointer
+	STA ptr+1				; set destination pointer
+	CLC
+	ADC #4					; four pages below (1 KB, $24)
+	STY sh_pt
+	STA sh_pt+1				; pointer to shifted copy
 ;	LDY #<screen3
 	LDX #>screen3
 	STY src					; origin LSB
+	STZ s_old
 cp_pg:
 ;		LDY #0
 		STX src+1			; set origin pointer in full
 cp_loop:
 			LDA (src), Y
 			STA (ptr), Y	; raw copy
-			INY
-			BNE cp_loop
-		INC ptr+1			; next page
-		INX
-		CPX #$64			; logo size is four pages (assume screen3 = $6000)
-		BNE cp_pg
-; now copy below that, one pixel shifted
-;	LDY #<screen3
-	LDX #>screen3
-	STY src					; origin LSB
-	STY s_old				; reset extracted nybbles
-cs_pg:
-;		LDY #0
-		STX src+1			; set origin pointer in full
-cs_loop:
 			STZ s_new
-			LDA (src), Y
+			LSR				; extract rightmost bit...
+			ROR s_new		; ...and insert here
 			LSR
 			ROR s_new
 			LSR
 			ROR s_new
 			LSR
-			ROR s_new
-			LSR				; should do ROR as well *** TBD
 			ROR s_new
 			ORA s_old
-			STA (ptr), Y	; MSB plus previous LSB
+			STA (sh_pt), Y	; MSB plus previous LSB
 			LDA s_new
 			STA s_old		; cycle extracted nybble
 			INY
-			BNE cs_loop
+			BNE cp_loop
 		INC ptr+1			; next page
+		INC sh_pt+1			; eeeeek
 		INX
 		CPX #$64			; logo size is four pages (assume screen3 = $6000)
-		BNE cs_pg
-.byt$cb
+		BNE cp_pg
+
 	LDA #$38
 	STA IO8mode				; standard screen for scroller
 ;TEST CODE
