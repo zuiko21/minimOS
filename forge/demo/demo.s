@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240507-1703
+; Last modified 20240507-1742
 
 ; ****************************
 ; *** standard definitions ***
@@ -24,6 +24,7 @@
 	colour	= posi-1
 	count	= posi
 	text	= test
+	sqk_par	= test
 	colidx	= test+2
 	glyph	= colidx+1
 ; ****************************
@@ -414,8 +415,8 @@ ok_l:
 ; * play 1 kHz for a couple of seconds (adjusted for 1.536 MHz) *
 ; toggle every 500µs means 768 cycles (875 for v2)
 	LDY #0					; reset timer
-	LDA #16
-	STA count				; will do 16x ~ 2 s
+	LDA #32
+	STA count				; will do 16x ~ 4 s
 bp_rpt:
 		NOP					; (2) for timing accuracy
 #ifdef	V2
@@ -442,7 +443,53 @@ bp_loop:
 	STY ptr
 	STX ptr+1				; set destination pointer
 	JSR rle_loop			; decompress picture off-screen
-; wait some time, maybe with some sound *** TBD
+; wait some time, maybe with pacman death sound
+; first sqweak
+	LDA #99					; initial freq
+	LDY #88					; top freq
+	LDX #36					; length
+	JSR squeak				; actual routine
+; second sqweak
+	LDA #118
+	LDY #105
+	LDX #30
+	JSR squeak
+; third sqweak
+	LDA #132
+	LDY #117
+	LDX #27
+	JSR squeak
+; fourth sqweak
+	LDA #148
+	LDY #132
+	LDX #24
+	JSR squeak
+; fifth sqweak
+	LDA #176
+	LDY #157
+	LDX #20
+	JSR squeak
+; last two sweeps
+	LDA #2
+d_rpt:
+	PHA						; iteration
+	LDA #255
+	STA count
+dth_sw:
+		LDX #10
+		JSR m_beep
+		LDA count
+		SEC
+		SBC #24
+		STA count
+		CMP #15
+		BCS dth_sw
+	LDA #4
+;	JSR ms20				; ~80 ms delay, no longer 75
+; next iteration
+	PLA
+	DEC						; *** CMOS ***
+	BNE d_rpt
 
 ; make copies of Durango·X logo into SMPTE screen, both normal and shifted by one pixel
 ; regular copy
@@ -487,8 +534,9 @@ cs_loop:
 		INX
 		CPX #$64			; logo size is four pages (assume screen3 = $6000)
 		BNE cs_pg
-
-
+.byt$cb
+	LDA #$38
+	STA IO8mode				; standard screen for scroller
 ;TEST CODE
 	JMP scroller
 
@@ -636,23 +684,21 @@ sc_loop:
 				INX
 				BPL sc_pg
 ; now print next column of pixels from glyph at the rightmost useable column
-			LDY #0					; reset glyph buffer index
-			LDX #>scrl				; back to top row
+			LDX #0					; reset glyph buffer index
+			LDY #>scrl				; back to top row
 			LDA #62					; this is rightmost column
 			STA ptr					; offset is ready
 sg_pg:
-				STX ptr+1			; update row page EEEEK
-				LDA glyph, Y		; get current glyph raster
-				ASL					; shift to the left
-				STA glyph, Y		; update
+				STY ptr+1			; update row page EEEEK
+				ASL glyph, X		; shift current glyph raster
 				LDA #0				; black background...
 				BCC sg_cset			; ...will stay if no pixel there
 					LDA colour		; otherwise get current colour
 sg_cset:
 				STA (ptr)			; set big pixel (CMOS only)
-				INX					; next page on screen
-				INY					; next raster on glyph
-				CPY #8				; until the end
+				INY					; next page on screen
+				INX					; next raster on glyph
+				CPX #8				; until the end
 				BNE sg_pg
 ; * end of base update *
 ; column is done, count until 8 are done, then reload next character and store glyph into buffer
@@ -670,6 +716,53 @@ sync:
 		INC text+1
 no_wrap:
 	JMP sc_char
+
+; *** beeping routine ***
+; *** X = length, A = freq. ***
+; *** X = 2*cycles          ***
+; *** tcyc = 16 A + 20      ***
+; ***     @1.536 MHz        ***
+m_beep:
+mb_l:
+		TAY					; determines frequency (2)
+		STX IOBeep			; send X's LSB to beeper (4)
+mb_zi:
+			STY himem		; small delay for 1.536 MHz! (3)
+			DEY				; count pulse length (y*2)
+			BNE mb_zi		; stay this way for a while (y*3-1)
+		DEX					; toggles even/odd number (2)
+		BNE mb_l			; new half cycle (3)
+	STX IOBeep				; turn off the beeper!
+	RTS
+
+; *** squeak sound ***
+; A=initial period, Y=final period, X=length
+; uses m_beep
+squeak:
+	STA sqk_par+1
+	STA sqk_par				; and current
+	STY sqk_par+2
+	STX count
+sw_up:
+		LDX count
+		JSR m_beep
+		LDA sqk_par
+		SEC
+		SBC #3
+		STA sqk_par
+		CMP sqk_par+2
+		BCS sw_up
+sw_down:
+		LDX count
+		JSR m_beep
+		LDA sqk_par
+		CLC
+		ADC #3
+		STA sqk_par
+		CMP sqk_par+1
+		BCC sw_down
+	RTS
+
 
 ; ********************
 ; *** *** data *** ***
