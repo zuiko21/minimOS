@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240507-1742
+; Last modified 20240508-0010
 
 ; ****************************
 ; *** standard definitions ***
@@ -516,18 +516,25 @@ cp_loop:
 ;	LDY #<screen3
 	LDX #>screen3
 	STY src					; origin LSB
+	STY s_new
+	STY s_old				; reset extracted nybbles
 cs_pg:
 ;		LDY #0
 		STX src+1			; set origin pointer in full
 cs_loop:
 			LDA (src), Y
 			LSR
+			ROR s_new
 			LSR
+			ROR s_new
 			LSR
+			ROR s_new
 			LSR				; should do ROR as well *** TBD
-
-
-			STA (ptr), Y	; ???
+			ROR s_new
+			ORA s_old
+			STA (ptr), Y	; MSB plus previous LSB
+			LDA s_new
+			STA s_old		; cycle extracted nybble
 			INY
 			BNE cs_loop
 		INC ptr+1			; next page
