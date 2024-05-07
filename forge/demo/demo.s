@@ -27,6 +27,8 @@
 	sqk_par	= test
 	colidx	= test+2
 	glyph	= colidx+1
+	s_new	= posi
+	s_old	= posi-1
 ; ****************************
 
 * = $8000					; this is gonna be big...
@@ -516,12 +518,12 @@ cp_loop:
 ;	LDY #<screen3
 	LDX #>screen3
 	STY src					; origin LSB
-	STY s_new
 	STY s_old				; reset extracted nybbles
 cs_pg:
 ;		LDY #0
 		STX src+1			; set origin pointer in full
 cs_loop:
+			STZ s_new
 			LDA (src), Y
 			LSR
 			ROR s_new
