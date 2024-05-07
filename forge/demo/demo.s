@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240507-0028
+; Last modified 20240507-1703
 
 ; ****************************
 ; *** standard definitions ***
@@ -52,10 +52,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1003			; 1.0a3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1004			; 1.0a4		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$B200			; time, 22.16		1011 0-010 000-0 0000
+	.word	$8800			; time, 17.00		1000 1-000 000-0 0000
 	.word	$58A6			; date, 2024/5/6	0101 100-0 101-0 0110
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -407,6 +407,88 @@ ok_l:
 	STX ptr+1				; set destination pointer
 	JSR rle_loop			; decompress picture off-screen
 
+; do some glitching effects *** TBD
+
+	LDA #%00011000			; screen 1
+	STA IO8mode				; SMPTE is visible
+; * play 1 kHz for a couple of seconds (adjusted for 1.536 MHz) *
+; toggle every 500µs means 768 cycles (875 for v2)
+	LDY #0					; reset timer
+	LDA #16
+	STA count				; will do 16x ~ 2 s
+bp_rpt:
+		NOP					; (2) for timing accuracy
+#ifdef	V2
+		NOP					; (2) v2 only
+		LDX #172			; (2) v2 needs 172, as 172x5+15 = 875
+#else
+		LDX #151			; (2) 151x5+13 = 768!
+#endif
+bp_loop:
+			DEX
+			BNE bp_loop		; 5t per iteration (needs ~153 of them)
+		INY					; (2)
+		STY IOBeep			; (4)
+		BNE bp_rpt			; (mostly 3)
+	DEC count
+		BNE bp_rpt
+; decompress 'just kidding' screen over current one
+	LDY #<kidding
+	LDX #>kidding
+	STY src
+	STX src+1				; set origin pointer
+	LDY #<screen1			; actually 0
+	LDX #>screen1			; $20
+	STY ptr
+	STX ptr+1				; set destination pointer
+	JSR rle_loop			; decompress picture off-screen
+; wait some time, maybe with some sound *** TBD
+
+; make copies of Durango·X logo into SMPTE screen, both normal and shifted by one pixel
+; regular copy
+	LDY #<screen1			; actually 0
+	LDX #>screen1			; $20
+	STY ptr
+	STX ptr+1				; set destination pointer
+;	LDY #<screen3
+	LDX #>screen3
+	STY src					; origin LSB
+cp_pg:
+;		LDY #0
+		STX src+1			; set origin pointer in full
+cp_loop:
+			LDA (src), Y
+			STA (ptr), Y	; raw copy
+			INY
+			BNE cp_loop
+		INC ptr+1			; next page
+		INX
+		CPX #$64			; logo size is four pages (assume screen3 = $6000)
+		BNE cp_pg
+; now copy below that, one pixel shifted
+;	LDY #<screen3
+	LDX #>screen3
+	STY src					; origin LSB
+cs_pg:
+;		LDY #0
+		STX src+1			; set origin pointer in full
+cs_loop:
+			LDA (src), Y
+			LSR
+			LSR
+			LSR
+			LSR				; should do ROR as well *** TBD
+
+
+			STA (ptr), Y	; ???
+			INY
+			BNE cs_loop
+		INC ptr+1			; next page
+		INX
+		CPX #$64			; logo size is four pages (assume screen3 = $6000)
+		BNE cs_pg
+
+
 ;TEST CODE
 	JMP scroller
 
@@ -536,7 +618,7 @@ sc_column:
 ; if colour should change every column, do it here
 			LDY #<scrl
 			LDX #>scrl
-			STY ptr
+			STY ptr					; destination LSB is set
 			INY
 			INY						; source is 4 pixels (2 bytes) to the right
 			STY src					; LSBs are set
@@ -653,6 +735,7 @@ msg:
 	.asc	"Designed in Almería by @zuiko21 at LaJaquería.org   "
 	.asc	"Big thanks to @emiliollbb and @zerasul, plus all the folks at 6502.org    "
 	.asc	"* * *    P.S.: Learn to code in assembly!    * * *    ", 0
+end:
 
 ; BIG DATA perhaps best if page-aligned?
 
