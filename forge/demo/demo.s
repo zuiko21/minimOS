@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240508-0046
+; Last modified 20240508-1048
 
 ; ****************************
 ; *** standard definitions ***
@@ -16,6 +16,7 @@
 	IOAen	= $DFA0
 	IOBeep	= $DFB0
 	screen1	= $2000
+	scr_shf	= $2400			; shifted logo address
 	screen2	= $4000
 	screen3	= $6000
 	scrl	= $7800			; top position of scrolled text
@@ -500,8 +501,8 @@ dth_sw:
 	LDA #>screen1			; $20
 	STY ptr
 	STA ptr+1				; set destination pointer
-	CLC
-	ADC #4					; four pages below (1 KB, $24)
+;	LDY #<scr_shf			; actually 0 as well
+	LDA #>scr_shf			; four pages below (1 KB, $24)
 	STY sh_pt
 	STA sh_pt+1				; pointer to shifted copy
 ;	LDY #<screen3
@@ -538,7 +539,8 @@ cp_loop:
 	LDA #$38
 	STA IO8mode				; standard screen for scroller
 ;TEST CODE
-	JMP scroller
+	JMP shifter
+;	JMP scroller
 
 ; ********************************************
 ; *** miscelaneous stuff, may be elsewhere ***
@@ -716,6 +718,32 @@ sync:
 		INC text+1
 no_wrap:
 	JMP sc_char
+
+; *** whole logo shifter ***
+shifter:
+	LDX sh_ix				; get shift index
+	LDA shift, X			; positive means shift to the right (expected -32...+32)
+	LDY #<screen1			; always zero
+	BIT #1					; check even/odd (CMOS)
+	BEQ not_half			; if even, whole byte shifting
+;		LDY #<scr_shf		; actually always the same as screen1
+		LDX #>scr_shf
+		BNE org_ok
+not_half:
+	LDX #>screen1			; original position of non-shifted copy
+org_ok:
+	STY src
+	STX src+1				; set origin pointer accordingly
+	PHA						; keep offset for later!
+	CMP #0					; recheck sign
+	BMI s_left				; negative means shift to the left
+; shift right
+		
+
+s_left:
+; shift left
+
+; *** *** sound routines *** ***
 
 ; *** beeping routine ***
 ; *** X = length, A = freq. ***
