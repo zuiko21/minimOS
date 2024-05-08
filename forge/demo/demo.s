@@ -1,16 +1,12 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240508-1048
+; Last modified 20240508-1648
 
 ; ****************************
 ; *** standard definitions ***
 	fw_irq	= $0200
 	fw_nmi	= $0202
-	test	= 0
-	posi	= $FB			; %11111011
-	sysptr	= $FC			; %11111100
-	systmp	= $FE			; %11111101
-	himem	= $FF			; %11111111
+
 	IO8mode	= $DF80
 	IO8lf	= $DF88			; EEEEEEEK
 	IOAen	= $DFA0
@@ -20,17 +16,25 @@
 	screen2	= $4000
 	screen3	= $6000
 	scrl	= $7800			; top position of scrolled text
-	ptr		= sysptr
-	src		= systmp
-	sh_pt	= posi-3
-	colour	= posi-1
-	count	= posi
-	text	= test
-	sqk_par	= test
-	colidx	= test+2
-	glyph	= colidx+1
-	s_new	= posi
-	s_old	= posi-1
+; *** memory usage ***
+	test	= 0
+	himem	= test+2
+	src		= himem+1
+	ptr		= src+2
+	posi	= ptr+2
+	swp_ct	= posi+1
+	temp	= swp_ct+1
+	count	= temp+1
+	sh_pt	= count+1
+	s_old	= sh_pt+2
+	s_new	= s_old+1
+	colidx	= s_new+1
+	text	= colidx+1
+	sh_ix	= text+2
+	sqk_par	= sh_ix+1
+	glyph	= sqk_par+3
+	colour	= glyph+8
+	END	= colour+1
 ; ****************************
 
 * = $8000					; this is gonna be big...
@@ -57,11 +61,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1004			; 1.0a4		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-
+	.word	$1005			; 1.0a5		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+#echo $1005
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$8800			; time, 17.00		1000 1-000 000-0 0000
-	.word	$58A6			; date, 2024/5/6	0101 100-0 101-0 0110
+	.word	$58A8			; date, 2024/5/8	0101 100-0 101-0 1000
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -306,7 +310,7 @@ it_2:
 ; ***************************
 
 ; sweep sound, print OK banner and lock
-	STX test				; sweep counter
+	STX swp_ct				; sweep counter
 	TXA						; X known to be zero, again
 sweep:
 		LDX #8				; sound length in half-cycles
@@ -314,16 +318,16 @@ beep_l:
 			TAY				; determines frequency (2)
 			STX IOBeep		; send X's LSB to beeper (4)
 rb_zi:
-				STY test+1	; small delay for 1.536 MHz! (3)
+				STY swp_ct+1; small delay for 1.536 MHz! (3)
 				DEY			; count pulse length (y*2)
 				BNE rb_zi	; stay this way for a while (y*3-1)
 			DEX				; toggles even/odd number (2)
 			BNE beep_l		; new half cycle (3)
 		STX IOBeep			; turn off the beeper!
-		LDA test			; period goes down, freq. goes up
+		LDA swp_ct			; period goes down, freq. goes up
 		SEC
 		SBC #4				; frequency change rate
-		STA test
+		STA swp_ct
 		CMP #16				; upper limit
 		BCS sweep
 ; sound done, may check CPU type too (from David Empson work)
@@ -352,10 +356,10 @@ cck_set:
 	ASL
 	ASL
 	ASL			; times 8
-	STA test
+	STA temp
 	ASL
 	ASL			; times 32
-	ADC test	; plus 8x (C was clear), it's times 40
+	ADC temp	; plus 8x (C was clear), it's times 40
 	ADC #7		; base offset (C should be clear too)
 	TAY			; reading index
 cpu_loop:
@@ -755,7 +759,7 @@ mb_l:
 		TAY					; determines frequency (2)
 		STX IOBeep			; send X's LSB to beeper (4)
 mb_zi:
-			STY himem		; small delay for 1.536 MHz! (3)
+			STY temp		; small delay for 1.536 MHz! (3)
 			DEY				; count pulse length (y*2)
 			BNE mb_zi		; stay this way for a while (y*3-1)
 		DEX					; toggles even/odd number (2)
@@ -847,6 +851,10 @@ coltab:
 	.byt	$FF, $77, $33, $66, $CC, $99, $DD
 	.byt	$55, $11, $CC, $99, $DD, $77, $33, $66
 	.byt	$AA, $EE, $BB, 0
+
+; *** trigonometry tables ***
+shift:
+wave:
 
 ; *** displayed text ***
 msg:
