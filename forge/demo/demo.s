@@ -539,12 +539,13 @@ cp_loop:
 		INX
 		CPX #$64			; logo size is four pages (assume screen3 = $6000)
 		BNE cp_pg
+.byt$cb
 
 	LDA #$38
 	STA IO8mode				; standard screen for scroller
 ;TEST CODE
-	JMP shifter
-;	JMP scroller
+;	JMP shifter
+	JMP scroller
 
 ; ********************************************
 ; *** miscelaneous stuff, may be elsewhere ***
