@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240509-1639
+; Last modified 20240509-1758
 
 ; ****************************
 ; *** standard definitions ***
@@ -64,10 +64,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1006			; 1.0a7		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1007			; 1.0a7		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 #echo $1007
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8800			; time, 15.00		1000 1-000 000-0 0000
+	.word	$8800			; time, 17.00		1000 1-000 000-0 0000
 	.word	$58A9			; date, 2024/5/9	0101 100-0 101-0 1001
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -553,10 +553,7 @@ cp_loop:
 	STY text
 	STX text+1				; restore pointer
 ; prepare animation
-	LDY #<screen1
-	LDX #>screen1
-	STY base
-	STX base+1				; set original pointer *** PLACEHOLDER
+	STZ sh_ix				; restore animation cursor
 ; prepare sound *** TBD
 
 ; set interrupt task!
@@ -779,6 +776,7 @@ sg_cset:
 shifter:
 	LDA #>screen3
 	STA ptr+1				; set destination MSB
+	STA base+1
 	LDX sh_ix				; get shift index
 	LDA shift, X			; positive means shift to the right (expected -32...+32)
 	CMP #128				; special case, end of list
@@ -813,12 +811,12 @@ sr_l:
 		LDY shift, X		; retrieve offset (NOT from ptr)
 		LDA ptr
 		AND #%11000000		; reset offset within raster!
-		STA ptr
+		STA base			; but on a different pointer!
 		LDA #0				; will clear leftmost pixels
 		DEY					; at least one before offset
 		BMI no_rc			; if anything to be cleared
 sr_c:
-			STA (ptr), Y
+			STA (base), Y
 			DEY
 			BPL sr_c		; complete clear
 no_rc:
@@ -828,10 +826,11 @@ no_rc:
 		STA src
 		BCC rr_nw
 			INC src+1
+			INC base+1		; may work here, too
 rr_nw:
 		LDA ptr
 		CLC
-		ADC #64				; next raster in destination (fixed address)
+		ADC #64				; next raster in destination
 		STA ptr
 		LDA ptr+1
 		ADC #0				; propagate carry (and already in A)
@@ -949,6 +948,9 @@ coltab:
 
 ; *** trigonometry tables ***
 shift:
+	.byt	0, 1, 2, 4, 6, 9, 12, 16, 20, 23, 26, 28, 30, 31, 32, 32
+	.byt	31, 30, 28, 26, 23, 20, 16, 12, 9, 6, 4, 2, 1, 0
+	.byt	128	;***end of list
 wave:
 
 ; *** displayed text ***
