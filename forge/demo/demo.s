@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240509-1517
+; Last modified 20240509-1551
 
 ; ****************************
 ; *** standard definitions ***
@@ -34,7 +34,8 @@
 	sqk_par	= sh_ix+1
 	glyph	= sqk_par+3
 	colour	= glyph+8
-	END	= colour+1
+	base	= colour+1		; temporary pointer
+	END		= base+2
 ; ****************************
 
 * = $8000					; this is gonna be big...
@@ -61,8 +62,8 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1005			; 1.0a6		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $1005
+	.word	$1006			; 1.0a6		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+#echo $1006cpu
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$7800			; time, 15.00		0111 1-000 000-0 0000
 	.word	$58A9			; date, 2024/5/9	0101 100-0 101-0 1001
@@ -549,19 +550,25 @@ cp_loop:
 	LDX #>(msg-1)			; back to text start, note points to byte before as always loads next char
 	STY text
 	STX text+1				; restore pointer
-; prepare animation and sound *** TBD
+; prepare animation
+	LDY #<screen1
+	LDX #>screen1
+	STY base
+	STX base+1				; set original pointer *** PLACEHOLDER
+; prepare sound *** TBD
 
 ; **************************
 ; *** multithreaded loop ***
 ; **************************
 wait:
-			BIT IO8lf
-			BVS wait
-sync:
 			BIT IO8lf		; wait for vertical blanking
-			BVC sync
+			BVC wait
+lda#$78;inverse
+sta IO8mode
 		JSR scroller		; execute this thread
-;		JSR shifter			; and animation as well
+		JSR shifter			; and animation as well
+lda#$38;normal
+sta IO8mode
 		BRA wait			; forever!
 
 ; ********************************************
@@ -737,6 +744,25 @@ sg_cset:
 
 ; *** whole logo shifter ***
 shifter:
+	INC base				; placeholder
+	LDY #<screen3
+	LDX #>screen3
+	STZ ptr					; LSB is ready
+sh_pg:
+		STX ptr+1
+sh_cp:
+			LDA (base), Y
+			STA (ptr), Y
+			INY
+			BNE sh_cp
+		INC base+1
+		INX
+		CPX #$64
+		BNE sh_pg
+	LDA #>screen1
+	STA base+1
+	RTS
+; REAL CODE*** TBD
 	LDX sh_ix				; get shift index
 	LDA shift, X			; positive means shift to the right (expected -32...+32)
 	LDY #<screen1			; always zero
