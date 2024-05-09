@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240509-1551
+; Last modified 20240509-1639
 
 ; ****************************
 ; *** standard definitions ***
@@ -35,7 +35,9 @@
 	glyph	= sqk_par+3
 	colour	= glyph+8
 	base	= colour+1		; temporary pointer
-	END		= base+2
+	irq_cnt	= base+2
+	sh_of	= irq_cnt+1
+	END	= sh_of+1
 ; ****************************
 
 * = $8000					; this is gonna be big...
@@ -62,10 +64,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1006			; 1.0a6		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $1006cpu
+	.word	$1006			; 1.0a7		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+#echo $1007
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$7800			; time, 15.00		0111 1-000 000-0 0000
+	.word	$8800			; time, 15.00		1000 1-000 000-0 0000
 	.word	$58A9			; date, 2024/5/9	0101 100-0 101-0 1001
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -557,6 +559,13 @@ cp_loop:
 	STX base+1				; set original pointer *** PLACEHOLDER
 ; prepare sound *** TBD
 
+; set interrupt task!
+	LDY #<isr2
+	LDX #>isr2				; alternative task address
+	STY fw_irq
+	STX fw_irq+1
+	CLI						; enable it!
+
 ; **************************
 ; *** multithreaded loop ***
 ; **************************
@@ -588,6 +597,30 @@ isr:
 	NOP
 	NOP
 exit:
+	RTI
+
+; *** final ISR ***
+isr2:
+	PHA
+	DEC irq_cnt				; one less to go
+	BNE do_isr				; if not each 5, do regular stuff
+		LDA IO8mode
+		AND #%11100000			; else will switch into screen2
+		ORA #%00001000			; RGM mode
+		STA IO8mode
+		LDA #5				; next screen swap will be 5 IRQs away
+		STA irq_cnt
+do_isr:
+; regular task *** before a sound player is made, take some delay
+i_delay:
+		INC
+		BNE i_delay
+; restore things
+	LDA IO8mode
+	AND #%11000000			; will switch back into screen3
+	ORA #%00111000			; RGB mode
+	STA IO8mode
+	PLA
 	RTI
 
 ; *** delay routine *** (may be elsewhere)
@@ -744,44 +777,68 @@ sg_cset:
 
 ; *** whole logo shifter ***
 shifter:
-	INC base				; placeholder
-	LDY #<screen3
-	LDX #>screen3
-	STZ ptr					; LSB is ready
-sh_pg:
-		STX ptr+1
-sh_cp:
-			LDA (base), Y
-			STA (ptr), Y
-			INY
-			BNE sh_cp
-		INC base+1
-		INX
-		CPX #$64
-		BNE sh_pg
-	LDA #>screen1
-	STA base+1
-	RTS
-; REAL CODE*** TBD
+	LDA #>screen3
+	STA ptr+1				; set destination MSB
 	LDX sh_ix				; get shift index
 	LDA shift, X			; positive means shift to the right (expected -32...+32)
-	LDY #<screen1			; always zero
-	BIT #1					; check even/odd (CMOS)
+	CMP #128				; special case, end of list
+	BNE do_shift
+		STZ sh_ix
+		BRA shifter			; roll back, PLACEHOLDER
+do_shift:
+	LSR						; check even/odd (destructive)
 	BEQ not_half			; if even, whole byte shifting
-;		LDY #<scr_shf		; actually always the same as screen1
-		LDX #>scr_shf
+		LDY #>scr_shf
 		BNE org_ok
 not_half:
-	LDX #>screen1			; original position of non-shifted copy
+	LDY #>screen1			; original position of non-shifted copy
 org_ok:
-	STY src
-	STX src+1				; set origin pointer accordingly
-	PHA						; keep offset for later!
-	CMP #0					; recheck sign
+	STZ src					; assume always zero!
+	STY src+1				; set origin pointer accordingly
+	LDA shift, X			; recheck offset (worth it)
 	BMI s_left				; negative means shift to the left
 ; shift right
-		
-
+		STA ptr				; set destination offset
+		EOR #$FF			; 1's complement
+		SEC					; looking for 2's complement
+		ADC #64				; bytes per raster-offset
+		STA sh_of			; last index
+sr_ras:
+		LDY sh_of			; will be retrieved once and again
+sr_l:
+			LDA (src), Y	; get original
+			STA (ptr), Y	; store with offset
+			DEY
+			BPL sr_l		; down to index 0
+		LDY shift, X		; retrieve offset (NOT from ptr)
+		LDA ptr
+		AND #%11000000		; reset offset within raster!
+		STA ptr
+		LDA #0				; will clear leftmost pixels
+		DEY					; at least one before offset
+		BMI no_rc			; if anything to be cleared
+sr_c:
+			STA (ptr), Y
+			DEY
+			BPL sr_c		; complete clear
+no_rc:
+		LDA src
+		CLC
+		ADC #64				; next raster in origin
+		STA src
+		BCC rr_nw
+			INC src+1
+rr_nw:
+		LDA ptr
+		CLC
+		ADC #64				; next raster in destination (fixed address)
+		STA ptr
+		LDA ptr+1
+		ADC #0				; propagate carry (and already in A)
+		STA ptr+1
+		CMP #$64			; end of logo?
+		BNE sr_ras
+	RTS
 s_left:
 ; shift left
 
