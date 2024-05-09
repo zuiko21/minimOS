@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240508-1648
+; Last modified 20240509-1517
 
 ; ****************************
 ; *** standard definitions ***
@@ -61,11 +61,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1005			; 1.0a5		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1005			; 1.0a6		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 #echo $1005
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8800			; time, 17.00		1000 1-000 000-0 0000
-	.word	$58A8			; date, 2024/5/8	0101 100-0 101-0 1000
+	.word	$7800			; time, 15.00		0111 1-000 000-0 0000
+	.word	$58A9			; date, 2024/5/9	0101 100-0 101-0 1001
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -539,13 +539,30 @@ cp_loop:
 		INX
 		CPX #$64			; logo size is four pages (assume screen3 = $6000)
 		BNE cp_pg
-.byt$cb
-
+; *** get ready to launch concurrent tasks ***
 	LDA #$38
 	STA IO8mode				; standard screen for scroller
-;TEST CODE
-;	JMP shifter
-	JMP scroller
+; prepare text scroller
+	STZ colidx				; reset colour index
+	STZ count				; will trigger character load
+	LDY #<(msg-1)
+	LDX #>(msg-1)			; back to text start, note points to byte before as always loads next char
+	STY text
+	STX text+1				; restore pointer
+; prepare animation and sound *** TBD
+
+; **************************
+; *** multithreaded loop ***
+; **************************
+wait:
+			BIT IO8lf
+			BVS wait
+sync:
+			BIT IO8lf		; wait for vertical blanking
+			BVC sync
+		JSR scroller		; execute this thread
+;		JSR shifter			; and animation as well
+		BRA wait			; forever!
 
 ; ********************************************
 ; *** miscelaneous stuff, may be elsewhere ***
@@ -623,18 +640,23 @@ rle_next:
 rle_exit:
 	RTS
 
-; *** text scroller ***
+; *** text scroller *** multithreaded
 scroller:
-	STZ colidx				; reset colour index
-rst_text:
-	LDY #<msg
-	LDX #>msg				; back to text start
-	STY text
-	STX text+1				; restore pointer
+	LDA count				; check shiftings counter
+	BPL sc_column			; if still shifting one char, continue with it
+		INC text			; otherwise, next char in message
+			BNE sc_char
+		INC text+1
 sc_char:
 ; get char from text
 		LDA (text)				; get character to be displayed (CMOS only)
-	BEQ rst_text				; restart text if NUL
+		BNE do_text				; restart text if NUL
+			LDY #<msg
+			LDX #>msg			; back to text start
+			STY text
+			STX text+1			; restore pointer
+			LDA (text)			; and get first char, no big deal
+do_text:
 ; compute glyph address
 		STZ src+1				; will be shifted before adding font base address
 		ASL
@@ -671,58 +693,47 @@ not_black:
 ; displace 4 pixels (2 bytes) to the left on selected lines (every page start)
 sc_column:
 ; if colour should change every column, do it here
-			LDY #<scrl
-			LDX #>scrl
-			STY ptr					; destination LSB is set
-			INY
-			INY						; source is 4 pixels (2 bytes) to the right
-			STY src					; LSBs are set
+	LDY #<scrl
+	LDX #>scrl
+	STY ptr					; destination LSB is set
+	INY
+	INY						; source is 4 pixels (2 bytes) to the right
+	STY src					; LSBs are set
 sc_pg:
-				STX ptr+1
-				STX src+1			; MSBs are set and updated
-				LDY #0
+		STX ptr+1
+		STX src+1			; MSBs are set and updated
+		LDY #0
 sc_loop:
-					LDA (src), Y
-					STA (ptr), Y	; copy active byte
-					INY
-					INY				; every two pixels
-					CPY #62			; no more to be scrolled?
-					BNE sc_loop
-				INX
-				BPL sc_pg
+			LDA (src), Y
+			STA (ptr), Y	; copy active byte
+			INY
+			INY				; every two pixels
+			CPY #62			; no more to be scrolled?
+			BNE sc_loop
+		INX
+		BPL sc_pg
 ; now print next column of pixels from glyph at the rightmost useable column
-			LDX #0					; reset glyph buffer index
-			LDY #>scrl				; back to top row
-			LDA #62					; this is rightmost column
-			STA ptr					; offset is ready
+	LDX #0					; reset glyph buffer index
+	LDY #>scrl				; back to top row
+	LDA #62					; this is rightmost column
+	STA ptr					; offset is ready
 sg_pg:
-				STY ptr+1			; update row page EEEEK
-				ASL glyph, X		; shift current glyph raster
-				LDA #0				; black background...
-				BCC sg_cset			; ...will stay if no pixel there
-					LDA colour		; otherwise get current colour
+		STY ptr+1			; update row page EEEEK
+		ASL glyph, X		; shift current glyph raster
+		LDA #0				; black background...
+		BCC sg_cset			; ...will stay if no pixel there
+			LDA colour		; otherwise get current colour
 sg_cset:
-				STA (ptr)			; set big pixel (CMOS only)
-				INY					; next page on screen
-				INX					; next raster on glyph
-				CPX #8				; until the end
-				BNE sg_pg
+		STA (ptr)			; set big pixel (CMOS only)
+		INY					; next page on screen
+		INX					; next raster on glyph
+		CPX #8				; until the end
+		BNE sg_pg
 ; * end of base update *
 ; column is done, count until 8 are done, then reload next character and store glyph into buffer
 ; maybe changing colour somehow
-wait:
-				BIT IO8lf
-				BVS wait
-sync:
-				BIT IO8lf		; wait for vertical blanking
-				BVC sync
-			DEC count			; one less column (7...0)
-			BPL sc_column		; or go to next character, forever!
-		INC text				; next char in message
-	BNE no_wrap
-		INC text+1
-no_wrap:
-	JMP sc_char
+	DEC count				; one less column (7...0)
+	RTS
 
 ; *** whole logo shifter ***
 shifter:
