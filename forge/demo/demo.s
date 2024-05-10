@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240510-1816
+; Last modified 20240510-1840
 
 ; ****************************
 ; *** standard definitions ***
@@ -67,7 +67,7 @@ rom_start:
 	.word	$1008			; 1.0a8		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 #echo $1008
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$9200			; time, 18.16		1001 0-010 000-0 0000
+	.word	$9500			; time, 18.40		1001 0-101 000-0 0000
 	.word	$58AA			; date, 2024/5/10	0101 100-0 101-0 1010
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -367,15 +367,15 @@ cck_set:
 	TAY			; reading index
 cpu_loop:
 		LDA cpu_n, Y
-		STA $7400, X
+		STA $7300, X
 		LDA cpu_n+8, Y
-		STA $7440, X
+		STA $7340, X
 		LDA cpu_n+16, Y
-		STA $7480, X
+		STA $7380, X
 		LDA cpu_n+24, Y
-		STA $74C0, X
+		STA $73C0, X
 		LDA cpu_n+32, Y
-		STA $7500, X
+		STA $7400, X
 		DEY
 		DEX
 		BPL cpu_loop
@@ -384,11 +384,11 @@ cpu_loop:
 	LDX #3					; max. offset
 ok_l:
 		LDA ok_b, X			; put banner data...
-		STA $77DC, X		; ...in appropriate screen place
+		STA $76DC, X		; ...in appropriate screen place
 		LDA ok_b+4, X
-		STA $781C, X
+		STA $771C, X
 		LDA ok_b+8, X
-		STA $785C, X
+		STA $775C, X
 		DEX
 		BPL ok_l			; note offset-avoiding BPL
 	LDA #$3C				; turn on extra LED
@@ -569,12 +569,16 @@ cp_loop:
 wait:
 			BIT IO8lf		; wait for vertical blanking
 			BVC wait
-lda#$78;inverse
-sta IO8mode
+#ifdef	CPU
+		LDA #$78			;inverse
+		STA IO8mode
+#endif
 		JSR scroller		; execute this thread
 		JSR shifter			; and animation as well
-lda#$38;normal
-sta IO8mode
+#ifdef	CPU
+		LDA #$38			; normal
+		STA IO8mode
+#endif
 		BRA wait			; forever!
 
 ; ********************************************
@@ -791,7 +795,7 @@ do_shift:
 	LDA shift, X			; restore value (faster this way)
 	ROR						; check even/odd... with sign extention
 	
-	BEQ not_half			; if even, whole byte shifting
+	BCC not_half			; if even, whole byte shifting EEEEK
 		LDY #>scr_shf		; otherwise take half-byte shifted origin
 		BNE org_ok
 not_half:
@@ -805,7 +809,7 @@ org_ok:
 		STA ptr				; set destination offset LSB
 		EOR #$FF			; 1's complement
 		SEC					; looking for 2's complement
-		ADC #64				; bytes per raster-offset
+		ADC #63				; bytes per raster-offset EEEK
 		STA sh_of			; last index
 sr_ras:
 		LDY sh_of			; will be retrieved once and again
@@ -815,9 +819,11 @@ sr_l:
 			DEY
 			BPL sr_l		; down to index 0
 		LDA ptr
-		TAY					; retrieve byte-offset
-		AND #%11000000		; reset offset within raster!
+		AND #%11000000		; reset offset within raster
 		STA base			; but on a different pointer!
+		LDA ptr				; reload
+		AND #%00111111		; but keep offset this time
+		TAY					; retrieve byte-offset EEEK
 		LDA #0				; will clear leftmost pixels
 		DEY					; at least one before offset
 		BMI no_rc			; if anything to be cleared
