@@ -778,6 +778,7 @@ shifter:
 	STA ptr+1				; set destination MSB
 	STA base+1
 	LDX sh_ix				; get shift index
+	INC sh_ix				; for next EEEEEEK
 	LDA shift, X			; positive means shift to the right (expected -32...+32)
 	CMP #128				; special case, end of list
 	BNE do_shift
