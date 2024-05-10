@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240509-1758
+; Last modified 20240510-1816
 
 ; ****************************
 ; *** standard definitions ***
@@ -64,11 +64,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1007			; 1.0a7		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $1007
+	.word	$1008			; 1.0a8		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+#echo $1008
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8800			; time, 17.00		1000 1-000 000-0 0000
-	.word	$58A9			; date, 2024/5/9	0101 100-0 101-0 1001
+	.word	$9200			; time, 18.16		1001 0-010 000-0 0000
+	.word	$58AA			; date, 2024/5/10	0101 100-0 101-0 1010
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -777,27 +777,32 @@ shifter:
 	LDA #>screen3
 	STA ptr+1				; set destination MSB
 	STA base+1
-	LDX sh_ix				; get shift index
 	INC sh_ix				; for next EEEEEEK
+sh_again:
+	LDX sh_ix				; get shift index
 	LDA shift, X			; positive means shift to the right (expected -32...+32)
 	CMP #128				; special case, end of list
 	BNE do_shift
 		STZ sh_ix
-		BRA shifter			; roll back, PLACEHOLDER
+		BRA sh_again		; roll back, PLACEHOLDER
 do_shift:
-	LSR						; check even/odd (destructive)
+; emulate ASR for sign extention!
+	ASL						; keep sign into carry
+	LDA shift, X			; restore value (faster this way)
+	ROR						; check even/odd... with sign extention
+	
 	BEQ not_half			; if even, whole byte shifting
-		LDY #>scr_shf
+		LDY #>scr_shf		; otherwise take half-byte shifted origin
 		BNE org_ok
 not_half:
 	LDY #>screen1			; original position of non-shifted copy
 org_ok:
 	STZ src					; assume always zero!
 	STY src+1				; set origin pointer accordingly
-	LDA shift, X			; recheck offset (worth it)
+	TAX						; recheck byte-offset (worth it)
 	BMI s_left				; negative means shift to the left
 ; shift right
-		STA ptr				; set destination offset
+		STA ptr				; set destination offset LSB
 		EOR #$FF			; 1's complement
 		SEC					; looking for 2's complement
 		ADC #64				; bytes per raster-offset
@@ -809,8 +814,8 @@ sr_l:
 			STA (ptr), Y	; store with offset
 			DEY
 			BPL sr_l		; down to index 0
-		LDY shift, X		; retrieve offset (NOT from ptr)
 		LDA ptr
+		TAY					; retrieve byte-offset
 		AND #%11000000		; reset offset within raster!
 		STA base			; but on a different pointer!
 		LDA #0				; will clear leftmost pixels
