@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240511-1648
+; Last modified 20240511-1753
 
 ; ****************************
 ; *** standard definitions ***
@@ -53,7 +53,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"Twist'n'Scroll 1.0a9", 0	; C-string with filename @ [8], max 220 chars
+	.asc	"Twist'n'Scroll 1.0a10"		; C-string with filename @ [8], max 220 chars
 #ifdef	CPUMETER
 #echo	CPU meter
 	.asc	" (with CPU meter)"			; optional C-string with comment after filename, filename+comment up to 220 chars
@@ -66,7 +66,7 @@ rom_start:
 #echo	"TURBO"
 	.asc	" TURBO"
 #endif
-	.byt	0				; second terminator for optional comment, just in case
+	.byt	0, 0			; second terminator for optional comment, just in case
 
 ; advance to end of header
 	.dsb	rom_start + $E6 - *, $FF
@@ -77,9 +77,9 @@ rom_start:
 	.asc	"$$$$$$$$"
 ; NEW coded version number
 	.word	$100A			; 1.0a10		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $100a
+#echo $100a-table
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8600			; time, 16.48		1000 0-110 000-0 0000
+	.word	$8E00			; time, 17.48		1000 1-110 000-0 0000
 	.word	$58AB			; date, 2024/5/11	0101 100-0 101-0 1011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -911,6 +911,7 @@ s_left:
 		EOR #$FF			; 1's complement
 		INC					; 2's complement
 		STA src				; set ORIGIN offset LSB
+		EOR #$FF			; 1's complement of offset
 		SEC					; looking for 2's complement
 		ADC #63				; bytes per raster-offset EEEK
 		STA sh_of			; last index
@@ -924,7 +925,7 @@ sl_l:
 		LDY sh_of			; and again
 		INY					; at least one AFTER last index
 		CPY #64				; anything to clear?
-		BNE no_lc
+		BEQ no_lc
 			LDA #0			; will clear rightmost pixels
 sl_c:
 				STA (ptr), Y
@@ -1063,11 +1064,32 @@ coltab:
 
 ; *** trigonometry tables ***
 shift:
-	.byt	0, 6, 12, 16, 20, 23, 26, 28, 30, 31, 32, 32
-	.byt	31, 30, 28, 26, 23, 20, 16, 12, 6, 0
-	.byt	250, 244, 240, 236, 233, 230, 228, 226, 225
-	.byt	224, 224, 225, 226, 228, 230, 233, 236, 240, 244, 250
-	.byt	128	;***end of list
+	.byt	  0,   0,   0,   0,   0,   0,   1,   1,   1,   2
+	.byt	  2,   2,   3,   3,   3,   3,   3,   3,   3,   3
+	.byt	  3,   2,   2,   1,   0,   0, 255, 254, 253, 252
+	.byt	251, 250, 249, 248, 248, 247, 246, 246, 246, 246
+	.byt	246, 246, 246, 247, 248, 249, 250, 251, 252, 254
+	.byt	  0,   1,   3,   4,   6,   8,   9,  11,  12,  13
+	.byt	 14,  15,  15,  16,  16,  15,  15,  14,  13,  12
+	.byt	 10,   8,   6,   4,   2,   0, 253, 251, 248, 246
+	.byt	243, 241, 239, 238, 236, 235, 234, 233, 233, 233
+	.byt	234, 234, 236, 237, 239, 241, 244, 246, 249, 252
+	.byt	  0,   3,   6,   9,  12,  15,  18,  21,  23,  25
+	.byt	 26,  27,  28,  28,  28,  27,  26,  25,  23,  20
+	.byt	 18,  14,  11,   7,   3,   0, 252, 248, 244, 241
+	.byt	237, 235, 232, 230, 229, 228, 227, 227, 227, 228
+	.byt	229, 230, 232, 234, 237, 240, 243, 246, 249, 252
+	.byt	  0,   3,   6,   9,  11,  14,  16,  18,  19,  21
+	.byt	 21,  22,  22,  22,  21,  20,  19,  17,  16,  14
+	.byt	 12,   9,   7,   4,   2,   0, 253, 251, 249, 247
+	.byt	245, 243, 242, 241, 240, 240, 239, 239, 240, 240
+	.byt	241, 242, 243, 244, 246, 247, 249, 251, 252, 254
+	.byt	  0,   1,   3,   4,   5,   6,   7,   8,   9,   9
+	.byt	  9,   9,   9,   9,   9,   8,   7,   7,   6,   5
+	.byt	  4,   3,   2,   1,   0,   0, 255, 254, 253, 253
+	.byt	252, 252, 252, 252, 252, 252, 252, 252, 252, 253
+	.byt	253, 253, 254, 254, 254, 255, 255, 255, 255, 255
+	.byt	128				;***end of list
 wave:
 
 ; *** displayed text ***
