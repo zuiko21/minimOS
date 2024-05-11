@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240511-1149
+; Last modified 20240511-1648
 
 ; ****************************
 ; *** standard definitions ***
@@ -76,10 +76,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1009			; 1.0a9		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $1009ts-stop-opt
+	.word	$100A			; 1.0a10		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+#echo $100a
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5700			; time, 10.56		0101 0-111 000-0 0000
+	.word	$8600			; time, 16.48		1000 0-110 000-0 0000
 	.word	$58AB			; date, 2024/5/11	0101 100-0 101-0 1011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -856,11 +856,11 @@ do_shift:
 not_half:
 	LDY #>screen1			; original position of non-shifted copy
 org_ok:
-	STZ src					; assume always zero!
 	STY src+1				; set origin pointer accordingly
 	TAX						; recheck byte-offset (worth it)
 	BMI s_left				; negative means shift to the left
 ; shift right
+		STZ src				; assume always zero!
 		STA ptr				; set destination offset LSB
 		EOR #$FF			; 1's complement
 		SEC					; looking for 2's complement
@@ -907,34 +907,30 @@ rr_nw:
 	RTS
 s_left:
 ; shift left
-
-
-; for reference, shift RIGHT ahead
-		STA ptr				; set destination offset LSB
+		STZ ptr				; assume always zero!
 		EOR #$FF			; 1's complement
+		INC					; 2's complement
+		STA src				; set ORIGIN offset LSB
 		SEC					; looking for 2's complement
 		ADC #63				; bytes per raster-offset EEEK
 		STA sh_of			; last index
 sl_ras:
 		LDY sh_of			; will be retrieved once and again
 sl_l:
-			LDA (src), Y	; get original
-			STA (ptr), Y	; store with offset
+			LDA (src), Y	; get original with offset
+			STA (ptr), Y	; store it
 			DEY
 			BPL sl_l		; down to index 0
-		LDA ptr
-		AND #%11000000		; reset offset within raster
-		STA base			; but on a different pointer!
-		LDA ptr				; reload
-		AND #%00111111		; but keep offset this time
-		TAY					; retrieve byte-offset EEEK
-		LDA #0				; will clear leftmost pixels
-		DEY					; at least one before offset
-		BMI no_lc			; if anything to be cleared
+		LDY sh_of			; and again
+		INY					; at least one AFTER last index
+		CPY #64				; anything to clear?
+		BNE no_lc
+			LDA #0			; will clear rightmost pixels
 sl_c:
-			STA (base), Y
-			DEY
-			BPL sl_c		; complete clear
+				STA (ptr), Y
+				INY
+				CPY #64
+				BNE sl_c	; complete clear
 no_lc:
 		LDA src
 		CLC
@@ -954,9 +950,6 @@ rl_nw:
 		CMP #$64			; end of logo?
 		BNE sl_ras
 	RTS
-
-
-
 
 ; *** *** sound routines *** ***
 
@@ -1070,8 +1063,10 @@ coltab:
 
 ; *** trigonometry tables ***
 shift:
-	.byt	0, 1, 2, 4, 6, 9, 12, 16, 20, 23, 26, 28, 30, 31, 32, 32
-	.byt	31, 30, 28, 26, 23, 20, 16, 12, 9, 6, 4, 2, 1, 0
+	.byt	0, 6, 12, 16, 20, 23, 26, 28, 30, 31, 32, 32
+	.byt	31, 30, 28, 26, 23, 20, 16, 12, 6, 0
+	.byt	250, 244, 240, 236, 233, 230, 228, 226, 225
+	.byt	224, 224, 225, 226, 228, 230, 233, 236, 240, 244, 250
 	.byt	128	;***end of list
 wave:
 
