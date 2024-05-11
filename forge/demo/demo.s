@@ -53,8 +53,15 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"Twist'n'Scroll", 0			; C-string with filename @ [8], max 220 chars
-	.byt	0				; optional C-string with comment after filename, filename+comment up to 220 chars
+	.asc	"Twist'n'Scroll 1.0a9", 0	; C-string with filename @ [8], max 220 chars
+#ifdef	CPUMETER
+#echo	CPU meter
+	.asc	" (with CPU meter)"			; optional C-string with comment after filename, filename+comment up to 220 chars
+#endif
+#ifdef	VERSION2
+#echo	v2
+	.asc	" v2"
+#endif
 	.byt	0				; second terminator for optional comment, just in case
 
 ; advance to end of header
@@ -66,9 +73,9 @@ rom_start:
 	.asc	"$$$$$$$$"
 ; NEW coded version number
 	.word	$1009			; 1.0a9		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $1009ts
+#echo $1009ts-stop-opt
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5200			; time, 10.16		0101 0-010 000-0 0000
+	.word	$5700			; time, 10.56		0101 0-111 000-0 0000
 	.word	$58AB			; date, 2024/5/11	0101 100-0 101-0 1011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -254,10 +261,10 @@ nt_2:
 			LDA test		; get new target
 		BNE nt_1			; no need for BRA
 ; disable NMI again for safer IRQ test (prepare task switcher)
-	LDY #<nmi2
-	LDA #>nmi2				; maybe the same
-	STY fw_nmi
-	STA fw_nmi+1
+	LDY #<tswitch
+	LDX #>tswitch			; eeek
+	STY fw_nmi				; standard-ish NMI vector
+	STX fw_nmi+1
 ; display dots indicating how many times was called (button bounce)
 nt_3:
 	LDX test				; using amount as index
@@ -429,7 +436,7 @@ ok_l:
 	STA count				; will do 16x ~ 4 s
 bp_rpt:
 		NOP					; (2) for timing accuracy
-#ifdef	V2
+#ifdef	VERSION2
 		NOP					; (2) v2 only
 		LDX #172			; (2) v2 needs 172, as 172x5+15 = 875
 #else
@@ -552,12 +559,15 @@ cp_loop:
 	STY text
 	STX text+1				; restore pointer
 ; prepare animation
-	STZ sh_ix				; restore animation cursor
+	LDA #$FF				; don't loose first frame!
+	STA sh_ix				; reset animation cursor
 ; prepare sound *** TBD
 
 ; set interrupt task!
-	LDY #<isr2
-	LDX #>isr2				; alternative task address
+	LDA #5					; next screen swap will be 5 IRQs away
+	STA irq_cnt
+	LDY #<player
+	LDX #>player			; alternative task address
 	STY fw_irq
 	STX fw_irq+1
 	CLI						; enable it!
@@ -569,7 +579,7 @@ cp_loop:
 wait:
 			BIT IO8lf		; wait for vertical blanking
 			BVC wait
-#ifdef	CPU
+#ifdef	CPUMETER
 		LDA #$78			;inverse
 		STA IO8mode
 #endif
@@ -581,7 +591,7 @@ no_scr:
 		BMI no_shf
 			JSR shifter		; and animation as well (if enabled)
 no_shf:
-#ifdef	CPU
+#ifdef	CPUMETER
 		LDA #$38			; normal
 		STA IO8mode
 #endif
@@ -607,13 +617,13 @@ exit:
 	RTI
 
 ; *** final ISR ***
-isr2:
+player:
 	PHA
 	DEC irq_cnt				; one less to go
 	BNE do_isr				; if not each 5, do regular stuff
 		LDA IO8mode
 		AND #%11100000			; else will switch into screen2
-		ORA #%00001000			; RGM mode
+		ORA #%00001000			; RGB mode
 		STA IO8mode
 		LDA #5				; next screen swap will be 5 IRQs away
 		STA irq_cnt
@@ -631,11 +641,13 @@ i_delay:
 	RTI
 
 ; *** task switcher ***
-nmi2:
+tswitch:
+.byt$cb
 	PHA
 	LDA tasks				; task disable register (1=OFF)
 	CLC
 	ADC #64					; will just use bits 6-7, as V & N flags for BIT opcode
+sta$6d00
 	STA tasks
 	PLA
 	RTI
