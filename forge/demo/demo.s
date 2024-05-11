@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240511-1016
+; Last modified 20240511-1117
 
 ; ****************************
 ; *** standard definitions ***
@@ -60,7 +60,11 @@ rom_start:
 #endif
 #ifdef	VERSION2
 #echo	v2
-	.asc	" v2"
+	.asc	" for Durango v2"
+#endif
+#ifdef	TURBO
+#echo	"TURBO"
+	.asc	" TURBO"
 #endif
 	.byt	0				; second terminator for optional comment, just in case
 
@@ -122,13 +126,12 @@ zp_2:
 		INX					; next address (2+4)
 		STX IOBeep			; make beep at 158t ~4.86 kHz, over 11 kHz in TURBO!
 		BNE zp_1			; complete page (3, post 13t)
-	BEQ zp_ok
-zp_bad:						; don't care about errors
-zp_ok:
+;	BEQ zp_ok
+; don't care about errors
 
 ; * no mirroring/address lines test, as it's quite fast and barely noticeable *
 	LDA #$7F				; last RAM page
- 	STA himem
+	STA himem
 
 ; ** RAM test **
 ; silent but will show up on screen
@@ -162,9 +165,7 @@ rt_2:
 		LSR
 		BNE rt_1			; test with new value
 		BCS rt_1			; EEEEEEEEEEEEK
-	BCC ram_ok				; if arrived here SECOND time, C is CLEAR and A=0
-ram_bad:					; none of this
-ram_ok:
+;	BCC ram_ok				; if arrived here SECOND time, C is CLEAR and A=0
 
 ; ** ROM test ** NOPE
 
@@ -224,7 +225,7 @@ lf_l:
 		DEX
 		BPL lf_l			; note offset-avoiding BPL
 
-; * NMI test * just for the sake of it
+; * NMI test * just for the sake of it, as it's the only responsive thing
 ; wait a few seconds for NMI
 	LDY #<isr				; ISR address
 	LDX #>isr
@@ -327,7 +328,12 @@ beep_l:
 			TAY				; determines frequency (2)
 			STX IOBeep		; send X's LSB to beeper (4)
 rb_zi:
-				STY swp_ct+1; small delay for 1.536 MHz! (3)
+#ifdef	TURBO
+				STY temp
+				STY temp
+				NOP			; double loop delay
+#endif
+				STY temp	; small delay for 1.536 MHz! (y*3)
 				DEY			; count pulse length (y*2)
 				BNE rb_zi	; stay this way for a while (y*3-1)
 			DEX				; toggles even/odd number (2)
@@ -443,6 +449,10 @@ bp_rpt:
 		LDX #151			; (2) 151x5+13 = 768!
 #endif
 bp_loop:
+#ifdef	TURBO
+			STX temp
+			NOP				; double loop delay
+#endif
 			DEX
 			BNE bp_loop		; 5t per iteration (needs ~153 of them)
 		INY					; (2)
@@ -502,7 +512,7 @@ dth_sw:
 		CMP #15
 		BCS dth_sw
 	LDA #4
-;	JSR ms20				; ~80 ms delay, no longer 75
+	JSR ms20				; ~80 ms delay, no longer 75
 ; next iteration
 	PLA
 	DEC						; *** CMOS ***
@@ -659,6 +669,23 @@ delay:
 	JSR dl_1				; (12... +12 total overhead =48)
 dl_1:
 	RTS						; for timeout counters
+
+; *** delay ~20A ms *** assuming 1.536 MHz clock! NEW
+ms20:
+	LDX #11					; computed iterations for a 20ms delay
+	LDY #44					; first iteration takes ~0.17 the time, actually ~10.17 iterations
+m20d:
+#ifdef	TURBO
+			STY temp
+			NOP				; double loop delay
+#endif
+			DEY				; inner loop (2y)x
+			BNE m20d		; (3y-1)x, total 1279t if in full, ~220 otherwise
+		DEX					; outer loop (2x)
+		BNE m20d			; (3x-1)
+	DEC						; ** CMOS **
+		BNE ms20
+	RTS						; add 12t from call overhead
 
 ; *** RLE decompressor ***
 ; entry point, set src & ptr pointers
@@ -893,6 +920,11 @@ mb_l:
 		TAY					; determines frequency (2)
 		STX IOBeep			; send X's LSB to beeper (4)
 mb_zi:
+#ifdef	TURBO
+			STY temp
+			STY temp
+			NOP				; double loop delay
+#delay
 			STY temp		; small delay for 1.536 MHz! (3)
 			DEY				; count pulse length (y*2)
 			BNE mb_zi		; stay this way for a while (y*3-1)
