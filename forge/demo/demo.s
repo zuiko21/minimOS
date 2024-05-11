@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240510-1840
+; Last modified 20240511-1016
 
 ; ****************************
 ; *** standard definitions ***
@@ -37,7 +37,8 @@
 	base	= colour+1		; temporary pointer
 	irq_cnt	= base+2
 	sh_of	= irq_cnt+1
-	END	= sh_of+1
+	tasks	= sh_of+1
+	END	= tasks+1
 ; ****************************
 
 * = $8000					; this is gonna be big...
@@ -64,11 +65,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1008			; 1.0a8		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $1008
+	.word	$1009			; 1.0a9		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+#echo $1009ts
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$9500			; time, 18.40		1001 0-101 000-0 0000
-	.word	$58AA			; date, 2024/5/10	0101 100-0 101-0 1010
+	.word	$5200			; time, 10.16		0101 0-010 000-0 0000
+	.word	$58AB			; date, 2024/5/11	0101 100-0 101-0 1011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -252,9 +253,9 @@ nt_2:
 			STY IOBeep		; turn off buzzer
 			LDA test		; get new target
 		BNE nt_1			; no need for BRA
-; disable NMI again for safer IRQ test
-	LDY #<exit
-	LDA #>exit				; maybe the same
+; disable NMI again for safer IRQ test (prepare task switcher)
+	LDY #<nmi2
+	LDA #>nmi2				; maybe the same
 	STY fw_nmi
 	STA fw_nmi+1
 ; display dots indicating how many times was called (button bounce)
@@ -284,8 +285,6 @@ it_b:
 	LDA #$78				; colour, inverse, RGB
 	STA IO8mode				; eeeeek
 ; interrupt setup * nope
-	LDY #32					; EXPECTED value
-	STY test
 ; assume HW interrupt is on
 	LDX #154				; about 129 ms, time for 32 interrupts v1
 ; this provides timeout
@@ -298,7 +297,7 @@ it_1:
 	LDX #$38
 	STX IO8mode
 ; display dots indicating how many times IRQ happened
-	LDX test				; eeeek
+	LDX #32					; expected value eeeek
 	LDA #$01				; nice mid green value in all modes
 	STA $6FDF				; place index dot @32 eeeeeek
 	LDA #$0F				; nice white value in all modes
@@ -562,6 +561,7 @@ cp_loop:
 	STY fw_irq
 	STX fw_irq+1
 	CLI						; enable it!
+	STZ tasks				; enable all tasks for scheduler
 
 ; **************************
 ; *** multithreaded loop ***
@@ -573,8 +573,14 @@ wait:
 		LDA #$78			;inverse
 		STA IO8mode
 #endif
-		JSR scroller		; execute this thread
-		JSR shifter			; and animation as well
+		BIT tasks			; controlled scheduler
+		BVS no_scr
+			JSR scroller	; execute this thread (if enabled)
+no_scr:
+		BIT tasks			; recheck
+		BMI no_shf
+			JSR shifter		; and animation as well (if enabled)
+no_shf:
 #ifdef	CPU
 		LDA #$38			; normal
 		STA IO8mode
@@ -621,6 +627,16 @@ i_delay:
 	AND #%11000000			; will switch back into screen3
 	ORA #%00111000			; RGB mode
 	STA IO8mode
+	PLA
+	RTI
+
+; *** task switcher ***
+nmi2:
+	PHA
+	LDA tasks				; task disable register (1=OFF)
+	CLC
+	ADC #64					; will just use bits 6-7, as V & N flags for BIT opcode
+	STA tasks
 	PLA
 	RTI
 
