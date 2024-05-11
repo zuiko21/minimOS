@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240511-1117
+; Last modified 20240511-1149
 
 ; ****************************
 ; *** standard definitions ***
@@ -908,6 +908,56 @@ rr_nw:
 s_left:
 ; shift left
 
+
+; for reference, shift RIGHT ahead
+		STA ptr				; set destination offset LSB
+		EOR #$FF			; 1's complement
+		SEC					; looking for 2's complement
+		ADC #63				; bytes per raster-offset EEEK
+		STA sh_of			; last index
+sl_ras:
+		LDY sh_of			; will be retrieved once and again
+sl_l:
+			LDA (src), Y	; get original
+			STA (ptr), Y	; store with offset
+			DEY
+			BPL sl_l		; down to index 0
+		LDA ptr
+		AND #%11000000		; reset offset within raster
+		STA base			; but on a different pointer!
+		LDA ptr				; reload
+		AND #%00111111		; but keep offset this time
+		TAY					; retrieve byte-offset EEEK
+		LDA #0				; will clear leftmost pixels
+		DEY					; at least one before offset
+		BMI no_lc			; if anything to be cleared
+sl_c:
+			STA (base), Y
+			DEY
+			BPL sl_c		; complete clear
+no_lc:
+		LDA src
+		CLC
+		ADC #64				; next raster in origin
+		STA src
+		BCC rl_nw
+			INC src+1
+			INC base+1		; may work here, too
+rl_nw:
+		LDA ptr
+		CLC
+		ADC #64				; next raster in destination
+		STA ptr
+		LDA ptr+1
+		ADC #0				; propagate carry (and already in A)
+		STA ptr+1
+		CMP #$64			; end of logo?
+		BNE sl_ras
+	RTS
+
+
+
+
 ; *** *** sound routines *** ***
 
 ; *** beeping routine ***
@@ -924,7 +974,7 @@ mb_zi:
 			STY temp
 			STY temp
 			NOP				; double loop delay
-#delay
+#endif
 			STY temp		; small delay for 1.536 MHz! (3)
 			DEY				; count pulse length (y*2)
 			BNE mb_zi		; stay this way for a while (y*3-1)
