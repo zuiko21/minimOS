@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240512-1122
+; Last modified 20240512-1648
 
 ; ****************************
 ; *** standard definitions ***
@@ -54,7 +54,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"Twist'n'Scroll 1.0a11b"		; C-string with filename @ [8], max 220 chars
+	.asc	"Twist'n'Scroll 1.0a11c"		; C-string with filename @ [8], max 220 chars
 #ifdef	CPUMETER
 #echo	CPU meter
 	.asc	" (with CPU meter)"			; optional C-string with comment after filename, filename+comment up to 220 chars
@@ -78,9 +78,9 @@ rom_start:
 	.asc	"$$$$$$$$"
 ; NEW coded version number
 	.word	$100B			; 1.0a11		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $100b-twist-b
+#echo $100b-twist-only
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5800			; time, 11.00		0101 1-000 000-0 0000
+	.word	$8000			; time, 11.00		1000 0-000 000-0 0000
 	.word	$58AC			; date, 2024/5/12	0101 100-0 101-0 1100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -572,6 +572,7 @@ cp_loop:
 ; prepare animation
 	LDA #$FF				; don't loose first frame!
 	STA sh_ix				; reset animation cursor
+	STA tw_ix				; for twist as well (placeholder)
 ; prepare sound *** TBD
 
 ; set interrupt task!
@@ -600,7 +601,8 @@ wait:
 no_scr:
 		BIT tasks			; recheck
 		BMI no_shf
-			JSR shifter		; and animation as well (if enabled)
+;			JSR shifter		; and animation as well (if enabled)
+			JSR twister		; TEST ******
 no_shf:
 #ifdef	CPUMETER
 		LDA #$38			; normal
@@ -897,54 +899,68 @@ twister:
 	LDA #>screen3
 	STA ptr+1				; set destination MSB
 	STA base+1
-	INC sh_ix				; for next EEEEEEK
-tw_again:
+	STZ base
+	STZ src
+	STZ ptr					; just as initial values, will change one of them later
+	INC tw_ix				; for next EEEEEEK
+t_again:
 	LDX tw_ix				; get shift index
-	LDA wave, X			; positive means shift to the right (expected -32...+32)
-	CMP #128				; special case, end of list
-	BNE do_twist
-		STZ tw_ix
-		BRA tw_again		; roll back, PLACEHOLDER
+	STX sh_ix				; temporary use of this variable
+t_ras:
+		LDX sh_ix			; retrieve for next pass
+		LDA wave, X			; positive means shift to the right (expected -24...+24)
+		CMP #128			; special case, end of list
+		BNE do_twist
+			STZ tw_ix
+			BRA t_again		; roll back, PLACEHOLDER
 do_twist:
 ; emulate ASR for sign extention!
-	ASL						; keep sign into carry
-	LDA wave, X				; restore value (faster this way)
-	ROR						; check even/odd... with sign extention
-	BCC not_htw				; if even, whole byte shifting EEEEK
-		LDY #>scr_shf		; otherwise take half-byte shifted origin
-		BNE tw_ok
+		ASL						; keep sign into carry
+		LDA wave, X				; restore value (faster this way)
+		ROR						; check even/odd... with sign extention
+		BCC not_htw				; if even, whole byte shifting EEEEK
+			LDY #>scr_shf		; otherwise take half-byte shifted origin
+			BNE tw_ok
 not_htw:
-	LDY #>screen1			; original position of non-shifted copy
+		LDY #>screen1			; original position of non-shifted copy
 tw_ok:
-	STY src+1				; set origin pointer accordingly
-	TAX						; recheck byte-offset (worth it)
-	BMI t_left				; negative means shift to the left
+		STY src+1				; set origin pointer accordingly
+		TAX						; recheck byte-offset (worth it)
+		BMI t_left				; negative means shift to the left
 ; twist right
-		STZ src				; assume always zero!
-		STA ptr				; set destination offset LSB
-		EOR #$FF			; 1's complement
-		SEC					; looking for 2's complement
-		ADC #63				; bytes per raster-offset EEEK
-		STA sh_of			; last index
-tr_ras:
-		JSR shr_ras			; common raster code
-		CMP #$64			; end of logo?
-		BNE tr_ras
+			STA temp			; store byte offset for later
+			LDA ptr
+			AND #%11000000		; clear previous value within raster
+			CLC
+			ADC temp			; actually adds A to ptr
+			STA ptr				; set destination offset LSB
+			AND #%00111111		; we don't need raster index here
+			EOR #$FF			; 1's complement
+			SEC					; looking for 2's complement
+			ADC #63				; bytes per raster-offset EEEK
+			STA sh_of			; last index
+			JSR shr_ras			; common raster code
+			INC sh_ix			; next within pass
+		CMP #$64				; end of logo?
+		BNE t_ras
 	RTS
 t_left:
 ; twist left
-		STZ ptr				; assume always zero!
 		EOR #$FF			; 1's complement
 		INC					; 2's complement
+		STA temp			; store byte offset for later
+		LDA src
+		AND #%11000000		; clear previous value within raster
+		CLC
+		ADC temp			; actually adds A to src
 		STA src				; set ORIGIN offset LSB
 		EOR #$FF			; 1's complement of offset
 		SEC					; looking for 2's complement
 		ADC #63				; bytes per raster-offset EEEK
 		STA sh_of			; last index
-tl_ras:
 		JSR shl_ras			; common raster code
 		CMP #$64			; end of logo?
-		BNE tl_ras
+		BNE t_ras
 	RTS
 
 ; *** *** auxiliary graphic routines *** ***
