@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240512-1101
+; Last modified 20240512-1122
 
 ; ****************************
 ; *** standard definitions ***
@@ -38,7 +38,8 @@
 	irq_cnt	= base+2
 	sh_of	= irq_cnt+1
 	tasks	= sh_of+1
-	END	= tasks+1
+	tw_ix	= tasks+1
+	END	= tw_ix+1
 ; ****************************
 
 * = $8000					; this is gonna be big...
@@ -53,7 +54,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"Twist'n'Scroll 1.0a11"		; C-string with filename @ [8], max 220 chars
+	.asc	"Twist'n'Scroll 1.0a11b"		; C-string with filename @ [8], max 220 chars
 #ifdef	CPUMETER
 #echo	CPU meter
 	.asc	" (with CPU meter)"			; optional C-string with comment after filename, filename+comment up to 220 chars
@@ -77,7 +78,7 @@ rom_start:
 	.asc	"$$$$$$$$"
 ; NEW coded version number
 	.word	$100B			; 1.0a11		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $100b-jsr
+#echo $100b-twist-b
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$5800			; time, 11.00		0101 1-000 000-0 0000
 	.word	$58AC			; date, 2024/5/12	0101 100-0 101-0 1100
@@ -736,6 +737,10 @@ rle_next:
 rle_exit:
 	RTS
 
+; *************************************
+; *** *** main graphic routines *** ***
+; *************************************
+
 ; *** text scroller *** multithreaded
 scroller:
 	LDA count				; check shiftings counter
@@ -885,6 +890,61 @@ sl_ras:
 		JSR shl_ras			; common raster code
 		CMP #$64			; end of logo?
 		BNE sl_ras
+	RTS
+
+; *** logo wave twister *** TBD
+twister:
+	LDA #>screen3
+	STA ptr+1				; set destination MSB
+	STA base+1
+	INC sh_ix				; for next EEEEEEK
+tw_again:
+	LDX tw_ix				; get shift index
+	LDA wave, X			; positive means shift to the right (expected -32...+32)
+	CMP #128				; special case, end of list
+	BNE do_twist
+		STZ tw_ix
+		BRA tw_again		; roll back, PLACEHOLDER
+do_twist:
+; emulate ASR for sign extention!
+	ASL						; keep sign into carry
+	LDA wave, X				; restore value (faster this way)
+	ROR						; check even/odd... with sign extention
+	BCC not_htw				; if even, whole byte shifting EEEEK
+		LDY #>scr_shf		; otherwise take half-byte shifted origin
+		BNE tw_ok
+not_htw:
+	LDY #>screen1			; original position of non-shifted copy
+tw_ok:
+	STY src+1				; set origin pointer accordingly
+	TAX						; recheck byte-offset (worth it)
+	BMI t_left				; negative means shift to the left
+; twist right
+		STZ src				; assume always zero!
+		STA ptr				; set destination offset LSB
+		EOR #$FF			; 1's complement
+		SEC					; looking for 2's complement
+		ADC #63				; bytes per raster-offset EEEK
+		STA sh_of			; last index
+tr_ras:
+		JSR shr_ras			; common raster code
+		CMP #$64			; end of logo?
+		BNE tr_ras
+	RTS
+t_left:
+; twist left
+		STZ ptr				; assume always zero!
+		EOR #$FF			; 1's complement
+		INC					; 2's complement
+		STA src				; set ORIGIN offset LSB
+		EOR #$FF			; 1's complement of offset
+		SEC					; looking for 2's complement
+		ADC #63				; bytes per raster-offset EEEK
+		STA sh_of			; last index
+tl_ras:
+		JSR shl_ras			; common raster code
+		CMP #$64			; end of logo?
+		BNE tl_ras
 	RTS
 
 ; *** *** auxiliary graphic routines *** ***
@@ -1100,17 +1160,27 @@ shift:
 	.byt	  4,   3,   2,   1,   0,   0, 255, 254, 253, 253
 	.byt	252, 252, 252, 252, 252, 252, 252, 252, 252, 253
 	.byt	253, 253, 254, 254, 254, 255, 255, 255, 255, 255
-	.byt	128				;***end of list
+	.byt	128				; *** end of list ***
+
 wave:
+	.byt	  0,   0					; padding
+	.byt	  0,   0,   0,   0,   0,   0,   0,   0
+	.byt	  0,   0,   0,   0,   0,   0,   0,   2
+	.byt	  6,  10,  16,  22,  24,  22,  16,   9
+	.byt	  0, 246, 239, 233, 232, 233, 239, 245
+	.byt	249, 253, 255, 255,   0,   0,   0,   0
+	.byt	  0,   0,   0,   0,   0,   0,   0,   0
+	.byt	  0,   0,   0,   0				; padding
+	.byt	128				; *** end of list ***
 
 ; *** displayed text ***
 msg:
-	.asc	"* * * Durango·X: the 8-bit computer for the 21st Century! * * *    "
-	.asc	"65C02 @ 1.536-3.5 MHz... 32K RAM... 32K ROM in cartridge... "
-	.asc	"128x128/16 colour, or 256x256 mono video... 1-bit audio! * * *    "
-	.asc	"Designed in Almería by @zuiko21 at LaJaquería.org   "
-	.asc	"Big thanks to @emiliollbb and @zerasul, plus all the folks at 6502.org    "
-	.asc	"* * *    P.S.: Learn to code in assembly!    * * *    ", 0
+	.asc	"    ", 16, 32, 16, 32, 16, " Durango·X: the 8-bit computer for the 21st Century! ", 16, 32, 16, 32, 16
+	.asc	"    65C02 @ 1.536-3.5 MHz... 32K RAM... 32K ROM in cartridge... "
+	.asc	"128x128/16 colour, or 256x256 mono video... 1-bit audio! ", 19, 32, 7, 32, 19
+	.asc	" Designed in Almería by @zuiko21 at LaJaquería.org ", 17, 32, 7, 32, 17
+	.asc	" Big thanks to @emiliollbb and @zerasul, plus all the folks at 6502.org    "
+	.asc	14, 32, 6, 32, 6, " P.S.: Learn to code in assembly! ", 2, 32, 2, 32, 15, "    ", 0
 end:
 
 ; BIG DATA perhaps best if page-aligned?
