@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240512-1648
+; Last modified 20240512-1811
 
 ; ****************************
 ; *** standard definitions ***
@@ -54,7 +54,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"Twist'n'Scroll 1.0a11c"		; C-string with filename @ [8], max 220 chars
+	.asc	"Twist'n'Scroll 1.0a11d"		; C-string with filename @ [8], max 220 chars
 #ifdef	CPUMETER
 #echo	CPU meter
 	.asc	" (with CPU meter)"			; optional C-string with comment after filename, filename+comment up to 220 chars
@@ -78,7 +78,7 @@ rom_start:
 	.asc	"$$$$$$$$"
 ; NEW coded version number
 	.word	$100B			; 1.0a11		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $100b-twist-only
+#echo $100b-ok-twist
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$8000			; time, 11.00		1000 0-000 000-0 0000
 	.word	$58AC			; date, 2024/5/12	0101 100-0 101-0 1100
@@ -906,6 +906,8 @@ twister:
 t_again:
 	LDX tw_ix				; get shift index
 	STX sh_ix				; temporary use of this variable
+	LDA #>screen1			; base address for even shifts, might toggle D2 on odds!
+	STA src+1				; set origin pointer accordingly
 t_ras:
 		LDX sh_ix			; retrieve for next pass
 		LDA wave, X			; positive means shift to the right (expected -24...+24)
@@ -918,14 +920,16 @@ do_twist:
 		ASL						; keep sign into carry
 		LDA wave, X				; restore value (faster this way)
 		ROR						; check even/odd... with sign extention
-		BCC not_htw				; if even, whole byte shifting EEEEK
-			LDY #>scr_shf		; otherwise take half-byte shifted origin
+		STA sh_of				; might be inverted later!
+		LDA src+1				; might modify source page
+		BCC tw_even				; if even, whole byte shifting EEEEK
+			ORA #4				; set D2, turn initial address into scr_shf ($2400)
 			BNE tw_ok
-not_htw:
-		LDY #>screen1			; original position of non-shifted copy
+tw_even:
+		AND #%11111011			; reset D2, back to initial screen1
 tw_ok:
-		STY src+1				; set origin pointer accordingly
-		TAX						; recheck byte-offset (worth it)
+		STA src+1				; eeeeeek
+		LDA sh_of				; recheck byte-offset (worth it)
 		BMI t_left				; negative means shift to the left
 ; twist right
 			STA temp			; store byte offset for later
@@ -934,7 +938,7 @@ tw_ok:
 			CLC
 			ADC temp			; actually adds A to ptr
 			STA ptr				; set destination offset LSB
-			AND #%00111111		; we don't need raster index here
+			LDA sh_of			; much better this way
 			EOR #$FF			; 1's complement
 			SEC					; looking for 2's complement
 			ADC #63				; bytes per raster-offset EEEK
@@ -954,11 +958,13 @@ t_left:
 		CLC
 		ADC temp			; actually adds A to src
 		STA src				; set ORIGIN offset LSB
+		LDA temp			; much better this way, but why?
 		EOR #$FF			; 1's complement of offset
 		SEC					; looking for 2's complement
 		ADC #63				; bytes per raster-offset EEEK
 		STA sh_of			; last index
 		JSR shl_ras			; common raster code
+		INC sh_ix			; next within pass
 		CMP #$64			; end of logo?
 		BNE t_ras
 	RTS
