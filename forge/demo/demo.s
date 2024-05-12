@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240511-1753
+; Last modified 20240512-1101
 
 ; ****************************
 ; *** standard definitions ***
@@ -53,7 +53,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"Twist'n'Scroll 1.0a10"		; C-string with filename @ [8], max 220 chars
+	.asc	"Twist'n'Scroll 1.0a11"		; C-string with filename @ [8], max 220 chars
 #ifdef	CPUMETER
 #echo	CPU meter
 	.asc	" (with CPU meter)"			; optional C-string with comment after filename, filename+comment up to 220 chars
@@ -76,11 +76,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$100A			; 1.0a10		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $100a-table
+	.word	$100B			; 1.0a11		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+#echo $100b-jsr
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8E00			; time, 17.48		1000 1-110 000-0 0000
-	.word	$58AB			; date, 2024/5/11	0101 100-0 101-0 1011
+	.word	$5800			; time, 11.00		0101 1-000 000-0 0000
+	.word	$58AC			; date, 2024/5/12	0101 100-0 101-0 1100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -439,7 +439,7 @@ ok_l:
 ; toggle every 500µs means 768 cycles (875 for v2)
 	LDY #0					; reset timer
 	LDA #32
-	STA count				; will do 16x ~ 4 s
+	STA count				; will do 32x ~ 4 s
 bp_rpt:
 		NOP					; (2) for timing accuracy
 #ifdef	VERSION2
@@ -867,41 +867,7 @@ org_ok:
 		ADC #63				; bytes per raster-offset EEEK
 		STA sh_of			; last index
 sr_ras:
-		LDY sh_of			; will be retrieved once and again
-sr_l:
-			LDA (src), Y	; get original
-			STA (ptr), Y	; store with offset
-			DEY
-			BPL sr_l		; down to index 0
-		LDA ptr
-		AND #%11000000		; reset offset within raster
-		STA base			; but on a different pointer!
-		LDA ptr				; reload
-		AND #%00111111		; but keep offset this time
-		TAY					; retrieve byte-offset EEEK
-		LDA #0				; will clear leftmost pixels
-		DEY					; at least one before offset
-		BMI no_rc			; if anything to be cleared
-sr_c:
-			STA (base), Y
-			DEY
-			BPL sr_c		; complete clear
-no_rc:
-		LDA src
-		CLC
-		ADC #64				; next raster in origin
-		STA src
-		BCC rr_nw
-			INC src+1
-			INC base+1		; may work here, too
-rr_nw:
-		LDA ptr
-		CLC
-		ADC #64				; next raster in destination
-		STA ptr
-		LDA ptr+1
-		ADC #0				; propagate carry (and already in A)
-		STA ptr+1
+		JSR shr_ras			; common raster code
 		CMP #$64			; end of logo?
 		BNE sr_ras
 	RTS
@@ -916,40 +882,85 @@ s_left:
 		ADC #63				; bytes per raster-offset EEEK
 		STA sh_of			; last index
 sl_ras:
-		LDY sh_of			; will be retrieved once and again
-sl_l:
-			LDA (src), Y	; get original with offset
-			STA (ptr), Y	; store it
-			DEY
-			BPL sl_l		; down to index 0
-		LDY sh_of			; and again
-		INY					; at least one AFTER last index
-		CPY #64				; anything to clear?
-		BEQ no_lc
-			LDA #0			; will clear rightmost pixels
-sl_c:
-				STA (ptr), Y
-				INY
-				CPY #64
-				BNE sl_c	; complete clear
-no_lc:
-		LDA src
-		CLC
-		ADC #64				; next raster in origin
-		STA src
-		BCC rl_nw
-			INC src+1
-			INC base+1		; may work here, too
-rl_nw:
-		LDA ptr
-		CLC
-		ADC #64				; next raster in destination
-		STA ptr
-		LDA ptr+1
-		ADC #0				; propagate carry (and already in A)
-		STA ptr+1
+		JSR shl_ras			; common raster code
 		CMP #$64			; end of logo?
 		BNE sl_ras
+	RTS
+
+; *** *** auxiliary graphic routines *** ***
+shr_ras:
+; shift right one raster, returns destination page in A (autoincremented)
+	LDY sh_of			; will be retrieved once and again
+sr_l:
+		LDA (src), Y	; get original
+		STA (ptr), Y	; store with offset
+		DEY
+		BPL sr_l		; down to index 0
+	LDA ptr
+	AND #%11000000		; reset offset within raster
+	STA base			; but on a different pointer!
+	LDA ptr				; reload
+	AND #%00111111		; but keep offset this time
+	TAY					; retrieve byte-offset EEEK
+	LDA #0				; will clear leftmost pixels
+	DEY					; at least one before offset
+	BMI no_rc			; if anything to be cleared
+sr_c:
+		STA (base), Y
+		DEY
+		BPL sr_c		; complete clear
+no_rc:
+	LDA src
+	CLC
+	ADC #64				; next raster in origin
+	STA src
+	BCC rr_nw
+		INC src+1
+		INC base+1		; may work here, too
+rr_nw:
+	LDA ptr
+	CLC
+	ADC #64				; next raster in destination
+	STA ptr
+	LDA ptr+1
+	ADC #0				; propagate carry (and already in A)
+	STA ptr+1			; will return page number
+	RTS
+
+shl_ras:
+; shift left one raster, returns destination page in A (autoincremented)
+	LDY sh_of			; will be retrieved once and again
+sl_l:
+		LDA (src), Y	; get original with offset
+		STA (ptr), Y	; store it
+		DEY
+		BPL sl_l		; down to index 0
+	LDY sh_of			; and again
+	INY					; at least one AFTER last index
+	CPY #64				; anything to clear?
+	BEQ no_lc
+		LDA #0			; will clear rightmost pixels
+sl_c:
+			STA (ptr), Y
+			INY
+			CPY #64
+			BNE sl_c	; complete clear
+no_lc:
+	LDA src
+	CLC
+	ADC #64				; next raster in origin
+	STA src
+	BCC rl_nw
+		INC src+1
+		INC base+1		; may work here, too
+rl_nw:
+	LDA ptr
+	CLC
+	ADC #64				; next raster in destination
+	STA ptr
+	LDA ptr+1
+	ADC #0				; propagate carry (and already in A)
+	STA ptr+1
 	RTS
 
 ; *** *** sound routines *** ***
