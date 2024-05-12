@@ -30,8 +30,6 @@ Wire Wire Line
 Wire Wire Line
 	2250 2550 2250 2350
 Connection ~ 2250 2550
-NoConn ~ 2550 2550
-NoConn ~ 2650 2550
 $Comp
 L Device:CP C12
 U 1 1 662853B6
@@ -305,7 +303,7 @@ L Amplifier_Audio:LM386 U11
 U 1 1 662834D9
 P 2550 2250
 F 0 "U11" H 2600 2350 50  0000 L CNN
-F 1 "LM386N-4" H 2300 1850 50  0000 L CNN
+F 1 "LM386N-4" V 2350 2500 50  0000 L CNN
 F 2 "Package_DIP:DIP-8_W7.62mm_Socket" H 2650 2350 50  0001 C CNN
 F 3 "http://www.ti.com/lit/ds/symlink/lm386.pdf" H 2750 2450 50  0001 C CNN
 	1    2550 2250
@@ -327,8 +325,6 @@ Wire Wire Line
 Wire Wire Line
 	4650 2550 4650 2350
 Connection ~ 4650 2550
-NoConn ~ 4350 2550
-NoConn ~ 4250 2550
 $Comp
 L Device:CP C22
 U 1 1 6629EFF4
@@ -534,8 +530,6 @@ F 3 "" H 3350 1300 50  0001 C CNN
 	1    3350 1300
 	-1   0    0    -1  
 $EndComp
-Connection ~ 4050 2250
-Connection ~ 4650 2350
 Text Label 4050 2550 2    50   ~ 0
 RS
 $Comp
@@ -569,17 +563,6 @@ F 1 "22" V 4050 2400 50  0000 C CNN
 F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 3980 2400 50  0001 C CNN
 F 3 "~" H 4050 2400 50  0001 C CNN
 	1    4050 2400
-	-1   0    0    -1  
-$EndComp
-$Comp
-L Amplifier_Audio:LM386 U21
-U 1 1 6629F0E4
-P 4350 2250
-F 0 "U21" H 4400 2350 50  0000 L CNN
-F 1 "LM386N-4" H 4100 1850 50  0000 L CNN
-F 2 "Package_DIP:DIP-8_W7.62mm_Socket" H 4450 2350 50  0001 C CNN
-F 3 "http://www.ti.com/lit/ds/symlink/lm386.pdf" H 4550 2450 50  0001 C CNN
-	1    4350 2250
 	-1   0    0    -1  
 $EndComp
 $Comp
@@ -781,4 +764,59 @@ F 3 "~" H 7600 1000 50  0001 C CNN
 	1    7600 1000
 	1    0    0    -1  
 $EndComp
+Connection ~ 4050 2250
+Connection ~ 4650 2350
+$Comp
+L Amplifier_Audio:LM386 U21
+U 1 1 6629F0E4
+P 4350 2250
+F 0 "U21" H 4400 2350 50  0000 L CNN
+F 1 "LM386N-4" V 4150 2550 50  0000 L CNN
+F 2 "Package_DIP:DIP-8_W7.62mm_Socket" H 4450 2350 50  0001 C CNN
+F 3 "http://www.ti.com/lit/ds/symlink/lm386.pdf" H 4550 2450 50  0001 C CNN
+	1    4350 2250
+	-1   0    0    -1  
+$EndComp
+$Comp
+L Device:CP C17
+U 1 1 66415855
+P 2550 2800
+F 0 "C17" H 2650 2900 50  0000 C CNN
+F 1 "10µ" H 2650 2700 50  0000 C CNN
+F 2 "Capacitor_THT:CP_Radial_D4.0mm_P1.50mm" H 2588 2650 50  0001 C CNN
+F 3 "~" H 2550 2800 50  0001 C CNN
+	1    2550 2800
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	2550 2650 2550 2550
+Wire Wire Line
+	2650 2550 2650 2950
+Wire Wire Line
+	2650 2950 2550 2950
+Text Label 2550 2650 2    50   ~ 0
+AV1L
+Text Label 2650 2950 3    50   ~ 0
+AV8L
+$Comp
+L Device:CP C27
+U 1 1 6641ABF6
+P 4350 2800
+F 0 "C27" H 4200 2900 50  0000 C CNN
+F 1 "10µ" H 4250 2700 50  0000 C CNN
+F 2 "Capacitor_THT:CP_Radial_D4.0mm_P1.50mm" H 4388 2650 50  0001 C CNN
+F 3 "~" H 4350 2800 50  0001 C CNN
+	1    4350 2800
+	-1   0    0    -1  
+$EndComp
+Wire Wire Line
+	4350 2650 4350 2550
+Wire Wire Line
+	4250 2550 4250 2950
+Wire Wire Line
+	4250 2950 4350 2950
+Text Label 4350 2650 0    50   ~ 0
+AV1R
+Text Label 4350 2950 3    50   ~ 0
+AV8R
 $EndSCHEMATC

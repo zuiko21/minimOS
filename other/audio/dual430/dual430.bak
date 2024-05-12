@@ -759,4 +759,26 @@ $EndComp
 Wire Wire Line
 	3450 1300 3350 1300
 Connection ~ 3350 1300
+$Comp
+L Mechanical:MountingHole H2
+U 1 1 662D42F9
+P 7600 1250
+F 0 "H2" H 7700 1296 50  0000 L CNN
+F 1 "MountingHole" H 7700 1205 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965" H 7600 1250 50  0001 C CNN
+F 3 "~" H 7600 1250 50  0001 C CNN
+	1    7600 1250
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H1
+U 1 1 662D39C5
+P 7600 1000
+F 0 "H1" H 7700 1046 50  0000 L CNN
+F 1 "MountingHole" H 7700 955 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3_DIN965" H 7600 1000 50  0001 C CNN
+F 3 "~" H 7600 1000 50  0001 C CNN
+	1    7600 1000
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
