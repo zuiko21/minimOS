@@ -2,7 +2,7 @@
 
   (general
     (thickness 1.6)
-    (drawings 15)
+    (drawings 21)
     (tracks 1397)
     (zones 0)
     (modules 47)
@@ -34,7 +34,7 @@
   )
 
   (setup
-    (last_trace_width 0.635)
+    (last_trace_width 0.2)
     (user_trace_width 0.2)
     (user_trace_width 0.28)
     (user_trace_width 0.635)
@@ -2806,6 +2806,12 @@
     )
   )
 
+  (gr_line (start 69.85 31.75) (end 72.39 34.29) (layer F.SilkS) (width 0.3))
+  (gr_line (start 69.85 31.75) (end 67.31 34.29) (layer F.SilkS) (width 0.3))
+  (gr_line (start 69.85 29.473026) (end 69.85 31.75) (layer F.SilkS) (width 0.3))
+  (gr_line (start 66.675 29.845) (end 73.025 29.845) (layer F.SilkS) (width 0.3) (tstamp 66424FD7))
+  (gr_arc (start 69.85 29.845) (end 73.025 29.845) (angle -180) (layer F.SilkS) (width 0.3))
+  (gr_circle (center 69.85 28.575) (end 70.748026 28.575) (layer F.SilkS) (width 0.3))
   (gr_text "(CCIR)" (at 87.63 83.185) (layer F.SilkS)
     (effects (font (size 1 1) (thickness 0.15)))
   )
@@ -2818,7 +2824,7 @@
   (gr_text @zuiko21 (at 120.015 78.74 270) (layer F.SilkS)
     (effects (font (size 2.4 2) (thickness 0.4)))
   )
-  (gr_text "v1  2024·03" (at 114.935 78.74 270) (layer F.SilkS)
+  (gr_text "v1.1  2024·04" (at 114.935 78.74 270) (layer F.SilkS)
     (effects (font (size 1.4 1.27) (thickness 0.254)))
   )
   (gr_text "256x256 monochrome VDU\nfor 6502 systems" (at 104.14 90.805) (layer F.SilkS)

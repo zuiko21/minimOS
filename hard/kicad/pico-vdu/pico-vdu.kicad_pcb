@@ -2,7 +2,7 @@
 
   (general
     (thickness 1.6)
-    (drawings 15)
+    (drawings 21)
     (tracks 1397)
     (zones 0)
     (modules 47)
@@ -34,7 +34,7 @@
   )
 
   (setup
-    (last_trace_width 0.635)
+    (last_trace_width 0.2)
     (user_trace_width 0.2)
     (user_trace_width 0.28)
     (user_trace_width 0.635)
@@ -68,7 +68,7 @@
     (visible_elements FFFFFF7F)
     (pcbplotparams
       (layerselection 0x010fc_ffffffff)
-      (usegerberextensions false)
+      (usegerberextensions true)
       (usegerberattributes false)
       (usegerberadvancedattributes false)
       (creategerberjobfile false)
@@ -87,12 +87,12 @@
       (plotvalue true)
       (plotinvisibletext false)
       (padsonsilk false)
-      (subtractmaskfromsilk false)
+      (subtractmaskfromsilk true)
       (outputformat 1)
       (mirror false)
-      (drillshape 1)
+      (drillshape 0)
       (scaleselection 1)
-      (outputdirectory ""))
+      (outputdirectory "gerber/"))
   )
 
   (net 0 "")
@@ -2806,6 +2806,12 @@
     )
   )
 
+  (gr_line (start 69.85 31.75) (end 72.39 34.29) (layer F.SilkS) (width 0.3))
+  (gr_line (start 69.85 31.75) (end 67.31 34.29) (layer F.SilkS) (width 0.3))
+  (gr_line (start 69.85 29.473026) (end 69.85 31.75) (layer F.SilkS) (width 0.3))
+  (gr_line (start 66.675 29.845) (end 73.025 29.845) (layer F.SilkS) (width 0.3) (tstamp 66424FD7))
+  (gr_arc (start 69.85 29.845) (end 73.025 29.845) (angle -180) (layer F.SilkS) (width 0.3))
+  (gr_circle (center 69.85 28.575) (end 70.748026 28.575) (layer F.SilkS) (width 0.3))
   (gr_text "(CCIR)" (at 87.63 83.185) (layer F.SilkS)
     (effects (font (size 1 1) (thickness 0.15)))
   )
@@ -4234,7 +4240,7 @@
   (segment (start 83.805 92.71) (end 83.82 92.725) (width 0.635) (layer B.Cu) (net 94))
   (segment (start 76.43 92.71) (end 83.805 92.71) (width 0.635) (layer B.Cu) (net 94))
 
-  (zone (net 28) (net_name GND) (layer F.Cu) (tstamp 0) (hatch edge 0.508)
+  (zone (net 28) (net_name GND) (layer F.Cu) (tstamp 664254CB) (hatch edge 0.508)
     (connect_pads (clearance 0.508))
     (min_thickness 0.254)
     (fill yes (arc_segments 32) (thermal_gap 0.508) (thermal_bridge_width 0.508))
@@ -5739,7 +5745,7 @@
       )
     )
   )
-  (zone (net 21) (net_name +5V) (layer B.Cu) (tstamp 0) (hatch edge 0.508)
+  (zone (net 21) (net_name +5V) (layer B.Cu) (tstamp 664254C8) (hatch edge 0.508)
     (connect_pads (clearance 0.508))
     (min_thickness 0.254)
     (fill yes (arc_segments 32) (thermal_gap 0.508) (thermal_bridge_width 0.508))
