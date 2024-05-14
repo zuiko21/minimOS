@@ -78,7 +78,7 @@ rom_start:
 	.asc	"$$$$$$$$"
 ; NEW coded version number
 	.word	$100B			; 1.0a11		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $100b-lock_nmi
+#echo $100b-nmi_set
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$8000			; time, 11.00		1000 0-000 000-0 0000
 	.word	$58AC			; date, 2024/5/12	0101 100-0 101-0 1100
@@ -262,13 +262,13 @@ nt_2:
 			STY IOBeep		; turn off buzzer
 			LDA test		; get new target
 		BNE nt_1			; no need for BRA
+nt_3:						; eeeeeeeek
 ; disable NMI again for safer IRQ test (prepare task switcher)
 	LDY #<tswitch
 	LDX #>tswitch			; eeek
 	STY fw_nmi				; standard-ish NMI vector
 	STX fw_nmi+1
 ; display dots indicating how many times was called (button bounce)
-nt_3:
 	LDX test				; using amount as index
 	BEQ irq_test			; did not respond, don't bother printing dots EEEEEEEK
 		LDA #$0F			; nice white value in all modes
@@ -655,15 +655,10 @@ i_delay:
 
 ; *** task switcher ***
 tswitch:
-lda#$55
-sta$6d00,x
-inx
-jmp tswitch
 	PHA
 	LDA tasks				; task disable register (1=OFF)
 	CLC
 	ADC #64					; will just use bits 6-7, as V & N flags for BIT opcode
-sta$6d00
 	STA tasks
 	PLA
 	RTI
