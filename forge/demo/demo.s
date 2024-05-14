@@ -463,7 +463,8 @@ broken:
 		JSR glitch
 		LDA (base)
 		LSR
-		LSR					; divide-by-4 randomish (max. 1.28 s)
+		LSR
+		LSR					; divide-by-8 randomish (max. 0.64 s)
 		INC					; never zero
 		JSR ms20
 		LDA IO8mode
@@ -473,7 +474,7 @@ broken:
 		ORA #$08			; non-readable bits (RGB)
 		STA IO8mode
 		LDA base			; check pointer LSB
-		BNE broken
+		BPL broken
 ; keep SMPTE bars
 	LDA #%00011000			; screen 1
 	STA IO8mode				; SMPTE is visible
@@ -793,7 +794,7 @@ gl_nw:
 gl_loop:
 		STA IOBeep			; (4) place LSB on speaker
 		ROR					; (2)
-		LDX #80				; will make around 400t delay ~3.8 kHz
+		LDX #50				; will make around 250t delay ~6.1 kHz
 gl_dly:
 			DEX				; (2X)
 			BNE gl_dly		; (3X)
