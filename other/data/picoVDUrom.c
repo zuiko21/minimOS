@@ -30,13 +30,34 @@ byte	data[256] = {
 	0x1E, 0x9E, 0x5E, 0xDE, 0x1F, 0x9F, 0x5F, 0xDF, 0x3E, 0xBE, 0x7E, 0xFE, 0x3F, 0xBF, 0x7F, 0xFF
 };
 
+/* address bits scrambling array */
+word	a[16] = {
+	0b0001000000000000, 0b0000000010000000, 0b0000000001000000, 0b0000000000100000,
+	0b0000000000010000, 0b0000000000001000, 0b0000000000000100, 0b0000000000000010,
+	0b0000000000000001, 0b0000000100000000, 0b0000001000000000, 0b0000100000000000,
+	0b0000010000000000,				   0x0,				   0x0,				   0x0
+};
 
 /* *** function prototypes *** */
+word	address(word ax);
 
 /* *** main code *** */
 int main(void) {
+	printf("[%X]=%X\n",address(0x1234),data[0x12]);
 	
 	return 0;
 }
 
 /* *** function definitions *** */
+word	address(word ax) {
+	word	final	= 0;
+	word	mask	= 1;
+	byte	bit;
+
+	for (bit=0; bit<13; bit++) {
+		if (ax & mask)		final |= a[bit];
+		mask <<= 1;
+	}
+
+	return	final;
+}
