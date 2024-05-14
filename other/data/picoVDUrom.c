@@ -45,22 +45,34 @@ word	address(word ax);
 
 /* *** main code *** */
 int main(int argc, char* argv[]) {
-	FILE*	f;		/* source file */
-	FILE*	o;		/* scrambled output */
+	FILE*	f;		/* source and output file */
 	char	s[80];	/* scrambled filename .shf */
 	word	w;		/* file address */
 	byte	d;		/* data read */
 	byte	rom[8192];
 
-	if (f = fopen(argv[1]) == NULL) {
+	if ((f = fopen(argv[1], "rb")) == NULL) {	/* try opening source */
 		printf("*** Can't open file! ***\n");
 		return -1;
 	}
-	strcpy(s, argv[1]);
+	strcpy(s, argv[1]);							/* generate output filename */
 	strcat(s, ".shf");
 	printf("Scrambling %s into %s...\n", argv[1], s);
 
-	fclose(f);
+	w = 0;
+	while (!feof(f)) {
+		d = fgetc(f);							/* read data */
+		rom[address(w++)]=data[d];				/* store in final form */
+	}
+	fclose(f);									/* reading is done */
+
+	if ((f = fopen(s, "wb")) == NULL) {			/* try creating output */
+		printf("*** Can't write result! ***\n");
+		return -2;
+	}
+	fwrite(rom, 1, 8192, f);					/* write the whole scrambled array */
+	fclose(f);									/* all done */
+	printf("\t%d bytes OK!\n", w);
 
 	return 0;
 }
