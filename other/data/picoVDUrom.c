@@ -4,13 +4,15 @@
 
 /* *** compiler directives *** */
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /* *** type definitions *** */
 typedef	u_int8_t	byte;
 typedef	u_int16_t	word;
 
 /* *** global data *** */
-/* data bits D0-D7 on chip are connected to VD2-4-6-7-5-3-1-0
+/* data bits D0-D7 on chip are connected to VD2-4-6-7-5-3-1-0 */
 byte	data[256] = {
 	0x00, 0x80, 0x40, 0xC0, 0x01, 0x81, 0x41, 0xC1, 0x20, 0xA0, 0x60, 0xE0, 0x21, 0xA1, 0x61, 0xE1,
 	0x02, 0x82, 0x42, 0xC2, 0x03, 0x83, 0x43, 0xC3, 0x22, 0xA2, 0x62, 0xE2, 0x23, 0xA3, 0x63, 0xE3,
@@ -42,9 +44,24 @@ word	a[16] = {
 word	address(word ax);
 
 /* *** main code *** */
-int main(void) {
-	printf("[%X]=%X\n",address(0x1234),data[0x12]);
-	
+int main(int argc, char* argv[]) {
+	FILE*	f;		/* source file */
+	FILE*	o;		/* scrambled output */
+	char	s[80];	/* scrambled filename .shf */
+	word	w;		/* file address */
+	byte	d;		/* data read */
+	byte	rom[8192];
+
+	if (f = fopen(argv[1]) == NULL) {
+		printf("*** Can't open file! ***\n");
+		return -1;
+	}
+	strcpy(s, argv[1]);
+	strcat(s, ".shf");
+	printf("Scrambling %s into %s...\n", argv[1], s);
+
+	fclose(f);
+
 	return 0;
 }
 
