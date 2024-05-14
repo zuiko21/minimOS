@@ -1,39 +1,49 @@
 /* PPM to SV image converter          */
 /* assume 128x128 4bpp GRgB D0-3      */
-/* (C)2021-2022 Carlos J. Santisteban */
-/* last modified 20210903-0031        */
+/* (C)2021-2024 Carlos J. Santisteban */
+/* last modified 20240514-1840        */
 
 #include <stdio.h>
+#include <string.h>
 
-int main(void) {
+int main(int argc, char* argv[]) {
 	FILE*	f;
 	FILE*	o;
 	unsigned int	r, g, gh, gl, b, s;
 	unsigned char	c;
 	char	nombre[80];
 
-/* ask for filename and open files */
-	printf("File: ");
-	fgets(nombre, 80, stdin);
+	if (argc<2) {
+		printf("\nUsage: %s filename\n\n", argv[0]);
+		return -4;
+	}
+/* generate output filename */
+	strcpy(nombre, argv[1]);
 	s=0;
-	while (nombre[s]!='\n' && nombre[s]!='\0')	{s++;}
-	nombre[s]=0;			/* add termination */
+	while (nombre[s]!='\0')	{s++;}
+	while (nombre[s]!='.')	{s--;}	// seek extension!
+	nombre[++s] = 's';
+	nombre[++s] = 'v';
+	nombre[++s] = '\0';				// final terminator
+/* open files */
 	printf("Opening %s...\n", nombre);
-	f=fopen(nombre, "rb");
+	f=fopen(argv[1], "rb");
 	if (f==NULL) {
 		printf("*** no file ***\n");
 		return -1;
 	}
-	o=fopen("output.sv", "wb");
-	if (o==NULL) {
-		printf("*** cannot write ***\n");
-		return -1;
-	}
-/* skip header, may check things */
 	if ((fgetc(f)!='P')||(fgetc(f)!='6')) {
 		printf("*** wrong file type ***\n");
-		return -1;
+		fclose(f);
+		return -2;
 	}
+	o=fopen(nombre, "wb");
+	if (o==NULL) {
+		printf("*** cannot write ***\n");
+		fclose(f);
+		return -3;
+	}
+/* skip header */
 	b=0;					/* will count LFs here */
 	while (b<4)
 		if (fgetc(f)==10)	b++;
@@ -69,6 +79,7 @@ int main(void) {
 /* clean up */
 	fclose(f);
 	fclose(o);
+	printf("OK!\n");
 
 	return 0;
 }

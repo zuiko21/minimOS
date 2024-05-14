@@ -1,6 +1,7 @@
 /* bit scrambler for picoVDU   *
- * (27C64 pìnout)              *
- * (c) 2024 Carlos Santisteban */
+ * (27C64 pinout)              *
+ * (c) 2024 Carlos Santisteban *
+ * last modified 20240514-1840 */
 
 /* *** compiler directives *** */
 #include <stdio.h>
