@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240514-1908
+; Last modified 20240514-2028
 
 ; ****************************
 ; *** standard definitions ***
@@ -54,7 +54,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"Twist'n'Scroll 1.0a11d"		; C-string with filename @ [8], max 220 chars
+	.asc	"Twist'n'Scroll 1.0a12"		; C-string with filename @ [8], max 220 chars
 #ifdef	CPUMETER
 #echo	CPU meter
 	.asc	" (with CPU meter)"			; optional C-string with comment after filename, filename+comment up to 220 chars
@@ -77,11 +77,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$100B			; 1.0a11		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $100b-nmi_set
+	.word	$100C			; 1.0a12		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+#echo $100c-glitch test
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8000			; time, 11.00		1000 0-000 000-0 0000
-	.word	$58AC			; date, 2024/5/12	0101 100-0 101-0 1100
+	.word	$9D00			; time, 19.40		1001 1-101 000-0 0000
+	.word	$58AE			; date, 2024/5/14	0101 100-0 101-0 1110
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -431,9 +431,50 @@ ok_l:
 	STY ptr
 	STX ptr+1				; set destination pointer
 	JSR rle_loop			; decompress picture off-screen
-
-; do some glitching effects *** TBD
-
+; wait a bit before the glitching
+	LDA #100				; 2 s delay
+	JSR ms20
+; prepare glitching problem
+	LDY #<banner			; compressed Durango banner seems random enough
+	LDX #>banner
+	STY base
+	STX base+1
+	JSR glitch
+; place a question mark after 'OK'
+	LDA #$55				; put symbol data...
+	STA $7660				; ...in appropriate screen places (inlined data)
+	LDA #$05
+	STA $76A0
+	LDA #$55
+	STA $76E0
+	LDA #$50
+	STA $7720
+	LDA #0
+	STA $7760
+	LDA #$50
+	STA $77A0
+	LDA #50					; 3 s delay after question mark (and a glitch in between)
+	JSR ms20
+	JSR glitch
+	LDA #100
+	JSR ms20
+; do some glitching effects
+broken:
+		JSR glitch
+		LDA (base)
+		LSR
+		LSR					; divide-by-4 randomish (max. 1.28 s)
+		INC					; never zero
+		JSR ms20
+		LDA IO8mode
+		CLC
+		ADC #$10			; next screen
+		AND #$30			; screen address only (colour mode anyway)
+		ORA #$08			; non-readable bits (RGB)
+		STA IO8mode
+		LDA base			; check pointer LSB
+		BNE broken
+; keep SMPTE bars
 	LDA #%00011000			; screen 1
 	STA IO8mode				; SMPTE is visible
 ; * play 1 kHz for a couple of seconds (adjusted for 1.536 MHz) *
@@ -512,8 +553,8 @@ dth_sw:
 		STA count
 		CMP #15
 		BCS dth_sw
-	LDA #4
-	JSR ms20				; ~80 ms delay, no longer 75
+	LDA #8
+	JSR ms20				; ~160 ms delay, no longer 75
 ; next iteration
 	PLA
 	DEC						; *** CMOS ***
@@ -735,6 +776,34 @@ rle_next:
 			INC ptr+1
 		BNE rle_loop		; no need for BRA
 rle_exit:
+	RTS
+
+; *** screen glitch ***
+glitch:
+	LDA (base)				; get randomish data
+	INC base
+	BNE gl_nw
+		INC base+1
+gl_nw:
+	TAY
+	LDA IO8mode
+	ORA #$C0				; HIRES & inverse
+	STA IO8mode
+	TYA						; eeeek
+gl_loop:
+		STA IOBeep			; (4) place LSB on speaker
+		ROR					; (2)
+		LDX #80				; will make around 400t delay ~3.8 kHz
+gl_dly:
+			DEX				; (2X)
+			BNE gl_dly		; (3X)
+		DEY					; (2)
+		BNE gl_loop			; (usually 3) total 11
+	STZ IOBeep				; don't keep speaker on
+	LDA IO8mode
+	AND #$30				; back to colour
+	ORA #$08				; non-readable bits
+	STA IO8mode
 	RTS
 
 ; *************************************
