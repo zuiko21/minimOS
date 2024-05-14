@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240512-1811
+; Last modified 20240514-1908
 
 ; ****************************
 ; *** standard definitions ***
@@ -78,7 +78,7 @@ rom_start:
 	.asc	"$$$$$$$$"
 ; NEW coded version number
 	.word	$100B			; 1.0a11		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $100b-ok-twist
+#echo $100b-no_cb
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$8000			; time, 11.00		1000 0-000 000-0 0000
 	.word	$58AC			; date, 2024/5/12	0101 100-0 101-0 1100
@@ -655,7 +655,6 @@ i_delay:
 
 ; *** task switcher ***
 tswitch:
-.byt$cb
 	PHA
 	LDA tasks				; task disable register (1=OFF)
 	CLC
