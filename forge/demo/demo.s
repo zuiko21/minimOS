@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango·X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240515-1626
+; Last modified 20240515-1715
 
 ; ****************************
 ; *** standard definitions ***
@@ -39,7 +39,8 @@
 	sh_of	= irq_cnt+1
 	tasks	= sh_of+1
 	tw_ix	= tasks+1
-	END	= tw_ix+1
+	sh_tw	= tw_ix+1
+	END	= sh_tw+1
 ; ****************************
 
 * = $8000					; this is gonna be big...
@@ -54,7 +55,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"Twist'n'Scroll 1.0a12b"		; C-string with filename @ [8], max 220 chars
+	.asc	"Twist'n'Scroll 1.0a12c"		; C-string with filename @ [8], max 220 chars
 #ifdef	CPUMETER
 #echo	CPU meter
 	.asc	" (with CPU meter)"			; optional C-string with comment after filename, filename+comment up to 220 chars
@@ -78,7 +79,7 @@ rom_start:
 	.asc	"$$$$$$$$"
 ; NEW coded version number
 	.word	$100C			; 1.0a12		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $100c4-faster glitch
+#echo $100c5-shift-twist
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$5500			; time, 10.40		0101 0-101 000-0 0000
 	.word	$58AF			; date, 2024/5/15	0101 100-0 101-0 1111
@@ -621,6 +622,7 @@ cp_loop:
 	STX fw_irq+1
 	CLI						; enable it!
 	STZ tasks				; enable all tasks for scheduler
+	STZ sh_tw				; select shift first
 
 ; **************************
 ; *** multithreaded loop ***
@@ -638,8 +640,13 @@ wait:
 no_scr:
 		BIT tasks			; recheck
 		BMI no_shf
-;			JSR shifter		; and animation as well (if enabled)
-			JSR twister		; TEST ******
+; shift or twist
+			BIT sh_tw		; check switch
+			BNE is_tw
+				JSR shifter	; and do animation as well... (if enabled)
+				BRA no_shf
+is_tw:
+			JSR twister		; ...or twist instead
 no_shf:
 #ifdef	CPUMETER
 		LDA #$38			; normal
@@ -924,7 +931,8 @@ sh_again:
 	CMP #128				; special case, end of list
 	BNE do_shift
 		STZ sh_ix
-		BRA sh_again		; roll back, PLACEHOLDER
+		DEC sh_tw			; change into twist mode
+		BRA tw_again		; and start twisting!
 do_shift:
 ; emulate ASR for sign extention!
 	ASL						; keep sign into carry
@@ -988,7 +996,8 @@ t_ras:
 		CMP #128			; special case, end of list
 		BNE do_twist
 			STZ tw_ix
-			BRA t_again		; roll back, PLACEHOLDER
+			STZ sh_tw		; back into shift mode
+			BRA sh_again	; and shift at one
 do_twist:
 ; emulate ASR for sign extention!
 		ASL						; keep sign into carry
