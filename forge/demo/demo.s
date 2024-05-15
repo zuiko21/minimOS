@@ -1,6 +1,6 @@
-; Twist-and-Scroll demo for Durango-X
+; Twist-and-Scroll demo for Durango·X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240515-1212
+; Last modified 20240515-1626
 
 ; ****************************
 ; *** standard definitions ***
@@ -94,7 +94,7 @@ reset:
 	CLD
 	LDX #$FF
 	TXS
-; Durango-X specific stuff
+; Durango·X specific stuff
 	LDA #$38				; flag init and interrupt disable
 	STA IO8mode				; set colour mode
 	STA IOAen				; disable hardware interrupt (LED turns on)
@@ -554,7 +554,7 @@ dth_sw:
 	LDA #100
 	JSR ms20				; wait a couple of seconds
 
-; make copies of DurangoÂ·X logo into SMPTE screen, both normal and shifted by one pixel
+; make copies of Durango·X logo into SMPTE screen, both normal and shifted by one pixel
 ; both copies integrated!
 	LDY #<screen1			; actually 0
 	LDA #>screen1			; $20
@@ -1293,10 +1293,10 @@ wave:
 
 ; *** displayed text ***
 msg:
-	.asc	"    ", 16, 32, 16, 32, 16, " DurangoÂ·X: the 8-bit computer for the 21st Century! ", 16, 32, 16, 32, 16
+	.asc	"    ", 16, 32, 16, 32, 16, " Durango·X: the 8-bit computer for the 21st Century! ", 16, 32, 16, 32, 16
 	.asc	"    65C02 @ 1.536-3.5 MHz... 32K RAM... 32K ROM in cartridge... "
 	.asc	"128x128/16 colour, or 256x256 mono video... 1-bit audio! ", 19, 32, 7, 32, 19
-	.asc	" Designed in AlmerÃ­a by @zuiko21 at LaJaquerÃ­a.org ", 17, 32, 7, 32, 17
+	.asc	" Designed in Almerí­a by @zuiko21 at LaJaquerí­a.org ", 17, 32, 7, 32, 17
 	.asc	" Big thanks to @emiliollbb and @zerasul, plus all the folks at 6502.org    "
 	.asc	14, 32, 6, 32, 6, " P.S.: Learn to code in assembly! ", 2, 32, 2, 32, 15, "    ", 0
 end:
