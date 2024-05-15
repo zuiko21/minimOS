@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240515-1038
+; Last modified 20240515-1212
 
 ; ****************************
 ; *** standard definitions ***
@@ -628,7 +628,7 @@ wait:
 			BIT IO8lf		; wait for vertical blanking
 			BVC wait
 #ifdef	CPUMETER
-		LDA #$78			;inverse
+		LDA #$78			; inverse
 		STA IO8mode
 #endif
 		BIT tasks			; controlled scheduler
@@ -764,7 +764,7 @@ rle_adv:
 rle_next:
 		TYA					; once again, these were the transferred/repeated bytes
 		CLC
-		ADC ptr				; advance desetination pointer accordingly
+		ADC ptr				; advance destination pointer accordingly
 		STA ptr
 		BCC rle_loop		; check possible carry
 			INC ptr+1
@@ -781,6 +781,7 @@ glitch:
 ;gl_nw:
 	TAY
 	LDA IO8mode
+ 	AND #$F0				; remove unreadable bits
 	ORA #$C0				; HIRES & inverse
 	STA IO8mode
 	TYA						; eeeek
@@ -966,7 +967,7 @@ sl_ras:
 		BNE sl_ras
 	RTS
 
-; *** logo wave twister *** TBD
+; *** logo wave twister ***
 twister:
 	LDA #>screen3
 	STA ptr+1				; set destination MSB
@@ -992,7 +993,7 @@ do_twist:
 		ASL						; keep sign into carry
 		LDA wave, X				; restore value (faster this way)
 		ROR						; check even/odd... with sign extention
-		STA sh_of				; might be inverted later!
+		STA sh_of				; signed byte offset, might be inverted later!
 		LDA src+1				; might modify source page
 		BCC tw_even				; if even, whole byte shifting EEEEK
 			ORA #4				; set D2, turn initial address into scr_shf ($2400)
@@ -1004,11 +1005,11 @@ tw_ok:
 		LDA sh_of				; recheck byte-offset (worth it)
 		BMI t_left				; negative means shift to the left
 ; twist right
-			STA temp			; store byte offset for later
+;			STA temp			; store byte offset for later
 			LDA ptr
 			AND #%11000000		; clear previous value within raster
 			CLC
-			ADC temp			; actually adds A to ptr
+			ADC sh_of			; actually adds A to ptr
 			STA ptr				; set destination offset LSB
 			LDA sh_of			; much better this way
 			EOR #$FF			; 1's complement
@@ -1024,7 +1025,7 @@ t_left:
 ; twist left
 		EOR #$FF			; 1's complement
 		INC					; 2's complement
-		STA temp			; store byte offset for later
+		STA temp			; store byte offset (absolute) for later
 		LDA src
 		AND #%11000000		; clear previous value within raster
 		CLC
