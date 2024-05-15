@@ -78,7 +78,7 @@ rom_start:
 	.asc	"$$$$$$$$"
 ; NEW coded version number
 	.word	$100C			; 1.0a12		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $100c2-complete glitch
+#echo $100c4-faster glitch
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$5500			; time, 10.40		0101 0-101 000-0 0000
 	.word	$58AF			; date, 2024/5/15	0101 100-0 101-0 1111
@@ -429,7 +429,7 @@ ok_l:
 	STX ptr+1				; set destination pointer
 	JSR rle_loop			; decompress picture off-screen
 ; wait a bit before the glitching
-	LDA #150				; 3 s delay
+	LDA #120				; 2.4 s delay
 	JSR ms20
 ; prepare glitching problem
 	LDY #<banner			; compressed Durango banner seems random enough
@@ -451,7 +451,7 @@ ok_l:
 	LDA #$50
 	STA $77A0
 
-	LDA #33					; 3 s delay after question mark (and a glitch in between)
+	LDA #33					; 2 s delay after question mark (and a glitch in between)
 	JSR ms20
 	JSR glitch
 	LDA #67
@@ -472,7 +472,8 @@ broken:
 		ORA #$08			; non-readable bits (RGB)
 		STA IO8mode
 		LDA base			; check pointer LSB
-		BPL broken
+		CMP #48
+		BCC broken
 
 ; show 'Please Standy By' for a moment with 1 kHz
 	LDA #%00101000			; screen 2
@@ -480,8 +481,8 @@ broken:
 ; * play 1 kHz for a couple of seconds (adjusted for 1.536 MHz) *
 ; toggle every 500µs means 768 cycles (875 for v2)
 	LDY #0					; reset timer
-	LDA #16
-	STA count				; will do 16x ~ 2 s
+	LDA #24
+	STA count				; will do 16x ~ 3 s
 	JSR beep1k
 
 ; keep SMPTE bars
@@ -795,7 +796,7 @@ gl_dly:
 		DEY					; (2)
 		BNE gl_loop			; (usually 3)
 	LDA (base)				; get randomish data again
-	TYA						; eeeek
+	TAY						; eeeek^2
 gl_loop2:
 		STA IOBeep			; (4) place LSB on speaker
 		ROR					; (2)
