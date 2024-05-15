@@ -79,7 +79,7 @@ rom_start:
 	.asc	"$$$$$$$$"
 ; NEW coded version number
 	.word	$100C			; 1.0a12		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $100c5-shift-twist
+#echo $100c7-half-twist
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$5500			; time, 10.40		0101 0-101 000-0 0000
 	.word	$58AF			; date, 2024/5/15	0101 100-0 101-0 1111
@@ -642,7 +642,7 @@ no_scr:
 		BMI no_shf
 ; shift or twist
 			BIT sh_tw		; check switch
-			BNE is_tw
+			BMI is_tw
 				JSR shifter	; and do animation as well... (if enabled)
 				BRA no_shf
 is_tw:
@@ -930,9 +930,10 @@ sh_again:
 	LDA shift, X			; positive means shift to the right (expected -32...+32)
 	CMP #128				; special case, end of list
 	BNE do_shift
-		STZ sh_ix
-		DEC sh_tw			; change into twist mode
-		BRA tw_again		; and start twisting!
+		LDA #$FF
+		STA sh_ix			; preset index
+		STA sh_tw			; change into twist mode
+		BRA twister			; and start twisting!
 do_shift:
 ; emulate ASR for sign extention!
 	ASL						; keep sign into carry
@@ -995,9 +996,10 @@ t_ras:
 		LDA wave, X			; positive means shift to the right (expected -24...+24)
 		CMP #128			; special case, end of list
 		BNE do_twist
-			STZ tw_ix
+			LDA #$FF
+			STA tw_ix
 			STZ sh_tw		; back into shift mode
-			BRA sh_again	; and shift at one
+			BRA shifter		; and shift at one
 do_twist:
 ; emulate ASR for sign extention!
 		ASL						; keep sign into carry
@@ -1293,10 +1295,10 @@ shift:
 wave:
 	.byt	  0,   0					; padding
 	.byt	  0,   0,   0,   0,   0,   0,   0,   0
-	.byt	  0,   0,   0,   0,   0,   0,   0,   2
-	.byt	  6,  10,  16,  22,  24,  22,  16,   9
-	.byt	  0, 246, 239, 233, 232, 233, 239, 245
-	.byt	249, 253, 255, 255,   0,   0,   0,   0
+	.byt	  0,   0,   0,   0,   0,   0,   0,   1
+	.byt	  3,   5,   8,  11,  12,  11,   8,   4
+	.byt	  0, 251, 247, 244, 244, 244, 247, 250
+	.byt	252, 254, 255, 255,   0,   0,   0,   0
 	.byt	  0,   0,   0,   0,   0,   0,   0,   0
 	.byt	  0,   0,   0,   0				; padding
 	.byt	128				; *** end of list ***
