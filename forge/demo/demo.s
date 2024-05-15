@@ -1,6 +1,6 @@
 ; Twist-and-Scroll demo for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; Last modified 20240514-2028
+; Last modified 20240515-1038
 
 ; ****************************
 ; *** standard definitions ***
@@ -54,7 +54,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"Twist'n'Scroll 1.0a12"		; C-string with filename @ [8], max 220 chars
+	.asc	"Twist'n'Scroll 1.0a12b"		; C-string with filename @ [8], max 220 chars
 #ifdef	CPUMETER
 #echo	CPU meter
 	.asc	" (with CPU meter)"			; optional C-string with comment after filename, filename+comment up to 220 chars
@@ -78,10 +78,10 @@ rom_start:
 	.asc	"$$$$$$$$"
 ; NEW coded version number
 	.word	$100C			; 1.0a12		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
-#echo $100c-glitch test
+#echo $100c2-complete glitch
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$9D00			; time, 19.40		1001 1-101 000-0 0000
-	.word	$58AE			; date, 2024/5/14	0101 100-0 101-0 1110
+	.word	$5500			; time, 10.40		0101 0-101 000-0 0000
+	.word	$58AF			; date, 2024/5/15	0101 100-0 101-0 1111
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -98,11 +98,8 @@ reset:
 	LDA #$38				; flag init and interrupt disable
 	STA IO8mode				; set colour mode
 	STA IOAen				; disable hardware interrupt (LED turns on)
-; disable NMI for safety
-	LDY #<exit
-	LDA #>exit
-	STY fw_nmi
-	STA fw_nmi+1
+; disable NMI for safety * actually useless as will be wiped during RAM test
+
 ; ** zeropage test **
 ; make high pitched chirp during test (not actually done, just run for timing reasons)
 	LDX #<test				; 6510-savvy...
@@ -257,7 +254,7 @@ nt_2:
 		BEQ nt_1			; nope
 			LDY #0			; otherwise do some click
 			STY IOBeep		; buzzer = 1
-			JSR delay		; 50 µs pulse
+			JSR delay		; 50 Âµs pulse
 			INY
 			STY IOBeep		; turn off buzzer
 			LDA test		; get new target
@@ -432,7 +429,7 @@ ok_l:
 	STX ptr+1				; set destination pointer
 	JSR rle_loop			; decompress picture off-screen
 ; wait a bit before the glitching
-	LDA #100				; 2 s delay
+	LDA #150				; 3 s delay
 	JSR ms20
 ; prepare glitching problem
 	LDY #<banner			; compressed Durango banner seems random enough
@@ -453,10 +450,11 @@ ok_l:
 	STA $7760
 	LDA #$50
 	STA $77A0
-	LDA #50					; 3 s delay after question mark (and a glitch in between)
+
+	LDA #33					; 3 s delay after question mark (and a glitch in between)
 	JSR ms20
 	JSR glitch
-	LDA #100
+	LDA #67
 	JSR ms20
 ; do some glitching effects
 broken:
@@ -475,34 +473,27 @@ broken:
 		STA IO8mode
 		LDA base			; check pointer LSB
 		BPL broken
+
+; show 'Please Standy By' for a moment with 1 kHz
+	LDA #%00101000			; screen 2
+	STA IO8mode				; 'Please Stand By' is visible
+; * play 1 kHz for a couple of seconds (adjusted for 1.536 MHz) *
+; toggle every 500Âµs means 768 cycles (875 for v2)
+	LDY #0					; reset timer
+	LDA #16
+	STA count				; will do 16x ~ 2 s
+	JSR beep1k
+
 ; keep SMPTE bars
 	LDA #%00011000			; screen 1
 	STA IO8mode				; SMPTE is visible
-; * play 1 kHz for a couple of seconds (adjusted for 1.536 MHz) *
-; toggle every 500µs means 768 cycles (875 for v2)
+; * play 1 kHz for a few seconds (adjusted for 1.536 MHz) *
+; toggle every 500Âµs means 768 cycles (875 for v2)
 	LDY #0					; reset timer
 	LDA #32
 	STA count				; will do 32x ~ 4 s
-bp_rpt:
-		NOP					; (2) for timing accuracy
-#ifdef	VERSION2
-		NOP					; (2) v2 only
-		LDX #172			; (2) v2 needs 172, as 172x5+15 = 875
-#else
-		LDX #151			; (2) 151x5+13 = 768!
-#endif
-bp_loop:
-#ifdef	TURBO
-			STX temp
-			NOP				; double loop delay
-#endif
-			DEX
-			BNE bp_loop		; 5t per iteration (needs ~153 of them)
-		INY					; (2)
-		STY IOBeep			; (4)
-		BNE bp_rpt			; (mostly 3)
-	DEC count
-		BNE bp_rpt
+	JSR beep1k
+
 ; decompress 'just kidding' screen over current one
 	LDY #<kidding
 	LDX #>kidding
@@ -554,14 +545,16 @@ dth_sw:
 		STA count
 		CMP #15
 		BCS dth_sw
-	LDA #8
-	JSR ms20				; ~160 ms delay, no longer 75
+	LDA #4
+	JSR ms20				; ~80 ms delay, no longer 75
 ; next iteration
 	PLA
 	DEC						; *** CMOS ***
 	BNE d_rpt
+	LDA #100
+	JSR ms20				; wait a couple of seconds
 
-; make copies of Durango·X logo into SMPTE screen, both normal and shifted by one pixel
+; make copies of DurangoÂ·X logo into SMPTE screen, both normal and shifted by one pixel
 ; both copies integrated!
 	LDY #<screen1			; actually 0
 	LDA #>screen1			; $20
@@ -601,6 +594,7 @@ cp_loop:
 		INX
 		CPX #$64			; logo size is four pages (assume screen3 = $6000)
 		BNE cp_pg
+
 ; *** get ready to launch concurrent tasks ***
 	LDA #$38
 	STA IO8mode				; standard screen for scroller
@@ -664,7 +658,7 @@ nmi:
 
 ; *** interrupt routine (for NMI test) *** could be elsewhere
 isr:
-	NOP						; make sure it takes over 13-15 µsec
+	NOP						; make sure it takes over 13-15 Âµsec
 	INC test				; increment standard zeropage address (no longer DEC)
 	NOP
 	NOP
@@ -715,8 +709,7 @@ dl_1:
 
 ; *** delay ~20A ms *** assuming 1.536 MHz clock! NEW
 ms20:
-	LDX #11					; computed iterations for a 20ms delay
-	LDY #44					; first iteration takes ~0.17 the time, actually ~10.17 iterations
+	LDX #24					; computed iterations for a 20ms delay eeek
 m20d:
 #ifdef	TURBO
 			STY temp
@@ -783,9 +776,9 @@ rle_exit:
 glitch:
 	LDA (base)				; get randomish data
 	INC base
-	BNE gl_nw
-		INC base+1
-gl_nw:
+;	BNE gl_nw
+;		INC base+1
+;gl_nw:
 	TAY
 	LDA IO8mode
 	ORA #$C0				; HIRES & inverse
@@ -794,12 +787,23 @@ gl_nw:
 gl_loop:
 		STA IOBeep			; (4) place LSB on speaker
 		ROR					; (2)
-		LDX #50				; will make around 250t delay ~6.1 kHz
+		LDX #6				; will make around 30t delay per bit, or ~6.4 kHz per byte
 gl_dly:
 			DEX				; (2X)
 			BNE gl_dly		; (3X)
 		DEY					; (2)
-		BNE gl_loop			; (usually 3) total 11
+		BNE gl_loop			; (usually 3)
+	LDA (base)				; get randomish data again
+	TYA						; eeeek
+gl_loop2:
+		STA IOBeep			; (4) place LSB on speaker
+		ROR					; (2)
+		LDX #6				; will make around 30t delay per bit, or ~6.4 kHz per byte
+gl_dly2:
+			DEX				; (2X)
+			BNE gl_dly2		; (3X)
+		DEY					; (2)
+		BNE gl_loop2		; (usually 3)
 	STZ IOBeep				; don't keep speaker on
 	LDA IO8mode
 	AND #$30				; back to colour
@@ -1166,6 +1170,29 @@ sw_down:
 		BCC sw_down
 	RTS
 
+; *** play 1 kHz for a while ***
+; set Y to zero, A for every ~1/8 s
+beep1k:
+		NOP					; (2) for timing accuracy
+#ifdef	VERSION2
+		NOP					; (2) v2 only
+		LDX #172			; (2) v2 needs 172, as 172x5+15 = 875
+#else
+		LDX #151			; (2) 151x5+13 = 768!
+#endif
+bp_loop:
+#ifdef	TURBO
+			STX temp
+			NOP				; double loop delay
+#endif
+			DEX
+			BNE bp_loop		; 5t per iteration (needs ~153 of them)
+		INY					; (2)
+		STY IOBeep			; (4)
+		BNE beep1k			; (mostly 3)
+	DEC count
+		BNE beep1k
+	RTS
 
 ; ********************
 ; *** *** data *** ***
@@ -1265,10 +1292,10 @@ wave:
 
 ; *** displayed text ***
 msg:
-	.asc	"    ", 16, 32, 16, 32, 16, " Durango·X: the 8-bit computer for the 21st Century! ", 16, 32, 16, 32, 16
+	.asc	"    ", 16, 32, 16, 32, 16, " DurangoÂ·X: the 8-bit computer for the 21st Century! ", 16, 32, 16, 32, 16
 	.asc	"    65C02 @ 1.536-3.5 MHz... 32K RAM... 32K ROM in cartridge... "
 	.asc	"128x128/16 colour, or 256x256 mono video... 1-bit audio! ", 19, 32, 7, 32, 19
-	.asc	" Designed in Almería by @zuiko21 at LaJaquería.org ", 17, 32, 7, 32, 17
+	.asc	" Designed in AlmerÃ­a by @zuiko21 at LaJaquerÃ­a.org ", 17, 32, 7, 32, 17
 	.asc	" Big thanks to @emiliollbb and @zerasul, plus all the folks at 6502.org    "
 	.asc	14, 32, 6, 32, 6, " P.S.: Learn to code in assembly! ", 2, 32, 2, 32, 15, "    ", 0
 end:
