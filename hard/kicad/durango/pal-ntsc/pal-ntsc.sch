@@ -323,7 +323,7 @@ Text Label 3750 3700 0    50   ~ 0
 Y_BIAS
 Wire Wire Line
 	3750 3700 4050 3700
-Text Label 3450 3700 2    50   ~ 0
+Text Label 3400 3700 2    50   ~ 0
 Y
 Text Label 4450 3900 0    50   ~ 0
 Y_BUF
@@ -814,6 +814,82 @@ Wire Wire Line
 	2100 5150 2300 5150
 Text Label 2100 2300 0    50   ~ 0
 RGB
-Text Notes 2250 2600 0    50   ~ 0
+Text Notes 2300 2600 0    50   ~ 0
 POWER
+$Comp
+L Connector_Generic:Conn_02x05_Odd_Even J202
+U 1 1 66483205
+P 2550 1750
+F 0 "J202" H 2600 1350 50  0000 C CNN
+F 1 "RGB" H 2600 1450 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x05_P2.54mm_Horizontal" H 2550 1750 50  0001 C CNN
+F 3 "~" H 2550 1750 50  0001 C CNN
+	1    2550 1750
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 664B4163
+P 2750 1950
+F 0 "#PWR?" H 2750 1700 50  0001 C CNN
+F 1 "GND" H 2755 1777 50  0000 C CNN
+F 2 "" H 2750 1950 50  0001 C CNN
+F 3 "" H 2750 1950 50  0001 C CNN
+	1    2750 1950
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3050 2900 3050 1850
+Wire Wire Line
+	3050 1850 2750 1850
+Wire Wire Line
+	2750 1750 3150 1750
+Wire Wire Line
+	3150 1750 3150 3000
+Wire Wire Line
+	3250 3100 3250 1650
+Wire Wire Line
+	3250 1650 2750 1650
+NoConn ~ 2750 1550
+Wire Wire Line
+	2250 1850 2000 1850
+Wire Wire Line
+	2000 1850 2000 3700
+Wire Wire Line
+	2000 3700 3450 3700
+Connection ~ 3450 3700
+Text Label 2200 1850 2    50   ~ 0
+Y
+Text Label 2800 1850 0    50   ~ 0
+RED
+Text Label 2800 1750 0    50   ~ 0
+GREEN
+Text Label 2800 1650 0    50   ~ 0
+BLUE
+Wire Wire Line
+	2250 1750 1900 1750
+Wire Wire Line
+	1900 1750 1900 2500
+Wire Wire Line
+	1900 2500 4350 2500
+Connection ~ 4350 2500
+Text Label 2200 1750 2    50   ~ 0
+~CSYNC
+Wire Wire Line
+	2250 1950 2250 2600
+Connection ~ 2250 2600
+Wire Wire Line
+	2100 2300 2100 1650
+Wire Wire Line
+	2100 1650 2250 1650
+Connection ~ 2100 2300
+Text Label 2200 1550 2    50   ~ 0
+AUDIO
+Wire Wire Line
+	2200 4400 1800 4400
+Wire Wire Line
+	1800 4400 1800 1550
+Wire Wire Line
+	1800 1550 2250 1550
+Connection ~ 2200 4400
 $EndSCHEMATC

@@ -644,7 +644,7 @@ U 1 1 6647E176
 P 8600 2700
 F 0 "J4" H 8600 3067 50  0000 C CNN
 F 1 "S-Video" H 8600 2976 50  0000 C CNN
-F 2 "" H 8600 2700 50  0001 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Horizontal" H 8600 2700 50  0001 C CNN
 F 3 "http://service.powerdynamics.com/ec/Catalog17/Section%2011.pdf" H 8600 2700 50  0001 C CNN
 	1    8600 2700
 	1    0    0    -1  
@@ -816,4 +816,15 @@ Text Label 2100 2300 0    50   ~ 0
 RGB
 Text Notes 2250 2600 0    50   ~ 0
 POWER
+$Comp
+L Connector_Generic:Conn_02x05_Odd_Even J202
+U 1 1 66483205
+P 2450 1750
+F 0 "J202" H 2500 2167 50  0000 C CNN
+F 1 "Conn_02x05_Odd_Even" H 2500 2076 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x05_P2.54mm_Horizontal" H 2450 1750 50  0001 C CNN
+F 3 "~" H 2450 1750 50  0001 C CNN
+	1    2450 1750
+	-1   0    0    1   
+$EndComp
 $EndSCHEMATC

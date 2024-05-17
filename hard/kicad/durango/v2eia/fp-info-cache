@@ -1,4 +1,4 @@
-16740683147915041
+16745823812230041
 Battery
 BatteryHolder_Bulgin_BX0036_1xC
 Bulgin Battery Holder, BX0036, Battery Type C (https://www.bulgin.com/products/pub/media/bulgin/data/Battery_holders.pdf)
@@ -47376,6 +47376,20 @@ SCART socket, Tyco P/N 1483465-1
 6
 6
 durango
+chuchario
+
+
+0
+0
+0
+durango
+chuchario600
+
+
+0
+0
+0
+durango
 durango-x
 
 
@@ -65378,6 +65392,13 @@ Potentiometer, vertical, 9mm, dual, http://www.taiwanalpha.com.tw/downloads?targ
 potentiometer vertical 9mm dual
 0
 8
+6
+Potentiometer_THT
+Potentiometer_Alps_225G_Dual_Horizontal
+Potentiometer, horizontal, Alps RK163 Dual, http://www.alps.com/prod/info/E/HTML/Potentiometer/RotaryPotentiometers/RK16/RK16_list.html
+Potentiometer horizontal Alps RK163 Dual
+0
+6
 6
 Potentiometer_THT
 Potentiometer_Alps_RK09K_Single_Horizontal
