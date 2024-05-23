@@ -1,4 +1,4 @@
-; chihuahua test
+; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
 ; last modified 20240522-2200
 
@@ -25,7 +25,7 @@
 	fw_irq	= $0200
 	fw_nmi	= $0202
 	VIAptr	= 0				; Chihuahua specific
-	test	= 2
+	test	= VIAptr+2
 	posi	= $FB			; %11111011
 	systmp	= $FC			; %11111100
 	sysptr	= $FD			; %11111101
@@ -73,11 +73,31 @@ reset:
 	TSX						; usual 6502 stuff
 ; first of all, check whether C or D configuration
 	STZ VIAptr
-	LDA #$BF				; last page of I/O for D map
-
-	STA VIAptr+1			; placeholder *****
-
+	LDA #$80				; first page of I/O for D map
+	STA VIAptr+1
+	LDY #IER
+via_chk:
+		LDA #$7F			; writing $7F to IER will read as $80!
+		STA (VIAptr), Y
+		LDA (VIAptr), Y		; check response
+		CMP #$80			; all interrupts disabled
+	BEQ via_ok				; VIA is responding properly (if 32K ROM, make sure $800E does *not* contain $80, which is reasonable)
+		LSR VIAptr+1		; or try C map instead
+		BIT VIAptr+1		; just once
+		BVS via_chk			; %x1xxxxxx is C map
+; *** no VIA detected is horribly wrong ***
+panic_loop:
+				STA (VIAptr), Y			; fill memory with current A value
+				INY
+				BNE panic_loop
+			INC VIAptr+1	; next page
+			BNE panic_loop
+		INC					; change fill pattern
+		INC VIAptr+1		; ...and skip zeropage
+		BNE panic_loop		; no need for BRA
+; *** end of panic routine ***
 ; basic VIA init
+via_ok:
 
 ; ** zeropage test **
 ; set CB2 high in order to activate sound (PB7) during test
@@ -124,7 +144,7 @@ zp_ok:
 	LDY #IORB
 	STA (VIAptr), Y
 
-; * simple mirroring test * beware of VIA!
+; * simple mirroring test *
 ; probe responding size first
 	LDA #127				; max 32 KB, also a fairly good offset EEEEK
 	LDY VIAptr+1			; * check whether C (+) or D (-) config *
@@ -320,3 +340,26 @@ it_wt:
 ; ***************************
 
 ; bong sound, tell C from D thru beep codes and lock (just waiting for NMIs)
+
+; *********************
+; *** base firmware ***
+; *********************
+
+; *** interrupt handlers ***
+irq:
+	JMP (fw_irq)
+nmi:
+	JMP (fw_nmi)
+
+; *** ROM footer ***
+	.dsb	$FFD6-*, $FF	; filling
+
+	.asc	"DmOS"			; usual ROM signature
+
+	.dsb	$FFE1-*, $FF	; Durango devCart is *not* supported, but anyway
+	JMP ($FFFC)
+
+	.dsb	$FFFA-*, $FF	; fill until 6502 hard vectors
+	.word	nmi
+	.word	reset
+	.word	irq
