@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240522-2200
+; last modified 20240523-1307
 
 ; *** VIA constants ***
 #define	IORB	0
@@ -32,6 +32,7 @@
 	himem	= $FF			; %11111111
 
 ; ****************************
+	t1ct	= (1000000/250)-2			; 250 Hz interrupt at 1 MHz clock rate
 
 * = $F400					; 3 KiB start address
 ; *** standard header ***
@@ -57,8 +58,8 @@ rom_start:
 	.word	$1001			; 1.0a1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$B000			; time, 22.00		1011 0-000 000-0 0000
-	.word	$58B6			; date, 2024/5/22	0101 100-0 101-1 0110
+	.word	$6000			; time, 12.00		0110 0-000 000-0 0000
+	.word	$58B7			; date, 2024/5/23	0101 100-0 101-1 0111
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -84,7 +85,7 @@ via_chk:
 	BEQ via_ok				; VIA is responding properly (if 32K ROM, make sure $800E does *not* contain $80, which is reasonable)
 		LSR VIAptr+1		; or try C map instead
 		BIT VIAptr+1		; just once
-		BVS via_chk			; %x1xxxxxx is C map
+		BVS via_chk			; %01000000 is C map
 ; *** no VIA detected is horribly wrong ***
 panic_loop:
 				STA (VIAptr), Y			; fill memory with current A value
@@ -96,17 +97,34 @@ panic_loop:
 		INC VIAptr+1		; ...and skip zeropage
 		BNE panic_loop		; no need for BRA
 ; *** end of panic routine ***
+
 ; basic VIA init
 via_ok:
+	LDA #%11101110			; CA2, CB2 high, CA1, CB1 trailing
+	LDY #PCR
+	STA (VIAptr), Y
+	LDA #%01000000			; T1 free run (PB7 off), no SR, no latch
+	LDY #ACR
+	STA (VIAptr), Y
+	LDA #<t1ct
+	LDY #T1CL				; will load T1CL
+	STA (VIAptr), Y
+	INY						; now for T1CH, that will start count
+	LDA #>t1ct
+	STA (VIAptr), Y
+	LDA #%11000000			; enable T1 interrupt
+	LDY #IER
+	STA (VIAptr), Y
 
 ; ** zeropage test **
 ; set CB2 high in order to activate sound (PB7) during test
 	LDA #%10000000			; PB7 will be output
 	LDY #DDRB
 	STA (VIAptr), Y			; universal form (STA VIA+DDRB)
-	LDA #%11101000			; CB2 hi, CA2 handshake out, CB1/CA1 trailing
-	LDY #PCR
-	STA (VIAptr), Y
+	LDY #PCR				; * not really needed...
+	LDA (VIAptr), Y			; *
+	ORA #%11100000			; * make sure CB2 hi (could use LDA# instead of LDA/ORA#)
+	STA (VIAptr), Y			; *
 ; make high pitched chirp during test
 	LDX #<test				; 6510-savvy...
 zp_1:
@@ -303,6 +321,8 @@ ram_ok:
 ; ** IRQ test ** REVISE
 irq_test:
 ; interrupt setup
+	LDY #T1CL
+	LDA (VIAptr), Y			; just clear previous interrupts
 	LDY #<isr				; ISR address
 	LDX #>isr
 	STY fw_irq				; standard-ish IRQ vector
@@ -340,6 +360,39 @@ it_wt:
 ; ***************************
 
 ; bong sound, tell C from D thru beep codes and lock (just waiting for NMIs)
+
+; ********************************************
+; *** interrupt service and other routines ***
+; ********************************************
+isr:
+	BIT $8000+T1CL			; simpler way to acknowledge the T1 interrupt!
+	BIT $4000+T1CL
+	INC test				; increment standard zeropage address (no longer DEC)
+exit:
+	RTI
+
+; *** standard panic, will make buzzing bursts instead of Durango's LED
+panic:
+	SEC						; at least one bit will flash
+	EOR #$FF				; this is positive logic, BTW
+	LDY #%11101110			; make sure CB2 is high
+	STY $800C
+	STY $400C				; update PCR (safer)
+ploop:
+			INY
+			BNE ploop
+		INX
+		BNE ploop			; total cycle is ~326 ms
+	ROL						; keep rotating pattern (cycle ~2.94 s)
+	TAY						; must save pattern safely
+	LDA #%01000000			; standard ACR config
+	BCC no_buzz
+		ORA #%10000000		; if C, then enable output
+no_buzz:
+	STA $800B
+	STA $400B				; update ACR (safer)
+	TYA
+	BRA ploop				; not sure about A
 
 ; *********************
 ; *** base firmware ***
