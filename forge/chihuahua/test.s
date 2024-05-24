@@ -1,6 +1,11 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240523-1307
+; last modified 20240525-0011
+
+; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
+#ifndef	SPEED
+#define		SPEED	1000000
+#endif
 
 ; *** VIA constants ***
 #define	IORB	0
@@ -30,11 +35,11 @@
 	systmp	= $FC			; %11111100
 	sysptr	= $FD			; %11111101
 	himem	= $FF			; %11111111
-
 ; ****************************
-	t1ct	= (1000000/250)-2			; 250 Hz interrupt at 1 MHz clock rate
 
-* = $F400					; 3 KiB start address
+	t1ct	= (SPEED/250)-2	; 250 Hz interrupt at 1 MHz (or whatever) clock rate
+
+* = $F800					; 2 KiB start address
 ; *** standard header ***
 rom_start:
 ; header ID
@@ -330,10 +335,12 @@ irq_test:
 	LDY #0					; initial value and inner counter reset
 	STY test
 ; assume HW interrupt is on
-	LDX #100				; about 129 ms, time for 32 interrupts
+	LDX #(50*SPEED/1000000)	; 50@1 MHz is about 128 ms, time for 32 interrupts
 	CLI						; start counting!
 ; this provides timeout
 it_1:
+			NOP
+			STY systmp		; add some delay
 			INY
 			BNE it_1
 		DEX
@@ -382,7 +389,7 @@ ploop:
 			INY
 			BNE ploop
 		INX
-		BNE ploop			; total cycle is ~326 ms
+		BNE ploop			; total cycle is ~326 ms @ 1 MHz
 	ROL						; keep rotating pattern (cycle ~2.94 s)
 	TAY						; must save pattern safely
 	LDA #%01000000			; standard ACR config
@@ -393,6 +400,18 @@ no_buzz:
 	STA $400B				; update ACR (safer)
 	TYA
 	BRA ploop				; not sure about A
+
+; ************
+; *** data ***
+; ************
+
+; *** bit position table ***
+; INDEX =    0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
+bit_l:
+	.byt	$00, $01, $02, $04, $08, $10, $20, $40, $80, $00, $00, $00, $00, $00, $00, $00
+;            -    A0   A1   A2   A3   A4   A5   A6   A7   A8   A9   AA   AB   AC   AD   AE (A14)
+bit_h:
+	.byt    $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $02, $04, $08, $10, $20, $40
 
 ; *********************
 ; *** base firmware ***
