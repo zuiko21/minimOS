@@ -1,13 +1,28 @@
 ; *** adapted version of EhBASIC for Chihuahua (standalone) ***
 ; (c) 2015-2024 Carlos J. Santisteban
-; last modified 20240526-1024
+; last modified 20240527-0003
 ; *************************************************************
 
-; Enhanced BASIC, $ver 2.22 with Durango-X support!
-
-; $E7E1 $E7CF $E7C6 $E7D3 $E7D1 $E7D5 $E7CF $E81E $E825
+; xa ehbasic_chi.s -I ../../OS/firmware -l labels 
+; add -DAUXIO="aux_io.s" for LOAD SAVE device (replace aux_io.s by suitable file)
+; *** default map is D-map (use -DCMAP if needed) ***
+; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
+#ifndef	SPEED
+#define		SPEED	1000000
+#endif
 
 #define	VERSION	4
+
+; might include #defines for OLEDkeypad as well... or better, BIOS support
+;#define	KBBYPAD
+#define		KBDMAT
+
+; default AUX I/O is Virtual Serial Port
+#ifndef	AUXIO
+#define	AUXIO	"vsp.s"
+#endif
+
+; $E7E1 $E7CF $E7C6 $E7D3 $E7D1 $E7D5 $E7CF $E81E $E825
 
 ; 2.00	new revision numbers start here
 ; 2.01	fixed LCASE$() and UCASE$()
@@ -26,18 +41,6 @@
 
 	* = $C000				; fits in 16K!
 
-; try to assemble from here with
-; xa ehbasic_chi.s -I ../../OS/firmware -l labels 
-; add -DAUXIO="aux_io.s" for LOAD SAVE device (replace aux_io.s by suitable file)
-
-;#define	KBBYPAD
-#define		KBDMAT
-
-; default AUX I/O is Virtual Serial Port
-#ifndef	AUXIO
-#define	AUXIO	"vsp.s"
-#endif
-
 ; *****************************************************
 ; *** firmware & hardware definitions for Chihuahua ***
 ; *****************************************************
@@ -51,7 +54,7 @@ fw_fnt		= fw_cbin+1		; (new, pointer to relocatable 2KB font file)
 fw_mask		= fw_fnt+2		; (for inverse/emphasis mode)
 fw_chalf	= fw_mask+1		; (remaining pages to write)
 fw_sind		= fw_chalf+1
-fw_ccol		= fw_sind+3		; (no longer SPARSE array of two-pixel combos, will store ink & paper)
+fw_ccol		= fw_sind+3		; *not used* (no longer SPARSE array of two-pixel combos, will store ink & paper)
 fw_ctmp		= fw_ccol+4
 fw_cbyt		= fw_ctmp		; (temporary glyph storage) other tmp
 fw_ccnt		= fw_cbyt		; (bytes per raster counter, no longer X) actually the same tmp
@@ -65,11 +68,13 @@ GAMEPAD_MASK1	= fw_knes+1	; EEEEEEEEK
 GAMEPAD_MASK2	= GAMEPAD_MASK1+1		; needed for standard gamepad support
 gamepad1	= GAMEPAD_MASK2+1			; "standard" read value at $226
 gamepad2	= gamepad1+1				; "standard" read value at $227
+
 ; CONIO zeropage usage ($E4-$E7)
 cio_pt		= $E6
 cio_src		= $E4
+
 ; ** graphic routines ZP usage **
-; local variables
+; local variables ($E8-$F1)
 gr_tmp		= $E8			; eeeeeeeeeek
 
 sx			= gr_tmp+1		; * used by LINE *
@@ -85,7 +90,7 @@ ddf_y		= ddf_x+2		; starts negative and gets added to f, thus 16-bit
 cir_x		= ddf_y+2		; seems 8 bit
 cir_y		= cir_x+1		; 8-bit as well
 
-; parameters
+; parameters ($F2-F7)
 px_col		= $F2			; THIRD byte in parameter area, used by all graphic functions
 radius		= px_col+1		; used by CIRCLE only
 x1			= radius+1		; used by LINE, CIRCLE and RECT
@@ -94,7 +99,12 @@ x2			= y1+1			; used by LINE and RECT
 y2			= x2+1
 
 ; *** Chihuahua hardware definitions ****
--DChiVIA	= $8000			; actual VIA location (picoVDU needs D-map)
+#ifndef	CMAP
+VIA			= $8000			; actual VIA location (picoVDU needs D-map)
+#else
+VIA			= $4000			; special case, must relocate picoVDU to $2000)
+#endif
+	t1ct	= (SPEED/250)-2	; 250 Hz interrupt at 1 MHz (or whatever) clock rate
 
 ; *** VIA constants ***
 #define	IORB	0
@@ -114,6 +124,12 @@ y2			= x2+1
 #define	IER		14
 #define	NHRA	15
 
+; *** other constants ***
+#define	PASK	$A
+#define	M5X8	$B
+#define	NES0L	$C
+#define	NES1C	$D
+
 .(
 rom_start:
 ; header ID
@@ -122,12 +138,11 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-#ifndef	DEBUG
-	.asc	"EhBASIC for picoVDU", 0	; C-string with filename @ [8], max 238 chars
-#else
-	.asc	"EhBASIC (DEBUG version)", 0	; C-string with filename @ [8], max 238 chars
+	.asc	"EhBASIC for Chihuaha/picoVDU"	; C-string with filename @ [8], max 238 chars
+#ifdef	CMAP
+	.asc	"    (C-map)"		; C-string with filename @ [8], max 238 chars
 #endif
-	.asc	"Derived from EhBASIC v2.22 by Lee Davison", 13, "RIP"	; comment with IMPORTANT attribution
+	.asc	0, "Derived from EhBASIC v2.22 by Lee Davison", 13, "RIP"	; comment with IMPORTANT attribution
 	.byt	0				; second terminator for optional comment, just in case
 
 ; advance to end of header *** NEW format
@@ -7995,12 +8010,12 @@ LAB_DOCLS
 LAB_CLSERR
 	RTS
 
-; perform INK i
+; perform INK i, PAPER p
 LAB_INK
-LAB_PAPER
+LAB_PAPER				; both take an argument which is ignored
 ; perform SCREEN n
 LAB_SCREEN
-	JMP LAB_GTBY		; get argument 0...3 and return
+	JMP LAB_GTBY		; get argument 0...3 (ignored) and return
 
 ; perform LOCATE x,y -- worth using the stack
 LAB_LOCATE
@@ -8032,7 +8047,7 @@ LAB_SENDCUR
 
 ; perform MODE n
 LAB_MODE
-	JSR LAB_GTBY		; get argument 0...3 (may add 4,5 for greyscale)
+	JSR LAB_GTBY		; get argument 0...3 (ignored)
 	JMP LAB_DOCLS		; and clear screen (and return)
 
 ; perform PLOT x,y,c -- worth using the stack
@@ -8111,6 +8126,7 @@ LAB_RECT
 
 ; perform BEEP d,n (len/25, note 0=F3 ~ 42=B6 (ZX Spectrum value+7))
 LAB_BEEP
+; *** *** *** MUST revise ASAP ***
 	JSR LAB_GTBY		; length
 	STX gr_tmp			; outside any register
 	JSR LAB_SCGB		; note
@@ -8165,7 +8181,7 @@ LAB_PAEX
 
 ; The rest are tables messages and code for RAM
 
-; *** Durango-X BEEP specific, table of notes and cycles ***
+; *** Durango-X BEEP specific, table of notes and cycles *** REVISE ASAP
 fr_Tab:
 ;			C	C#	D	D#	E	F	F#	G	G#	A	A#	B
 	.byt						232,219,206,195,184,173,164		; octave 3
@@ -8182,7 +8198,7 @@ cy_Tab:
 
 ; the rest of the code is tables and BASIC start-up code
 
-; *** Durango-X version tables ***
+; *** device tables ***
 dev_in					; input device drivers
 	.word	conio		; device 0, standard console (keyboard)
 	.word	dev_null	; device 2, NULL
@@ -9220,7 +9236,7 @@ LAB_IMSG	.byte	" Extra ignored",$0D,$00
 LAB_REDO	.byte	" Redo from start",$0D,$00
 
 ; *** *** ************************** *** ***
-; *** *** DURANGO-X GRAPHICS LIBRARY *** ***
+; *** *** CHIHUAHUA GRAPHICS LIBRARY *** ***
 ; *** *** ************************** *** ***
 LAB_CKRD			; *** check circle coordinates, including radius ***
 	PHA				; save colour for later
@@ -9290,18 +9306,22 @@ jf_res:
 		INX
 		BNE jf_res
 ; *** basic VIA init ***
-	LDA #%11101110			; CA2, CB2 high, CA1, CB1 trailing
-	STA $8000+PCR
-	LDA #%01000000			; T1 free run (PB7 off), no SR, no latch
-	STA $8000+ACR
+	STZ VIA+DDRA			; PA as input by default
+	LDA #%10011111			; make PB7 and PB0-4 (BA0-3, /WR) output
+	STA VIA+IORB			; disable sound
+	STA VIA+DDRB			; make this after writing, so no handshake
+	LDA #%10101110			; CA2 high, CB2 pulse, CA1, CB1 trailing
+	STA VIA+PCR
+	LDA #%01000001			; T1 free run (PB7 off), no SR, latch CA1 only
+	STA VIA+ACR
 	LDY #<t1ct
 	LDX #>t1ct
-	STY $8000+T1CL			; will load T1CL
-	STX $8000+T1CH			; now for T1CH, that will start count
+	STY VIA+T1CL			; will load T1CL
+	STX VIA+T1CH			; now for T1CH, that will start count
 	LDA #$7F				; disable ALL interrupts for a while
-	STA $8000+IER
-	LDA #%11000000			; enable T1 interrupt
-	STA $8000+IER
+	STA VIA+IER
+	LDA #%11000000			; enable T1 interrupt only
+	STA VIA+IER
 ; *** back to EhBASIC stuff
 	LDX #>std_irq
 	LDY #<std_irq
@@ -9314,8 +9334,10 @@ jf_res:
 ; * check keyboard *
 	LDX #0					; default is PASK
 	LDA #32					; column 6
-;*	STA IO9m5x8				; select it
-;*	LDA IO9m5x8				; and read rows
+	LDY #M5X8				; matrix keyboard port
+	JSR IOwrite				; STA IO9m5x8				; select it
+	LDY #M5X8
+	JSR IOread				; LDA IO9m5x8				; and read rows
 	CMP #$2C				; is it a 5x8 matrix? EEEEEEEEK
 	BNE not_5x8
 		LDX #2				; set as default keyboard
@@ -9333,6 +9355,28 @@ not_5x8:
 
 	JMP eh_basic			; start BASIC!
 
+; ********************************
+; *** preliminary BIOS support ***
+; ********************************
+#ifndef	BIOS
+#define	BIOS
+; read from IO9 port Y into A
+IOread:
+	TYA
+	ORA #%10010000			; (2+2) keep PB7 high, set RWB to read
+	STA VIA+IORB			; (4) this launches IOx transaction and latches input data (if jumper LATCH exists)
+	LDA VIA+IORA			; (4+12 overhead)
+	RTS
+; write A to IO9 port Y
+IOwrite:
+	STA VIA+IORA			; (4) store outgoing data
+	LDA #$FF				; (2) all bits are output
+	STA VIA+DDRA			; (4) peripheral data present, but no transaction yet
+	TYA
+	ORA #%10000000			; (2+2) keep PB7 high, just in case (D4 is 0, write transaction)
+	STA VIA+IORB			; (4+12 overhead) execute transaction
+	RTS
+#endif
 ; **************************
 ; *** interrupt handlers ***
 ; **************************
@@ -9355,31 +9399,39 @@ irq_sup:
 	JSR kbd_isr
 ; *** *** special patch for improving BREAK key read *** ***
 #ifdef	KBDMAT
-	LDA #1			; select first column
-;*	STA IO9m5x8
-;*	LDA IO9m5x8		; get rows for this column
-	AND #%10100000	; check bits for SHIFT and SPACE *** check
+	LDA #1					; select first column
+	LDY #M5X8				; matrix keyboard port
+	JSR IOwrite				; STA IO9m5x8				; select it
+	LDY #M5X8
+	JSR IOread				; LDA IO9m5x8				; and read rows
+	AND #%10100000			; check bits for SHIFT and SPACE *** check
 	CMP #%10100000
 	BNE irq_nbrk
-		LDA #3		; BREAK key code (Control-C)
-		STA kb_asc	; as received key continuously while pressed, no matter the repeat function!
+		LDA #3				; BREAK key code (Control-C)
+		STA kb_asc			; as received key continuously while pressed, no matter the repeat function!
 irq_nbrk:
-;*	STZ IO9m5x8		; disable column (CMOS only, not needed but lowers power)
+	LDA #0
+	LDY #M5X8				; matrix keyboard port
+	JSR IOwrite				; STZ IO9m5x8		; disable column (CMOS only, not needed but lowers power)
 #endif
 ; *** ***
 ; * after reading keyboard, gamepads are read, may suppress this for slight performance improvement *
 ; keep gamepad input updated (already done for KBD emulation)
-;*	STA IO9nes0				; latch pad status
+	LDY #NES0L
+	JSR IOwrite				; STA IO9nes0				; latch pad status (stored value irrelevant)
 	LDX #8					; number of bits to read
 nes_loop:
-;*		STA IO9nes1			; send clock pulse
+		LDY #NES1C
+		JSR IOwrite			; STA IO9nes1			; send clock pulse
 		DEX
 		BNE nes_loop		; all bits read @ IO9nes0/1
 ; done, but check GAMEPAD_MASK1 & GAMEPAD_MASK2 after reading ports in BASIC!
-;*	LDA IO9nes0
+	LDY #NES0L
+	JSR IOread				; LDA IO9nes0
 	EOR GAMEPAD_MASK1
 	STA gamepad1			; corrected value at $226, or 550
-;*	LDA IO9nes1
+	LDY #NES1C
+	JSR IOread				; LDA IO9nes1
 	EOR GAMEPAD_MASK2
 	STA gamepad2			; corrected value at $227, or 551
 ; * end of gamepad code *
@@ -9395,14 +9447,20 @@ nes_loop:
 	LDA $104, X				; get pushed PSR (note stack frame)
 	AND #$10				; check BRK bit
 	BEQ not_brk
-; *** BRK happened *** will keep the LED flashing, as no debugger is installed
+; *** BRK happened *** will make buzzer bursts, as no debugger is installed
 brk_panic:
 				INX
 				BNE brk_panic
 			INY
-			BNE brk_panic	; 0.2s delay
-		INC					; cycle LED
-		STA IOAie
+			BNE brk_panic	; 0.3s delay @ 1 MHz
+		INC					; cycle status
+; activate/deactivate buzzer depending on D0
+		LDX #%11000000		; T1 free run (PB7 on), no SR, no latch
+		BIT #%00000001		; check D0 only
+		BNE do_buzz
+			LDX #%01000000	; otherwise PB7 off
+do_buzz:
+		STX VIA+ACR			; STA IOAie
 		BRA brk_panic
 not_brk:
 	PLY						; for 5x8 matrix support
@@ -9431,7 +9489,8 @@ kbd_drv:
 	.word	drv_5x8
 ; generic PASK driver
 drv_pask:
-;*	LDA IO9pask				; PASK peripheral address
+	LDY #PASK
+	JSR IOread				; LDA IO9pask				; PASK peripheral address
 	STA kb_asc				; store for software
 	RTS
 
