@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Chihuahua (standalone) ***
 ; (c) 2015-2024 Carlos J. Santisteban
-; last modified 20240525-2337
+; last modified 20240526-1024
 ; *************************************************************
 
 ; Enhanced BASIC, $ver 2.22 with Durango-X support!
@@ -24,7 +24,7 @@
 ; 2.21	fixed IF .. THEN RETURN to not cause error
 ; 2.22	fixed RND() breaking the get byte routine
 
-	* = $C000
+	* = $C000				; fits in 16K!
 
 ; try to assemble from here with
 ; xa ehbasic_chi.s -I ../../OS/firmware -l labels 
@@ -93,14 +93,26 @@ y1			= x1+1
 x2			= y1+1			; used by LINE and RECT
 y2			= x2+1
 
-; *** Durango-X hardware definitions ****
--IO8attr	= $DF80			; video mode register
--IO8blk		= $DF88			; video blanking signals
--IO9di		= $DF9A			; data input (PASK standard)
--IO9nes0	= $DF9C			; NES controller for alternative keyboard emulation & latch
--IO9nes1	= $DF9D			; NES controller clock port
--IOAie		= $DFA0			; canonical interrupt enable address (d0)
--IOBeep		= $DFB0			; canonical buzzer address (d0)
+; *** Chihuahua hardware definitions ****
+-DChiVIA	= $8000			; actual VIA location (picoVDU needs D-map)
+
+; *** VIA constants ***
+#define	IORB	0
+#define	IORA	1
+#define	DDRB	2
+#define	DDRA	3
+#define	T1CL	4
+#define	T1CH	5
+#define	T1LL	6
+#define	T1LH	7
+#define	T2CL	8
+#define	T2CH	9
+#define	VSR		10
+#define	ACR		11
+#define	PCR		12
+#define	IFR		13
+#define	IER		14
+#define	NHRA	15
 
 .(
 rom_start:
@@ -111,7 +123,7 @@ rom_start:
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
 #ifndef	DEBUG
-	.asc	"EhBASIC", 0	; C-string with filename @ [8], max 238 chars
+	.asc	"EhBASIC for picoVDU", 0	; C-string with filename @ [8], max 238 chars
 #else
 	.asc	"EhBASIC (DEBUG version)", 0	; C-string with filename @ [8], max 238 chars
 #endif
@@ -9245,8 +9257,9 @@ LAB_PLRD			; check radius+coord against screen limit
 
 dxplot_lib:
 ;	STA px_col		; colour was in A, but X and Y already loaded
-#include "../../OS/firmware/modules/durango-plot.s"
+#include "../../OS/firmware/modules/picovdu-plot.s"
 
+; line & circle are abstract routines using plot, thus unchanged
 dxline_lib:
 #include "../../OS/firmware/modules/durango-line.s"
 
@@ -9261,8 +9274,6 @@ AA_end_basic		; for easier size computation
 
 ; *** *** *** ***** *** *** ***
 
-;	.dsb	$E000-*, $FF	; just in case, skip IO
-
 ; *****************************
 ; *** include firmware here ***
 ; *****************************
@@ -9272,15 +9283,26 @@ reset:
 	CLD
 	LDX #$FF
 	TXS
-;	STX IOAie				; ### enable Durango-X hardware interrupt ###
-;	LDA #$B8				; start in HIRES mode, if possible (note RGB bit set, just in case)
-;	STA IO8attr
 	INX						; X was $FF, now 0
 jf_res:
 		STZ 0, X			; reset all zeropage, just in case (will do standard devices)
 		STZ $0200, X		; reset all page two as well, useful for drivers
 		INX
 		BNE jf_res
+; *** basic VIA init ***
+	LDA #%11101110			; CA2, CB2 high, CA1, CB1 trailing
+	STA $8000+PCR
+	LDA #%01000000			; T1 free run (PB7 off), no SR, no latch
+	STA $8000+ACR
+	LDY #<t1ct
+	LDX #>t1ct
+	STY $8000+T1CL			; will load T1CL
+	STX $8000+T1CH			; now for T1CH, that will start count
+	LDA #$7F				; disable ALL interrupts for a while
+	STA $8000+IER
+	LDA #%11000000			; enable T1 interrupt
+	STA $8000+IER
+; *** back to EhBASIC stuff
 	LDX #>std_irq
 	LDY #<std_irq
 	STY fw_irq				; set standard interrupt vectors
@@ -9292,8 +9314,8 @@ jf_res:
 ; * check keyboard *
 	LDX #0					; default is PASK
 	LDA #32					; column 6
-	STA IO9m5x8				; select it
-	LDA IO9m5x8				; and read rows
+;*	STA IO9m5x8				; select it
+;*	LDA IO9m5x8				; and read rows
 	CMP #$2C				; is it a 5x8 matrix? EEEEEEEEK
 	BNE not_5x8
 		LDX #2				; set as default keyboard
@@ -9304,8 +9326,8 @@ not_5x8:
 ;	STZ fw_mask
 ;	STZ fw_io9
 	LDA #$87				; yellow on blue intial colours (not for HIRES)
-	STA fw_ccol+1			; will reconstruct colours from this upon FF
-	STA fw_scur				; as bit 7 is on, activates cursor *** check if different colours ***
+;	STA fw_ccol+1			; will reconstruct colours from this upon FF
+;	STA fw_scur				; as bit 7 is on, activates cursor *** check if different colours ***
 	LDY #12					; FF = clear screen
 	JSR conio
 
@@ -9334,32 +9356,30 @@ irq_sup:
 ; *** *** special patch for improving BREAK key read *** ***
 #ifdef	KBDMAT
 	LDA #1			; select first column
-	STA IO9m5x8
-	LDA IO9m5x8		; get rows for this column
+;*	STA IO9m5x8
+;*	LDA IO9m5x8		; get rows for this column
 	AND #%10100000	; check bits for SHIFT and SPACE *** check
 	CMP #%10100000
 	BNE irq_nbrk
 		LDA #3		; BREAK key code (Control-C)
 		STA kb_asc	; as received key continuously while pressed, no matter the repeat function!
 irq_nbrk:
-	STZ IO9m5x8		; disable column (CMOS only, not needed but lowers power)
+;*	STZ IO9m5x8		; disable column (CMOS only, not needed but lowers power)
 #endif
 ; *** ***
 ; * after reading keyboard, gamepads are read, may suppress this for slight performance improvement *
-#ifndef	KBBYPAD
 ; keep gamepad input updated (already done for KBD emulation)
-	STA IO9nes0				; latch pad status
+;*	STA IO9nes0				; latch pad status
 	LDX #8					; number of bits to read
 nes_loop:
-		STA IO9nes1			; send clock pulse
+;*		STA IO9nes1			; send clock pulse
 		DEX
 		BNE nes_loop		; all bits read @ IO9nes0/1
 ; done, but check GAMEPAD_MASK1 & GAMEPAD_MASK2 after reading ports in BASIC!
-#endif
-	LDA IO9nes0
+;*	LDA IO9nes0
 	EOR GAMEPAD_MASK1
 	STA gamepad1			; corrected value at $226, or 550
-	LDA IO9nes1
+;*	LDA IO9nes1
 	EOR GAMEPAD_MASK2
 	STA gamepad2			; corrected value at $227, or 551
 ; * end of gamepad code *
@@ -9411,7 +9431,7 @@ kbd_drv:
 	.word	drv_5x8
 ; generic PASK driver
 drv_pask:
-	LDA IO9pask				; PASK peripheral address
+;*	LDA IO9pask				; PASK peripheral address
 	STA kb_asc				; store for software
 	RTS
 
@@ -9425,9 +9445,9 @@ drv_pask:
 -conio:
 #include "../../OS/firmware/modules/conio-chihuahua.s"
 
-; keyboard driver
+; keyboard driver (needs specific driver as IOx is emulated by VIA)
 #ifdef	KBDMAT
-#include "../../OS/firmware/modules/durango-5x8key.s"
+#include "../../OS/firmware/modules/chihuahua-5x8key.s"
 #endif
 
 ; *** padding, signatures and hardware vectors ***
