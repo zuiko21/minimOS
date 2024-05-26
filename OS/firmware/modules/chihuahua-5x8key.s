@@ -1,15 +1,17 @@
-; Chihuahua 5x8 keyboard driver
+; Durango-type 5x8 keyboard driver for Chihuahua
 ; v1.0b6
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240526-1035
+; last modified 20240527-0020
 
 #echo 5x8 keyboard support
 
 ; usual definitions
 #ifndef	KEYBDRV
 #define	KEYBDRV
-;***IO9pask	= $DF9A				; PASK port
-IO9m5x8	= $DF9B				; matrix keyboard port
+; keyboard ports
+#define	PASK	$A
+#define	M5X8	$B
+; memory usage
 kb_asc	= $020A				; read key
 kb_mod	= $020B				; modifier keys combo (d7=ALT, d6=SHIFT)
 kb_ctl	= $020C				; control key flag (d7)
@@ -37,7 +39,8 @@ kbd_drv:
 
 ; *** generic PASK driver *** not compatible with Durango SRAM card
 drv_pask:
-	LDA IO9pask				; PASK peripheral address
+	LDY #PASK
+	JSR IOread				; LDA IO9pask				; PASK peripheral address
 	STA kb_asc				; store for software
 	RTS
 #endif
@@ -46,39 +49,48 @@ drv_pask:
 
 ; *** 5x8 matrix driver ***
 drv_5x8:
-	LDY #0
-	STY kb_mod				; reset modifiers (no need for STZ)
-	INY						; column 1 has CAPS SHIFT
-	STY IO9m5x8				; select column
-	LDA IO9m5x8				; get rows
+	STZ kb_mod				; reset modifiers
+	LDA #1					; column 1 has CAPS SHIFT
+	LDY #M5X8
+	JSR IOwrite				; STY IO9m5x8				; select column
+	LDY #M5X8
+	JSR IOread				; LDA IO9m5x8				; get rows
 	ASL						; extract ROW8 (SPACE)...
 	ASL						; ...then ROW7 (ENTER)...
 	ASL						; ...and finally ROW6 (SHIFT) into C (3b, 6t; was 6b, 7/8t)
 	ROR kb_mod				; insert CAPS bit at left (will end at d6)
-	INY						; second column
-	STY IO9m5x8				; select it
-	LDA IO9m5x8				; and read its rows
+	LDA #2					; second column
+	LDY #M5X8
+	JSR IOwrite				; STY IO9m5x8				; select column
+	LDY #M5X8
+	JSR IOread				; LDA IO9m5x8				; and read its rows
 	ASL						; only d7 is interesting (ALT, aka SYMBOL SHIFT)
 	ROR kb_mod				; insert ALT bit at d7
-	LDY #5					; prepare to scan backwards (note indices are 1...5)
+	LDX #5					; prepare to scan backwards (note indices are 1...5)
 col_loop:
-		LDA col_bit-1, Y	; get bit position for column, note offset
-		STA IO9m5x8			; select column
-		LDA IO9m5x8			; and read it
-;		STZ IO9m5x8			; deselect all, not necessary but lower power (CMOS only)
-		AND k_mask-1, Y		; discard modifier bits, note offset
+		LDA col_bit-1, X	; get bit position for column, note offset
+		PHX
+		LDY #M5X8
+		JSR IOwrite			; STA IO9m5x8			; select column
+		LDY #M5X8
+		JSR IOred			; LDA IO9m5x8			; and read it
+;		LDA #0
+;		LDY #M5X8
+;		JSR IOwrite			; STZ IO9m5x8			; deselect all, not necessary but lower power (CMOS only)
+		PLX					; note macro is not NMOS savvy
+		AND k_mask-1, X		; discard modifier bits, note offset
 		BEQ kb_skip			; no keys from this column
-			LDX #7			; row loop (row indices are 0...7)
+			LDY #7			; row loop (row indices are 0...7)
 row_loop:
 			ASL				; d7 goes first
 			BCS key_pr		; detected keypress!
-			DEX
+			DEY
 			BPL row_loop	; all 8 rows
 kb_skip:
-		DEY					; next column
+		DEX					; next column
 		BNE col_loop
 ; if arrived here, no keys (beside modifiers) were pressed
-	STY kb_scan				; Y is zero, which is now an invalid scancode
+	STX kb_scan				; X is zero, which is now an invalid scancode
 	LDA #DELAY				; reset key repeat
 	STA kb_rcnt
 no_key:
@@ -88,11 +100,11 @@ set_key:					; common ASCII code output, with or without actual key
 	RTS
 ; otherwise, a key was detected
 key_pr:
-	TYA						; get column index (1...5)
+	TXA						; get column index (1...5)
 	ASL
 	ASL
 	ASL						; times 8 (8...40)
-	STX kb_asc				; TEMPORARY STORAGE of ·····XXX
+	STY kb_asc				; TEMPORARY STORAGE of ·····XXX
 	ORA kb_asc				; A = ··YYYXXX
 	BIT kb_ctl				; is control-mode enabled?
 	BMI ctl_key				; check different table (without checking any modifiers nor repeat)
@@ -102,12 +114,12 @@ key_pr:
 		BNE diff_k			; nope, just generate new keystroke
 			DEC kb_rcnt		; otherwise update repeat counter
 				BNE no_key	; if not expired, just simulate released key for a while
-			LDX #RATE		; I believe this goes here...
-			STX kb_rcnt		; the counter is reset, repeat current keystroke
+			LDY #RATE		; I believe this goes here...
+			STY kb_rcnt		; the counter is reset, repeat current keystroke
 diff_k:
 		STA kb_scan			; in any case, update last scancode as new keystroke
-		TAX					; use scancode as index
-		LDA kb_map-8, X		; get ASCII from layout, note offset
+		TAY					; use scancode as index
+		LDA kb_map-8, Y		; get ASCII from layout, note offset
 		CMP #$FF			; invalid ASCII, this will change into CTRL mode
 		BNE set_key			; not the CONTROL combo, all done
 			STA kb_ctl		; otherwise, $FF sets d7 for CTRL mode
@@ -119,11 +131,31 @@ ctl_key:
 	CMP kb_scan				; same as before?
 	BEQ no_key				; nope, just generate new keystroke
 		STA kb_scan			; in any case, update last scancode as new keystroke
-		TAX					; use scancode (without modifiers) as index
-		LDA ctl_map-8, X	; get ASCII from CONTROL-mode layout, note offset
+		TAY					; use scancode (without modifiers) as index
+		LDA ctl_map-8, Y	; get ASCII from CONTROL-mode layout, note offset
 		BEQ no_key			; invalid ASCII, this will stay into CTRL mode
 		STA kb_ctl			; otherwise clear d7, no longer in CTRL mode (works as none of control codes is over 127)
 	BNE set_key				; and send that control code (no need for BRA)
+
+#ifndef	BIOS
+#define	BIOS
+; read from IO9 port Y into A
+IOread:
+	TYA
+	ORA #%10010000			; (2+2) keep PB7 high, set RWB to read
+	STA VIA+IORB			; (4) this launches IOx transaction and latches input data (if jumper LATCH exists)
+	LDA VIA+IORA			; (4+12 overhead)
+	RTS
+; write A to IO9 port Y
+IOwrite:
+	STA VIA+IORA			; (4) store outgoing data
+	LDA #$FF				; (2) all bits are output
+	STA VIA+DDRA			; (4) peripheral data present, but no transaction yet
+	TYA
+	ORA #%10000000			; (2+2) keep PB7 high, just in case (D4 is 0, write transaction)
+	STA VIA+IORB			; (4+12 overhead) execute transaction
+	RTS
+#endif
 
 ; *******************
 ; *** data tables ***
