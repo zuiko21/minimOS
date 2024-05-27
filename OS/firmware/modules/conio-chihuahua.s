@@ -2,7 +2,7 @@
 ; Chihuahua firmware console 0.9.6b12
 ; for picoVDU 32x32 text b&w
 ; (c) 2021-2024 Carlos J. Santisteban
-; last modified 20240527-1220
+; last modified 20240527-1340
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -208,12 +208,8 @@ sc_loop:
 			BNE sc_hr
 ; data has been transferred, now should clear the last line
 		JSR cio_clear		; cannot be inlined! Y is 0
-; important, cursor pointer must get back one row up! that means subtracting one (or two) from MSB
-		LDA IO8attr			; eeeeeek
-		ASL					; now C is set for hires
-		LDA fw_ciop+1		; cursor MSB
-		SBC #1				; with C set (hires) this subtracts 1, but 2 if C is clear! (colour)
-		STA fw_ciop+1
+; important, cursor pointer must get back one row up! that means subtracting one from MSB
+		DEC fw_ciop+1		; cursor MSB
 ; *** end of actual scrolling routine
 		BIT fw_scur				; if cursor is on... [NEW]
 		BPL cn_ok
@@ -432,10 +428,8 @@ do_cu_end:
 
 cio_ff:
 ; * * FF, clear screen AND intialise values! * *
-; note that firmware must set IO8attr hardware register appropriately at boot!
 ; we don't want a single CLS to switch modes, although a font reset is acceptable, set it again afterwards if needed
 ; * things to be initialised... *
-; fw_ccol, note it's an array now (restore from PAPER-INK previous setting)
 ; fw_fnt (new, pointer to relocatable 2KB font file)
 ; fw_mask (for inverse/emphasis mode)
 ; fw_cbin (binary or multibyte mode, but must be reset BEFORE first FF)
@@ -640,7 +634,7 @@ do_atyx:
 ; any non-zero value is stored and returned the first time, otherwise returns empty (C set)
 ; any repeated characters must have a zero inbetween, 10 ms would suffice (perhaps as low as 5 ms)
 cn_in:
-	LDY $020A				; standard address for generated ASCII code
+	LDY kb_asc				; standard address for generated ASCII code
 ; *** should this properly address a matrix keyboard?
 	BEQ cn_empty			; no transfer is in the making
 cn_chk:
