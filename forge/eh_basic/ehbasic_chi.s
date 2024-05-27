@@ -8285,7 +8285,7 @@ LAB_MSZM
 LAB_SMSG
 	.byte	" Bytes free",$0D,$0D
 	.byte	"Enhanced BASIC 2.22f", VERSION+'0', $0D
-	.byte	"for Chihuahua & picoÂ·VDU",$0D,$00	; *** do not know why this was $0A ***
+	.byte	"for Chihuahua & pico·VDU",$0D,$00	; *** do not know why this was $0A ***
 
 ; numeric constants and series
 
@@ -9430,7 +9430,7 @@ nes_loop:
 		LDY #NES1C
 		JSR IOwrite			; STA IO9nes1			; send clock pulse
 		DEX
-		BNE nes_loop		; all bits read @Â IO9nes0/1
+		BNE nes_loop		; all bits read @ IO9nes0/1
 ; done, but check GAMEPAD_MASK1 & GAMEPAD_MASK2 after reading ports in BASIC!
 	LDY #NES0L
 	JSR IOread				; LDA IO9nes0
