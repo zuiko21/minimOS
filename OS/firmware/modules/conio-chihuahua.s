@@ -2,7 +2,7 @@
 ; Chihuahua firmware console 0.9.6b12
 ; for picoVDU 32x32 text b&w
 ; (c) 2021-2024 Carlos J. Santisteban
-; last modified 20240525-2330
+; last modified 20240527-1220
 
 ; ****************************************
 ; CONIO, simple console driver in firmware
@@ -231,7 +231,7 @@ cn_newl:
 	JMP chk_scrl			; will return
 
 cn_lf:
-; * * do LF * *, adds 1 (hires) or 2 (colour) to MSB
+; * * do LF * *, adds 1 (hires) to MSB
 	JSR cur_lf				; do actual LF...
 	JMP chk_scrl			; ...check and return
 
@@ -339,19 +339,32 @@ do_tab:
 
 cio_bel:
 ; * * BEL, make a beep! * *
-; 40ms @ 1 kHz is 40 cycles
-; the 500µs halfperiod is about 325t
-	_CRITIC					; let's make things the right way
-	LDX #79					; 80 half-cycles, will end with d0 clear
-cbp_pul:
-;		STX IOBeep			; pulse output bit (4)
-		LDY #63				; should make around 500µs halfcycle (2)
-cbp_del:
-			DEY
-			BNE cbp_del		; each iteration is (2+3)
-		DEX					; go for next semicycle
-		BPL cbp_pul			; must do zero too, to clear output bit
-	_NO_CRIT				; eeeeek
+; easier way is to just enable audio output for the T1-IRQ (125 Hz), maybe more than 40 ms
+; say, 160 ms is 20 cycles, seems OK
+	PHP
+	CLI						; enable interrupts, just in case
+; should I check for PB7 output?
+	LDA VIA+DDRB
+	ORA #%10000000			; make sure PB7 is output
+	STA VIA+DDRB
+; first, turn speaker on
+	LDA VIA+ACR
+ 	TAY						; keep original ACR value
+	ORA #%11000000			; change T1 to PB7 square wave, make sure continuous interrupts are on
+	STA VIA+ACR
+; wait some time while sounding
+	LDA ticks				; time reference
+	CLC
+	ADC #40					; 40x4 = 160 mS later
+cb_loop:
+		CMP ticks
+		BNE cb_loop			; loop until 160 ms have passed
+; turn off speaker (faster)
+	STY VIA+ACR				; change T1 back to continuous interrupts
+	LDA VIA+IORB
+	ORA #%10000000			; keep PB7 high, just in case
+	STA VIA+IORB
+	PLP						; just in case interrupts were shut off
 	RTS
 
 cio_bs:
