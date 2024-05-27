@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Chihuahua (standalone) ***
 ; (c) 2015-2024 Carlos J. Santisteban
-; last modified 20240527-0003
+; last modified 20240527-1342
 ; *************************************************************
 
 ; xa ehbasic_chi.s -I ../../OS/firmware -l labels 
@@ -8124,7 +8124,7 @@ LAB_RECT
 ;	JMP dxrect_lib		; call graphic function and return!
 	RTS
 
-; perform BEEP d,n (len/25, note 0=F3 ~ 42=B6 (ZX Spectrum value+7))
+; perform BEEP d,n (len/50, note 0=F3 ~ 42=B6 (ZX Spectrum value+7))
 LAB_BEEP
 ; *** *** *** MUST revise ASAP ***
 	JSR LAB_GTBY		; length
@@ -8132,17 +8132,18 @@ LAB_BEEP
 	JSR LAB_SCGB		; note
 	CPX #43				; less than four octaves
 	BCS LAB_BERR		; outside range!
-	LDY fr_Tab, X		; period
+	LDY fl_Tab, X		; VIA period (LSB)
+	LDA fh_Tab, X		; VIA period (MSB)
+	PHP
+	CLI					; make sure interrupts are on
 	LDA cy_Tab, X		; base cycles
-	STA gr_tmp+1		; eeek
-	TYA					; save period...
-	SEI
+	STA gr_tmp+1		; eeek?
+;****** ***** REVISEEEEE
 LAB_BRPT
 	LDX gr_tmp+1		; retrieve repetitions...
 LAB_BLNG
 	TAY					; ...and period
 LAB_BCYC
-	JSR LAB_BDLY		; waste 12 cyles...
 	NOP					; ...and another 2
 	DEY
 	BNE LAB_BCYC		; total 19t per iteration
@@ -8151,8 +8152,13 @@ LAB_BCYC
 	BNE LAB_BLNG
 	DEC gr_tmp			; repeat until desired length
 	BNE LAB_BRPT
-	CLI					; restore interrupts!
-LAB_BDLY
+; *** ** *** ****
+; all done, shut speaker off and restore interrupt timing
+	LDY #<t1ct
+ 	LDA #>t1ct			; stardard values
+	STY T1CL
+	STA T1CH			; restore timer 1
+	PLP					; restore interrupt state
 	RTS
 LAB_BERR
 	JMP LAB_FCER		; function call error & return
@@ -8190,7 +8196,7 @@ fr_Tab:
 	.byt	 39, 36, 34, 32, 31, 29, 27, 26, 24, 23, 22, 20		; octave 6
 	
 cy_Tab:
-;			C	C#	D	D#	E	F	F#	G	G#	A	A#	B		repetitions for a normalised 20 ms length
+;			C	C#	D	D#	E	F	F#	G	G#	A	A#	B		repetitions for a normalised 20 ms length, is this half-periods?
 	.byt						  6,  8,  8,  8,  8, 10, 10		; octave 3
 	.byt	 10, 12, 12, 12, 14, 14, 14, 16, 16, 18, 18, 20		; octave 4
 	.byt	 20, 22, 24, 24, 26, 28, 30, 30, 32, 34, 38, 38		; octave 5
@@ -8279,7 +8285,7 @@ LAB_MSZM
 LAB_SMSG
 	.byte	" Bytes free",$0D,$0D
 	.byte	"Enhanced BASIC 2.22f", VERSION+'0', $0D
-	.byte	"for Chihuahua & pico·VDU",$0D,$00	; *** do not know why this was $0A ***
+	.byte	"for Chihuahua & picoÂ·VDU",$0D,$00	; *** do not know why this was $0A ***
 
 ; numeric constants and series
 
@@ -9424,7 +9430,7 @@ nes_loop:
 		LDY #NES1C
 		JSR IOwrite			; STA IO9nes1			; send clock pulse
 		DEX
-		BNE nes_loop		; all bits read @ IO9nes0/1
+		BNE nes_loop		; all bits read @Â IO9nes0/1
 ; done, but check GAMEPAD_MASK1 & GAMEPAD_MASK2 after reading ports in BASIC!
 	LDY #NES0L
 	JSR IOread				; LDA IO9nes0
