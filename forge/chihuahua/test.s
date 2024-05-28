@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240525-0011
+; last modified 20240528-2349
 
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -367,6 +367,28 @@ it_wt:
 ; ***************************
 
 ; bong sound, tell C from D thru beep codes and lock (just waiting for NMIs)
+	SEI
+	LDA #%11010000			; T1 free run (PB7 on), SR free, no latch
+	STA $8000+ACR
+	LDY #<(t1ct/8)
+	LDX #>(t1ct/8)			; *** placeholder 1 kHz
+	STY $8000+T1CL
+	STX $8000+T1CH
+	LDY #1
+	STY $8000+T2CL
+	STZ $8000+T2CH			; free run at max speed
+	LDA #$FF				; max volume PWM
+bvol:
+		STA $8000+VSR		; set PWM
+bloop:
+				INX
+				BNE bloop
+			INY
+			BNE bloop
+		LSR					; one bit less
+		BNE bvol
+lock:
+	BRA lock				; stop here, this far
 
 ; ********************************************
 ; *** interrupt service and other routines ***
