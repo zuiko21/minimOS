@@ -8148,7 +8148,7 @@ LAB_BCYC
 	DEY
 	BNE LAB_BCYC		; total 19t per iteration
 	DEX
-	STX IOBeep			; toggle speaker
+;	STX IOBeep			; toggle speaker
 	BNE LAB_BLNG
 	DEC gr_tmp			; repeat until desired length
 	BNE LAB_BRPT
@@ -8188,12 +8188,13 @@ LAB_PAEX
 ; The rest are tables messages and code for RAM
 
 ; *** Durango-X BEEP specific, table of notes and cycles *** REVISE ASAP
-fr_Tab:
+fl_Tab:
 ;			C	C#	D	D#	E	F	F#	G	G#	A	A#	B
 	.byt						232,219,206,195,184,173,164		; octave 3
 	.byt	155,146,138,130,123,116,109,103, 97, 92, 87, 82		; octave 4
 	.byt	 77, 73, 69, 65, 61, 58, 55, 52, 49, 46, 43, 41		; octave 5
 	.byt	 39, 36, 34, 32, 31, 29, 27, 26, 24, 23, 22, 20		; octave 6
+fh_Tab:
 	
 cy_Tab:
 ;			C	C#	D	D#	E	F	F#	G	G#	A	A#	B		repetitions for a normalised 20 ms length, is this half-periods?

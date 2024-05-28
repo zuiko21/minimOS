@@ -1,7 +1,7 @@
 ; Durango-type 5x8 keyboard driver for Chihuahua
 ; v1.0b6
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240527-0020
+; last modified 20240528-0949
 
 #echo 5x8 keyboard support
 
@@ -73,7 +73,7 @@ col_loop:
 		LDY #M5X8
 		JSR IOwrite			; STA IO9m5x8			; select column
 		LDY #M5X8
-		JSR IOred			; LDA IO9m5x8			; and read it
+		JSR IOread			; LDA IO9m5x8			; and read it
 ;		LDA #0
 ;		LDY #M5X8
 ;		JSR IOwrite			; STZ IO9m5x8			; deselect all, not necessary but lower power (CMOS only)
