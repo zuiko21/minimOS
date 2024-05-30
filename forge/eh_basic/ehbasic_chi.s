@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Chihuahua (standalone) ***
 ; (c) 2015-2024 Carlos J. Santisteban
-; last modified 20240527-1342
+; last modified 20240530-1046
 ; *************************************************************
 
 ; xa ehbasic_chi.s -I ../../OS/firmware -l labels 
@@ -8126,7 +8126,6 @@ LAB_RECT
 
 ; perform BEEP d,n (len/50, note 0=F3 ~ 42=B6 (ZX Spectrum value+7))
 LAB_BEEP
-; *** *** *** MUST revise ASAP ***
 	JSR LAB_GTBY		; length
 	STX gr_tmp			; outside any register
 	JSR LAB_SCGB		; note
@@ -8190,11 +8189,17 @@ LAB_PAEX
 ; *** Durango-X BEEP specific, table of notes and cycles *** REVISE ASAP
 fl_Tab:
 ;			C	C#	D	D#	E	F	F#	G	G#	A	A#	B
-	.byt						232,219,206,195,184,173,164		; octave 3
-	.byt	155,146,138,130,123,116,109,103, 97, 92, 87, 82		; octave 4
-	.byt	 77, 73, 69, 65, 61, 58, 55, 52, 49, 46, 43, 41		; octave 5
-	.byt	 39, 36, 34, 32, 31, 29, 27, 26, 24, 23, 22, 20		; octave 6
+	.byt						 93, 27,236,205,191,192,208		; octave 3
+	.byt	237, 22, 75,140,216, 45,141,245,102,223, 95,231		; octave 4
+	.byt	117, 10,165, 69,235,150, 69,250,  ?,110, 47,242		; octave 5
+	.byt	185,132, 81, 33,244,202,162,124, 88,  ?, 22,248		; octave 6
+
 fh_Tab:
+;			C	C#	D	D#	E	F	F#	G	G#	A	A#	B
+	.byt						 22, 21, 20, 19, 18, 17, 16		; octave 3
+	.byt	 15, 14, 13, 13, 12, 11, 11, 10,  9,  9,  8,  8		; octave 4
+	.byt	  7,  7,  7,  6,  6,  6,  5,  5,  4,  4,  4,  4		; octave 5
+	.byt	  4,  4,  3,  3,  3,  3,  3,  2,  2,  2,  2,  2		; octave 6
 	
 cy_Tab:
 ;			C	C#	D	D#	E	F	F#	G	G#	A	A#	B		repetitions for a normalised 20 ms length, is this half-periods?
@@ -8286,7 +8291,7 @@ LAB_MSZM
 LAB_SMSG
 	.byte	" Bytes free",$0D,$0D
 	.byte	"Enhanced BASIC 2.22f", VERSION+'0', $0D
-	.byte	"for Chihuahua & pico·VDU",$0D,$00	; *** do not know why this was $0A ***
+	.byte	"for Chihuahua & picoÂ·VDU",$0D,$00	; *** do not know why this was $0A ***
 
 ; numeric constants and series
 
@@ -9431,7 +9436,7 @@ nes_loop:
 		LDY #NES1C
 		JSR IOwrite			; STA IO9nes1			; send clock pulse
 		DEX
-		BNE nes_loop		; all bits read @ IO9nes0/1
+		BNE nes_loop		; all bits read @Â IO9nes0/1
 ; done, but check GAMEPAD_MASK1 & GAMEPAD_MASK2 after reading ports in BASIC!
 	LDY #NES0L
 	JSR IOread				; LDA IO9nes0
