@@ -1,6 +1,6 @@
 ; *** adapted version of EhBASIC for Chihuahua (standalone) ***
 ; (c) 2015-2024 Carlos J. Santisteban
-; last modified 20240530-1046
+; last modified 20240531-1046
 ; *************************************************************
 
 ; xa ehbasic_chi.s -I ../../OS/firmware -l labels 
@@ -8189,24 +8189,24 @@ LAB_PAEX
 ; *** Durango-X BEEP specific, table of notes and cycles *** REVISE ASAP
 fl_Tab:
 ;			C	C#	D	D#	E	F	F#	G	G#	A	A#	B
-	.byt						 93, 27,236,205,191,192,208		; octave 3
-	.byt	237, 22, 75,140,216, 45,141,245,102,223, 95,231		; octave 4
-	.byt	117, 10,165, 69,235,150, 69,250,  ?,110, 47,242		; octave 5
-	.byt	185,132, 81, 33,244,202,162,124, 88,  ?, 22,248		; octave 6
+	.byt						 48,143,247,103,225, 97,233		; octave 3
+	.byt	119, 12,166, 71,237,152, 71,252,180,112, 49,244		; octave 4
+	.byt	187,134, 83, 35,246,204,164,126, 90, 56, 24,250		; octave 5
+	.byt	222,195,170,146,123,102, 82, 63, 45, 28, 12,253		; octave 6
 
 fh_Tab:
 ;			C	C#	D	D#	E	F	F#	G	G#	A	A#	B
-	.byt						 22, 21, 20, 19, 18, 17, 16		; octave 3
-	.byt	 15, 14, 13, 13, 12, 11, 11, 10,  9,  9,  8,  8		; octave 4
-	.byt	  7,  7,  7,  6,  6,  6,  5,  5,  4,  4,  4,  4		; octave 5
-	.byt	  4,  4,  3,  3,  3,  3,  3,  2,  2,  2,  2,  2		; octave 6
+	.byt						 11, 10,  9,  9,  8,  8,  7		; octave 3
+	.byt	  7,  7,  6,  6,  5,  5,  5,  4,  4,  4,  4,  3		; octave 4
+	.byt	  3,  3,  3,  3,  2,  2,  2,  2,  2,  2,  2,  1		; octave 5
+	.byt	  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0		; octave 6
 	
 cy_Tab:
 ;			C	C#	D	D#	E	F	F#	G	G#	A	A#	B		repetitions for a normalised 20 ms length, is this half-periods?
-	.byt						  6,  8,  8,  8,  8, 10, 10		; octave 3
-	.byt	 10, 12, 12, 12, 14, 14, 14, 16, 16, 18, 18, 20		; octave 4
-	.byt	 20, 22, 24, 24, 26, 28, 30, 30, 32, 34, 38, 38		; octave 5
-	.byt	 40, 44, 46, 50, 52, 56, 58, 60, 66, 68, 72, 78		; octave 6
+	.byt						  7,  7,  8,  8,  9,  9, 10		; octave 3
+	.byt	 10, 11, 12, 12, 13, 14, 15, 16, 17, 18, 19, 20		; octave 4
+	.byt	 21, 22, 23, 25, 26, 28, 30, 31, 33, 35, 37, 40		; octave 5
+	.byt	 42, 44, 47, 50, 53, 56, 59, 63, 66, 70, 75, 79		; octave 6
 
 ; the rest of the code is tables and BASIC start-up code
 
