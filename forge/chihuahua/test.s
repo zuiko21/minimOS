@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240528-2349
+; last modified 20240605-1257
 
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -77,6 +77,12 @@ reset:
 	CLD
 	LDX #$FF
 	TSX						; usual 6502 stuff
+#ifdef	DEBUG
+	STX $8000+IORB
+	STX $4000+IORB			; all PB LEDs will flash for a moment
+	STX $8000+DDRB
+	STX $4000+DDRB			; set all PB bits to output, wherever the VIA is
+#endif
 ; first of all, check whether C or D configuration
 	STZ VIAptr
 	LDA #$80				; first page of I/O for D map
@@ -105,9 +111,11 @@ panic_loop:
 
 ; basic VIA init
 via_ok:
-	LDA #%11101110			; CA2, CB2 high, CA1, CB1 trailing
-	LDY #PCR
-	STA (VIAptr), Y
+#ifdef	DEBUG
+	LDA #%10000000			; all LEDs off, except PB7 to disable sound (VIA OK)
+	STA $8000+IORB
+	STA $4000+IORB			; clear all LEDs, safest way
+#endif
 	LDA #%01000000			; T1 free run (PB7 off), no SR, no latch
 	LDY #ACR
 	STA (VIAptr), Y
@@ -168,6 +176,11 @@ zp_ok:
 	STA (VIAptr), Y
 
 ; * simple mirroring test *
+#ifdef	DEBUG
+	LDA #%10000001			; turn on PB0 (zeropage OK)
+	STA $8000+IORB
+	STA $4000+IORB
+#endif
 ; probe responding size first
 	LDA #127				; max 32 KB, also a fairly good offset EEEEK
 	LDY VIAptr+1			; * check whether C (+) or D (-) config *
@@ -283,6 +296,11 @@ at_bad:
 addr_ok:
 
 ; ** RAM test **
+#ifdef	DEBUG
+	LDA #%10000010			; PB1 means address test OK
+	STA $8000+IORB
+	STA $4000+IORB
+#endif
 	LDA #$F0				; initial value
 	LDY #0
 	STY test				; standard pointer address
@@ -325,6 +343,11 @@ ram_ok:
 
 ; ** IRQ test ** REVISE
 irq_test:
+#ifdef	DEBUG
+	LDA #%10000100			; PB2 means RAM OK
+	STA $8000+IORB
+	STA $4000+IORB
+#endif
 ; interrupt setup
 	LDY #T1CL
 	LDA (VIAptr), Y			; just clear previous interrupts
@@ -365,6 +388,11 @@ it_wt:
 ; ***************************
 ; *** all OK, end of test ***
 ; ***************************
+#ifdef	DEBUG
+	LDA #%10001000			; PB3 means IRQ OK
+	STA $8000+IORB
+	STA $4000+IORB
+#endif
 
 ; bong sound, tell C from D thru beep codes and lock (just waiting for NMIs)
 	SEI
