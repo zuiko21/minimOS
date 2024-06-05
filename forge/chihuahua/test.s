@@ -10,7 +10,7 @@
 ; *** VIA constants ***
 #define	IORB	0
 #define	IORA	1
-#define	DDRB	2
+#define		2
 #define	DDRA	3
 #define	T1CL	4
 #define	T1CH	5
@@ -131,9 +131,13 @@ via_ok:
 
 ; ** zeropage test **
 ; set CB2 high in order to activate sound (PB7) during test
-	LDA #%10000000			; PB7 will be output
+#ifndef	DEBUG
+ 	LDA #%10000000			; PB7 will be output
+#else
+	LDA #$FF			; all outputs (could be universal)
+#endif
 	LDY #DDRB
-	STA (VIAptr), Y			; universal form (STA VIA+DDRB)
+	STA (VIAptr), Y			; universal form (STA VIA+)
 	LDY #PCR				; * not really needed...
 	LDA (VIAptr), Y			; *
 	ORA #%11100000			; * make sure CB2 hi (could use LDA# instead of LDA/ORA#)
@@ -397,24 +401,31 @@ it_wt:
 ; bong sound, tell C from D thru beep codes and lock (just waiting for NMIs)
 	SEI
 	LDA #%11010000			; T1 free run (PB7 on), SR free, no latch
-	STA $8000+ACR
-	LDY #<(t1ct/8)
-	LDX #>(t1ct/8)			; *** placeholder 1 kHz
-	STY $8000+T1CL
-	STX $8000+T1CH
-	LDY #1
-	STY $8000+T2CL
-	STZ $8000+T2CH			; free run at max speed
+	LDY #ACR
+	STA (VIAptr), Y
+	LDA #<(t1ct/8)
+	LDY #T1CL
+	STA (VIAptr), Y
+	LDA #>(t1ct/8)			; *** placeholder 1 kHz
+	LDY #T1CH
+	STA (VIAptr), Y
+	LDA #1
+	LDY #T2CL
+	STA (VIAptr), Y
+	INY						; now pointing to T2CH
+	LDA #0
+	STA (VIAptr), Y			; free run at max speed
 	LDA #$FF				; max volume PWM
 bvol:
-		STA $8000+VSR		; set PWM
+		LDY #VSR
+		STA (VIAptr), Y		; set PWM
 bloop:
 				INX
 				BNE bloop
 			INY
 			BNE bloop
 		LSR					; one bit less
-		BNE bvol
+		BCS bvol
 lock:
 	BRA lock				; stop here, this far
 
@@ -433,8 +444,8 @@ panic:
 	SEC						; at least one bit will flash
 	EOR #$FF				; this is positive logic, BTW
 	LDY #%11101110			; make sure CB2 is high
-	STY $800C
-	STY $400C				; update PCR (safer)
+	STY $8000+PCR
+	STY $4000+PCR				; update PCR (safer)
 ploop:
 			INY
 			BNE ploop
@@ -446,8 +457,8 @@ ploop:
 	BCC no_buzz
 		ORA #%10000000		; if C, then enable output
 no_buzz:
-	STA $800B
-	STA $400B				; update ACR (safer)
+	STA $8000+ACR
+	STA $4000+ACR				; update ACR (safer)
 	TYA
 	BRA ploop				; not sure about A
 
