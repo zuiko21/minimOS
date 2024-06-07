@@ -10,7 +10,7 @@
 ; *** VIA constants ***
 #define	IORB	0
 #define	IORA	1
-#define		2
+#define	DDRB	2
 #define	DDRA	3
 #define	T1CL	4
 #define	T1CH	5

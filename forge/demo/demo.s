@@ -1308,7 +1308,7 @@ msg:
 	.asc	"    ", 16, 32, 16, 32, 16, " Durango·X: the 8-bit computer for the 21st Century! ", 16, 32, 16, 32, 16
 	.asc	"    65C02 @ 1.536-3.5 MHz... 32K RAM... 32K ROM in cartridge... "
 	.asc	"128x128/16 colour, or 256x256 mono video... 1-bit audio! ", 19, 32, 7, 32, 19
-	.asc	" Designed in Almerí­a by @zuiko21 at LaJaquerí­a.org ", 17, 32, 7, 32, 17
+	.asc	" Designed in Almería by @zuiko21 at LaJaquería.org ", 17, 32, 7, 32, 17
 	.asc	" Big thanks to @emiliollbb and @zerasul, plus all the folks at 6502.org    "
 	.asc	14, 32, 6, 32, 6, " P.S.: Learn to code in assembly! ", 2, 32, 2, 32, 15, "    ", 0
 end:
