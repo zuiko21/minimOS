@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240608-1114
+; last modified 20240609-0004
 
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -60,7 +60,7 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1043			; 1.0b3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1044			; 1.0b4		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$5800			; time, 11.00		0101 1-000 000-0 0000
@@ -76,17 +76,13 @@ reset:
 	SEI
 	CLD
 	LDX #$FF
-	TSX						; usual 6502 stuff
+	TXS						; usual 6502 stuff EEEEK
 #ifdef	DEBUG
 	STX $8000+IORB
 	STX $4000+IORB			; all PB LEDs will flash for a moment
 	STX $8000+DDRB
 	STX $4000+DDRB			; set all PB bits to output, wherever the VIA is
 #endif
-	LDY #<exit
-	LDX #>exit
-	STY fw_nmi
-	STX fw_nmi+1			; disable NMI for a while
 ; first of all, check whether C or D configuration
 	STZ VIAptr
 	LDA #$80				; first page of I/O for D map
@@ -120,6 +116,10 @@ via_ok:
 	STA $8000+IORB
 	STA $4000+IORB			; clear all LEDs, safest way
 #endif
+; set CB2 high in order to activate sound (PB7) during test
+	LDY #PCR
+	LDA #%11101110			; * make sure CB2 hi
+	STA (VIAptr), Y			; *
 	LDA #%01000000			; T1 free run (PB7 off), no SR, no latch
 	LDY #ACR
 	STA (VIAptr), Y
@@ -131,18 +131,11 @@ via_ok:
 	STA (VIAptr), Y
 
 ; ** zeropage test **
-; set CB2 high in order to activate sound (PB7) during test
 #ifndef	DEBUG
- 	LDA #%10000000			; PB7 will be output
-#else
 	LDA #$FF				; all outputs (could be universal)
-#endif
 	LDY #DDRB
 	STA (VIAptr), Y			; universal form (STA VIA+)
-	LDY #PCR				; * not really needed...
-	LDA (VIAptr), Y			; *
-	ORA #%11100000			; * make sure CB2 hi (could use LDA# instead of LDA/ORA#)
-	STA (VIAptr), Y			; *
+#endif
 ; make high pitched chirp during test
 	LDX #<test				; Chihuahua and 6510-savvy...
 zp_1:
@@ -177,7 +170,7 @@ zp_bad:
 		JMP panic			; panic if failed
 zp_ok:
 #ifdef	DEBUG
-	LDA #%10000001			; turn on PB0 (zeropage OK)
+	LDA #%11000001			; turn on PB0 (zeropage OK) & PB7 (sound off), PB6 means 'do not use NMI'
 	STA $8000+IORB
 	STA $4000+IORB
 #else
@@ -301,7 +294,7 @@ at_bad:
 		JMP panic
 addr_ok:
 #ifdef	DEBUG
-	LDA #%10000010			; PB1 means address test OK
+	LDA #%11000010			; PB1 means address test OK
 	STA $8000+IORB
 	STA $4000+IORB
 #endif
@@ -355,19 +348,23 @@ ram_ok:
 ; ** IRQ test ** REVISE
 irq_test:
 ; interrupt setup
+	LDY #<exit
+	LDX #>exit
+	STY fw_nmi
+	STX fw_nmi+1			; disable NMI for a while EEEEK
 ;	LDY #T1CL
 ;	LDA (VIAptr), Y			; just clear previous interrupts
 	LDY #<isr				; ISR address
 	LDX #>isr
 	STY fw_irq				; standard-ish IRQ vector
 	STX fw_irq+1
-	LDY #0					; initial value and inner counter reset
-	STY test
 ; make sure HW interrupt is on
 	LDA #%11000000			; enable T1 interrupt
 	LDY #IER
 	STA (VIAptr), Y
 	LDX #(50*SPEED/1000000)	; 50@1 MHz is about 128 ms, time for 32 interrupts
+	LDY #0					; initial value and inner counter reset
+	STY test
 	CLI						; start counting!
 ; this provides timeout
 it_1:
@@ -405,26 +402,23 @@ it_wt:
 
 ; bong sound, tell C from D thru beep codes and lock (just waiting for NMIs)
 	SEI
-	LDA #%11101110			; make sure CB2 is high
-	LDY #PCR
-	STA (VIAptr), Y			; update PCR
 	LDA #<(t1ct/8)
 	LDY #T1CL
 	STA (VIAptr), Y
 	LDA #>(t1ct/8)			; *** placeholder 1 kHz
 	LDY #T1CH
 	STA (VIAptr), Y
-	LDA #1
+	LDA #0
 	LDY #T2CL
 	STA (VIAptr), Y
-;	INY						; now pointing to T2CH
-;	LDA #0
-;	STA (VIAptr), Y			; free run at max speed
+	INY						; now pointing to T2CH
+	STA (VIAptr), Y			; free run at max speed
 	LDA #%11010000			; T1 free run (PB7 on), SR free, no latch
 	LDY #ACR
 	STA (VIAptr), Y			; shifting starts now (SR not yet loaded)
 	LDA #$FF				; max volume PWM
 bvol:
+		LDX #$A0			; shorter envelope
 		LDY #VSR
 		STA (VIAptr), Y		; set PWM
 #ifdef	DEBUG
@@ -438,11 +432,9 @@ bloop:
 			BNE bloop
 		ASL					; one bit less
 		BCS bvol
-#ifdef	DEBUG
-	LDA #%10010000			; PB4 means all tests OK
-	STA $8000+IORB
-	STA $4000+IORB
-#endif
+	LDA #%10010000			; PB4 means all tests OK, also PB7 hi shuts speaker off
+	LDY #IORB
+	STA (VIAptr), Y			; this will shut speaker off
 	LDY #<nmi_test
 	LDX #>nmi_test
 	STY fw_nmi
@@ -467,7 +459,10 @@ nmi_test:
 	LDA #%11101110			; make sure CB2 is high
 	STA $8000+PCR
 	STA $4000+PCR			; update PCR (safer)
-	LDA #%11000000			; set PB7 square wave
+	LDA #$FF
+	STA $8000+DDRB
+	STA $4000+DDRB			; and PB is all output (safer)
+	LDA #%11000000			; set PB7 square wave, no shift
 	STA $8000+ACR
 	STA $4000+ACR			; update ACR (safer)
 	LDX #0					; eeeek
@@ -479,9 +474,9 @@ wait:
 	LDA #%01000000			; back to continuous interrupts but no PB7 output
 	STA $8000+ACR
 	STA $4000+ACR			; update ACR (safer)
-	LDA #%11001110			; make sure CB2 is low, keep speaker off
-	STA $8000+PCR
-	STA $4000+PCR			; update PCR (safer)
+	LDA #%10111111			; make sure PB7 is hi, keep speaker off (PB0-5 green checked NMI)
+	STA $8000+IORB
+	STA $4000+IORB			; update PB7 (safer)
 	PLY
 	PLX
 	PLA
@@ -493,7 +488,7 @@ panic:
 	EOR #$FF				; this is positive logic, BTW
 	LDY #%11101110			; make sure CB2 is high
 	STY $8000+PCR
-	STY $4000+PCR				; update PCR (safer)
+	STY $4000+PCR			; update PCR (safer)
 ploop:
 			INY
 			BNE ploop
@@ -506,7 +501,7 @@ ploop:
 		ORA #%10000000		; if C, then enable output
 no_buzz:
 	STA $8000+ACR
-	STA $4000+ACR				; update ACR (safer)
+	STA $4000+ACR			; update ACR (safer)
 	TYA
 	BRA ploop				; not sure about A
 
