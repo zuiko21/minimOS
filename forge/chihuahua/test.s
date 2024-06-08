@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240608-1007
+; last modified 20240608-1051
 
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -60,7 +60,7 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1002			; 1.0a2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1041			; 1.0b1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$5800			; time, 11.00		0101 1-000 000-0 0000
@@ -404,6 +404,9 @@ it_wt:
 
 ; bong sound, tell C from D thru beep codes and lock (just waiting for NMIs)
 	SEI
+	LDA #%11101110			; make sure CB2 is high
+	LDY #PCR
+	STA (VIAptr), Y			; update PCR
 	LDA #<(t1ct/8)
 	LDY #T1CL
 	STA (VIAptr), Y
@@ -460,9 +463,9 @@ nmi_test:
 	PHA
 	PHX
 	PHY
-	LDY #%11101110			; make sure CB2 is high
-	STY $8000+PCR
-	STY $4000+PCR			; update PCR (safer)
+	LDA #%11101110			; make sure CB2 is high
+	STA $8000+PCR
+	STA $4000+PCR			; update PCR (safer)
 	LDA #%11000000			; set PB7 square wave
 	STA $8000+ACR
 	STA $4000+ACR			; update ACR (safer)
@@ -474,9 +477,9 @@ wait:
 	LDA #%01000000			; back to continuous interrupts but no PB7 output
 	STA $8000+ACR
 	STA $4000+ACR			; update ACR (safer)
-	LDY #%11001110			; make sure CB2 is low, keep speaker off
-	STY $8000+PCR
-	STY $4000+PCR			; update PCR (safer)
+	LDA #%11001110			; make sure CB2 is low, keep speaker off
+	STA $8000+PCR
+	STA $4000+PCR			; update PCR (safer)
 	PLY
 	PLX
 	PLA
