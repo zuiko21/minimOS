@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240609-0004
+; last modified 20240609-0052
 
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -352,8 +352,8 @@ irq_test:
 	LDX #>exit
 	STY fw_nmi
 	STX fw_nmi+1			; disable NMI for a while EEEEK
-;	LDY #T1CL
-;	LDA (VIAptr), Y			; just clear previous interrupts
+	LDY #T1CL
+	LDA (VIAptr), Y			; just clear previous interrupts
 	LDY #<isr				; ISR address
 	LDX #>isr
 	STY fw_irq				; standard-ish IRQ vector
@@ -377,6 +377,7 @@ it_1:
 ; check timeout results for slow or fast
 	SEI						; no more interrupts, but hardware still generates them (LED off)
 ; compare results
+bra it_wt;patch
 	LDA test
 	CMP #31					; one less is acceptable
 	BCS it_3				; <31 is slow
