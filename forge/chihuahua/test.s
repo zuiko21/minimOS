@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240608-1051
+; last modified 20240608-1114
 
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -60,7 +60,7 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1041			; 1.0b1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1043			; 1.0b3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$5800			; time, 11.00		0101 1-000 000-0 0000
@@ -129,16 +129,13 @@ via_ok:
 	INY						; now for T1CH, that will start count
 	LDA #>t1ct
 	STA (VIAptr), Y
-	LDA #%11000000			; enable T1 interrupt
-	LDY #IER
-	STA (VIAptr), Y
 
 ; ** zeropage test **
 ; set CB2 high in order to activate sound (PB7) during test
 #ifndef	DEBUG
  	LDA #%10000000			; PB7 will be output
 #else
-	LDA #$FF			; all outputs (could be universal)
+	LDA #$FF				; all outputs (could be universal)
 #endif
 	LDY #DDRB
 	STA (VIAptr), Y			; universal form (STA VIA+)
@@ -147,7 +144,7 @@ via_ok:
 	ORA #%11100000			; * make sure CB2 hi (could use LDA# instead of LDA/ORA#)
 	STA (VIAptr), Y			; *
 ; make high pitched chirp during test
-	LDX #<test				; 6510-savvy...
+	LDX #<test				; Chihuahua and 6510-savvy...
 zp_1:
 		TXA
 		STA 0, X			; try storing address itself (2+4)
@@ -179,16 +176,17 @@ zp_bad:
 		LDA #$FF			; *** bad ZP, LED code = %1 00000000 ***
 		JMP panic			; panic if failed
 zp_ok:
-	LDA #%10000000			; * PB7 high will shut down sound
-	LDY #IORB
-	STA (VIAptr), Y
-
-; * simple mirroring test *
 #ifdef	DEBUG
 	LDA #%10000001			; turn on PB0 (zeropage OK)
 	STA $8000+IORB
 	STA $4000+IORB
+#else
+	LDA #%10000000			; * PB7 high will shut down sound
+	LDY #IORB
+	STA (VIAptr), Y
 #endif
+
+; * simple mirroring test *
 ; probe responding size first
 	LDA #127				; max 32 KB, also a fairly good offset EEEEK
 	LDY VIAptr+1			; * check whether C (+) or D (-) config *
@@ -302,13 +300,13 @@ at_bad:
 		LDA #%10111111		; *** bad address lines, LED code = %1 01000000 ***
 		JMP panic
 addr_ok:
-
-; ** RAM test **
 #ifdef	DEBUG
 	LDA #%10000010			; PB1 means address test OK
 	STA $8000+IORB
 	STA $4000+IORB
 #endif
+
+; ** RAM test **
 	LDA #$F0				; initial value
 	LDY #0
 	STY test				; standard pointer address
@@ -344,6 +342,11 @@ ram_bad:
 		LDA #%10101111		; *** bad RAM, LED code = %1 01010000 ***
 		JMP panic			; panic if failed
 ram_ok:
+#ifdef	DEBUG
+	LDA #%10000100			; PB2 means RAM OK
+	STA $8000+IORB
+	STA $4000+IORB
+#endif
 
 ; ** ROM test is no longer done **
 
@@ -351,21 +354,19 @@ ram_ok:
 
 ; ** IRQ test ** REVISE
 irq_test:
-#ifdef	DEBUG
-	LDA #%10000100			; PB2 means RAM OK
-	STA $8000+IORB
-	STA $4000+IORB
-#endif
 ; interrupt setup
-	LDY #T1CL
-	LDA (VIAptr), Y			; just clear previous interrupts
+;	LDY #T1CL
+;	LDA (VIAptr), Y			; just clear previous interrupts
 	LDY #<isr				; ISR address
 	LDX #>isr
 	STY fw_irq				; standard-ish IRQ vector
 	STX fw_irq+1
 	LDY #0					; initial value and inner counter reset
 	STY test
-; assume HW interrupt is on
+; make sure HW interrupt is on
+	LDA #%11000000			; enable T1 interrupt
+	LDY #IER
+	STA (VIAptr), Y
 	LDX #(50*SPEED/1000000)	; 50@1 MHz is about 128 ms, time for 32 interrupts
 	CLI						; start counting!
 ; this provides timeout
@@ -392,15 +393,15 @@ it_fast:
 		LDA #%10101011		; *** fast IRQ, LED code = %1 01010100 ***
 		JMP panic
 it_wt:
-
-; ***************************
-; *** all OK, end of test ***
-; ***************************
 #ifdef	DEBUG
 	LDA #%10001000			; PB3 means IRQ OK
 	STA $8000+IORB
 	STA $4000+IORB
 #endif
+
+; ***************************
+; *** all OK, end of test ***
+; ***************************
 
 ; bong sound, tell C from D thru beep codes and lock (just waiting for NMIs)
 	SEI
@@ -469,6 +470,7 @@ nmi_test:
 	LDA #%11000000			; set PB7 square wave
 	STA $8000+ACR
 	STA $4000+ACR			; update ACR (safer)
+	LDX #0					; eeeek
 wait:
 			INY
 			BNE wait
