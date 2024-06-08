@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240605-1257
+; last modified 20240608-1007
 
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -60,11 +60,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1001			; 1.0a1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1002			; 1.0a2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$6000			; time, 12.00		0110 0-000 000-0 0000
-	.word	$58B7			; date, 2024/5/23	0101 100-0 101-1 0111
+	.word	$5800			; time, 11.00		0101 1-000 000-0 0000
+	.word	$58C8			; date, 2024/5/23	0101 100-0 110-0 1000
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -83,6 +83,10 @@ reset:
 	STX $8000+DDRB
 	STX $4000+DDRB			; set all PB bits to output, wherever the VIA is
 #endif
+	LDY #<exit
+	LDX #>exit
+	STY fw_nmi
+	STX fw_nmi+1			; disable NMI for a while
 ; first of all, check whether C or D configuration
 	STZ VIAptr
 	LDA #$80				; first page of I/O for D map
@@ -400,9 +404,6 @@ it_wt:
 
 ; bong sound, tell C from D thru beep codes and lock (just waiting for NMIs)
 	SEI
-	LDA #%11010000			; T1 free run (PB7 on), SR free, no latch
-	LDY #ACR
-	STA (VIAptr), Y
 	LDA #<(t1ct/8)
 	LDY #T1CL
 	STA (VIAptr), Y
@@ -412,20 +413,36 @@ it_wt:
 	LDA #1
 	LDY #T2CL
 	STA (VIAptr), Y
-	INY						; now pointing to T2CH
-	LDA #0
-	STA (VIAptr), Y			; free run at max speed
+;	INY						; now pointing to T2CH
+;	LDA #0
+;	STA (VIAptr), Y			; free run at max speed
+	LDA #%11010000			; T1 free run (PB7 on), SR free, no latch
+	LDY #ACR
+	STA (VIAptr), Y			; shifting starts now (SR not yet loaded)
 	LDA #$FF				; max volume PWM
 bvol:
 		LDY #VSR
 		STA (VIAptr), Y		; set PWM
+#ifdef	DEBUG
+		STA $8000+IORB
+		STA $4000+IORB		; display current PWM pattern on LEDs
+#endif
 bloop:
-				INX
+				INY			; first iteration a bit shorter
 				BNE bloop
-			INY
+			INX
 			BNE bloop
-		LSR					; one bit less
+		ASL					; one bit less
 		BCS bvol
+#ifdef	DEBUG
+	LDA #%10010000			; PB4 means all tests OK
+	STA $8000+IORB
+	STA $4000+IORB
+#endif
+	LDY #<nmi_test
+	LDX #>nmi_test
+	STY fw_nmi
+	STX fw_nmi+1			; NMI will buzz
 lock:
 	BRA lock				; stop here, this far
 
@@ -437,6 +454,32 @@ isr:
 	BIT $4000+T1CL
 	INC test				; increment standard zeropage address (no longer DEC)
 exit:
+	RTI
+
+nmi_test:
+	PHA
+	PHX
+	PHY
+	LDY #%11101110			; make sure CB2 is high
+	STY $8000+PCR
+	STY $4000+PCR			; update PCR (safer)
+	LDA #%11000000			; set PB7 square wave
+	STA $8000+ACR
+	STA $4000+ACR			; update ACR (safer)
+wait:
+			INY
+			BNE wait
+		INX
+		BNE wait
+	LDA #%01000000			; back to continuous interrupts but no PB7 output
+	STA $8000+ACR
+	STA $4000+ACR			; update ACR (safer)
+	LDY #%11001110			; make sure CB2 is low, keep speaker off
+	STY $8000+PCR
+	STY $4000+PCR			; update PCR (safer)
+	PLY
+	PLX
+	PLA
 	RTI
 
 ; *** standard panic, will make buzzing bursts instead of Durango's LED
