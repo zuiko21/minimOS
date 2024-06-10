@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240609-0052
+; last modified 20240610-2004
 
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -60,11 +60,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1044			; 1.0b4		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1045			; 1.0b5		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5800			; time, 11.00		0101 1-000 000-0 0000
-	.word	$58C8			; date, 2024/5/23	0101 100-0 110-0 1000
+	.word	$A000			; time, 20.00		1010 0-000 000-0 0000
+	.word	$58CA			; date, 2024/6/10	0101 100-0 110-0 1010
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -116,10 +116,6 @@ via_ok:
 	STA $8000+IORB
 	STA $4000+IORB			; clear all LEDs, safest way
 #endif
-; set CB2 high in order to activate sound (PB7) during test
-	LDY #PCR
-	LDA #%11101110			; * make sure CB2 hi
-	STA (VIAptr), Y			; *
 	LDA #%01000000			; T1 free run (PB7 off), no SR, no latch
 	LDY #ACR
 	STA (VIAptr), Y
@@ -129,6 +125,10 @@ via_ok:
 	INY						; now for T1CH, that will start count
 	LDA #>t1ct
 	STA (VIAptr), Y
+; make sure HW interrupt is on
+	LDA #%11000000			; enable T1 interrupt
+	LDY #IER
+	STA (VIAptr), Y
 
 ; ** zeropage test **
 #ifndef	DEBUG
@@ -136,6 +136,10 @@ via_ok:
 	LDY #DDRB
 	STA (VIAptr), Y			; universal form (STA VIA+)
 #endif
+; set CB2 high in order to activate sound (PB7) during test
+	LDY #PCR
+	LDA #%11101110
+	STA (VIAptr), Y
 ; make high pitched chirp during test
 	LDX #<test				; Chihuahua and 6510-savvy...
 zp_1:
@@ -358,10 +362,6 @@ irq_test:
 	LDX #>isr
 	STY fw_irq				; standard-ish IRQ vector
 	STX fw_irq+1
-; make sure HW interrupt is on
-	LDA #%11000000			; enable T1 interrupt
-	LDY #IER
-	STA (VIAptr), Y
 	LDX #(50*SPEED/1000000)	; 50@1 MHz is about 128 ms, time for 32 interrupts
 	LDY #0					; initial value and inner counter reset
 	STY test
@@ -403,6 +403,9 @@ it_wt:
 
 ; bong sound, tell C from D thru beep codes and lock (just waiting for NMIs)
 	SEI
+	LDA #%11010000			; T1 free run (PB7 on), SR free, no latch
+	LDY #ACR
+	STA (VIAptr), Y			; shifting starts now (SR not yet loaded)
 	LDA #<(t1ct/8)
 	LDY #T1CL
 	STA (VIAptr), Y
@@ -414,9 +417,6 @@ it_wt:
 	STA (VIAptr), Y
 	INY						; now pointing to T2CH
 	STA (VIAptr), Y			; free run at max speed
-	LDA #%11010000			; T1 free run (PB7 on), SR free, no latch
-	LDY #ACR
-	STA (VIAptr), Y			; shifting starts now (SR not yet loaded)
 	LDA #$FF				; max volume PWM
 bvol:
 		LDX #$A0			; shorter envelope
