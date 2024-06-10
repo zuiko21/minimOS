@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240610-2010
+; last modified 20240610-2024
 
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -433,6 +433,9 @@ bloop:
 			BNE bloop
 		ASL					; one bit less
 		BCS bvol
+	LDA #%01000000			; T1 free run (but PB7 off EEEEK), no SR, no latch
+	LDY #ACR
+	STA (VIAptr), Y			; shifting starts now (SR not yet loaded)
 	LDA #%10010000			; PB4 means all tests OK, also PB7 hi shuts speaker off
 	LDY #IORB
 	STA (VIAptr), Y			; this will shut speaker off
@@ -463,6 +466,9 @@ nmi_test:
 	LDA #$FF
 	STA $8000+DDRB
 	STA $4000+DDRB			; and PB is all output (safer)
+	LDA #%01000000			; don't press NMI any more
+	STA $8000+IORB
+	STA $4000+IORB
 	LDA #%11000000			; set PB7 square wave, no shift
 	STA $8000+ACR
 	STA $4000+ACR			; update ACR (safer)
