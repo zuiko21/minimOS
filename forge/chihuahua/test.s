@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240610-2004
+; last modified 20240610-2010
 
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -377,7 +377,7 @@ it_1:
 ; check timeout results for slow or fast
 	SEI						; no more interrupts, but hardware still generates them (LED off)
 ; compare results
-bra it_wt;patch
+;bra it_wt;patch
 	LDA test
 	CMP #31					; one less is acceptable
 	BCS it_3				; <31 is slow
