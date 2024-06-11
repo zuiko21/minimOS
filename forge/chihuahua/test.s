@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240610-2024
+; last modified 20240611-0936
 
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -60,11 +60,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1045			; 1.0b5		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1046			; 1.0b6		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$A000			; time, 20.00		1010 0-000 000-0 0000
-	.word	$58CA			; date, 2024/6/10	0101 100-0 110-0 1010
+	.word	$5000			; time, 10.00		0101 0-000 000-0 0000
+	.word	$58CB			; date, 2024/6/11	0101 100-0 110-0 1011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -403,6 +403,9 @@ it_wt:
 
 ; bong sound, tell C from D thru beep codes and lock (just waiting for NMIs)
 	SEI
+	LDY #PCR
+	LDA #%00101110			; * desperately set CB2 as input?
+	STA (VIAptr), Y
 	LDA #%11010000			; T1 free run (PB7 on), SR free, no latch
 	LDY #ACR
 	STA (VIAptr), Y			; shifting starts now (SR not yet loaded)
@@ -439,6 +442,9 @@ bloop:
 	LDA #%10010000			; PB4 means all tests OK, also PB7 hi shuts speaker off
 	LDY #IORB
 	STA (VIAptr), Y			; this will shut speaker off
+	LDY #PCR
+	LDA #%11101110			; * CB2 back to hi, just in case
+	STA (VIAptr), Y
 	LDY #<nmi_test
 	LDX #>nmi_test
 	STY fw_nmi
