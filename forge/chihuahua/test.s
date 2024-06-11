@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240611-0936
+; last modified 20240611-0953
 
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -60,7 +60,7 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1046			; 1.0b6		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1047			; 1.0b7		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$5000			; time, 10.00		0101 0-000 000-0 0000
@@ -403,23 +403,28 @@ it_wt:
 
 ; bong sound, tell C from D thru beep codes and lock (just waiting for NMIs)
 	SEI
-	LDY #PCR
 	LDA #%00101110			; * desperately set CB2 as input?
+	LDY #PCR
 	STA (VIAptr), Y
 	LDA #%11010000			; T1 free run (PB7 on), SR free, no latch
-	LDY #ACR
-	STA (VIAptr), Y			; shifting starts now (SR not yet loaded)
+sta $8000+ACR
+;	LDY #ACR
+;	STA (VIAptr), Y			; shifting starts now (SR not yet loaded)
 	LDA #<(t1ct/8)
-	LDY #T1CL
-	STA (VIAptr), Y
+sta $8000+T1CL
+;	LDY #T1CL
+;	STA (VIAptr), Y
 	LDA #>(t1ct/8)			; *** placeholder 1 kHz
-	LDY #T1CH
-	STA (VIAptr), Y
+sta $8000+T1CH
+;	LDY #T1CH
+;	STA (VIAptr), Y
 	LDA #0
-	LDY #T2CL
-	STA (VIAptr), Y
-	INY						; now pointing to T2CH
-	STA (VIAptr), Y			; free run at max speed
+sta $8000+T2CL
+;	LDY #T2CL
+;	STA (VIAptr), Y
+sta $8001+T2CL
+;	INY						; now pointing to T2CH
+;	STA (VIAptr), Y			; free run at max speed
 	LDA #$FF				; max volume PWM
 bvol:
 		LDX #$A0			; shorter envelope
@@ -437,14 +442,17 @@ bloop:
 		ASL					; one bit less
 		BCS bvol
 	LDA #%01000000			; T1 free run (but PB7 off EEEEK), no SR, no latch
-	LDY #ACR
-	STA (VIAptr), Y			; shifting starts now (SR not yet loaded)
+sta $8000+ACR
+;	LDY #ACR
+;	STA (VIAptr), Y			; shifting starts now (SR not yet loaded)
 	LDA #%10010000			; PB4 means all tests OK, also PB7 hi shuts speaker off
-	LDY #IORB
-	STA (VIAptr), Y			; this will shut speaker off
-	LDY #PCR
+sta $8000+IORB
+;	LDY #IORB
+;	STA (VIAptr), Y			; this will shut speaker off
 	LDA #%11101110			; * CB2 back to hi, just in case
-	STA (VIAptr), Y
+sta $8000+PCR
+;	LDY #PCR
+;	STA (VIAptr), Y
 	LDY #<nmi_test
 	LDX #>nmi_test
 	STY fw_nmi
