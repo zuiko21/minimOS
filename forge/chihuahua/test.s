@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240613-1314
+; last modified 20240613-1731
 
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -29,8 +29,10 @@
 ; *** standard definitions ***
 	fw_irq	= $0200
 	fw_nmi	= $0202
+	Dmap	= $8000			; original VIA location
+	Cmap	= $4000
 	VIAptr	= 0				; Chihuahua specific
-	test	= VIAptr+2
+	test	= VIAptr+2		; 6510-savvy
 	posi	= $FB			; %11111011
 	systmp	= $FC			; %11111100
 	sysptr	= $FD			; %11111101
@@ -60,10 +62,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1048			; 1.0b8		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1049			; 1.0b9		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$6800			; time, 13.00		0110 1-000 000-0 0000
+	.word	$8800			; time, 17.00		1000 1-000 000-0 0000
 	.word	$58CD			; date, 2024/6/13	0101 100-0 110-0 1101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -77,69 +79,33 @@ reset:
 	CLD
 	LDX #$FF
 	TXS						; usual 6502 stuff EEEEK
-#ifdef	DEBUG
-	STX $8000+IORB
-	STX $4000+IORB			; all PB LEDs will flash for a moment
-	STX $8000+DDRB
-	STX $4000+DDRB			; set all PB bits to output, wherever the VIA is
-#endif
-; first of all, check whether C or D configuration
-	STZ VIAptr
-	LDA #$80				; first page of I/O for D map
-	STA VIAptr+1
-	LDY #IER
-via_chk:
-		LDA #$7F			; writing $7F to IER will read as $80!
-		STA (VIAptr), Y
-		LDA (VIAptr), Y		; check response
-		CMP #$80			; all interrupts disabled
-	BEQ via_ok				; VIA is responding properly (if 32K ROM, make sure $800E does *not* contain $80, which is reasonable)
-		LSR VIAptr+1		; or try C map instead
-		BIT VIAptr+1		; just once
-		BVS via_chk			; %01000000 is C map
-; *** no VIA detected is horribly wrong ***
-panic_loop:
-				STA (VIAptr), Y			; fill memory with current A value
-				INY
-				BNE panic_loop
-			INC VIAptr+1	; next page
-			BNE panic_loop
-		INC					; change fill pattern
-		INC VIAptr+1		; ...and skip zeropage
-		BNE panic_loop		; no need for BRA
-; *** end of panic routine ***
+	STX Dmap+IORB
+	STX Cmap+IORB			; all PB LEDs will flash for a moment
+	STX Dmap+DDRB
+	STX Cmap+DDRB			; set all PB bits to output, wherever the VIA is
 
 ; basic VIA init
-via_ok:
+; set CB2 high in order to activate sound (PB7) during test
+	LDA #%11101110
+	STA Dmap+PCR
+	STA Cmap+PCR
+; start T1 counter!
+	LDA #%01000000			; T1 free run (PB7 off), no SR, no latch
+	STA Dmap+ACR
+	STA Cmap+ACR
+	LDA #<t1ct
+	STA Dmap+T1CL
+	STA Cmap+T1CL				; will load T1CL
+	LDA #>t1ct					; now for T1CH, that will start count
+	STA Dmap+T1CH
+	STA Cmap+T1CH
 #ifdef	DEBUG
 	LDA #%10000000			; all LEDs off, except PB7 to disable sound (VIA OK)
-	STA $8000+IORB
-	STA $4000+IORB			; clear all LEDs, safest way
+	STA Dmap+IORB
+	STA Cmap+IORB			; clear all LEDs, safest way
 #endif
-	LDA #%01000000			; T1 free run (PB7 off), no SR, no latch
-	LDY #ACR
-	STA (VIAptr), Y
-	LDA #<t1ct
-	LDY #T1CL				; will load T1CL
-	STA (VIAptr), Y
-	INY						; now for T1CH, that will start count
-	LDA #>t1ct
-	STA (VIAptr), Y
-; make sure HW interrupt is on
-	LDA #%11000000			; enable T1 interrupt
-	LDY #IER
-	STA (VIAptr), Y
 
 ; ** zeropage test **
-#ifndef	DEBUG
-	LDA #$FF				; all outputs (could be universal)
-	LDY #DDRB
-	STA (VIAptr), Y			; universal form (STA VIA+)
-#endif
-; set CB2 high in order to activate sound (PB7) during test
-	LDY #PCR
-	LDA #%11101110
-	STA (VIAptr), Y
 ; make high pitched chirp during test
 	LDX #<test				; Chihuahua and 6510-savvy...
 zp_1:
@@ -164,8 +130,8 @@ zp_2:
 		INX					; next address (2+4)
 		TXA					; *** Chihuahua specific ***
 		ROR: ROR			; * D0 is now at D7
-		LDY #IORB
-		STA (VIAptr), Y		; *** end of Chihuahua sound ***
+		STA Dmap+IORB
+		STA Cmap+IORB		; *** end of Chihuahua sound ***
 		TXA					; * ...but check X again
 		BNE zp_1			; complete page (3, post 13t)
 	BEQ zp_ok
@@ -173,25 +139,45 @@ zp_bad:
 		LDA #$FF			; *** bad ZP, LED code = %1 00000000 ***
 		JMP panic			; panic if failed
 zp_ok:
-#ifdef	DEBUG
 	LDA #%11000001			; turn on PB0 (zeropage OK) & PB7 (sound off), PB6 means 'do not use NMI'
-	STA $8000+IORB
-	STA $4000+IORB
-#else
-	LDA #%10000000			; * PB7 high will shut down sound
-	LDY #IORB
-	STA (VIAptr), Y
-#endif
+	STA Dmap+IORB
+	STA Cmap+IORB
 
 ; * simple mirroring test *
-; probe responding size first
+; first of all, check whether C or D configuration
+	STZ VIAptr
+	LDA #>Dmap				; first page of I/O for D map
+	STA VIAptr+1
+	LDY #IER
+via_chk:
+		LDA #$7F			; writing $7F to IER will read as $80!
+		STA (VIAptr), Y
+		LDA (VIAptr), Y		; check response
+		CMP #$80			; all interrupts disabled
+	BEQ via_ok				; VIA is responding properly (if 32K ROM, make sure $800E does *not* contain $80, which is reasonable)
+		LSR VIAptr+1		; or try C map instead
+		BIT VIAptr+1		; just once
+		BVS via_chk			; %01000000 is C map
+; *** no VIA detected is horribly wrong ***
+panic_loop:
+				STA (VIAptr), Y			; fill memory with current A value
+				INY
+				BNE panic_loop
+			INC VIAptr+1	; next page
+			BNE panic_loop
+		INC					; change fill pattern
+		INC VIAptr+1		; ...and skip zeropage
+		BNE panic_loop		; no need for BRA
+; *** end of panic routine ***
+via_ok:
+; probe responding size then
 	LDA #127				; max 32 KB, but not a good offset EEEEK
 	LDX VIAptr+1			; * check whether C (+) or D (-) config *
 	BMI ok32				; * D is up to 32K (pages 0...127)
 		LSR					; * otherwise C is up to 16K (pages 0...63)
 ok32:
-	LDY #IER				; now this is a good offset as won't return the written value
 	STA test+1				; pointer set (test.LSB known to be zero)
+	LDY #IER				; now this is a good offset as won't return the written value
 mt_1:
 		LDA #$AA			; first test value
 mt_2:
@@ -300,8 +286,8 @@ at_bad:
 addr_ok:
 #ifdef	DEBUG
 	LDA #%11000010			; PB1 means address test OK
-	STA $8000+IORB
-	STA $4000+IORB
+	STA Dmap+IORB
+	STA Cmap+IORB
 #endif
 
 ; ** RAM test **
@@ -342,8 +328,8 @@ ram_bad:
 ram_ok:
 #ifdef	DEBUG
 	LDA #%10000100			; PB2 means RAM OK
-	STA $8000+IORB
-	STA $4000+IORB
+	STA Dmap+IORB
+	STA Cmap+IORB
 #endif
 
 ; ** ROM test is no longer done **
@@ -357,8 +343,12 @@ irq_test:
 	LDX #>exit
 	STY fw_nmi
 	STX fw_nmi+1			; disable NMI for a while EEEEK
-	LDY #T1CL
-	LDA (VIAptr), Y			; just clear previous interrupts
+; make sure HW interrupt is on
+	LDA #%11000000			; enable T1 interrupt
+	STA Dmap+IER
+	STA Cmap+IER
+	BIT Dmap+T1CL
+	BIT Cmap+T1CL			; just clear previous interrupts
 	LDY #<isr				; ISR address
 	LDX #>isr
 	STY fw_irq				; standard-ish IRQ vector
@@ -377,8 +367,12 @@ it_1:
 		BNE it_1
 ; check timeout results for slow or fast
 	SEI						; no more interrupts, but hardware still generates them (LED off)
+	LDA #%01000000			; disable T1 interrupt for good measure
+	STA Dmap+IER
+	STA Cmap+IER
+	BIT Dmap+T1CL
+	BIT Cmap+T1CL			; just clear previous interrupts, why?
 ; compare results
-;bra it_wt;patch
 	LDA test
 	CMP #31					; one less is acceptable
 	BCS it_3				; <31 is slow
@@ -394,8 +388,8 @@ it_fast:
 it_wt:
 #ifdef	DEBUG
 	LDA #%10001000			; PB3 means IRQ OK
-	STA $8000+IORB
-	STA $4000+IORB
+	STA Dmap+IORB
+	STA Cmap+IORB
 #endif
 
 ; ***************************
@@ -404,36 +398,40 @@ it_wt:
 
 ; bong sound, tell C from D thru beep codes and lock (just waiting for NMIs)
 	SEI
-	LDA #%00101110			; * desperately set CB2 as input?
-	LDY #PCR
-	STA (VIAptr), Y
+#echo CB2 hi
+	LDA #%11101110			; * CB2 back to hi, just in case
+	STA Dmap+PCR
+	STA Cmap+PCR
+;	LDA #%00101110			; * desperately set CB2 as input?
+;	STA Dmap+PCR
+;	STA Cmap+PCR
 	LDA #%11010000			; T1 free run (PB7 on), SR free, no latch
-;sta $8000+ACR
-	LDY #ACR
-	STA (VIAptr), Y			; shifting starts now (SR not yet loaded)
+	STA Dmap+ACR
+	STA Cmap+ACR			; shifting starts now (SR not yet loaded)
 	LDA #<(t1ct/8)
-;sta $8000+T1CL
-	LDY #T1CL
-	STA (VIAptr), Y
+	STA Dmap+T1CL
+	STA Cmap+T1CL
 	LDA #>(t1ct/8)			; *** placeholder 1 kHz
-;sta $8000+T1CH
-	LDY #T1CH
-	STA (VIAptr), Y
+	STA Dmap+T1CH
+	STA Cmap+T1CH
 	LDA #0
-;sta $8000+T2CL
-	LDY #T2CL
-	STA (VIAptr), Y
-;sta $8001+T2CL
-	INY						; now pointing to T2CH
-	STA (VIAptr), Y			; free run at max speed
+	STA Dmap+T2CL
+	STA Cmap+T2CL
+	STA Dmap+T2CH
+	STA Cmap+T2CH			; now pointing to T2CH, free run at max speed
 	LDA #$FF				; max volume PWM
 bvol:
 		LDX #$A0			; shorter envelope
-		LDY #VSR
-		STA (VIAptr), Y		; set PWM
+		STA Dmap+VSR
+		STA Cmap+VSR		; set PWM
+; needed here?
+	LDA #%11010000			; T1 free run (PB7 on), SR free, no latch
+	STA Dmap+ACR
+	STA Cmap+ACR			; shifting starts now (SR not yet loaded)
+#echo ACR shift every bvol
 #ifdef	DEBUG
-		STA $8000+IORB
-		STA $4000+IORB		; display current PWM pattern on LEDs
+		STA Dmap+IORB
+		STA Cmap+IORB		; display current PWM pattern on LEDs
 #endif
 bloop:
 				INY			; first iteration a bit shorter
@@ -443,21 +441,18 @@ bloop:
 		ASL					; one bit less
 		BCS bvol
 	LDA #%01000000			; T1 free run (but PB7 off EEEEK), no SR, no latch
-;sta $8000+ACR
-	LDY #ACR
-	STA (VIAptr), Y			; shifting starts now (SR not yet loaded)
+	STA Dmap+ACR
+	STA Cmap+ACR			; shifting starts now (SR not yet loaded)
 	LDA #%10010000			; PB4 means all tests OK, also PB7 hi shuts speaker off
-;sta $8000+IORB
-	LDY #IORB
-	STA (VIAptr), Y			; this will shut speaker off
+	STA Dmap+IORB
+	STA Cmap+IORB			; this will shut speaker off
 	LDA #%11101110			; * CB2 back to hi, just in case
-;sta $8000+PCR
-	LDY #PCR
-	STA (VIAptr), Y
+	STA Dmap+PCR
+	STA Cmap+PCR
 	LDY #<nmi_test
 	LDX #>nmi_test
 	STY fw_nmi
-	STX fw_nmi+1			; NMI will buzz
+	STX fw_nmi+1			; NMI will beep
 lock:
 	BRA lock				; stop here, this far
 
@@ -465,8 +460,8 @@ lock:
 ; *** interrupt service and other routines ***
 ; ********************************************
 isr:
-	BIT $8000+T1CL			; simpler way to acknowledge the T1 interrupt!
-	BIT $4000+T1CL
+	BIT Dmap+T1CL			; simpler way to acknowledge the T1 interrupt!
+	BIT Cmap+T1CL
 	INC test				; increment standard zeropage address (no longer DEC)
 exit:
 	RTI
@@ -476,17 +471,17 @@ nmi_test:
 	PHX
 	PHY
 	LDA #%11101110			; make sure CB2 is high
-	STA $8000+PCR
-	STA $4000+PCR			; update PCR (safer)
+	STA Dmap+PCR
+	STA Cmap+PCR			; update PCR (safer)
 	LDA #$FF
-	STA $8000+DDRB
-	STA $4000+DDRB			; and PB is all output (safer)
+	STA Dmap+DDRB
+	STA Cmap+DDRB			; and PB is all output (safer)
 	LDA #%01000000			; don't press NMI any more
-	STA $8000+IORB
-	STA $4000+IORB
+	STA Dmap+IORB
+	STA Cmap+IORB
 	LDA #%11000000			; set PB7 square wave, no shift
-	STA $8000+ACR
-	STA $4000+ACR			; update ACR (safer)
+	STA Dmap+ACR
+	STA Cmap+ACR			; update ACR (safer)
 	LDX #0					; eeeek
 wait:
 			INY
@@ -494,11 +489,11 @@ wait:
 		INX
 		BNE wait
 	LDA #%01000000			; back to continuous interrupts but no PB7 output
-	STA $8000+ACR
-	STA $4000+ACR			; update ACR (safer)
+	STA Dmap+ACR
+	STA Cmap+ACR			; update ACR (safer)
 	LDA #%10111111			; make sure PB7 is hi, keep speaker off (PB0-5 green checked NMI)
-	STA $8000+IORB
-	STA $4000+IORB			; update PB7 (safer)
+	STA Dmap+IORB
+	STA Cmap+IORB			; update PB7 (safer)
 	PLY
 	PLX
 	PLA
@@ -509,8 +504,8 @@ panic:
 	SEC						; at least one bit will flash
 	EOR #$FF				; this is positive logic, BTW
 	LDY #%11101110			; make sure CB2 is high
-	STY $8000+PCR
-	STY $4000+PCR			; update PCR (safer)
+	STY Dmap+PCR
+	STY Cmap+PCR			; update PCR (safer)
 ploop:
 			INY
 			BNE ploop
@@ -522,8 +517,8 @@ ploop:
 	BCC no_buzz
 		ORA #%10000000		; if C, then enable output
 no_buzz:
-	STA $8000+ACR
-	STA $4000+ACR			; update ACR (safer)
+	STA Dmap+ACR
+	STA Cmap+ACR			; update ACR (safer)
 	TYA
 	BRA ploop				; not sure about A
 
