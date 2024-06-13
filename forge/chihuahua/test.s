@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240611-0953
+; last modified 20240613-1314
 
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -60,11 +60,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1047			; 1.0b7		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1048			; 1.0b8		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5000			; time, 10.00		0101 0-000 000-0 0000
-	.word	$58CB			; date, 2024/6/11	0101 100-0 110-0 1011
+	.word	$6800			; time, 13.00		0110 1-000 000-0 0000
+	.word	$58CD			; date, 2024/6/13	0101 100-0 110-0 1101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -185,11 +185,12 @@ zp_ok:
 
 ; * simple mirroring test *
 ; probe responding size first
-	LDA #127				; max 32 KB, also a fairly good offset EEEEK
-	LDY VIAptr+1			; * check whether C (+) or D (-) config *
+	LDA #127				; max 32 KB, but not a good offset EEEEK
+	LDX VIAptr+1			; * check whether C (+) or D (-) config *
 	BMI ok32				; * D is up to 32K (pages 0...127)
 		LSR					; * otherwise C is up to 16K (pages 0...63)
 ok32:
+	LDY #IER				; now this is a good offset as won't return the written value
 	STA test+1				; pointer set (test.LSB known to be zero)
 mt_1:
 		LDA #$AA			; first test value
@@ -309,9 +310,9 @@ addr_ok:
 	STY test				; standard pointer address
 rt_1:
 		LDX #1				; skip zeropage
-		BNE rt_2
-rt_1s:
-		LDX #$60			; skip to begin of screen
+;		BNE rt_2
+;rt_1s:
+;		LDX #$60			; skip to begin of screen
 rt_2:
 			STX test+1		; update pointer
 			STA (test), Y	; store...
@@ -320,14 +321,14 @@ rt_2:
 			INY
 			BNE rt_2
 				INX			; next page
-				STX test+1
+;				STX test+1
 				CPX himem	; should check against actual RAMtop
 			BCC rt_2		; ends at whatever detected RAMtop...
 			BEQ rt_2
-				CPX #$60	; already at screen
-				BCC rt_1s	; ...or continue with screen
-			CPX #$80		; end of screen?
-			BNE rt_2
+;				CPX #$60	; already at screen
+;				BCC rt_1s	; ...or continue with screen
+;			CPX #$80		; end of screen?
+;			BNE rt_2
 		LSR					; create new value, either $0F or 0
 		LSR
 		LSR
@@ -407,24 +408,24 @@ it_wt:
 	LDY #PCR
 	STA (VIAptr), Y
 	LDA #%11010000			; T1 free run (PB7 on), SR free, no latch
-sta $8000+ACR
-;	LDY #ACR
-;	STA (VIAptr), Y			; shifting starts now (SR not yet loaded)
+;sta $8000+ACR
+	LDY #ACR
+	STA (VIAptr), Y			; shifting starts now (SR not yet loaded)
 	LDA #<(t1ct/8)
-sta $8000+T1CL
-;	LDY #T1CL
-;	STA (VIAptr), Y
+;sta $8000+T1CL
+	LDY #T1CL
+	STA (VIAptr), Y
 	LDA #>(t1ct/8)			; *** placeholder 1 kHz
-sta $8000+T1CH
-;	LDY #T1CH
-;	STA (VIAptr), Y
+;sta $8000+T1CH
+	LDY #T1CH
+	STA (VIAptr), Y
 	LDA #0
-sta $8000+T2CL
-;	LDY #T2CL
-;	STA (VIAptr), Y
-sta $8001+T2CL
-;	INY						; now pointing to T2CH
-;	STA (VIAptr), Y			; free run at max speed
+;sta $8000+T2CL
+	LDY #T2CL
+	STA (VIAptr), Y
+;sta $8001+T2CL
+	INY						; now pointing to T2CH
+	STA (VIAptr), Y			; free run at max speed
 	LDA #$FF				; max volume PWM
 bvol:
 		LDX #$A0			; shorter envelope
@@ -442,17 +443,17 @@ bloop:
 		ASL					; one bit less
 		BCS bvol
 	LDA #%01000000			; T1 free run (but PB7 off EEEEK), no SR, no latch
-sta $8000+ACR
-;	LDY #ACR
-;	STA (VIAptr), Y			; shifting starts now (SR not yet loaded)
+;sta $8000+ACR
+	LDY #ACR
+	STA (VIAptr), Y			; shifting starts now (SR not yet loaded)
 	LDA #%10010000			; PB4 means all tests OK, also PB7 hi shuts speaker off
-sta $8000+IORB
-;	LDY #IORB
-;	STA (VIAptr), Y			; this will shut speaker off
+;sta $8000+IORB
+	LDY #IORB
+	STA (VIAptr), Y			; this will shut speaker off
 	LDA #%11101110			; * CB2 back to hi, just in case
-sta $8000+PCR
-;	LDY #PCR
-;	STA (VIAptr), Y
+;sta $8000+PCR
+	LDY #PCR
+	STA (VIAptr), Y
 	LDY #<nmi_test
 	LDX #>nmi_test
 	STY fw_nmi
