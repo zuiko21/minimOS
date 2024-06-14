@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240613-1731
+; last modified 20240614-1750
 
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -62,11 +62,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1049			; 1.0b9		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$104A			; 1.0b10		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$8800			; time, 17.00		1000 1-000 000-0 0000
-	.word	$58CD			; date, 2024/6/13	0101 100-0 110-0 1101
+	.word	$58CE			; date, 2024/6/14	0101 100-0 110-0 1110
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -85,6 +85,10 @@ reset:
 	STX Cmap+DDRB			; set all PB bits to output, wherever the VIA is
 
 ; basic VIA init
+; try disabling any interrupts, just in case
+	LDA #%01111111			; all off
+	STA Dmap+IER
+	STA Cmap+IER
 ; set CB2 high in order to activate sound (PB7) during test
 	LDA #%11101110
 	STA Dmap+PCR
@@ -95,8 +99,8 @@ reset:
 	STA Cmap+ACR
 	LDA #<t1ct
 	STA Dmap+T1CL
-	STA Cmap+T1CL				; will load T1CL
-	LDA #>t1ct					; now for T1CH, that will start count
+	STA Cmap+T1CL			; will load T1CL
+	LDA #>t1ct				; now for T1CH, that will start count
 	STA Dmap+T1CH
 	STA Cmap+T1CH
 #ifdef	DEBUG
@@ -145,20 +149,20 @@ zp_ok:
 
 ; * simple mirroring test *
 ; first of all, check whether C or D configuration
-	STZ VIAptr
 	LDA #>Dmap				; first page of I/O for D map
 	STA VIAptr+1
-	LDY #IER
-via_chk:
-		LDA #$7F			; writing $7F to IER will read as $80!
-		STA (VIAptr), Y
-		LDA (VIAptr), Y		; check response
-		CMP #$80			; all interrupts disabled
+	LDA #$7F				; writing $7F to IER will read as $80!
+	STA Dmap+IER
+	LDX Dmap+IER			; check response
+	CPX #$80				; are all interrupts disabled?
 	BEQ via_ok				; VIA is responding properly (if 32K ROM, make sure $800E does *not* contain $80, which is reasonable)
 		LSR VIAptr+1		; or try C map instead
-		BIT VIAptr+1		; just once
-		BVS via_chk			; %01000000 is C map
+		STA Dmap+IER
+		LDX Dmap+IER		; check response
+		CPX #$80			; are all interrupts disabled?
+	BEQ via_ok
 ; *** no VIA detected is horribly wrong ***
+		STZ VIAptr			; may serve as pointer (MSB somewhat set)
 panic_loop:
 				STA (VIAptr), Y			; fill memory with current A value
 				INY
@@ -421,13 +425,14 @@ it_wt:
 	STA Cmap+T2CH			; now pointing to T2CH, free run at max speed
 	LDA #$FF				; max volume PWM
 bvol:
+#echo ACR mode first, then load SR
+; * needed here?
+		LDA #%11010000		; T1 free run (PB7 on), SR free, no latch
+		STA Dmap+ACR
+		STA Cmap+ACR		; * shifting starts now? (SR not yet loaded)
 		LDX #$A0			; shorter envelope
 		STA Dmap+VSR
 		STA Cmap+VSR		; set PWM
-; needed here?
-	LDA #%11010000			; T1 free run (PB7 on), SR free, no latch
-	STA Dmap+ACR
-	STA Cmap+ACR			; shifting starts now (SR not yet loaded)
 #echo ACR shift every bvol
 #ifdef	DEBUG
 		STA Dmap+IORB
