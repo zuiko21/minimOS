@@ -1,9 +1,9 @@
-; nanoBoot v2 (w/ support for Durango Cartridge & Pocket)
+; nanoBoot v2 (w/ support for Durango Cartridge & Pocket format, plus Chihuahua·D)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240505-1756
+; last modified 20240618-1819
 
 ; add -DALONE for standalone version (otherwise module after multiboot.s)
-#echo	fixed Y register
+#echo	fixed Durango init, Chihuahua·D compatible
 
 #ifdef ALONE
 	*		= $E000			; skip I/O, just in case
@@ -37,10 +37,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2083			; 2.0RC3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2085			; 2.0RC5		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$8F00			; time, 17.56		%1000 1-111 000-0 0000
-	.word	$58A5			; date, 2024/5/5	%0101 100-0 101-0 0101
+	.word	$58D2			; date, 2024/6/18	%0101 100-0 110-1 0010
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -63,6 +63,7 @@ nb_start:
 	LDX #$FF
 	TXS
 	LDA #%10110000			; *** Durango·X init, HIRES mode ***
+	STA IO8attr				; eeeek
 ; clear screen
 	LDX #>screen3			; standard screen start address
 	LDY #<screen3			; should be zero!
@@ -100,7 +101,7 @@ sb_loop:
 
 ; *** all inited, get ready for reception ***
 nb_rdy:
-	STZ $DFA0				; note we keep IRQ disabled! *CMOS
+	STZ IOAie				; note we keep IRQ disabled! *CMOS
 	LDY #<nb_irq
 	LDA #>nb_irq			; get receiver ISR address
 	STY fw_irq
@@ -196,7 +197,7 @@ no_io:
 			STA IO9kbd
 			LDA IO9kbd		; (4+4) get active rows
 			STZ IO9kbd		; (4) just for good measure
-			AND #%10100000	; (2) mask relevant keys
+;			AND #%10100000	; (2) mask relevant keys NOPE, this way Chihuahua·D compatible too!
 			CMP #%10100000	; (2) both SHIFT & SPACE?
 			BNE nb_cont		; (3/2) nope, just continue
 ;				JMP nb_error			; (3) PLACEHOLDER
