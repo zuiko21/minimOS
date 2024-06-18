@@ -1,7 +1,7 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240614-1750
-
+; last modified 20240618-2026
+; use -DPOCKET for nanoBoot version
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
 #define		SPEED	1000000
@@ -41,13 +41,24 @@
 
 	t1ct	= (SPEED/250)-2	; 250 Hz interrupt at 1 MHz (or whatever) clock rate
 
+#ifndef	POCKET
 * = $F800					; 2 KiB start address
+#else
+#echo Pocket version!
+* = $800
+#endif
 ; *** standard header ***
 rom_start:
 ; header ID
 	.byt	0				; [0]=NUL, first magic number
+#ifndef	POCKET
 	.asc	"dX"			; bootable ROM
 	.asc	"****"			; reserved
+#else
+	.asc	"pX"			; downloadable Pocket format
+	.word	rom_start		; load address
+	.word	reset			; execution address
+#endif
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
 	.asc	"Hardware test for Chihuahua v1.0", 0	; C-string with filename @ [8], max 220 chars
@@ -62,11 +73,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$104A			; 1.0b10		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$104C		; 1.0b12		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8800			; time, 17.00		1000 1-000 000-0 0000
-	.word	$58CE			; date, 2024/6/14	0101 100-0 110-0 1110
+	.word	$AB00			; time, 20.24		1010 1-011 000-0 0000
+	.word	$58D2			; date, 2024/6/18	0101 100-0 110-1 0010
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -146,7 +157,6 @@ zp_ok:
 	LDA #%11000001			; turn on PB0 (zeropage OK) & PB7 (sound off), PB6 means 'do not use NMI'
 	STA Dmap+IORB
 	STA Cmap+IORB
-
 ; * simple mirroring test *
 ; first of all, check whether C or D configuration
 	LDA #>Dmap				; first page of I/O for D map
@@ -157,8 +167,8 @@ zp_ok:
 	CPX #$80				; are all interrupts disabled?
 	BEQ via_ok				; VIA is responding properly (if 32K ROM, make sure $800E does *not* contain $80, which is reasonable)
 		LSR VIAptr+1		; or try C map instead
-		STA Dmap+IER
-		LDX Dmap+IER		; check response
+		STA Cmap+IER
+		LDX Cmap+IER		; check response EEEEK
 		CPX #$80			; are all interrupts disabled?
 	BEQ via_ok
 ; *** no VIA detected is horribly wrong ***
@@ -196,6 +206,7 @@ mt_3:
 		BNE mt_1
 	JMP ram_bad				; if arrived here, there is no more than 256 bytes of RAM, which is a BAD thing
 mt_4:
+#ifndef	POCKET
 ; size is probed, let's check for mirroring
 	LDX test+1				; keep highest responding page number
 mt_5:
@@ -214,11 +225,16 @@ mt_6:
 		LSR					; ...and half the memory
 		BCC mt_6
 	STY posi				; X & Y cannot reach this in address lines test
-
+#else
+#echo no mirroring test? store himem
+	LDA test+1
+	STA himem				; store in a safe place (needed afterwards)
+#endif
 ; ** address lines test ** make sure it NEVER tries to write to VIA
 ; X=bubble bit, Y=base bit (An+1)
 ; written value =$XY
 ; first write all values
+#ifndef	POCKET
 	STZ 0					; zero is a special case, as no bits are used
 	LDY #1					; first base bit, representing A0
 at_0:
@@ -288,6 +304,9 @@ at_bad:
 		LDA #%10111111		; *** bad address lines, LED code = %1 01000000 ***
 		JMP panic
 addr_ok:
+#else
+#echo No address lines test
+#endif
 #ifdef	DEBUG
 	LDA #%11000010			; PB1 means address test OK
 	STA Dmap+IORB
@@ -299,7 +318,11 @@ addr_ok:
 	LDY #0
 	STY test				; standard pointer address
 rt_1:
+#ifndef	POCKET
 		LDX #1				; skip zeropage
+#else
+		LDX #$C				; skip all code EEEEK
+#endif
 ;		BNE rt_2
 ;rt_1s:
 ;		LDX #$60			; skip to begin of screen
@@ -402,7 +425,6 @@ it_wt:
 
 ; bong sound, tell C from D thru beep codes and lock (just waiting for NMIs)
 	SEI
-#echo CB2 hi
 	LDA #%11101110			; * CB2 back to hi, just in case
 	STA Dmap+PCR
 	STA Cmap+PCR
@@ -425,15 +447,14 @@ it_wt:
 	STA Cmap+T2CH			; now pointing to T2CH, free run at max speed
 	LDA #$FF				; max volume PWM
 bvol:
-#echo ACR mode first, then load SR
+#echo set aux cr needed?
 ; * needed here?
-		LDA #%11010000		; T1 free run (PB7 on), SR free, no latch
-		STA Dmap+ACR
-		STA Cmap+ACR		; * shifting starts now? (SR not yet loaded)
+		LDY #%11010000		; T1 free run (PB7 on), SR free, no latch EEEEK
+		STY Dmap+ACR
+		STY Cmap+ACR		; * shifting starts now? (SR not yet loaded)
 		LDX #$A0			; shorter envelope
 		STA Dmap+VSR
 		STA Cmap+VSR		; set PWM
-#echo ACR shift every bvol
 #ifdef	DEBUG
 		STA Dmap+IORB
 		STA Cmap+IORB		; display current PWM pattern on LEDs
@@ -539,6 +560,7 @@ bit_l:
 bit_h:
 	.byt    $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $02, $04, $08, $10, $20, $40
 
+#ifndef	POCKET
 ; *********************
 ; *** base firmware ***
 ; *********************
@@ -561,3 +583,4 @@ nmi:
 	.word	nmi
 	.word	reset
 	.word	irq
+#endif
