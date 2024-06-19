@@ -258,7 +258,7 @@ at_1:
 			CMP #$8			; below code memory...
 			BCC at_1ok
 				CMP #$C		; ...or above it? continue as normal
-				BCC at_2	; otherwise skip this combo
+				BCC at_2x	; otherwise skip this combo
 at_1ok:
 #endif
 			STA sysptr+1
@@ -278,6 +278,7 @@ at_2:
 			INX				; advance bubble in any case
 			CPX posi		; size-savvy!
 			BNE at_1
+at_2x:
 		INY					; end of bubble, advance base bit
 		CPY posi			; size-savvy
 		BNE at_0			; this will disable bubble, too
@@ -297,7 +298,7 @@ at_4:
 			CMP #$8			; below code memory...
 			BCC at_4ok
 				CMP #$C		; ...or above it? continue as normal
-				BCC at_5	; otherwise skip this combo
+				BCC at_5x	; otherwise skip this combo
 at_4ok:
 #endif
 			STA sysptr+1
@@ -318,13 +319,15 @@ at_5:
 			INX				; advance bubble in any case
 			CPX posi		; size-savvy!
 			BNE at_4
+at_5x:
 		INY					; end of bubble, advance base bit
 		CPY posi			; size-savvy!
 		BNE at_3			; this will disable bubble, too
 	BEQ addr_ok
 at_bad:
-		LDA #%10111111		; *** bad address lines, LED code = %1 01000000 ***
-		JMP panic
+lda posi:sta $4000:bra at_bad
+;		LDA #%10111111		; *** bad address lines, LED code = %1 01000000 ***
+;		JMP panic
 addr_ok:
 #ifdef	DEBUG
 	LDA #%11000010			; PB1 means address test OK
