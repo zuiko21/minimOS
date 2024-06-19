@@ -1,7 +1,7 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240618-2026
-; use -DPOCKET for nanoBoot version
+; last modified 20240619-0855
+; use -DPOCKET for nanoBoot version (@ $800)
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
 #define		SPEED	1000000
@@ -61,7 +61,7 @@ rom_start:
 #endif
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"Hardware test for Chihuahua v1.0", 0	; C-string with filename @ [8], max 220 chars
+	.asc	"Hardware test for Chihuahua v1.1", 0	; C-string with filename @ [8], max 220 chars
 ;	.asc	"(comment)"		; optional C-string with comment after filename, filename+comment up to 220 chars
 	.byt	0				; second terminator for optional comment, just in case
 
@@ -73,11 +73,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$104C		; 1.0b12		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1141		; 1.1b1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$AB00			; time, 20.24		1010 1-011 000-0 0000
-	.word	$58D2			; date, 2024/6/18	0101 100-0 110-1 0010
+	.word	$4700			; time, 8.56		0100 0-111 000-0 0000
+	.word	$58D3			; date, 2024/6/19	0101 100-0 110-1 0011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -132,7 +132,6 @@ zp_1:
 		STA 0, X			; clear byte (4)
 		CMP 0, X			; must be clear right now! sets carry too (4+2)
 			BNE zp_bad
-;		SEC					; prepare for shifting bit (2)
 		LDY #10				; number of shifts +1 (2, 26t up here)
 zp_2:
 			DEY				; avoid infinite loop (2+2)
@@ -203,38 +202,48 @@ mt_2:
 mt_3:
 			BCS mt_4		; failed (¬C) or passed (C)?
 		LSR test+1			; if failed, try half the amount
+#ifdef	POCKET
+		LDA test+1
+		CMP #$C				; keep above loaded code!
+		BCS mt_1
+#else
 		BNE mt_1
+#endif
 	JMP ram_bad				; if arrived here, there is no more than 256 bytes of RAM, which is a BAD thing
 mt_4:
-#ifndef	POCKET
 ; size is probed, let's check for mirroring
 	LDX test+1				; keep highest responding page number
 mt_5:
 		LDA test+1			; get page number under test
 		STA (test), Y		; mark page number
 		LSR test+1			; try half the amount
+#ifdef	POCKET
+		LDA test+1
+		CMP #$C				; keep above loaded code!
+		BCS mt_5
+#else
 		BNE mt_5
+#endif
 	STX test+1				; recompute highest address tested
 	LDA (test), Y			; this is highest non-mirrored page
 	STA himem				; store in a safe place (needed afterwards)
 ; the address test needs himem in a bit-position format (An+1)
+#ifdef	POCKET
+	LDY #12					; * * * is this OK? * * *
+#else
 	LDY #8					; limit in case of a 256-byte RAM!
+#endif
 	INC						; CMOS only
 mt_6:
 		INY					; one more bit...
 		LSR					; ...and half the memory
 		BCC mt_6
 	STY posi				; X & Y cannot reach this in address lines test
-#else
-#echo no mirroring test? store himem
-	LDA test+1
-	STA himem				; store in a safe place (needed afterwards)
-#endif
+
 ; ** address lines test ** make sure it NEVER tries to write to VIA
 ; X=bubble bit, Y=base bit (An+1)
 ; written value =$XY
 ; first write all values
-#ifndef	POCKET
 	STZ 0					; zero is a special case, as no bits are used
 	LDY #1					; first base bit, representing A0
 at_0:
@@ -245,6 +254,13 @@ at_1:
 			STA sysptr
 			LDA bit_h, Y
 			ORA bit_h, X	; with MSB, pointer complete
+#ifdef	POCKET
+			CMP #$8			; below code memory...
+			BCC at_1ok
+				CMP #$C		; ...or above it? continue as normal
+				BCC at_2	; otherwise skip this combo
+at_1ok:
+#endif
 			STA sysptr+1
 			STY systmp		; lower nibble to write
 			TXA				; this will be higher nibble...
@@ -266,8 +282,7 @@ at_2:
 		CPY posi			; size-savvy
 		BNE at_0			; this will disable bubble, too
 ; then compare computed and stored values
-	LDA #0
-	CMP 0					; zero is a special case, as no bits are used
+	LDA 0					; zero is a special case, as no bits are used
 		BNE at_bad
 	LDY #1					; first base bit, representing A0
 at_3:
@@ -278,6 +293,13 @@ at_4:
 			STA sysptr
 			LDA bit_h, Y
 			ORA bit_h, X	; with MSB, pointer complete
+#ifdef	POCKET
+			CMP #$8			; below code memory...
+			BCC at_4ok
+				CMP #$C		; ...or above it? continue as normal
+				BCC at_5	; otherwise skip this combo
+at_4ok:
+#endif
 			STA sysptr+1
 			STY systmp		; lower nibble to write
 			TXA				; this will be higher nibble...
@@ -304,9 +326,6 @@ at_bad:
 		LDA #%10111111		; *** bad address lines, LED code = %1 01000000 ***
 		JMP panic
 addr_ok:
-#else
-#echo No address lines test
-#endif
 #ifdef	DEBUG
 	LDA #%11000010			; PB1 means address test OK
 	STA Dmap+IORB
@@ -318,14 +337,7 @@ addr_ok:
 	LDY #0
 	STY test				; standard pointer address
 rt_1:
-#ifndef	POCKET
 		LDX #1				; skip zeropage
-#else
-		LDX #$C				; skip all code EEEEK
-#endif
-;		BNE rt_2
-;rt_1s:
-;		LDX #$60			; skip to begin of screen
 rt_2:
 			STX test+1		; update pointer
 			STA (test), Y	; store...
@@ -334,14 +346,15 @@ rt_2:
 			INY
 			BNE rt_2
 				INX			; next page
-;				STX test+1
+#ifdef	POCKET
+				CPX #$8		; are we entering code memory?
+				BNE rt_2ok
+					LDX #$C	; if so, skip it!
+rt_2ok:
+#endif
 				CPX himem	; should check against actual RAMtop
 			BCC rt_2		; ends at whatever detected RAMtop...
 			BEQ rt_2
-;				CPX #$60	; already at screen
-;				BCC rt_1s	; ...or continue with screen
-;			CPX #$80		; end of screen?
-;			BNE rt_2
 		LSR					; create new value, either $0F or 0
 		LSR
 		LSR
