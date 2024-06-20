@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240619-0855
+; last modified 20240620-1248
 ; use -DPOCKET for nanoBoot version (@ $800)
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -37,9 +37,9 @@
 	systmp	= $FC			; %11111100
 	sysptr	= $FD			; %11111101
 	himem	= $FF			; %11111111
-; ****************************
 
 	t1ct	= (SPEED/250)-2	; 250 Hz interrupt at 1 MHz (or whatever) clock rate
+; ****************************
 
 #ifndef	POCKET
 * = $F800					; 2 KiB start address
@@ -73,11 +73,11 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1141		; 1.1b1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1142		; 1.1b2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$4700			; time, 8.56		0100 0-111 000-0 0000
-	.word	$58D3			; date, 2024/6/19	0101 100-0 110-1 0011
+	.word	$6600			; time, 12.48		0110 0-110 000-0 0000
+	.word	$58D4			; date, 2024/6/20	0101 100-0 110-1 0100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -204,7 +204,7 @@ mt_3:
 		LSR test+1			; if failed, try half the amount
 #ifdef	POCKET
 		LDA test+1
-		CMP #$C				; keep above loaded code!
+		CMP #$10			; keep above loaded code!
 		BCS mt_1
 #else
 		BNE mt_1
@@ -219,7 +219,7 @@ mt_5:
 		LSR test+1			; try half the amount
 #ifdef	POCKET
 		LDA test+1
-		CMP #$C				; keep above loaded code!
+		CMP #$10			; keep above loaded code!
 		BCS mt_5
 #else
 		BNE mt_5
@@ -228,16 +228,12 @@ mt_5:
 	LDA (test), Y			; this is highest non-mirrored page
 	STA himem				; store in a safe place (needed afterwards)
 ; the address test needs himem in a bit-position format (An+1)
-#ifdef	POCKET
-	LDY #12					; * * * is this OK? * * *
-#else
 	LDY #8					; limit in case of a 256-byte RAM!
-#endif
 	INC						; CMOS only
 mt_6:
 		INY					; one more bit...
 		LSR					; ...and half the memory
-		BCC mt_6
+		BCC mt_6			; is BNE safer, without the INC above?
 	STY posi				; X & Y cannot reach this in address lines test
 
 ; ** address lines test ** make sure it NEVER tries to write to VIA
@@ -297,7 +293,7 @@ at_4:
 #ifdef	POCKET
 			CMP #$8			; below code memory...
 			BCC at_4ok
-				CMP #$C		; ...or above it? continue as normal
+				CMP #$10	; ...or above it? continue as normal
 				BCC at_5x	; otherwise skip this combo
 at_4ok:
 #endif
@@ -325,9 +321,8 @@ at_5x:
 		BNE at_3			; this will disable bubble, too
 	BEQ addr_ok
 at_bad:
-lda posi:sta $4000:bra at_bad
-;		LDA #%10111111		; *** bad address lines, LED code = %1 01000000 ***
-;		JMP panic
+		LDA #%10111111		; *** bad address lines, LED code = %1 01000000 ***
+		JMP panic
 addr_ok:
 #ifdef	DEBUG
 	LDA #%11000010			; PB1 means address test OK
