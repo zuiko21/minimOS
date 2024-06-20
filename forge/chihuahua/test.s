@@ -1,6 +1,6 @@
 ; Chihuahua PLUS hardware test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240620-1248
+; last modified 20240620-1315
 ; use -DPOCKET for nanoBoot version (@ $800)
 ; *** speed in Hz (use -DSPEED=x, default 1 MHz) ***
 #ifndef	SPEED
@@ -374,7 +374,7 @@ ram_ok:
 
 ; * NMI test * HOW? maybe later
 
-; ** IRQ test ** REVISE
+; ** IRQ test **
 irq_test:
 ; interrupt setup
 	LDY #<exit
@@ -436,12 +436,6 @@ it_wt:
 
 ; bong sound, tell C from D thru beep codes and lock (just waiting for NMIs)
 	SEI
-	LDA #%11101110			; * CB2 back to hi, just in case
-	STA Dmap+PCR
-	STA Cmap+PCR
-;	LDA #%00101110			; * desperately set CB2 as input?
-;	STA Dmap+PCR
-;	STA Cmap+PCR
 	LDA #%11010000			; T1 free run (PB7 on), SR free, no latch
 	STA Dmap+ACR
 	STA Cmap+ACR			; shifting starts now (SR not yet loaded)
@@ -451,19 +445,14 @@ it_wt:
 	LDA #>(t1ct/8)			; *** placeholder 1 kHz
 	STA Dmap+T1CH
 	STA Cmap+T1CH
-	LDA #0
-	STA Dmap+T2CL
-	STA Cmap+T2CL
-	STA Dmap+T2CH
-	STA Cmap+T2CH			; now pointing to T2CH, free run at max speed
+	STZ Dmap+T2CL
+	STZ Cmap+T2CL
+	STZ Dmap+T2CH
+	STZ Cmap+T2CH			; now pointing to T2CH, free run at max speed
 	LDA #$FF				; max volume PWM
 bvol:
-#echo set aux cr needed?
-; * needed here?
-		LDY #%11010000		; T1 free run (PB7 on), SR free, no latch EEEEK
-		STY Dmap+ACR
-		STY Cmap+ACR		; * shifting starts now? (SR not yet loaded)
-		LDX #$A0			; shorter envelope
+#echo even shorter envelope
+		LDX #$C0			; shorter envelope
 		STA Dmap+VSR
 		STA Cmap+VSR		; set PWM
 #ifdef	DEBUG
@@ -483,9 +472,6 @@ bloop:
 	LDA #%10010000			; PB4 means all tests OK, also PB7 hi shuts speaker off
 	STA Dmap+IORB
 	STA Cmap+IORB			; this will shut speaker off
-	LDA #%11101110			; * CB2 back to hi, just in case
-	STA Dmap+PCR
-	STA Cmap+PCR
 	LDY #<nmi_test
 	LDX #>nmi_test
 	STY fw_nmi
