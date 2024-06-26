@@ -3,7 +3,7 @@
 ; compatible with Chihuhua·D (nanoBoot only)
 ; (c) 2023-2024 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20240626-1647
+; last modified 20240626-1819
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware
 ; add -DSCREEN for screenshots display capability
@@ -1489,7 +1489,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " bootloader 2.1.5", 13, 13, 0
+	.asc	14,"Durango·X", 15, " bootloader 2.1.6", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1499,7 +1499,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.1f5 + nanoBoot
+#echo	2.1f6 + nanoBoot & Chihuahua
 
 ; offset table for the above messages
 msg_ix:
@@ -1787,13 +1787,15 @@ nes_loop:
 	AND #$10				; check BRK bit
 	BEQ not_brk
 ; *** BRK happened *** will keep the LED flashing, as no debugger is installed
+		LDA #$FF			; for Chihuahua
 brk_panic:
 				INX
 				BNE brk_panic
 			INY
 			BNE brk_panic	; 0.2s delay
-		INC					; cycle LED
 		STA IOAie
+		STA D_IORB
+		EOR #$FF			; cycle LED(s)
 		BRA brk_panic
 not_brk:
 	PLY						; for 5x8 matrix support

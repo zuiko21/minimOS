@@ -1,6 +1,6 @@
 ; nanoBoot v2 (w/ support for Durango Cartridge & Pocket format, plus Chihuahua·D)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240626-1732
+; last modified 20240626-1819
 
 ; add -DALONE for standalone version (otherwise module after multiboot.s)
 #echo	fixed Durango init, Chihuahua-D compatible (with feedback)
@@ -118,6 +118,8 @@ sb_loop:
 ; *** all inited, get ready for reception ***
 nb_rdy:
 	STZ IOAie				; note we keep IRQ disabled! *CMOS
+	LDA #%11100000			; Chihuahua pattern
+	STA D_IORB
 	LDY #<nb_irq
 	LDA #>nb_irq			; get receiver ISR address
 	STY fw_irq
