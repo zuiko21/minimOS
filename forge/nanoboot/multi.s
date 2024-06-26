@@ -1,11 +1,11 @@
-; Durango-X devcart SD multi-boot loader
-; now with sidecar/fast SPI support
-; v2.1.5 with volume-into-FAT32, Pocket and nanoBoot support!
+; Durango-X devcart SD multi-boot loader, now with sidecar/fast SPI support
+; v2.1.6 with volume-into-FAT32, Pocket and nanoBoot support!
+; compatible with Chihuhua·D (nanoBoot only)
 ; (c) 2023-2024 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20240505-1740
+; last modified 20240626-1647
 
-; assemble from here with		xa multi.s -I ../../OS/firmware 
+; assemble from here with		xa multi.s -I ../../OS/firmware
 ; add -DSCREEN for screenshots display capability
 ; add -DTALLY for LED access indicator
 ; add -DDEBUG if desired
@@ -13,6 +13,9 @@
 #echo	DevCart @ $DFC0
 #echo	FastSPI @ $DF96-7, SPI ID=0...3
 #echo	volume-into-FAT32, pX and nanoBoot support!
+#echo	Chihuahua-D compatible (nanoBoot only)
+
+#define	KBDMAT
 
 ; SD interface definitions
 #define	SD_CLK		%00000001
@@ -70,8 +73,12 @@ IOAie	= $DFA0
 IOBeep	= $DFB0
 IOCart	= $DFC0
 IO_PSG	= $DFDB				; PSG riser port
-
-#define	KBDMAT
+; *** Chihuahua·D VIA definitions ***
+D_IORB	= $BFF0
+D_DDRB	= $BFF2
+D_PCR	= $BFFC
+D_IFR	= $BFFD
+D_IER	= $BFFE
 
 ; *** memory usage ***
 dev_id	= $EB		; $EB 1...4=SPI, 241=devCart, 0=RasPi; will turn into '0...3' and ' ' (and '/') for display
@@ -178,10 +185,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$21C5			; 2.1f5		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$21C6			; 2.1f6		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$8D00			; time, 17.40		%1000 1-101 000-0 0000
-	.word	$58A5			; date, 2024/5/5	%0101 100-0 101-0 0101
+	.word	$58DA			; date, 2024/6/26	%0101 100-0 110-1 1010
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -479,7 +486,7 @@ chk_brk:
 	STA IO9kbd
 	LDA IO9kbd				; get active rows
 	STZ IO9kbd				; just for good measure
-	AND #%10100000			; mask relevant keys
+;	AND #%10100000			; mask relevant keys
 	CMP #%10100000			; both SHIFT & SPACE?
 	BNE no_break
 		LDX #0				; *** last line, where progress indicator was
@@ -1405,6 +1412,7 @@ progress:
 		BNE no_bar			; if it's a screenshot, do not display progress
 #endif
 	LDA ptr+1				; check new page
+	STA D_IORB				; * Display page in binary thru Chihuahua simple I/O *
 	DEC						; last completed page
 	TAY						; save!
 	LSR
@@ -1641,7 +1649,7 @@ end_sd:
 
 ; ************************
 ; ************************
-; *** firmware support *** for Durango·X
+; *** firmware support *** for Durango·X and Chihuahua·D
 ; ************************
 ; ************************
 reset:
@@ -1711,7 +1719,17 @@ not_5x8:
 ;	STA fw_ccol+1			; will reconstruct colours from this upon FF
 	LDY #12					; FF = clear screen
 	JSR conio
-
+; ** init Chihuahua hardware (optional) **
+	LDA #$FF
+	STA D_DDRB				; set PB all outputs for feedback
+	STZ D_IORB				; all LEDs off
+	LSR						; now A is $7F
+	STA D_IER				; disable all interrupt sources
+	STA D_IFR				; and clear any previous interrupt
+; might check if D_IER reads $80, but anyway...
+	LDA #%11001110			; make sure CB2 is low (no sound!)
+	STA D_PCR
+; ** launch loader **
 	CLI						; must enable interrupts!
 	LDX #>reset				; * use start address for NMI
 	LDY #<reset

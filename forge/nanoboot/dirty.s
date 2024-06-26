@@ -1,9 +1,9 @@
 ; nanoBoot v2 (w/ support for Durango Cartridge & Pocket format, plus Chihuahua·D)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240618-1819
+; last modified 20240626-1732
 
 ; add -DALONE for standalone version (otherwise module after multiboot.s)
-#echo	fixed Durango init, Chihuahua·D compatible
+#echo	fixed Durango init, Chihuahua-D compatible (with feedback)
 
 #ifdef ALONE
 	*		= $E000			; skip I/O, just in case
@@ -16,6 +16,13 @@
 	IOAie	= $DFA0
 	IOCart	= $DFC0
 	screen3	= $6000
+; *** Chihuahua·D VIA definitions ***
+	D_IORB	= $BFF0
+	D_DDRB	= $BFF2
+	D_PCR	= $BFFC
+	D_IFR	= $BFFD
+	D_IER	= $BFFE
+
 ; might add standard header too
 rom_start:
 ; header ID
@@ -24,7 +31,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"nanoBoot v2"	; C-string with filename @ [8], max 220 chars
+	.asc	"nanoBoot v2.1"	; C-string with filename @ [8], max 220 chars
 ; note terminator below
 ; optional C-string with comment after filename, filename+comment up to 220 chars
 	.asc	0, 0
@@ -37,10 +44,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2085			; 2.0RC5		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2141			; 2.1b1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$8F00			; time, 17.56		%1000 1-111 000-0 0000
-	.word	$58D2			; date, 2024/6/18	%0101 100-0 110-1 0010
+	.word	$58DA			; date, 2024/6/26	%0101 100-0 110-1 1010
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -93,6 +100,15 @@ sb_loop:
 		STA $778A, X
 		DEX
 		BPL sb_loop
+	LDA #$FF				; ** Chihuahua specifics **
+	STA D_DDRB				; set PB all outputs for feedback
+	STZ D_IORB				; all LEDs off
+	LSR						; now A is $7F
+	STA D_IER				; disable all interrupt sources
+	STA D_IFR				; and clear any previous interrupt
+; might check if D_IER reads $80, but anyway...
+	LDA #%11001110			; make sure CB2 is low (no sound!)
+	STA D_PCR
 #else
 ; display ready message thru CONIO
 	LDX #banner-msg			; reset offset
@@ -212,8 +228,8 @@ nb_error:
 	SEI
 ; draw some feedback
 #ifdef	ALONE
-	LDX #5					; max offset
 	LDA #$FF				; whole byte
+	LDX #5					; max offset
 err_loop:
 		STA $772A, X		; strike two lines
 		STA $776A, X
@@ -224,13 +240,15 @@ err_loop:
 	LDX #error-msg			; preset offset
 	JSR sb_loop				; and print selected message
 #endif
+	LDA #$FF				; all LEDs
 lock:
 				INX
 				BNE lock
 			INY
 			BNE lock
 		STA IOAie			; update ERROR LED
-		INC					; will keep flashing
+		STA D_IORB			; Chihuahua too
+		EOR #$FF			; will keep flashing
 		BRA lock			; just press RST when transmission has ended!
 ; *****************************************************************************************************
 
@@ -306,6 +324,7 @@ progress:
 	CMP #$4D
 	BEQ no_bar				; if it's generic data (could be screenshot), do not display progress
 		LDA nb_ptr+1		; check new page
+		STA D_IORB			; * Display page in binary thru Chihuahua simple I/O *
 		DEC					; last completed page
 		TAY					; save!
 		LSR
