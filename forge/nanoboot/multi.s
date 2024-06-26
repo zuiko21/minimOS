@@ -3,7 +3,7 @@
 ; compatible with Chihuhua·D (nanoBoot only)
 ; (c) 2023-2024 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20240626-1819
+; last modified 20240626-2005
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware
 ; add -DSCREEN for screenshots display capability
@@ -394,10 +394,13 @@ prl_ok:
 ; but if pX format, begin from specified address AND end as required
 #ifdef	SCREEN
 	LDA bootsig+1
-	CMP #'X'				; if not executable, it's a screenshot
-	BEQ rom_siz
+	CMP #'S'				; if it's a screenshot...
+		BEQ is_screen
+	CMP #'R'
+	BNE rom_siz
+is_screen:
 		LDX #$80
-		STX end_pg			; tweak this indicator with end page!
+		STX end_pg			; ...tweak this indicator with end page!
 		LDA #$5E			; will load header sector off-screen!
 	BRA set_ptr				; always screen address
 rom_siz:
@@ -486,7 +489,7 @@ chk_brk:
 	STA IO9kbd
 	LDA IO9kbd				; get active rows
 	STZ IO9kbd				; just for good measure
-;	AND #%10100000			; mask relevant keys
+;	AND #%10100000			; mask relevant keys ** not for Chihuahua
 	CMP #%10100000			; both SHIFT & SPACE?
 	BNE no_break
 		LDX #0				; *** last line, where progress indicator was
@@ -1407,9 +1410,11 @@ rls_gp:
 ; *** new progress indicator ***
 progress:
 #ifdef	SCREEN
-	LDA bootsig+1
-	CMP #'X'
-		BNE no_bar			; if it's a screenshot, do not display progress
+;	LDA bootsig+1
+;	CMP #'S'
+;	BEQ no_bar				; if it's a screenshot, do not display progress
+;	CMP #'R'
+;	BEQ no_bar				; if it's a screenshot, do not display progress
 #endif
 	LDA ptr+1				; check new page
 	STA D_IORB				; * Display page in binary thru Chihuahua simple I/O *

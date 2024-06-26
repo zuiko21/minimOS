@@ -1,9 +1,9 @@
 ; nanoBoot v2 (w/ support for Durango Cartridge & Pocket format, plus Chihuahua·D)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240626-1819
+; last modified 20240626-2006
 
 ; add -DALONE for standalone version (otherwise module after multiboot.s)
-#echo	fixed Durango init, Chihuahua-D compatible (with feedback)
+#echo	Chihuahua-D compatible (with feedback even for data)
 
 #ifdef ALONE
 	*		= $E000			; skip I/O, just in case
@@ -44,7 +44,7 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2141			; 2.1b1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2142			; 2.1b2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$8F00			; time, 17.56		%1000 1-111 000-0 0000
 	.word	$58DA			; date, 2024/6/26	%0101 100-0 110-1 1010
@@ -299,7 +299,7 @@ not_cart:
 		STZ $778E
 #else
 	LDX #clrtype-msg		; preset offset
-	JSR sb_loop				; and print selected message	
+	JSR sb_loop				; and print selected message
 #endif
 		JMP nb_rdy			; (3) back to receiving mode
 not_data:
@@ -322,9 +322,9 @@ nb_bad:
 #ifdef	ALONE
 ; progress bar routine (already installed for SD)
 progress:
-	LDA nb_type
-	CMP #$4D
-	BEQ no_bar				; if it's generic data (could be screenshot), do not display progress
+;	LDA nb_type
+;	CMP #$4D
+;	BEQ no_bar				; if it's generic data (could be screenshot), do not display progress
 		LDA nb_ptr+1		; check new page
 		STA D_IORB			; * Display page in binary thru Chihuahua simple I/O *
 		DEC					; last completed page
@@ -459,7 +459,7 @@ msg:						; base address
 banner:
 	.asc	"nanoBoot?", 2, 14, 0		; standard banner
 clrtype:
-	.asc	15, ' ', 2, 14, 0		; clear previously displayed type
+	.asc	15, 2, ' ', 2, 14, 0		; clear previously displayed type
 error:
 	.asc	15, ' ', 14, "FAIL!", 15, 7, 0		; error message
 #endif
