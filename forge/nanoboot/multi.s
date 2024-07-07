@@ -1,9 +1,9 @@
 ; Durango-X devcart SD multi-boot loader, now with sidecar/fast SPI support
-; v2.1.6 with volume-into-FAT32, Pocket and nanoBoot support!
+; v2.1.7 with volume-into-FAT32, Pocket and nanoBoot support!
 ; compatible with Chihuhua·D (nanoBoot only)
 ; (c) 2023-2024 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20240626-2005
+; last modified 20240707-1732
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware
 ; add -DSCREEN for screenshots display capability
@@ -185,10 +185,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$21C6			; 2.1f6		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$21C7			; 2.1f7		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$8D00			; time, 17.40		%1000 1-101 000-0 0000
-	.word	$58DA			; date, 2024/6/26	%0101 100-0 110-1 1010
+	.word	$58E7			; date, 2024/7/7	%0101 100-0 111-0 0111
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -416,6 +416,10 @@ rom_siz:
 		BEQ all_pg			; * if zero, already OK
 			INC				; * otherwise fill last page
 all_pg:						; *
+		BIT #1				; * pocket images may have odd number of pages EEEEK
+		BEQ ev_pg			; * even page is sector-aligned
+			INC				; * make it even otherwise
+ev_pg:						; *
 		STA end_pg			; * store end page
 		TXA					; * EEEEEEEEEEEEEEEEEEEEEEKKKKKKKKKKKKKKKKK
 		BRA set_ptr			; *
@@ -1494,7 +1498,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " bootloader 2.1.6", 13, 13, 0
+	.asc	14,"Durango·X", 15, " bootloader 2.1.7", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1504,7 +1508,7 @@ sd_mnt:
 sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
-#echo	2.1f6 + nanoBoot & Chihuahua
+#echo	2.1f7 + nanoBoot & Chihuahua
 
 ; offset table for the above messages
 msg_ix:
