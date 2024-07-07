@@ -4,6 +4,21 @@
 ; (c) 2024 Carlos J. Santisteban
 ; last modified 20240707-1513
 
+; **************************
+; *** memory definitions ***
+; **************************
+; zeropage
+	ptr		= $FC			; indirect pointer
+; standard RAM
+	fw_irq	= $0200
+	fw_nmi	= $0202
+; Durango·X hardware
+	screen3	= $6000
+	IO8mode	= $DF80
+	IO8lf	= $DF88			; EEEEEEEK
+	IOAen	= $DFA0
+	IOBeep	= $DFB0
+
 	* = $800				; suitable for Pocket format
 ; *********************************
 ; *** pocket header (essential) ***
