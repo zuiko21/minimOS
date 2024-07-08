@@ -1,11 +1,13 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2024 Carlos J. Santisteban *
- * last modified 20240505-1358         */
+ * last modified 20240708-2337         */
+
+/* gcc server.c -lwiringPi -o nanoBootServer */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <wiringPi.h>
-/* *** needs -lwiringPi option *** */
+#include <unistd.h>
 
 /* pin definitions, 36-38-40 at header, BCM 16-20-21 */
 /* CB1 is clock, CB2 data, can use pin 34 as GND */
@@ -25,14 +27,69 @@ void dato(byte x);	/* send data byte at full speed! */
 void useg(int x);	/* delay for specified microseconds */
 
 /* *** main code *** */
-int main(void) {
+int main(int argc, char *argv[]) {
 	FILE*	f;
 	word	ini, exe, hi, hx;
 	byte	c, bb, tipo;
-	int		fin, i;
-	char	nombre[80];
+	int		fin, i, arg;
+	float	speed	= 1.0;	/* NEW speed factor */
+	char*	nombre;			/* now as argument */
 	byte	buffer[256];
+	char*	a_str	= NULL;	/* parameter parsing */
+	char*	x_str	= NULL;
+	char*	s_str	= NULL;
+	int		index, arg_index;
 
+/* parse arguments *** TBD *** */
+	while ((arg = getopt(argc, argv, "a:x:s:")) != -1) {
+		switch (arg) {
+			case 'a':
+				a_str = optarg;
+				break;
+			case 'x':
+				x_str = optarg;
+				break;
+			case 's':
+				s_str = optarg;
+				break;
+			case '?':
+				printf("Unknown option '-%c'\n", optopt);
+				printf("Usage: %s file [-a load_address] [-x execution_address] [-s speed]\n", argv[0]);
+				return -1;
+			default:
+				abort();
+		}
+	}
+	arg_index = 0;
+	index = optind;
+	while (index < argc) {
+		switch (arg_index++) {
+			case 0:
+				nombre = argv[index++];
+				break;
+		}
+	}
+	if (!arg_index) {
+		printf("Filename is mandatory\n");
+		return -2;
+	}
+	if (a_str != NULL && (strlen(a_str) != 6 || a_str[0]!='0' || a_str[1]!='x')) {
+		printf("Load address format: 0x0000\n");
+		return -3;
+	}
+	if (x_str != NULL && (strlen(x_str) != 6 || x_str[0]!='0' || x_str[1]!='x')) {
+		printf("Execution address format: 0x0000\n");
+		return -3;
+	}
+	if (s_str != NULL) {
+		speed = strtof(s_str, NULL);
+		if (!speed) {
+			printf("Speed must be a float in MHz\n");
+			return -3;
+		}
+	}
+
+/* data transmission */
 	printf("*** nanoBoot server (OC) ***\n\n");
 	printf("pin 34=GND, 36=CLK, 38=DAT\n\n");
 /* GPIO setup */
@@ -42,11 +99,9 @@ int main(void) {
 	pinMode(CB2, OUTPUT);
 	pinMode(STB, OUTPUT);	/* not actually used */
 /* open source file */
-	printf("File: ");
-	scanf("%s", nombre);
 	if ((f = fopen(nombre, "rb")) == NULL) {
 		printf("*** NO SUCH FILE ***\n");
-		return -1;
+		return -4;
 	}
 /* compute header parameters */
 	fseek(f, 0, SEEK_END);
@@ -75,17 +130,15 @@ int main(void) {
 		}
 	} else		bb = 1;					/* binary blob might be executed from start */
 /* determine type */
-	printf("\n\nNon-executable Load Address in HEX (0=default): ");
-	scanf("%x", &ini);
+	ini = (word)strtol(a_str, NULL, 0);	/* get load address, or default */
 	if (!ini) {
 		if (bb) {
-			printf("Execution Address in HEX (0=default): ");
-			scanf("%x", &exe);
+			exe = (word)strtol(x_str, NULL, 0);		/* get execution address from argument */
 			if (exe)	tipo = 0x4B;		/* binary code blob (legacy) */
 			else {
 				printf("*** Execution address is needed! ***\n");
 				fclose(f);
-				return -1;
+				return -5;
 			}
 		}
 	} else {
@@ -95,7 +148,7 @@ int main(void) {
 	if (ini && exe) {
 		printf("*** Set either Load OR Execution address ***\n");
 		fclose(f);
-		return -1;
+		return -6;
 	}
 	switch(tipo) {
 		case 0x4B:
