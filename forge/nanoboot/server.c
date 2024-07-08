@@ -73,12 +73,14 @@ int main(int argc, char *argv[]) {
 		printf("Filename is mandatory\n");
 		return -2;
 	}
+printf("before...\n");
 //*	if (a_str != NULL && (strlen(a_str) != 6 || a_str[0]!='0' || a_str[1]!='x')) {
 	if (a_str != NULL)
 		if (a_str[0]!='0' || a_str[1]!='x') {
 			printf("Load address format: 0x0000\n");
 			return -3;
 		}
+printf("...and after\n");
 	if (x_str != NULL)
 		if (x_str[0]!='0' || x_str[1]!='x') {
 			printf("Execution address format: 0x0000\n");
