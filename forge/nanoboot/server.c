@@ -73,14 +73,12 @@ int main(int argc, char *argv[]) {
 		printf("Filename is mandatory\n");
 		return -2;
 	}
-printf("before...\n");
 //*	if (a_str != NULL && (strlen(a_str) != 6 || a_str[0]!='0' || a_str[1]!='x')) {
 	if (a_str != NULL)
 		if (a_str[0]!='0' || a_str[1]!='x') {
 			printf("Load address format: 0x0000\n");
 			return -3;
 		}
-printf("...and after\n");
 	if (x_str != NULL)
 		if (x_str[0]!='0' || x_str[1]!='x') {
 			printf("Execution address format: 0x0000\n");
@@ -135,7 +133,9 @@ printf("...and after\n");
 		}
 	} else		bb = 1;					/* binary blob might be executed from start */
 /* determine type */
+printf("before...\n");
 	ini = (word)strtol(a_str, NULL, 0);	/* get load address, or default */
+printf("...and after\n");
 	if (!ini) {
 		if (bb) {
 			exe = (word)strtol(x_str, NULL, 0);		/* get execution address from argument */
