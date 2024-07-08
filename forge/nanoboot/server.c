@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2024 Carlos J. Santisteban *
- * last modified 20240708-2348         */
+ * last modified 20240708-2359         */
 
 /* gcc server.c -lwiringPi -o nanoBootServer */
 
@@ -74,16 +74,18 @@ int main(int argc, char *argv[]) {
 		return -2;
 	}
 //*	if (a_str != NULL && (strlen(a_str) != 6 || a_str[0]!='0' || a_str[1]!='x')) {
-	if (a_str != NULL && (a_str[0]!='0' || a_str[1]!='x')) {
-		printf("Load address format: 0x0000\n");
-		return -3;
-	}
-	if (x_str != NULL && (x_str[0]!='0' || x_str[1]!='x')) {
-		printf("Execution address format: 0x0000\n");
-		return -3;
-	}
+	if (a_str != NULL)
+		if (a_str[0]!='0' || a_str[1]!='x') {
+			printf("Load address format: 0x0000\n");
+			return -3;
+		}
+	if (x_str != NULL)
+		if (x_str[0]!='0' || x_str[1]!='x') {
+			printf("Execution address format: 0x0000\n");
+			return -3;
+		}
 	if (s_str != NULL) {
-//*		speed = strtof(s_str, NULL);
+		speed = strtof(s_str, NULL);
 		if (!speed) {
 			printf("Speed must be a float in MHz\n");
 			return -3;
