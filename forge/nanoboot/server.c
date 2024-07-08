@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2024 Carlos J. Santisteban *
- * last modified 20240708-2359         */
+ * last modified 20240709-0013         */
 
 /* gcc server.c -lwiringPi -o nanoBootServer */
 
@@ -78,12 +78,12 @@ int main(int argc, char *argv[]) {
 		if (a_str[0]!='0' || a_str[1]!='x') {
 			printf("Load address format: 0x0000\n");
 			return -3;
-		}
+		} else	ini = (word)strtol(a_str, NULL, 0);	/* get load address, or default */
 	if (x_str != NULL)
 		if (x_str[0]!='0' || x_str[1]!='x') {
 			printf("Execution address format: 0x0000\n");
 			return -3;
-		}
+		} else	exe = (word)strtol(x_str, NULL, 0);		/* get execution address from argument */
 	if (s_str != NULL) {
 		speed = strtof(s_str, NULL);
 		if (!speed) {
@@ -133,12 +133,8 @@ int main(int argc, char *argv[]) {
 		}
 	} else		bb = 1;					/* binary blob might be executed from start */
 /* determine type */
-printf("before...\n");
-	ini = (word)strtol(a_str, NULL, 0);	/* get load address, or default */
-printf("...and after\n");
 	if (!ini) {
 		if (bb) {
-			exe = (word)strtol(x_str, NULL, 0);		/* get execution address from argument */
 			if (exe)	tipo = 0x4B;		/* binary code blob (legacy) */
 			else {
 				printf("*** Execution address is needed! ***\n");
