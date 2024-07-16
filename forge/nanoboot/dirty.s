@@ -1,6 +1,6 @@
 ; nanoBoot v2 (w/ support for Durango Cartridge & Pocket format, plus Chihuahua·D)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240626-2006
+; last modified 20240716-1659
 
 ; add -DALONE for standalone version (otherwise module after multiboot.s)
 #echo	Chihuahua-D compatible (with feedback even for data)
@@ -44,20 +44,20 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2142			; 2.1b2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$2143			; 2.1b3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8F00			; time, 17.56		%1000 1-111 000-0 0000
-	.word	$58DA			; date, 2024/6/26	%0101 100-0 110-1 1010
+	.word	$8800			; time, 17.00		%1000 1-000 000-0 0000
+	.word	$58F0			; date, 2024/7/16	%0101 100-0 111-1 0000
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
 #endif
 
 ; *** zeropage usage ***
-	nb_ex	= $F8			; copy of initial address, or execution address
-	nb_ptr	= $FA			; initial address, will be used as pointer (will reuse for screen drawing)
-	nb_end	= $FC			; final address (consecutive) after downloaded chunk
-	nb_type	= $FE			; magic number
+	nb_ex	= $E4			; copy of initial address, or execution address (no longer $F8)
+	nb_ptr	= nb_ex+2		; initial address, will be used as pointer (will reuse for screen drawing)
+	nb_end	= nb_ptr+2		; final address (consecutive) after downloaded chunk
+	nb_type	= nb_end+2		; magic number
 
 ; *******************
 ; *** actual code ***
