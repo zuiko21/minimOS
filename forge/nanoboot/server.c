@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2024 Carlos J. Santisteban *
- * last modified 20240716-1155         */
+ * last modified 20240716-1210         */
 
 /* gcc server.c -lwiringPi -o nanoBootServer */
 
@@ -23,7 +23,7 @@ typedef u_int16_t	word;
 
 /* prototypes */
 void cabe(byte x);	/* send header byte in a slow way */
-void dato(byte x);	/* send data byte at full speed! */
+void dato(byte x, float speed);	/* send data byte at specified speed! */
 void useg(int x);	/* delay for specified microseconds */
 
 /* *** main code *** */
@@ -177,7 +177,7 @@ int main(int argc, char *argv[]) {
 			printf("$%02X...\n", i>>8);
 		}
 		c = fgetc(f);
-		if (i>>8 != 0xDF)	dato(c);
+		if (i>>8 != 0xDF)	dato(c, speed);
 	}
 	printf("\nEnded at $%04X\n", fin);
 	fclose(f);
@@ -204,7 +204,7 @@ void cabe(byte x) {			/* just like dato() but with longer bit delay, whole heade
 	delay(1);				/* shouldn't be needed, but won't harm anyway */
 }
 
-void dato(byte x) {			/* send a byte at 'top' speed */
+void dato(byte x, float speed) {			/* send a byte at 'top' speed */
 	byte bit, i = 8;
 
 	while(i>0) {
