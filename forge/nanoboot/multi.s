@@ -1,5 +1,5 @@
 ; Durango-X devcart SD multi-boot loader, now with sidecar/fast SPI support
-; v2.1.7 with volume-into-FAT32, Pocket and nanoBoot support!
+; v2.1.8 with volume-into-FAT32, Pocket and nanoBoot support!
 ; compatible with Chihuhua·D (nanoBoot only)
 ; (c) 2023-2024 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
@@ -94,6 +94,8 @@ ptr		= token	+ 1	; $FC-$FD
 cnt		= ptr	+ 2	; $FE
 tmpba	= cnt	- 1	; actually $FE-$FF, as $FD will NOT be used
 
+-ptr	= $DE		; *** same as RasPi module ***
+
 ; *** sector buffer and header pointers ***
 buffer	= $400
 magic1	= buffer+0			; must contain zero
@@ -185,10 +187,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$21C7			; 2.1f7		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$21C8			; 2.1f8		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8D00			; time, 17.40		%1000 1-101 000-0 0000
-	.word	$58E7			; date, 2024/7/7	%0101 100-0 111-0 0111
+	.word	$8C00			; time, 17.32		%1000 1-100 000-0 0000
+	.word	$58F0			; date, 2024/7/16	%0101 100-0 111-1 0000
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -1498,7 +1500,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " bootloader 2.1.7", 13, 13, 0
+	.asc	14,"Durango·X", 15, " bootloader 2.1.8", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1509,6 +1511,7 @@ sd_fat32:
 	.asc	" DURANGO.AV...", 0
 
 #echo	2.1f7 + nanoBoot & Chihuahua
+#echo	2.1f8 fixes feedback in RasPi module
 
 ; offset table for the above messages
 msg_ix:

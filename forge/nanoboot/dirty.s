@@ -1,6 +1,6 @@
 ; nanoBoot v2 (w/ support for Durango Cartridge & Pocket format, plus Chihuahua·D)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240716-1659
+; last modified 20240716-1717
 
 ; add -DALONE for standalone version (otherwise module after multiboot.s)
 #echo	Chihuahua-D compatible (with feedback even for data)
@@ -54,7 +54,7 @@ rom_start:
 #endif
 
 ; *** zeropage usage ***
-	nb_ex	= $E4			; copy of initial address, or execution address (no longer $F8)
+	nb_ex	= $DC			; copy of initial address, or execution address (no longer $F8)
 	nb_ptr	= nb_ex+2		; initial address, will be used as pointer (will reuse for screen drawing)
 	nb_end	= nb_ptr+2		; final address (consecutive) after downloaded chunk
 	nb_type	= nb_end+2		; magic number
