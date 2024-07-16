@@ -1,6 +1,6 @@
 /* nanoBoot server for Raspberry Pi!   *
  * (c) 2020-2024 Carlos J. Santisteban *
- * last modified 20240709-0013         */
+ * last modified 20240716-1155         */
 
 /* gcc server.c -lwiringPi -o nanoBootServer */
 
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
 	char*	s_str	= NULL;
 	int		index, arg_index;
 
-/* parse arguments *** TBD *** */
+/* parse arguments */
 	while ((arg = getopt(argc, argv, "a:x:s:")) != -1) {
 		switch (arg) {
 			case 'a':
@@ -73,7 +73,6 @@ int main(int argc, char *argv[]) {
 		printf("Filename is mandatory\n");
 		return -2;
 	}
-//*	if (a_str != NULL && (strlen(a_str) != 6 || a_str[0]!='0' || a_str[1]!='x')) {
 	if (a_str != NULL)
 		if (a_str[0]!='0' || a_str[1]!='x') {
 			printf("Load address format: 0x0000\n");
@@ -195,7 +194,7 @@ void cabe(byte x) {			/* just like dato() but with longer bit delay, whole heade
 		bit = x & 1;
 		digitalWrite(CB2, bit);		/* send bit for OC *** ^1 is NO LONGER needed *** */
 		digitalWrite(CB1, 1);
-		useg(15);			/* eeeeeek */
+		useg(15);					/* eeeeeek */
 		digitalWrite(CB1, 0);
 		delay(2);			/* way too long, just in case, note OC */
 /* delay is best here in any case */
@@ -212,15 +211,15 @@ void dato(byte x) {			/* send a byte at 'top' speed */
 		bit = x & 1;
 		digitalWrite(CB2, bit);		/* note OC *** ^1 is NO LONGER needed *** */
 		digitalWrite(CB1, 1);
-		useg(15);			/* eeeeeeek */
+		useg(15/speed);		/* eeeeeeek */
 		digitalWrite(CB1, 0);
-		useg(65);			/* *** cranked up to 55 µs or so (at 1 MHz) is pretty unreliable *** */
+		useg(65/speed);		/* *** cranked up to 55 µs or so (at 1 MHz) is pretty unreliable *** */
 /* delay is best here in any case */
 		x >>= 1;
 		i--;
 	}
 	digitalWrite(CB2, 0);	/* let data line float high, note OC */
-	useg(125);				/* *** perhaps 200 µs or so *** */
+	useg(125/speed);		/* *** perhaps 200 µs or so *** */
 }
 
 void useg(int x){
