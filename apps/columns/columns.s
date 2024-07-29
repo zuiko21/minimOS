@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240729-1821
+; last modified 20240729-1955
 
 ; ****************************
 ; *** hardware definitions ***
@@ -395,14 +395,13 @@ s2end:
 ; move according to Y-direction, if possible
 ;			JSR chkroom
 ;*/
-;		JSR colclear		; clear previous tile position
-;		LDX select			; eeeeeek (end of new code)
 		LDA posit, X
 		CLC
 		ADC ix_dir, Y		; add combined offset
 		STA posit, X
-;		JSR coldisp			; redisplay in new position, needed?
-;		LDX select			; eeeeeek (end of new code)
+		PHA					; keep this for later...
+		JSR coldisp			; ...as screen must be updated
+		PLA
 ; test, check bottom
 		AND #$7F
 		CMP #%01100000	; row 12
@@ -411,6 +410,7 @@ s2end:
 ;		JSR palmatoria
 ;		JMP next_player
 		LDA #STAT_DIE		; will trigger palmatoria
+		LDX select			; * retrieve player
 		STA status, X		; eeeeeeeeeeeeeeeeeeeeek
 ; prepare loops for the new status
 		LDA #113			; 14*8+1
