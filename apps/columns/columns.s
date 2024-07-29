@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240729-1602
+; last modified 20240729-1817
 
 ; ****************************
 ; *** hardware definitions ***
@@ -17,6 +17,7 @@ IO9nes1	= $DF9D
 IO9nclk	= IO9nes1
 IOAie	= $DFA0
 IOBeep	= $DFB0
+IO_PSG	= $DFDB				; PSG optional for some effects and background music
 
 ; ****************************
 ; *** constant definitions ***
@@ -128,11 +129,17 @@ rom_start:
 	.byt	0				; second terminator for optional comment, just in case
 
 ; advance to end of header
-	.dsb	rom_start + $F8 - *, $FF
+	.dsb	rom_start + $E6 - *, $FF
 
+; NEW library commit (user field 2)
+	.asc	"$$$$$$$$"
+; NEW main commit (user field 1)
+	.asc	"$$$$$$$$"
+; NEW coded version number
+	.word	$10a2			; 1.0a2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5800			; time, 11.00
-	.word	$5673			; date, 2023/3/19
+	.word	$8600			; time, 16.48		1000 0-110 000-0 0000
+	.word	$58FD			; date, 2024/7/29	0101 100-0 111-1 1101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -143,10 +150,6 @@ reset:
 	LDX #$FF
 	TXS
 ; Durango-X specifics
-#ifdef	DEBUG
-	lda #$f0
-	sta $df94	;enable Virtual Serial Port
-#endif
 	STX IOAie				; enable interrupts, as X is an odd value
 ;	STZ ticks
 	LDA #$38				; colour mode, screen 3, RGB
@@ -388,10 +391,14 @@ s2end:
 ; move according to Y-direction, if possible
 ;			JSR chkroom
 ;*/
+		JSR colclear		; clear previous tile position
+		LDX select			; eeeeeek (end of new code)
 		LDA posit, X
 		CLC
-		ADC ix_dir, Y			; add combined offset
+		ADC ix_dir, Y		; add combined offset
 		STA posit, X
+		JSR coldisp			; redisplay in new position, needed?
+		LDX select			; eeeeeek (end of new code)
 ; test, check bottom
 		AND #$7F
 		CMP #%01100000	; row 12
@@ -542,6 +549,34 @@ coldisp:
 	TAY						; last one does not need to be saved
 	LDX select
 	LDA column+2, X
+	JSR tiledis				; and bottom one
+	LDX select
+	RTS
+
+; ** clear falling column **
+; input
+;	X		player [0-128]
+; affects A, Y and some vars from tiledis
+colclear:
+; this displays falling column at index Y
+	LDY posit, X			; get current position
+	PHY						; eeeeeek
+	LDA #0					; only difference from coldisp
+	JSR tiledis				; show top tile
+	PLA
+	CLC
+	ADC #8
+	PHA
+	TAY
+	LDX select
+	LDA #0					; *
+	JSR tiledis				; middle one
+	PLA
+	CLC
+	ADC #8
+	TAY						; last one does not need to be saved
+	LDX select
+	LDA #0					; *
 	JSR tiledis				; and bottom one
 	LDX select
 	RTS
