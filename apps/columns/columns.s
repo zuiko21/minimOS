@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
-; (c) 2022-2023 Carlos J. Santisteban
-; last modified 20230619-0025
+; (c) 2022-2024 Carlos J. Santisteban
+; last modified 20240729-1602
 
 ; ****************************
 ; *** hardware definitions ***
@@ -1335,7 +1335,7 @@ pow_col:
 	.dsb	$FC00-*, $FF	; padding to avoid cross-page speed penalty
 
 ; *** 2x256-byte keyboard to pad tables ***
-	.bin	0, 0, "kbd2pad.s"
+#include "kbd2pad.s"
 
 ; this table preferably goes in another full page
 jwl_ix:						; convert random byte into reasonable tile index [1...6] with a few magic tiles [7]
