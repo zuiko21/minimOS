@@ -328,7 +328,7 @@ not_s2r:
 ;			CMP padlast, X	; still pressing? don't care, will fall asap
 ;		BEQ not_st2			; ignore either!
 ;			STA padlast, X	; anyway, register this press
-;			LDY #MOV_DOWN	; otherwise, y is one more
+			LDY #MOV_NONE	; just in case
 			LDA ticks
 			AND #7			; will drop quickly...
 			BNE s2end		; ...only every 8 (16) interrupts
