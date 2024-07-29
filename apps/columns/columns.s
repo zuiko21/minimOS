@@ -379,22 +379,31 @@ do_advance:
 			ADC speed, X
 			STA ev_dly, X	; update time for next event
 ; check if possible to move down * TODO * should use #MOV_DOWN
-
-			LDY posit, X
-			LDA #0
-			JSR tiledis		; clear topmost tile
-			LDX select		; eeeeeek
-			LDA posit, X	; reload original position
-			CLC
-			ADC #8
-			STA posit, X	; one row down
-			JSR coldisp		; show all column
-			LDY #MOV_NONE
+			LDY #MOV_DOWN
+;			LDY posit, X
+;			LDA #0
+;			JSR tiledis		; clear topmost tile
+;			LDX select		; eeeeeek
+;			LDA posit, X	; reload original position
+;			CLC
+;			ADC #8
+;			STA posit, X	; one row down
+;			JSR coldisp		; show all column
+;			LDY #MOV_NONE
 
 s2end:
 ; move according to Y-direction, if possible
 ;			JSR chkroom
 ;*/
+		CPY #MOV_NONE		; any move?
+			BEQ not_move
+;		CPY #MOV_DOWN
+;			BNE do_side
+;		LDA posit, X	; reload original position
+;		CLC
+;		ADC #8
+;		STA posit, X	; one row down
+do_side:
 		LDA posit, X
 		CLC
 		ADC ix_dir, Y		; add combined offset
