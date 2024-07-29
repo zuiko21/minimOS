@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240729-1955
+; last modified 20240729-2037
 
 ; ****************************
 ; *** hardware definitions ***
@@ -328,8 +328,12 @@ not_s2r:
 ;			CMP padlast, X	; still pressing? don't care, will fall asap
 ;		BEQ not_st2			; ignore either!
 ;			STA padlast, X	; anyway, register this press
-			LDY #MOV_DOWN	; otherwise, y is one more
-			BRA s2end
+;			LDY #MOV_DOWN	; otherwise, y is one more
+			LDA ticks
+			AND #7			; will drop quickly...
+			BNE s2end		; ...only every 8 (16) interrupts
+				LDY #MOV_DOWN	; otherwise, y is one more
+				BRA s2end
 not_s2d:
 		BIT #PAD_FIRE|PAD_B	; flip?
 		BEQ not_s2f			; not if not pressed
