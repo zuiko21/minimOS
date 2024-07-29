@@ -1,6 +1,6 @@
 ; nyan cat demo for Durango-X (or -S)
 ; (c) 2022 Carlos J. Santisteban
-; last modified 20220817-1234
+; last modified 20240727-0839
 
 ; *** usual definitions ***
 IO8attr	= $DF80				; video mode register
@@ -30,7 +30,38 @@ _last	= rest_f+1
 ; ********************
 ; *** ROM contents ***
 ; ********************
-	*	= $C000				; 16K ROM
+	*	= $8000				; now 32K ROM, makes room for the header!
+
+rom_start:
+; header ID
+	.byt	0				; [0]=NUL, first magic number
+	.asc	"dX"			; bootable ROM for Durango-X devCart
+	.asc	"****"			; reserved
+	.byt	13				; [7]=NEWLINE, second magic number
+; filename
+	.asc	"nyancat"		; C-string with filename @ [8], max 220 chars
+; note terminator below
+; optional C-string with comment after filename, filename+comment up to 220 chars
+	.asc	0, 0
+
+; advance to end of header *** NEW format
+	.dsb	rom_start + $E6 - *, $FF
+
+; NEW library commit (user field 2)
+	.asc	"$$$$$$$$"
+; NEW main commit (user field 1)
+	.asc	"$$$$$$$$"
+; NEW coded version number
+	.word	$1041			; 1.0b1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+; date & time in MS-DOS format at byte 248 ($F8)
+	.word	$3A00			; time, 07.16		%0011 1-010 000-0 0000
+	.word	$5892			; date, 2024/4/18	%0101 100-0 100-1 0010
+; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
+	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
+	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
+
+; filling
+	.dsb	$C000-*, $FF
 
 ; **********************
 ; *** animation data ***

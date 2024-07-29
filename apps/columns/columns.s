@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240729-1817
+; last modified 20240729-1821
 
 ; ****************************
 ; *** hardware definitions ***
@@ -73,7 +73,8 @@ padlast	= pad0val+1			; last pad status
 column	= padlast+1			; current column
 next_c	= column+3			; next piece
 posit	= next_c+3			; position in 8x16 matrix
-bcd_arr	= posit+1			; level/jewels/score arrays [LJJSSS] in BCD
+oldposit= posit+1			; old position
+bcd_arr	= oldposit+1		; level/jewels/score arrays [LJJSSS] in BCD
 yb		= bcd_arr+6			; base row for death animation
 die_y	= yb+1				; current death animation index (formerly Y)
 mag_col	= die_y+1			; specific magic jewel colour animation
@@ -102,7 +103,8 @@ padlast2= pad1val+1			; last pad status
 column2	= padlast2+1		; current column
 next_c2	= column2+3			; next piece
 posit2	= next_c2+3			; position in 8x16 matrix
-bcd_arr2= posit2+1			; level/jewels/score arrays [LJJSSS] in BCD
+oldpos2 = posit2+1			; old position in 8x16 matrix
+bcd_arr2= oldpos2+1			; level/jewels/score arrays [LJJSSS] in BCD
 yb2		= bcd_arr2+6		; base row for death animation
 die_y2	= yb2+1				; current death animation index (formerly Y)
 mag_col2= die_y2+1			; specific magic jewel colour animation
@@ -332,7 +334,9 @@ not_s2d:
 		BIT #PAD_FIRE|PAD_B	; flip?
 		BEQ not_s2f			; not if not pressed
 			CMP padlast, X	; still pressing?
-		BEQ not_st2			; ignore either!
+			BNE do_st2
+		JMP not_st2		; ignore either!
+do_st2:
 			STA padlast, X	; anyway, register this press
 ; piece rotation
 			LDA #1
@@ -391,14 +395,14 @@ s2end:
 ; move according to Y-direction, if possible
 ;			JSR chkroom
 ;*/
-		JSR colclear		; clear previous tile position
-		LDX select			; eeeeeek (end of new code)
+;		JSR colclear		; clear previous tile position
+;		LDX select			; eeeeeek (end of new code)
 		LDA posit, X
 		CLC
 		ADC ix_dir, Y		; add combined offset
 		STA posit, X
-		JSR coldisp			; redisplay in new position, needed?
-		LDX select			; eeeeeek (end of new code)
+;		JSR coldisp			; redisplay in new position, needed?
+;		LDX select			; eeeeeek (end of new code)
 ; test, check bottom
 		AND #$7F
 		CMP #%01100000	; row 12
@@ -530,36 +534,8 @@ rle_exit:					; exit decompressor
 ;	X		player [0-128]
 ; affects A, Y and some vars from tiledis
 coldisp:
-; this displays falling column at index Y
-	LDY posit, X			; get current position
-	PHY						; eeeeeek
-	LDA column, X
-	JSR tiledis				; show top tile
-	PLA
-	CLC
-	ADC #8
-	PHA
-	TAY
-	LDX select
-	LDA column+1, X
-	JSR tiledis				; middle one
-	PLA
-	CLC
-	ADC #8
-	TAY						; last one does not need to be saved
-	LDX select
-	LDA column+2, X
-	JSR tiledis				; and bottom one
-	LDX select
-	RTS
-
-; ** clear falling column **
-; input
-;	X		player [0-128]
-; affects A, Y and some vars from tiledis
-colclear:
-; this displays falling column at index Y
-	LDY posit, X			; get current position
+; new * inlined clear column from previous position
+	LDY oldposit, X			; get OLD position
 	PHY						; eeeeeek
 	LDA #0					; only difference from coldisp
 	JSR tiledis				; show top tile
@@ -577,6 +553,30 @@ colclear:
 	TAY						; last one does not need to be saved
 	LDX select
 	LDA #0					; *
+	JSR tiledis				; and bottom one
+	LDX select
+	LDA posit, X			; update old position
+	STA oldposit, X
+; this displays falling column at index Y
+	TAY						; current position already loaded
+;	LDY posit, X			; get current position
+	PHY						; eeeeeek
+	LDA column, X
+	JSR tiledis				; show top tile
+	PLA
+	CLC
+	ADC #8
+	PHA
+	TAY
+	LDX select
+	LDA column+1, X
+	JSR tiledis				; middle one
+	PLA
+	CLC
+	ADC #8
+	TAY						; last one does not need to be saved
+	LDX select
+	LDA column+2, X
 	JSR tiledis				; and bottom one
 	LDX select
 	RTS
