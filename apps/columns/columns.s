@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240730-1257
+; last modified 20240730-1312
 
 ; ****************************
 ; *** hardware definitions ***
@@ -1079,10 +1079,9 @@ clp_end:
 	CLC
 	ADC #118				; last visible tile
 	TAX						; should be recovered later
-	TAY						; faster counter
+	LDY #118				; eeeeeeek
 cl_loop:
 		STZ field, X		; until all visible tiles are clear
-		STZ field2, X		; eeeeeeeek
 		DEX
 		DEY					; one less
 		BPL cl_loop
@@ -1107,6 +1106,7 @@ sfh_loop:
 		STA field+128, Y
 		INX
 		BPL sfh_loop		; last one gets repeated, but no worries
+;	LDX select
 	RTS
 
 ; ** generate new column with 3 jewels ** should check here for room, actually
