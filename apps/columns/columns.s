@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240729-2037
+; last modified 20240730-0906
 
 ; ****************************
 ; *** hardware definitions ***
@@ -126,7 +126,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"columns", 0	; C-string with filename @ [8], max 238 chars
+	.asc	"Columns", 0	; C-string with filename @ [8], max 238 chars
 	.asc	"Original idea by SEGA"		; comment with IMPORTANT attribution
 	.byt	0				; second terminator for optional comment, just in case
 
@@ -138,10 +138,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$10a2			; 1.0a2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$10a3			; 1.0a3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8600			; time, 16.48		1000 0-110 000-0 0000
-	.word	$58FD			; date, 2024/7/29	0101 100-0 111-1 1101
+	.word	$8600			; time, 9.08		0100 1-001 000-0 0000
+	.word	$58FE			; date, 2024/7/30	0101 100-0 111-1 1110
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -216,7 +216,7 @@ loop:
 chk_stat:
 	LDA status, X			; check status of current player
 ; * * STATUS 0, game over * *
-;	CMP #STAT_OVER
+;	CMP #STAT_OVER			; not needed if STAT_OVER is zero
 	BNE not_st0
 		TYA					; get this player controller status
 		BIT #PAD_FIRE|PAD_B|PAD_SEL|PAD_STRT	; start new game
@@ -256,7 +256,7 @@ not_s1d:
 			JSR inv_row		; deselect current
 			DEC s_level, X	; decrement level
 			BPL s1_nw		; wrap if negative
-				LDA #NUM_LVLS-1			; max level index
+				LDA #NUM_LVLS-1					; max level index
 				STA s_level, X
 				BRA s1_nw	; common ending
 not_s1u:
@@ -272,9 +272,9 @@ not_s1u:
 			LDA ini_lev, Y	; level as index for initial value
 			PHA				; later...
 			LDA ini_score, Y
-			STA bcd_arr+3, X			; score counter eeeeek
+			STA bcd_arr+3, X; score counter eeeeek
 			PLA
-			STA bcd_arr, X				; place initial values in adequate array indices
+			STA bcd_arr, X	; place initial values in adequate array indices
 			LDY #DISP_LVL
 			JSR numdisp
 			LDY #DISP_JWL
@@ -328,52 +328,48 @@ not_s2r:
 ;			CMP padlast, X	; still pressing? don't care, will fall asap
 ;		BEQ not_st2			; ignore either!
 ;			STA padlast, X	; anyway, register this press
-			LDY #MOV_NONE	; just in case
+			LDY #MOV_NONE	; default action in most cases
 			LDA ticks
 			AND #7			; will drop quickly...
 			BNE s2end		; ...only every 8 (16) interrupts
-				LDY #MOV_DOWN	; otherwise, y is one more
-				BRA s2end
+				LDY #MOV_DOWN					; otherwise, y is one more
+			BRA s2end
 not_s2d:
 		BIT #PAD_FIRE|PAD_B	; flip?
 		BEQ not_s2f			; not if not pressed
 			CMP padlast, X	; still pressing?
 			BNE do_st2
-		JMP not_st2		; ignore either!
+		JMP not_st2			; ignore either!
 do_st2:
 			STA padlast, X	; anyway, register this press
 ; piece rotation
 			LDA #1
 			STA IOBeep		; activate sound...
-;			LDY poff6, X	; reindex for column arrays
-			LDY select		; ***
+			LDY select		; note different index register
 			LDA column+2, Y
 			PHA				; save last piece
 			LDA column+1, Y
 			STA column+2, Y
 			LDA column, Y
-			STA column+1, Y			; rotate the rest
+			STA column+1, Y	; rotate the rest
 			PLA
 			STA column, Y	; and wrap the last one
 			LDY posit, X	; display recently rotated column!
-			JSR coldisp
+			JSR col_upd
 			STZ IOBeep		; ...and finish audio pulse
 			LDY #MOV_ROT	; this was a rotation, thus no change
 			BRA s2end
-/**/
 not_s2f:
 		LDY #MOV_NONE		; eeek
-; *** CODE UNDER TEST ***
 ; first of all, check for magic jewel
 		LDX select
 		LDA column, X
 		CMP #MAGIC_JWL
 		BNE do_advance
 			LDY posit, X
-			JSR coldisp
+			JSR col_upd
 			LDY #MOV_NONE
 do_advance:
-; *** *** ***
 ; in case of timeout, put piece down... or take another
 		LDA ticks
 		CMP ev_dly, X
@@ -382,39 +378,21 @@ do_advance:
 			CLC
 			ADC speed, X
 			STA ev_dly, X	; update time for next event
-; check if possible to move down * TODO * should use #MOV_DOWN
+; will check if possible to move down
 			LDY #MOV_DOWN
-;			LDY posit, X
-;			LDA #0
-;			JSR tiledis		; clear topmost tile
-;			LDX select		; eeeeeek
-;			LDA posit, X	; reload original position
-;			CLC
-;			ADC #8
-;			STA posit, X	; one row down
-;			JSR coldisp		; show all column
-;			LDY #MOV_NONE
-
 s2end:
 ; move according to Y-direction, if possible
 ;			JSR chkroom
-;*/
 		CPY #MOV_NONE		; any move?
 			BEQ not_move
-;		CPY #MOV_DOWN
-;			BNE do_side
-;		LDA posit, X	; reload original position
-;		CLC
-;		ADC #8
-;		STA posit, X	; one row down
-do_side:
 		LDA posit, X
 		CLC
 		ADC ix_dir, Y		; add combined offset
 		STA posit, X
 		PHA					; keep this for later...
-		JSR coldisp			; ...as screen must be updated
+		JSR col_upd			; ...as screen must be updated
 		PLA
+
 ; test, check bottom
 		AND #$7F
 		CMP #%01100000	; row 12
@@ -460,7 +438,8 @@ next_player:
 	EOR #128				; toggle player in event manager
 	STA select
 ; check possible colour animation on magic jewel
-	LDX select				; just in case... or just TAX?
+;	LDX select				; just in case... or just TAX?
+	TAX
 	LDA next_c, X
 	CMP #MAGIC_JWL			; is the magic jewel next?
 	BNE nx_nonmagic
@@ -546,11 +525,11 @@ rle_exit:					; exit decompressor
 ; input
 ;	X		player [0-128]
 ; affects A, Y and some vars from tiledis
-coldisp:
+col_upd:
 ; new * inlined clear column from previous position
 	LDY oldposit, X			; get OLD position
 	PHY						; eeeeeek
-	LDA #0					; only difference from coldisp
+	LDA #0					; only difference from col_upd
 	JSR tiledis				; show top tile
 	PLA
 	CLC
@@ -571,8 +550,9 @@ coldisp:
 	LDA posit, X			; update old position
 	STA oldposit, X
 ; this displays falling column at index Y
-	TAY						; current position already loaded
-;	LDY posit, X			; get current position
+;	TAY						; current position already loaded
+coldisp:
+	LDY posit, X			; get current position
 	PHY						; eeeeeek
 	LDA column, X
 	JSR tiledis				; show top tile
@@ -907,7 +887,7 @@ release:
 	BNE release
 	RTS
 
-; ** VSYNC **
+; ** VSYNC ** not currently used
 vsync:
 		BIT IO8blk
 		BVS vsync			; if already in VBlank
@@ -955,7 +935,7 @@ sel_ban:
 ; brief EG arpeggio
 	LDA #228				; brief E5
 	JSR tone
-	LDA #192				; longest G5
+	LDA #192				; longer G5
 	LDX #0
 	JSR tone
 ; display banner
@@ -1066,7 +1046,7 @@ sfh_loop:
 		BPL sfh_loop		; last one gets repeated, but no worries
 	RTS
 
-; ** generate new column with 3 jewels **
+; ** generate new column with 3 jewels ** should check here for room, actually
 ; input
 ;	select	player [0-128]
 ;	s_level	to allow magic jewels
@@ -1416,6 +1396,6 @@ autoreset:
 
 	.dsb	$FFFA-*, $FF		; ROM fill, not using checksum
 ; 6502 hardware vectors
-	.word	autoreset			; devCart remote RESET support
+	.word	reset				; NMI as warm reset
 	.word	reset
 	.word	irq_hndl
