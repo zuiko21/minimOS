@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240730-1124
+; last modified 20240730-1257
 
 ; ****************************
 ; *** hardware definitions ***
@@ -138,9 +138,9 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$10a4			; 1.0a4		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1005			; 1.0a5		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8600			; time, 9.08		0100 1-001 000-0 0000
+	.word	$6800			; time, 13.00		0110 1-000 000-0 0000
 	.word	$58FE			; date, 2024/7/30	0101 100-0 111-1 1110
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -396,19 +396,46 @@ s2end:
 			SEC
 			SBC ix_dir, Y	; otherwise revert move
 			STA posit, X
-			BRA not_move	; and do not update screen... but check if at bottom
+			CPY #MOV_DOWN	; tried to go down and failed?
+		BNE not_move		; do not update screen... but check if at bottom
+; cannot go down any more, update field
+			PHY				; just in case
+			LDA posit, X	; final position of first tile
+			AND #127		; eeek
+			TAY
+			CPX #128		; second player?
+			BEQ bot_2nd
+				LDA column, X			; first jewel
+				STA field, Y
+				LDA column+1, X			; second jewel
+				STA field+8, Y			; into next row
+				LDA column+2, X			; last jewel
+				STA field+16, Y
+				BRA bot_end
+bot_2nd:
+				LDA column, X			; first jewel
+				STA field2, Y
+				LDA column+1, X			; second jewel
+				STA field2+8, Y			; into next row
+				LDA column+2, X			; last jewel
+				STA field2+16, Y
+bot_end:
+			JSR gen_col		; another one? anything else? ***
+			PLY
 is_room:
 		JSR col_upd			; ...as screen must be updated
 
-		LDA posit, X
+;		LDA posit, X
 ; test, check bottom
-		AND #$7F
-		CMP #%01100000	; row 12
-		BCC not_move
+;		AND #$7F
+;		CMP #%01100000	; row 12
+;		BCC not_move
 ; TODO * so far, just die *
 ;		JSR palmatoria
 ;		JMP next_player
-		LDA #STAT_DIE		; will trigger palmatoria
+
+; this is done when no room for the new column
+/*		LDA #STAT_DIE		; will trigger palmatoria
 		LDX select			; * retrieve player
 		STA status, X		; eeeeeeeeeeeeeeeeeeeeek
 ; prepare loops for the new status
@@ -421,7 +448,7 @@ is_room:
 		LDA ticks
 		STA ev_dly, X
 ; now will display the gameover animation concurrently!
-
+*/
 not_move:
 		LDX select
 		LDY pad0val, X		; restore and continue evaluation, is this neeed?
@@ -442,19 +469,30 @@ not_st2:
 not_st4:
 
 next_player:
-	LDA select
-	EOR #128				; toggle player in event manager
-	STA select
+	LDX select				; just in case... or just TAX?
 ; check possible colour animation on magic jewel
-;	LDX select				; just in case... or just TAX?
-	TAX
 	LDA next_c, X
 	CMP #MAGIC_JWL			; is the magic jewel next?
 	BNE nx_nonmagic
 		JSR magic_jewel		; pick one random colour
 		JSR nextcol			; and redisplay it
 nx_nonmagic:
-; TO DO * the same with player column *
+	LDA column, X
+	CMP #MAGIC_JWL			; is the magic jewel on the field?
+	BNE cl_nonmagic
+		JSR magic_jewel		; pick one random colour
+		JSR col_upd			; and redisplay it
+cl_nonmagic:
+	LDA select				; eeek
+	EOR #128				; toggle player in event manager
+	STA select
+#ifdef	DEBUG
+	LDA IO8attr				; get current video mode
+	AND #%11110000			; filter readable bits
+	ORA #%00001000			; force RGB
+	EOR #%01000000			; toggle inverse video
+	STA IO8attr				; switch mode
+#endif
 	JMP loop
 
 ; ***********************
@@ -854,7 +892,7 @@ chkroom:
 	AND #127				; ...regardless of player
 	TAY
 	CPX #128				; doing second player?
-;	BEQ second_ck
+	BEQ second_ck
 		LDA field, Y		; is it clear?
 		ORA field+8, Y		; what about second tile?
 		ORA field+16, Y		; and bottom one?
@@ -1044,6 +1082,7 @@ clp_end:
 	TAY						; faster counter
 cl_loop:
 		STZ field, X		; until all visible tiles are clear
+		STZ field2, X		; eeeeeeeek
 		DEX
 		DEY					; one less
 		BPL cl_loop
