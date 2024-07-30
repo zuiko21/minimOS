@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240730-0906
+; last modified 20240730-1124
 
 ; ****************************
 ; *** hardware definitions ***
@@ -89,7 +89,7 @@ seed	= colour+1			; PRNG seed
 src		= seed+2			; $FC
 ptr		= src+2				; $FE
 ; these save a few bytes and cycles in ZP
-irq_ptr	= ptr+2				; $0200 is standard minimOS, may save a few bytes putting these on ZP
+irq_ptr	= ptr+2				; $0200 is standard minimOS, may save a few bytes putting these on ZP ** consider going back to standard, for Pocket-format compatibility
 ticks	= irq_ptr+2			; $0206 but no NMI or BRK in use, and only 8-bit!!
 ticks_h	= ticks+1
 kbd_ok	= ticks_h+1			; if non-zero, supported keyboard has been detected
@@ -112,7 +112,7 @@ mag_col2= die_y2+1			; specific magic jewel colour animation
 _end_zp	= mag_col2+1
 ; these MUST be outside ZP, change start address accordingly
 field	= $0200				; 8x16 (6x13 visible) game status arrays (player2 = +128)
-;field2	= $0280
+field2	= $0280
 
 ; *****************
 ; *** main code ***
@@ -138,7 +138,7 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$10a3			; 1.0a3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$10a4			; 1.0a4		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$8600			; time, 9.08		0100 1-001 000-0 0000
 	.word	$58FE			; date, 2024/7/30	0101 100-0 111-1 1110
@@ -382,17 +382,25 @@ do_advance:
 			LDY #MOV_DOWN
 s2end:
 ; move according to Y-direction, if possible
-;			JSR chkroom
+; should actually update offset, check availability and, if so, update screen, otherwise revert offset (easily done)
 		CPY #MOV_NONE		; any move?
 			BEQ not_move
 		LDA posit, X
 		CLC
 		ADC ix_dir, Y		; add combined offset
 		STA posit, X
-		PHA					; keep this for later...
+		JSR chkroom			; returns zero if available space
+		CMP #0
+		BEQ is_room			; movement is feasible, do not revert
+			LDA posit, X
+			SEC
+			SBC ix_dir, Y	; otherwise revert move
+			STA posit, X
+			BRA not_move	; and do not update screen... but check if at bottom
+is_room:
 		JSR col_upd			; ...as screen must be updated
-		PLA
 
+		LDA posit, X
 ; test, check bottom
 		AND #$7F
 		CMP #%01100000	; row 12
@@ -838,10 +846,26 @@ go_nw:
 go_exit:
 	RTS
 
-; TO DO ** check for available movements ** TO DO
+; ** check for available movements **
 chkroom:
-LDA#0
-RTS
+;	LDX select				; depending on player
+	PHY						; keep desired movement
+	LDA posit, X			; desired position of topmost tile
+	AND #127				; ...regardless of player
+	TAY
+	CPX #128				; doing second player?
+;	BEQ second_ck
+		LDA field, Y		; is it clear?
+		ORA field+8, Y		; what about second tile?
+		ORA field+16, Y		; and bottom one?
+		BRA done_ck
+second_ck:
+		LDA field2, Y		; is it clear?
+		ORA field2+8, Y		; what about second tile?
+		ORA field2+16, Y	; and bottom one?
+done_ck:
+	PLY
+	RTS
 
 ; ** gamepad read **
 ; input
@@ -1029,8 +1053,8 @@ cl_sent:
 		LDA #$FF			; invalid tile
 		STA field, Y		; left sentinel
 		STA field+7, Y		; right sentinel
-		STA field+128, Y	; sentinels (2nd player)
-		STA field+135, Y
+		STA field2, Y		; sentinels (2nd player)
+		STA field2+7, Y
 		TYA
 		CLC
 		ADC #8				; next row
