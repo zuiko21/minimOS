@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240730-1631
+; last modified 20240730-1807
 
 ; ****************************
 ; *** hardware definitions ***
@@ -140,7 +140,7 @@ rom_start:
 ; NEW coded version number
 	.word	$1006			; 1.0a6		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$7E00			; time, 15.48		0111 1-110 000-0 0000
+	.word	$9000			; time, 18.00		1001 0-000 000-0 0000
 	.word	$58FE			; date, 2024/7/30	0101 100-0 111-1 1110
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -400,7 +400,7 @@ s2end:
 		BNE not_move		; do not update screen... but check if at bottom
 ; cannot go down any more, update field
 			PHY				; just in case
-			LDA posit, X	; final position of first tile
+;			LDA posit, X	; final position of first tile (already there)
 			AND #127		; eeek
 			TAY
 			CPX #128		; second player?
@@ -422,8 +422,7 @@ bot_2nd:
 bot_end:
 			JSR gen_col		; another piece
 			LDX select		; eeeeeeeek
-			LDY field+19, X	; this is first visible row, third column (19, not fourth?)
-ldy#0
+			LDY field+20, X	; this is first visible row, third column (19, not fourth?)
 			BEQ have_col	; yeah, continue as usual
 ; this is done when no room for the new column
 				LDA #STAT_DIE			; will trigger palmatoria
@@ -441,7 +440,6 @@ ldy#0
 have_col:
 			PLY
 is_room:
-ldx select
 		JSR col_upd			; ...as screen must be updated
 not_move:
 		LDX select
@@ -1097,8 +1095,8 @@ cl_sent:
 	LDA #$FF				; invalid tile
 sfh_loop:
 		STA field, Y
-		STA field+128, Y
-		INX
+		STA field2, Y
+		INY					; EEEEEEEEEEEEEEEEEEEEK
 		BPL sfh_loop		; last one gets repeated, but no worries
 ;	LDX select
 	RTS
@@ -1151,9 +1149,10 @@ gc_nomagic:
 was_magic:
 	LDX select				; get player eeeek
 	TXA
-	CLC						; why the first time appears one column to the right?
-	ADC #3					; first row (not visible), fourth column of every player
+	CLC
+	ADC #4					; first row (not visible), fourth column of every player
 	STA posit, X			; position set as matrix index
+	STA oldposit, X			; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 ;	JMP nextcol				; show new column and return
 
 ; ** show next column **
