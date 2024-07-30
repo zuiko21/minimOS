@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240730-1312
+; last modified 20240730-1543
 
 ; ****************************
 ; *** hardware definitions ***
@@ -138,9 +138,9 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1005			; 1.0a5		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1006			; 1.0a6		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$6800			; time, 13.00		0110 1-000 000-0 0000
+	.word	$7E00			; time, 15.48		0111 1-110 000-0 0000
 	.word	$58FE			; date, 2024/7/30	0101 100-0 111-1 1110
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -199,7 +199,7 @@ no_kbd:
 	LDX #2					; set compressed file index
 	JSR dispic				; decompress!
 ; then level selection according to player
-	LDX select				; retieve selected player
+	LDX select				; retrieve selected player
 	LDA #STAT_LVL
 	STA status, X			; set new status
 	JSR sel_ban
@@ -420,35 +420,27 @@ bot_2nd:
 				LDA column+2, X			; last jewel
 				STA field2+16, Y
 bot_end:
-			JSR gen_col		; another one? anything else? ***
+			JSR gen_col		; another piece
+			JSR checkroom	; does it really fit?
+			BEQ have_col	; yeah, continue as usual
+; this is done when no room for the new column
+				LDA #STAT_DIE			; will trigger palmatoria
+				LDX select				; * retrieve player
+				STA status, X			; eeeeeeeeeeeeeeeeeeeeek
+; prepare loops for the new status
+				LDA #113				; 14*8+1
+				ORA id_table, X			; first column in new coordinates, plus player offset
+				STA die_y, X			; eeeek
+				LDY #15					; needs 16 iterations non-visible rows
+				STY yb, X
+; start this animation immediatly, then once every 5 ticks (10 interrupts ~ 2 fields)
+				LDA ticks
+				STA ev_dly, X
+; now will display the gameover animation concurrently!
+have_col:
 			PLY
 is_room:
 		JSR col_upd			; ...as screen must be updated
-
-;		LDA posit, X
-; test, check bottom
-;		AND #$7F
-;		CMP #%01100000	; row 12
-;		BCC not_move
-; TODO * so far, just die *
-;		JSR palmatoria
-;		JMP next_player
-
-; this is done when no room for the new column
-/*		LDA #STAT_DIE		; will trigger palmatoria
-		LDX select			; * retrieve player
-		STA status, X		; eeeeeeeeeeeeeeeeeeeeek
-; prepare loops for the new status
-		LDA #113			; 14*8+1
-		ORA id_table, X		; first column in new coordinates, plus player offset
-		STA die_y, X		; eeeek
-		LDY #15				; needs 16 iterations non-visible rows
-		STY yb, X
-; start this animation immediatly, then once every 5 ticks (10 interrupts ~ 2 fields)
-		LDA ticks
-		STA ev_dly, X
-; now will display the gameover animation concurrently!
-*/
 not_move:
 		LDX select
 		LDY pad0val, X		; restore and continue evaluation, is this neeed?
