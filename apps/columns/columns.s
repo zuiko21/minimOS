@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240730-1543
+; last modified 20240730-1631
 
 ; ****************************
 ; *** hardware definitions ***
@@ -421,11 +421,12 @@ bot_2nd:
 				STA field2+16, Y
 bot_end:
 			JSR gen_col		; another piece
-			JSR checkroom	; does it really fit?
+			LDX select		; eeeeeeeek
+			LDY field+19, X	; this is first visible row, third column (19, not fourth?)
+ldy#0
 			BEQ have_col	; yeah, continue as usual
 ; this is done when no room for the new column
 				LDA #STAT_DIE			; will trigger palmatoria
-				LDX select				; * retrieve player
 				STA status, X			; eeeeeeeeeeeeeeeeeeeeek
 ; prepare loops for the new status
 				LDA #113				; 14*8+1
@@ -440,6 +441,7 @@ bot_end:
 have_col:
 			PLY
 is_room:
+ldx select
 		JSR col_upd			; ...as screen must be updated
 not_move:
 		LDX select
@@ -1147,10 +1149,9 @@ gc_nomagic:
 ;	LDX #$FF
 ;	STX colour				; respect original jewel colours
 was_magic:
-	LDX select
-; alternative entry point, just in case (X = player 0/128)
-	TXA						; player offset
-	CLC
+	LDX select				; get player eeeek
+	TXA
+	CLC						; why the first time appears one column to the right?
 	ADC #3					; first row (not visible), fourth column of every player
 	STA posit, X			; position set as matrix index
 ;	JMP nextcol				; show new column and return
