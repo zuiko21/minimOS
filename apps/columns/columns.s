@@ -354,15 +354,15 @@ do_st2:
 ; piece rotation
 			LDA #1
 			STA IOBeep		; activate sound...
-			LDY select		; note different index register
-			LDA column+2, Y
+;			LDY select		; note different index register
+			LDA column+2, X
 			PHA				; save last piece
-			LDA column+1, Y
-			STA column+2, Y
-			LDA column, Y
-			STA column+1, Y	; rotate the rest
+			LDA column+1, X
+			STA column+2, X
+			LDA column, X
+			STA column+1, X	; rotate the rest
 			PLA
-			STA column, Y	; and wrap the last one
+			STA column, X	; and wrap the last one
 			LDY posit, X	; display recently rotated column!
 			JSR col_upd
 			STZ IOBeep		; ...and finish audio pulse
