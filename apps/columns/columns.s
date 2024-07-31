@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240731-1728
+; last modified 20240731-1821
 
 ; ****************************
 ; *** hardware definitions ***
@@ -429,26 +429,13 @@ s2end:
 				BRA not_st2
 have_col:
 			PHY				; just in case
-;			LDA posit, X	; final position of first tile (already there)
-			AND #127		; eeek
-			TAY
-			CPX #128		; second player?
-			BEQ bot_2nd
-				LDA column, X			; first jewel
-				STA field, Y
-				LDA column+1, X			; second jewel
-				STA field+8, Y			; into next row
-				LDA column+2, X			; last jewel
-				STA field+16, Y
-				BRA bot_end
-bot_2nd:
-				LDA column, X			; first jewel
-				STA field2, Y
-				LDA column+1, X			; second jewel
-				STA field2+8, Y			; into next row
-				LDA column+2, X			; last jewel
-				STA field2+16, Y
-bot_end:
+			LDY posit, X	; final position of first tile (both players)
+			LDA column, X			; first jewel
+			STA field, Y
+			LDA column+1, X	; second jewel
+			STA field+8, Y	; into next row
+			LDA column+2, X	; last jewel
+			STA field+16, Y
 			JSR gen_col		; another piece
 			PLY
 is_room:
@@ -908,20 +895,10 @@ go_exit:
 chkroom:
 ;	LDX select				; depending on player
 	PHY						; keep desired movement
-	LDA posit, X			; desired position of topmost tile
-;	AND #127				; ...regardless of player
-	TAY
-;	CPX #128				; doing second player?
-;	BEQ second_ck
-		LDA field, Y		; is it clear?
-		ORA field+8, Y		; what about second tile?
-		ORA field+16, Y		; and bottom one?
-		BRA done_ck
-second_ck:
-		LDA field2, Y		; is it clear?
-		ORA field2+8, Y		; what about second tile?
-		ORA field2+16, Y	; and bottom one?
-done_ck:
+	LDY posit, X			; desired position of topmost tile, note already contains player offset
+	LDA field, Y			; is it clear?
+	ORA field+8, Y			; what about second tile?
+	ORA field+16, Y			; and bottom one?
 	PLY
 	RTS
 
