@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240731-1005
+; last modified 20240731-1038
 
 ; ****************************
 ; *** hardware definitions ***
@@ -140,10 +140,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1006			; 1.0a6		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1007			; 1.0a7		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$9000			; time, 18.00		1001 0-000 000-0 0000
-	.word	$58FE			; date, 2024/7/30	0101 100-0 111-1 1110
+	.word	$5500			; time, 10.40		0101 0-101 000-0 0000
+	.word	$58FF			; date, 2024/7/31	0101 100-0 111-1 1111
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -299,7 +299,7 @@ s1_nw:
 		LDY pad0val, X		; restore and continue evaluation
 not_st1:
 	LDA status, X
-; * * STATUS 2, play * * IN THE MAKING
+; * * STATUS 2, play * *
 	CMP #STAT_PLAY			; playing?
 		BEQ is_st2 
 	JMP not_st2
@@ -408,6 +408,26 @@ s2end:
 			CPY #MOV_DOWN	; tried to go down and failed?
 		BNE not_move		; do not update screen... but check if at bottom
 ; cannot go down any more, update field
+; but first check peñonazo's height, must be second row or below
+;			LDA posit, X	; current position
+			AND #127		; eeek
+			CMP #17			; first visible tile at second row, cannot be any higher
+			BCS have_col	; yeah, continue as usual
+; this is done when no room for the new column
+				LDA #STAT_DIE			; will trigger palmatoria
+				STA status, X			; eeeeeeeeeeeeeeeeeeeeek
+; prepare loops for the new status
+				LDA #113				; 14*8+1
+				ORA id_table, X			; first column in new coordinates, plus player offset
+				STA die_y, X			; eeeek
+				LDY #15					; needs 16 iterations non-visible rows
+				STY yb, X
+; start this animation immediatly, then once every 5 ticks (10 interrupts ~ 2 fields)
+				LDA ticks
+				STA ev_dly, X
+; now will display the gameover animation concurrently!
+				BRA not_st2
+have_col:
 			PHY				; just in case
 ;			LDA posit, X	; final position of first tile (already there)
 			AND #127		; eeek
@@ -430,23 +450,6 @@ bot_2nd:
 				STA field2+16, Y
 bot_end:
 			JSR gen_col		; another piece
-			LDX select		; eeeeeeeek
-			LDY field+20, X	; this is first visible row, third column (19, not fourth?)
-			BEQ have_col	; yeah, continue as usual
-; this is done when no room for the new column
-				LDA #STAT_DIE			; will trigger palmatoria
-				STA status, X			; eeeeeeeeeeeeeeeeeeeeek
-; prepare loops for the new status
-				LDA #113				; 14*8+1
-				ORA id_table, X			; first column in new coordinates, plus player offset
-				STA die_y, X			; eeeek
-				LDY #15					; needs 16 iterations non-visible rows
-				STY yb, X
-; start this animation immediatly, then once every 5 ticks (10 interrupts ~ 2 fields)
-				LDA ticks
-				STA ev_dly, X
-; now will display the gameover animation concurrently!
-have_col:
 			PLY
 is_room:
 		JSR col_upd			; ...as screen must be updated
