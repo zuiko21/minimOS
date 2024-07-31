@@ -348,7 +348,7 @@ not_s2d:
 		BEQ not_s2f			; not if not pressed
 			CMP padlast, X	; still pressing?
 			BNE do_st2
-		JMP not_st2			; ignore either!
+		JMP not_s2f			; ignore either, but keep going down!
 do_st2:
 			STA padlast, X	; anyway, register this press
 ; piece rotation
