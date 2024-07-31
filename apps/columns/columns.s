@@ -140,7 +140,7 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1007			; 1.0a7		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1008			; 1.0a8		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
 	.word	$5500			; time, 10.40		0101 0-101 000-0 0000
 	.word	$58FF			; date, 2024/7/31	0101 100-0 111-1 1111
@@ -316,7 +316,7 @@ not_s2t:
 		BEQ not_s2l			; not if not pressed
 			CMP padlast, X	; still pressing?
 			BNE is_s2l 
-		JMP not_s2f			;JMP not_st2			; ignore either!
+		JMP not_s2f			; ignore either, but keep going down!
 is_s2l:
 			STA padlast, X	; anyway, register this press
 			LDY #MOV_LEFT	; otherwise, x is one less
@@ -326,7 +326,7 @@ not_s2l:
 		BEQ not_s2r			; not if not pressed
 			CMP padlast, X	; still pressing?
 			BNE is_s2r
-		JMP not_st2			; ignore either!
+		JMP not_s2f			; ignore either, but keep going down!
 is_s2r:
 			STA padlast, X	; anyway, register this press
 			LDY #MOV_RGHT	; otherwise, x is one more
