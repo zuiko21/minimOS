@@ -909,10 +909,10 @@ chkroom:
 ;	LDX select				; depending on player
 	PHY						; keep desired movement
 	LDA posit, X			; desired position of topmost tile
-	AND #127				; ...regardless of player
+;	AND #127				; ...regardless of player
 	TAY
-	CPX #128				; doing second player?
-	BEQ second_ck
+;	CPX #128				; doing second player?
+;	BEQ second_ck
 		LDA field, Y		; is it clear?
 		ORA field+8, Y		; what about second tile?
 		ORA field+16, Y		; and bottom one?
