@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240731-1038
+; last modified 20240731-1728
 
 ; ****************************
 ; *** hardware definitions ***
@@ -316,7 +316,7 @@ not_s2t:
 		BEQ not_s2l			; not if not pressed
 			CMP padlast, X	; still pressing?
 			BNE is_s2l 
-		JMP not_st2			; ignore either!
+		JMP not_s2f			;JMP not_st2			; ignore either!
 is_s2l:
 			STA padlast, X	; anyway, register this press
 			LDY #MOV_LEFT	; otherwise, x is one less
