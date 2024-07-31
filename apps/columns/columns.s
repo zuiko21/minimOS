@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240730-1807
+; last modified 20240731-1005
 
 ; ****************************
 ; *** hardware definitions ***
@@ -50,6 +50,8 @@ IO_PSG	= $DFDB				; PSG optional for some effects and background music
 #define	STAT_PLAY	2
 #define	STAT_BLNK	3
 #define	STAT_DIE	4
+; new status values
+#define	STAT_PAUS	5
 
 #define	NUM_LVLS	3
 
@@ -303,6 +305,13 @@ not_st1:
 	JMP not_st2
 is_st2:
 		TYA					; get this player controller status
+		BIT #PAD_STRT		; START will make pause
+		BEQ not_s2t
+; ** ** TO DO * PAUSE * TO DO ** **
+			LDA #STAT_PAUS
+			STA status, X
+			JMP not_st2
+not_s2t:
 		BIT #PAD_LEFT		; move to the left?
 		BEQ not_s2l			; not if not pressed
 			CMP padlast, X	; still pressing?
@@ -459,6 +468,22 @@ not_st2:
 			STA ev_dly, X	; update time for next event
 			JSR palmatoria	; will switch to STAT_OVER when finished
 not_st4:
+; * * STATUS 5, pause * * TO DO
+	CMP #STAT_PAUS			; in pause
+	BNE not_st5
+		LDA pad0val, X
+		BIT #PAD_STRT
+		BEQ st5_rls			; just released, check previous
+			STA padlast, X	; otherwise register press
+			BRA not_st5
+st5_rls:
+		LDA padlast, X		; check previous
+		BIT #PAD_STRT		; just released START?
+		BNE not_st5			; nope, just continue
+; ** ** TO DO * otherwise, get screen back * TO DO ** **
+			LDA #STAT_PLAY
+			STA status, X	; restore play mode
+not_st5:
 
 next_player:
 	LDX select				; just in case... or just TAX?
