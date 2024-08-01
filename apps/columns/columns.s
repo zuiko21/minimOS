@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240801-1130
+; last modified 20240801-1149
 
 ; ****************************
 ; *** hardware definitions ***
@@ -466,6 +466,8 @@ mts_l:
 				INY			; count'em * placeholder
 no_mts:
 			DEX
+			TXA
+			AND #%01111111	; eeeek
 			BNE mts_l
 		TYA
 		BEQ no_match
@@ -475,6 +477,7 @@ no_match:
 		LDX select
 		STA status, X
 not_blink:
+
 ; * * STATUS 4, die * *
 	CMP #STAT_DIE			; just died?
 	BNE not_die
@@ -972,7 +975,6 @@ ch_detect:
 		BNE ch_try			; and keep trying
 ch_fin:
 ; now should check for vertical and diagonal matches... TO DO
-
 ; as a placeholder, switch to BLINK mode
 	LDA #STAT_BLNK
 	LDX select
