@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240801-1042
+; last modified 20240801-1130
 
 ; ****************************
 ; *** hardware definitions ***
@@ -221,28 +221,28 @@ chk_stat:
 	LDA status, X			; check status of current player
 ; * * STATUS 0, game over * *
 ;	CMP #STAT_OVER			; not needed if STAT_OVER is zero
-	BNE not_st0
+	BNE not_over
 		TYA					; get this player controller status
 		BIT #PAD_FIRE|PAD_B|PAD_SEL|PAD_STRT	; start new game
-			BEQ not_st0		; not if not pressed...
+			BEQ not_over	; not if not pressed...
 		CMP padlast, X
-			BEQ not_st0		; ...or not just released
+			BEQ not_over	; ...or not just released
 		STA padlast, X		; anyway, register this press
 		LDA #STAT_LVL
 		STA status, X		; go into selection status
 		JSR sel_ban			; after drawing level selection menu
 		BRA loop			; reload player status
-not_st0:
+not_over:
 	LDA status, X			; check status of current player
 ; * * STATUS 1, level selection * *
 	CMP #STAT_LVL			; selecting level?
-	BNE not_st1
+	BNE not_lvl
 ; selecting level, check up/down and fire/select/start
 		TYA					; get this player controller status
 		BIT #PAD_DOWN		; increment level
 		BEQ not_s1d			; not if not pressed
 			CMP padlast, X	; still pressing?
-		BEQ not_st1			; ignore either!
+		BEQ not_lvl			; ignore either!
 			STA padlast, X	; anyway, register this press
 			JSR inv_row		; deselect current
 			INC s_level, X	; increment level
@@ -255,7 +255,7 @@ not_s1d:
 		BIT #PAD_UP			; decrement level
 		BEQ not_s1u
 			CMP padlast, X	; still pressing?
-		BEQ not_st1			; ignore!
+		BEQ not_lvl			; ignore!
 			STA padlast, X	; anyway, register this press
 			JSR inv_row		; deselect current
 			DEC s_level, X	; decrement level
@@ -265,10 +265,10 @@ not_s1d:
 				BRA s1_nw	; common ending
 not_s1u:
 		BIT #PAD_FIRE|PAD_B|PAD_SEL|PAD_STRT	; select current level
-		BEQ not_st1
+		BEQ not_lvl
 ; level is selected, set initial score and display
 			CMP padlast, X	; still pressing?
-		BEQ not_st1			; ignore!
+		BEQ not_lvl			; ignore!
 			STA padlast, X	; anyway, register this press
 			LDY s_level, X	; selected level
 			LDA ini_spd, Y
@@ -295,63 +295,63 @@ not_s1u:
 			LDA #STAT_PLAY
 			STA status, X
 ; TODO * I believe some screen init is needed here * TODO
-			BRA not_st1
+			BRA not_lvl
 s1_nw:
 		JSR inv_row			; mark new value
 		LDY pad0val, X		; restore and continue evaluation
-not_st1:
+not_lvl:
 	LDA status, X
 ; * * STATUS 2, play * *
 	CMP #STAT_PLAY			; playing?
-		BEQ is_st2 
-	JMP not_st2
-is_st2:
+		BEQ is_play 
+	JMP not_play
+is_play:
 		TYA					; get this player controller status
 		BIT #PAD_STRT		; START will make pause
-		BEQ not_s2t
+		BEQ not_pstart
 ; ** ** TO DO * PAUSE * TO DO ** **
 			LDA #STAT_PAUS
 			STA status, X
-			JMP not_st2
-not_s2t:
+			JMP not_play
+not_pstart:
 		BIT #PAD_LEFT		; move to the left?
-		BEQ not_s2l			; not if not pressed
+		BEQ not_pleft		; not if not pressed
 			CMP padlast, X	; still pressing?
-			BNE is_s2l 
-		JMP not_s2f			; ignore either, but keep going down!
-is_s2l:
+			BNE is_pleft 
+		JMP not_pfire		; ignore either, but keep going down!
+is_pleft:
 			STA padlast, X	; anyway, register this press
 			LDY #MOV_LEFT	; otherwise, x is one less
-			BRA s2end
-not_s2l:
+			BRA p_end
+not_pleft:
 		BIT #PAD_RGHT		; move to the right?
-		BEQ not_s2r			; not if not pressed
+		BEQ not_pright		; not if not pressed
 			CMP padlast, X	; still pressing?
-			BNE is_s2r
-		JMP not_s2f			; ignore either, but keep going down!
-is_s2r:
+			BNE is_pright
+		JMP not_pfire		; ignore either, but keep going down!
+is_pright:
 			STA padlast, X	; anyway, register this press
 			LDY #MOV_RGHT	; otherwise, x is one more
-			BRA s2end
-not_s2r:
+			BRA p_end
+not_pright:
 		BIT #PAD_DOWN		; let it drop?
-		BEQ not_s2d			; not if not pressed
+		BEQ not_pdown		; not if not pressed
 ;			CMP padlast, X	; still pressing? don't care, will fall asap
-;		BEQ not_st2			; ignore either!
+;		BEQ not_play		; ignore either!
 ;			STA padlast, X	; anyway, register this press
 			LDY #MOV_NONE	; default action in most cases
 			LDA ticks
 			AND #7			; will drop quickly...
-			BNE s2end		; ...only every 8 (16) interrupts
+			BNE p_end		; ...only every 8 (16) interrupts
 				LDY #MOV_DOWN					; otherwise, y is one more
-			BRA s2end
-not_s2d:
+			BRA p_end
+not_pdown:
 		BIT #PAD_FIRE|PAD_B	; flip?
-		BEQ not_s2f			; not if not pressed
+		BEQ not_pfire		; not if not pressed
 			CMP padlast, X	; still pressing?
-			BNE do_st2
-		JMP not_s2f			; ignore either, but keep going down!
-do_st2:
+			BNE do_pfire
+		JMP not_pfire		; ignore either, but keep going down!
+do_pfire:
 			STA padlast, X	; anyway, register this press
 ; piece rotation
 			LDA #1
@@ -369,8 +369,8 @@ do_st2:
 			JSR col_upd
 			STZ IOBeep		; ...and finish audio pulse
 			LDY #MOV_ROT	; this was a rotation, thus no change
-			BRA s2end
-not_s2f:
+			BRA p_end
+not_pfire:
 		LDY #MOV_NONE		; eeek
 ; first of all, check for magic jewel
 		LDX select
@@ -384,14 +384,14 @@ do_advance:
 ; in case of timeout, put piece down... or take another
 		LDA ticks
 		CMP ev_dly, X
-		BMI s2end			; if timeout expired... but not BCC eeeeeek
+		BMI p_end			; if timeout expired... but not BCC eeeeeek
 ;			LDA ev_dly, X
 			CLC
 			ADC speed, X
 			STA ev_dly, X	; update time for next event
 ; will check if possible to move down
 			LDY #MOV_DOWN
-s2end:
+p_end:
 ; move according to Y-direction, if possible
 ; should actually update offset, check availability and, if so, update screen, otherwise revert offset (easily done)
 		CPY #MOV_NONE		; any move?
@@ -431,11 +431,11 @@ s2end:
 				LDA ticks
 				STA ev_dly, X
 ; now will display the gameover animation concurrently!
-				BRA not_st2
+				BRA not_play
 have_col:
 			PHY				; just in case
 			LDY posit, X	; final position of first tile (both players)
-			LDA column, X			; first jewel
+			LDA column, X	; first jewel
 			STA field, Y
 			LDA column+1, X	; second jewel
 			STA field+8, Y	; into next row
@@ -444,51 +444,64 @@ have_col:
 			JSR gen_col		; another piece
 			PLY
 ; new piece is stored, let's check for matches!
-			JSR chkmatch
+			JSR chkmatch	; *** should actually shift state ***
 is_room:
 		JSR col_upd			; ...as screen must be updated
 not_move:
 		LDX select
-		LDY pad0val, X		; restore and continue evaluation, is this neeed?
-not_st2:
+;		LDY pad0val, X		; restore and continue evaluation, is this neeed?
+not_play:
 
 ; * * STATUS 3, blink * * TO DO
 	LDA status, X
 	CMP #STAT_BLNK
-	BNE not_st3
+	BNE not_blink
 		LDY #0
-		JSR match			; placehloder * play match sound
+		LDA #118			; last piece
+		ORA id_table, X		; for any player
+		TAX					; as read index
+mts_l:
+			LDA mark, X		; check detected
+			BEQ no_mts
+				INY			; count'em * placeholder
+no_mts:
+			DEX
+			BNE mts_l
+		TYA
+		BEQ no_match
+			JSR match		; placehloder * play match sound
+no_match:
 		LDA #STAT_PLAY		; ...and return to play
-;		LDX select
+		LDX select
 		STA status, X
-not_st3:
+not_blink:
 ; * * STATUS 4, die * *
 	CMP #STAT_DIE			; just died?
-	BNE not_st4
+	BNE not_die
 		LDA ticks
 		CMP ev_dly, X
-		BMI not_st4			; if timeout expired... but not BCC
+		BMI not_die			; if timeout expired... but not BCC
 			CLC
 			ADC #5			; next in 5 ticks
 			STA ev_dly, X	; update time for next event
 			JSR palmatoria	; will switch to STAT_OVER when finished
-not_st4:
+not_die:
 ; * * STATUS 5, pause * * TO DO
 	CMP #STAT_PAUS			; in pause
-	BNE not_st5
+	BNE not_pause
 		LDA pad0val, X
 		BIT #PAD_STRT
 		BEQ st5_rls			; just released, check previous
 			STA padlast, X	; otherwise register press
-			BRA not_st5
+			BRA not_pause
 st5_rls:
 		LDA padlast, X		; check previous
 		BIT #PAD_STRT		; just released START?
-		BNE not_st5			; nope, just continue
+		BNE not_pause			; nope, just continue
 ; ** ** TO DO * otherwise, get screen back * TO DO ** **
 			LDA #STAT_PLAY
 			STA status, X	; restore play mode
-not_st5:
+not_pause:
 
 next_player:
 	LDX select				; just in case... or just TAX?
