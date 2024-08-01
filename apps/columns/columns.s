@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240731-1821
+; last modified 20240801-0915
 
 ; ****************************
 ; *** hardware definitions ***
@@ -409,10 +409,12 @@ s2end:
 		BNE not_move		; do not update screen... but check if at bottom
 ; cannot go down any more, update field
 ; but first check peñonazo's height, must be second row or below
-;			LDA posit, X	; current position
-			AND #127		; eeek
-			CMP #17			; first visible tile at second row, cannot be any higher
-			BCS have_col	; yeah, continue as usual
+;			LDA posit, X	; current position * already loaded *
+;			AND #127		; eeek * old way, check alternative code *
+;			CMP #17			; first visible tile at second row, cannot be any higher
+;			BCS have_col	; yeah, continue as usual
+			BIT #%01110000	; at least 16, no matter the player, the row is visible
+			BNE have_col	; any bit on is OK
 ; this is done when no room for the new column
 				LDA #STAT_DIE			; will trigger palmatoria
 				STA status, X			; eeeeeeeeeeeeeeeeeeeeek
