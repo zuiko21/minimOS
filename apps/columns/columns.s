@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240801-0915
+; last modified 20240801-1042
 
 ; ****************************
 ; *** hardware definitions ***
@@ -115,6 +115,8 @@ _end_zp	= mag_col2+1
 ; these MUST be outside ZP, change start address accordingly
 field	= $0200				; 8x16 (6x13 visible) game status arrays (player2 = +128)
 field2	= $0280
+mark	= $0300				; tile match register, mimics the game arrays (player2 = +128)
+mark2	= $0380
 
 ; *****************
 ; *** main code ***
@@ -408,6 +410,7 @@ s2end:
 			CPY #MOV_DOWN	; tried to go down and failed?
 		BNE not_move		; do not update screen... but check if at bottom
 ; cannot go down any more, update field
+; * maybe here's the place to check for matches *
 ; but first check peñonazo's height, must be second row or below
 ;			LDA posit, X	; current position * already loaded *
 ;			AND #127		; eeek * old way, check alternative code *
@@ -440,6 +443,8 @@ have_col:
 			STA field+16, Y
 			JSR gen_col		; another piece
 			PLY
+; new piece is stored, let's check for matches!
+			JSR chkmatch
 is_room:
 		JSR col_upd			; ...as screen must be updated
 not_move:
@@ -449,6 +454,14 @@ not_st2:
 
 ; * * STATUS 3, blink * * TO DO
 	LDA status, X
+	CMP #STAT_BLNK
+	BNE not_st3
+		LDY #0
+		JSR match			; placehloder * play match sound
+		LDA #STAT_PLAY		; ...and return to play
+;		LDX select
+		STA status, X
+not_st3:
 ; * * STATUS 4, die * *
 	CMP #STAT_DIE			; just died?
 	BNE not_st4
@@ -902,6 +915,55 @@ chkroom:
 	ORA field+8, Y			; what about second tile?
 	ORA field+16, Y			; and bottom one?
 	PLY
+	RTS
+
+; ** check for matches! **
+chkmatch:
+;	LDX select				; use player as base
+	LDY #118				; number of entries to be cleared
+cfcl:
+		STZ mark, X			; clear entry for current player
+		INX
+		DEY
+		BNE cfcl			; 118*11 ~ 1300t, 845 µs or less
+; scan for horizontal matches
+	LDA select				; player index
+	ORA #119				; last used cell (plus one)
+	TAY						; read index
+ch_try:
+		LDX #255			; -1, will be preincremented
+ch_skip:
+			DEY				; scan for blanks
+		BEQ ch_fin
+			INX				; count blanks
+			LDA field, Y	; get tile in field
+			BEQ ch_skip		; if blank, keep skipping
+		CPX #6				; did six consecutive blanks? ** CHECK **
+	BEQ ch_fin				; all done, then
+		LDX #0				; reset match counter
+ch_rpt:
+			INX
+			DEY				; advance backwards
+			CMP field, Y	; same as pivot?
+			BEQ ch_rpt		; keep counting matches
+		CPX #3				; at least 3-in-a-row? ** CHECK **
+		BCC ch_try				; not enough, try again
+; compute score from number of metched tiles ** TO DO
+		TYA					; non-zero value, also saves current position
+ch_detect:
+			STA mark+1, Y	; mark them, one 'before' the first mismatch
+			INY
+			DEX
+			BNE ch_detect
+		TAY					; restore index
+		BNE ch_try			; and keep trying
+ch_fin:
+; now should check for vertical and diagonal matches... TO DO
+
+; as a placeholder, switch to BLINK mode
+	LDA #STAT_BLNK
+	LDX select
+	STA status, X
 	RTS
 
 ; ** gamepad read **
