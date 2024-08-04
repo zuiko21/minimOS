@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240801-1149
+; last modified 20240804-2345
 
 ; ****************************
 ; *** hardware definitions ***
@@ -233,7 +233,7 @@ chk_stat:
 		JSR sel_ban			; after drawing level selection menu
 		BRA loop			; reload player status
 not_over:
-	LDA status, X			; check status of current player
+;	LDA status, X			; check status of current player
 ; * * STATUS 1, level selection * *
 	CMP #STAT_LVL			; selecting level?
 	BNE not_lvl
@@ -373,7 +373,7 @@ do_pfire:
 not_pfire:
 		LDY #MOV_NONE		; eeek
 ; first of all, check for magic jewel
-		LDX select
+;		LDX select
 		LDA column, X
 		CMP #MAGIC_JWL
 		BNE do_advance
@@ -385,7 +385,7 @@ do_advance:
 		LDA ticks
 		CMP ev_dly, X
 		BMI p_end			; if timeout expired... but not BCC eeeeeek
-;			LDA ev_dly, X
+;			LDA ev_dly, X	; better not try to recover from lag
 			CLC
 			ADC speed, X
 			STA ev_dly, X	; update time for next event
@@ -507,7 +507,7 @@ st5_rls:
 not_pause:
 
 next_player:
-	LDX select				; just in case... or just TAX?
+;	LDX select				; just in case... or just TAX?
 ; check possible colour animation on magic jewel
 	LDA next_c, X
 	CMP #MAGIC_JWL			; is the magic jewel next?
@@ -521,7 +521,7 @@ nx_nonmagic:
 		JSR magic_jewel		; pick one random colour
 		JSR col_upd			; and redisplay it
 cl_nonmagic:
-	LDA select				; eeek
+	TXA						; instead of LDA select	; eeek
 	EOR #128				; toggle player in event manager
 	STA select
 #ifdef	DEBUG
@@ -1090,7 +1090,7 @@ sel_ban:
 ;	s_level	currently selected
 ; affects all registers
 inv_row:
-	LDX select
+;	LDX select
 	LDA psum36, X			; horizontal position in raster
 	STA ptr
 	LDA s_level, X			; current level determines row
@@ -1231,7 +1231,7 @@ gc_nomagic:
 ;	LDX #$FF
 ;	STX colour				; respect original jewel colours
 was_magic:
-	LDX select				; get player eeeek
+;	LDX select				; get player eeeek
 	TXA
 	CLC
 	ADC #4					; first row (not visible), fourth column of every player
@@ -1261,6 +1261,7 @@ nc_loop:
 		INX					; next tile in column
 		DEY
 		BNE nc_loop			; all tiles in column done?
+	LDX select				; eeeeeeeek
 	RTS
 
 ; ** magic jewel colour animation **
@@ -1272,7 +1273,9 @@ magic_jewel:
 	LDX magic_colour, Y		; get some valid colour mask
 	LDY select
 	STX mag_col, Y			; set colour mask for magic jewel only
+	LDX select
 	RTS
+
 ; **********************
 ; *** sound routines ***
 ; **********************
