@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240806-1113
+; last modified 20240806-1259
 
 ; ****************************
 ; *** hardware definitions ***
@@ -45,13 +45,16 @@ IO_PSG	= $DFDB				; PSG optional for some effects and background music
 #define	DISP_JWL	1
 #define	DISP_SCO	2
 
+; renumbered status values
 #define	STAT_OVER	0
-#define	STAT_LVL	1
-#define	STAT_PLAY	2
-#define	STAT_BLNK	3
-#define	STAT_DIE	4
-; new status values
-#define	STAT_PAUS	5
+#define	STAT_LVL	2
+#define	STAT_PLAY	4
+#define	STAT_PNYN	6
+#define	STAT_CHK	8
+#define	STAT_BLNK	10
+#define	STAT_DROP	12
+#define	STAT_PAUS	14
+#define	STAT_DIE	16
 
 #define	NUM_LVLS	3
 
@@ -234,7 +237,7 @@ chk_stat:
 		BRA loop			; reload player status
 not_over:
 ;	LDA status, X			; check status of current player
-; * * STATUS 1, level selection * *
+; * * LVL STATUS, level selection * *
 	CMP #STAT_LVL			; selecting level?
 	BNE not_lvl
 ; selecting level, check up/down and fire/select/start
@@ -287,7 +290,7 @@ not_s1u:
 			JSR numdisp		; display all values
 ; and go into playing mode
 			JSR clearfield	; init game matrix and all gameplay status
-			LDX select
+;			LDX select
 			LDA speed, X	; eeeeek
 			CLC
 			ADC ticks
@@ -301,7 +304,7 @@ s1_nw:
 		LDY pad0val, X		; restore and continue evaluation
 not_lvl:
 	LDA status, X
-; * * STATUS 2, play * *
+; * * PLAY STATUS * *
 	CMP #STAT_PLAY			; playing?
 		BEQ is_play 
 	JMP not_play
@@ -444,16 +447,16 @@ have_col:
 			JSR gen_col		; another piece
 			PLY
 ; new piece is stored, let's check for matches!
-;			JSR chkmatch	; *** should actually shift state ***
-#echo no check
+			JSR chkmatch	; *** should actually shift state ***
+#echo with check
 is_room:
 		JSR col_upd			; ...as screen must be updated
 not_move:
-		LDX select
-;		LDY pad0val, X		; restore and continue evaluation, is this neeed?
 not_play:
 
-; * * STATUS 3, blink * * TO DO
+		LDX select
+;		LDY pad0val, X		; restore and continue evaluation, is this neeed?
+; * * BLNK STATUS, blink matched pieces * * TO DO
 	LDA status, X
 	CMP #STAT_BLNK
 	BNE not_blink
@@ -471,15 +474,24 @@ no_mts:
 			AND #%01111111	; eeeek
 			BNE mts_l
 		TYA
+		LSR
 		BEQ no_match
-			JSR match		; placehloder * play match sound
+			JSR match_snd	; placehloder * play match sound
+; another placeholder, clear mark array, maybe separate subroutine?
+#echo reclear mark
+			LDY #118				; number of entries to be cleared
+bfcl:
+				STZ mark, X			; clear entry for current player
+				INX
+				DEY
+				BNE bfcl			; 118*11 ~ 1300t, 845 µs or less
 no_match:
 		LDA #STAT_PLAY		; ...and return to play
 		LDX select
 		STA status, X
 not_blink:
 
-; * * STATUS 4, die * *
+; * * DIE STATUS * *
 	CMP #STAT_DIE			; just died?
 	BNE not_die
 		LDA ticks
@@ -490,7 +502,7 @@ not_blink:
 			STA ev_dly, X	; update time for next event
 			JSR palmatoria	; will switch to STAT_OVER when finished
 not_die:
-; * * STATUS 5, pause * * TO DO
+; * * PAUS STATUS, pause * * TO DO
 	CMP #STAT_PAUS			; in pause
 	BNE not_pause
 		LDA pad0val, X
@@ -964,8 +976,8 @@ ch_rpt:
 			CMP field, Y	; same as pivot?
 			BEQ ch_rpt		; keep counting matches
 		CPX #3				; at least 3-in-a-row? ** CHECK **
-		BCC ch_try				; not enough, try again
-; compute score from number of metched tiles ** TO DO
+		BCC ch_try			; not enough, try again
+; compute score from number of matched tiles ** TO DO
 		TYA					; non-zero value, also saves current position
 ch_detect:
 			STA mark+1, Y	; mark them, one 'before' the first mismatch
@@ -1152,13 +1164,17 @@ clp_end:
 	JSR gen_col				; create new column, display it and init coordinates
 	JSR gen_col				; needs another one for the current jewel!
 ; init matrix
-	LDA select				; check player
-	CLC
-	ADC #118				; last visible tile
-	TAX						; should be recovered later
 	LDY #118				; eeeeeeek
+	TYA						; last visible tile index * new way
+	ORA id_table, X			; include player bit d7
+;	LDA select				; check player
+;	CLC
+;	ADC #118				; last visible tile
+	TAX						; use as index, should be recovered later
 cl_loop:
 		STZ field, X		; until all visible tiles are clear
+#echo clear mark at 1177 as well
+		STZ mark, X			; much better here!
 		DEX
 		DEY					; one less
 		BPL cl_loop
@@ -1183,7 +1199,7 @@ sfh_loop:
 		STA field2, Y
 		INY					; EEEEEEEEEEEEEEEEEEEEK
 		BPL sfh_loop		; last one gets repeated, but no worries
-;	LDX select
+	LDX select				; for uniformity
 	RTS
 
 ; ** generate new column with 3 jewels ** should check here for room, actually
@@ -1280,9 +1296,10 @@ magic_jewel:
 ; **********************
 ; *** sound routines ***
 ; **********************
-match:
+match_snd:
 ; ** sound after matching, depending on number of them **
 ; input Y=0...12 for number of achieved group (plays higher)
+; affects all registers!
 	PHY
 	LDA m_tone+2, Y			; initial value
 	JSR tone				; play
