@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240804-2345
+; last modified 20240806-1113
 
 ; ****************************
 ; *** hardware definitions ***
@@ -444,7 +444,8 @@ have_col:
 			JSR gen_col		; another piece
 			PLY
 ; new piece is stored, let's check for matches!
-			JSR chkmatch	; *** should actually shift state ***
+;			JSR chkmatch	; *** should actually shift state ***
+#echo no check
 is_room:
 		JSR col_upd			; ...as screen must be updated
 not_move:
@@ -1231,8 +1232,8 @@ gc_nomagic:
 ;	LDX #$FF
 ;	STX colour				; respect original jewel colours
 was_magic:
-;	LDX select				; get player eeeek
-	TXA
+	LDX select				; get player eeeek
+	TXA						; I need BOTH registers eeeeek
 	CLC
 	ADC #4					; first row (not visible), fourth column of every player
 	STA posit, X			; position set as matrix index
