@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240807-1633
+; last modified 20240807-1645
 
 ; ****************************
 ; *** hardware definitions ***
@@ -158,10 +158,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1008			; 1.0a8		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1009			; 1.0a9		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5500			; time, 10.40		0101 0-101 000-0 0000
-	.word	$58FF			; date, 2024/7/31	0101 100-0 111-1 1111
+	.word	$8600			; time, 16.48		1000 0-110 000-0 0000
+	.word	$5907			; date, 2024/8/7	0101 100-1 000-0 0111
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 #ifdef	POCKET
 	.word	file_end-rom_start			; actual executable size
@@ -1445,6 +1445,9 @@ data_end:
 ; **************
 
 	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment to avoid penalty
+#if ((* & $FF00) == $DF00)
+	.dsb	$100, $FF		; skip IO page!
+#endif
 
 ; *** data for player 1 *** (player 2 uses 128-byte offset)
 id_table:
@@ -1502,7 +1505,7 @@ magic_colour:
 	.byt	$FF, $22, $33, $77, $55, $99, $AA, $FF	; six jewel colours [1..6], note first and last entries void
 
 
-	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment to avoid penalty
+	.dsb	$80*((* & $7F) <> 0) - (* & $7F), $FF	; HALF page alignment EEEEEEK
 
 ; *** data for player 2 *** (labels for convenience, always +128)
 
