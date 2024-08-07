@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240807-1645
+; last modified 20240807-1652
 
 ; ****************************
 ; *** hardware definitions ***
@@ -468,8 +468,8 @@ have_col:
 			JSR gen_col		; another piece
 			PLY
 ; new piece is stored, let's check for matches!
-			JSR chkmatch	; *** should actually shift state ***
-#echo with check
+;			JSR chkmatch	; *** should actually shift state ***
+#echo NO check
 is_room:
 		JSR col_upd			; ...as screen must be updated
 not_move:
