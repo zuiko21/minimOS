@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240806-1259
+; last modified 20240807-1633
 
 ; ****************************
 ; *** hardware definitions ***
@@ -71,9 +71,7 @@ speed	= status+1			; 7-bit value between events (127 at level 0, halving after t
 ev_dly	= speed+1			; 8-bit counter for next event (ditto)
 s_level	= ev_dly+1			; selected difficulty
 pad0mask= s_level+1			; gamepad masking values
-pad1mask= pad0mask+128
 pad0val	= pad0mask+1		; gamepad current status
-pad1val	= pad0val+128
 padlast	= pad0val+1			; last pad status
 column	= padlast+1			; current column
 next_c	= column+3			; next piece
@@ -94,16 +92,16 @@ seed	= colour+1			; PRNG seed
 src		= seed+2			; $FC
 ptr		= src+2				; $FE
 ; these save a few bytes and cycles in ZP
-irq_ptr	= ptr+2				; $0200 is standard minimOS, may save a few bytes putting these on ZP ** consider going back to standard, for Pocket-format compatibility
-ticks	= irq_ptr+2			; $0206 but no NMI or BRK in use, and only 8-bit!!
-ticks_h	= ticks+1
-kbd_ok	= ticks_h+1			; if non-zero, supported keyboard has been detected
+; irq_ptr and ticks(h) no longer here
+kbd_ok	= ptr+2				; if non-zero, supported keyboard has been detected
 col_sel	= kbd_ok			; keyboard column counter
 ; player 2 data for convenience
 status2	= 192				; player status [0=game over, 1=level select, 2=playing, 3=flashing?]
 speed2	= status2+1			; 7-bit value between events (127 at level 0, halving after that, but never under 5?)
 ev_dly2	= speed2+1			; 8-bit counter for next event (ditto)
 s_level2= ev_dly2+1			; selected difficulty
+pad1mask= s_level2+1		; gamepad masking values
+pad1val	= pad1mask+1		; gamepad current status
 padlast2= pad1val+1			; last pad status
 column2	= padlast2+1		; current column
 next_c2	= column2+3			; next piece
@@ -116,21 +114,36 @@ mag_col2= die_y2+1			; specific magic jewel colour animation
 
 _end_zp	= mag_col2+1
 ; these MUST be outside ZP, change start address accordingly
-field	= $0200				; 8x16 (6x13 visible) game status arrays (player2 = +128)
-field2	= $0280
-mark	= $0300				; tile match register, mimics the game arrays (player2 = +128)
-mark2	= $0380
+irq_ptr	= $0200				; for Pocket compatibility
+nmi_ptr	= $0202
+ticks_h	= $0205				; no BRK in use, sort of compatible
+ticks	= $0206				; standard address, although 8-bit only
+field	= $0400				; 8x16 (6x13 visible) game status arrays (player2 = +128)
+field2	= $0480
+mark	= $0500				; tile match register, mimics the game arrays (player2 = +128)
+mark2	= $0580
 
 ; *****************
 ; *** main code ***
 ; *****************
 
+#ifdef	POCKET
+* = $0800					; standard pocket address
+#else
 * = $C000					; will 16K suffice?
+#endif
+
 rom_start:
 ; header ID
 	.byt	0				; [0]=NUL, first magic number
+#ifdef	POCKET
+	.asc	"pX"			; pocket executable
+	.word	rom_start		; load address
+	.word	reset			; execution address
+#else
 	.asc	"dX"			; bootable ROM for Durango-X devCart
 	.asc	"****"			; reserved
+#endif
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
 	.asc	"Columns", 0	; C-string with filename @ [8], max 238 chars
@@ -150,7 +163,11 @@ rom_start:
 	.word	$5500			; time, 10.40		0101 0-101 000-0 0000
 	.word	$58FF			; date, 2024/7/31	0101 100-0 111-1 1111
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
+#ifdef	POCKET
+	.word	file_end-rom_start			; actual executable size
+#else
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
+#endif
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
 
 reset:
@@ -195,6 +212,10 @@ no_kbd:
 	LDX #>isr				; ISR address
 	STY irq_ptr				; standard FW adress
 	STX irq_ptr+1
+	LDY #<reset
+	LDX #>reset				; warm start address
+	STY nmi_ptr
+	STX nmi_ptr+1			; set standard pointer
 	CLI						; enable interrupts!
 ; let at least one player start the game
 	JSR continue			; wait for user action
@@ -478,13 +499,12 @@ no_mts:
 		BEQ no_match
 			JSR match_snd	; placehloder * play match sound
 ; another placeholder, clear mark array, maybe separate subroutine?
-#echo reclear mark
-			LDY #118				; number of entries to be cleared
-bfcl:
-				STZ mark, X			; clear entry for current player
-				INX
-				DEY
-				BNE bfcl			; 118*11 ~ 1300t, 845 µs or less
+;			LDY #118				; number of entries to be cleared
+;bfcl:
+;				STZ mark, X			; clear entry for current player
+;				INX
+;				DEY
+;				BNE bfcl			; 118*11 ~ 1300t, 845 µs or less
 no_match:
 		LDA #STAT_PLAY		; ...and return to play
 		LDX select
@@ -1173,8 +1193,6 @@ clp_end:
 	TAX						; use as index, should be recovered later
 cl_loop:
 		STZ field, X		; until all visible tiles are clear
-#echo clear mark at 1177 as well
-		STZ mark, X			; much better here!
 		DEX
 		DEY					; one less
 		BPL cl_loop
@@ -1426,7 +1444,7 @@ data_end:
 ; *** tables ***
 ; **************
 
-	.dsb	$FB00-*, $FF	; padding to avoid cross-page speed penalty
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment to avoid penalty
 
 ; *** data for player 1 *** (player 2 uses 128-byte offset)
 id_table:
@@ -1484,7 +1502,7 @@ magic_colour:
 	.byt	$FF, $22, $33, $77, $55, $99, $AA, $FF	; six jewel colours [1..6], note first and last entries void
 
 
-	.dsb	$FB80-*, $FF	; *** padding to avoid cross-page speed penalty ***
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment to avoid penalty
 
 ; *** data for player 2 *** (labels for convenience, always +128)
 
@@ -1520,7 +1538,7 @@ pow_col:
 
 ; any more?
 
-	.dsb	$FC00-*, $FF	; padding to avoid cross-page speed penalty
+	.dsb	$100*((* & $FF) <> 0) - (* & $FF), $FF	; page alignment to avoid penalty
 
 ; *** 2x256-byte keyboard to pad tables ***
 #include "kbd2pad.s"
@@ -1540,22 +1558,24 @@ jwl_ix:						; convert random byte into reasonable tile index [1...6] with a few
 	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6										; 240...251
 	.byt	7, 7, 7, 7		; 252...255 are the magic tiles
 
+file_end:					; for pocket format
+
+#ifndef	POCKET
 ; ***************************
 ; *** ROM padding and end ***
 ; ***************************
-
 	.dsb	$FFD6-*, $FF		; ROM fill
 	.asc	"DmOS"				; minimOS-compliant signature
 irq_hndl:
 	JMP (irq_ptr)				; standard IRQ handler @ $FFDA
-
-	.byt	$FF					; ROM fill for devCart support! $FFDD
-autoreset:
-	STZ $DFC0					; enable devCart ROM $FFDE
+nmi_hndl:
+	JMP (nmi_ptr)				; standard NMI handler @ $FFDD
+switch:
 	JMP ($FFFC)					; devCart switching support $FFE1
 
 	.dsb	$FFFA-*, $FF		; ROM fill, not using checksum
 ; 6502 hardware vectors
-	.word	reset				; NMI as warm reset
+	.word	nmi_hndl			; NMI as warm reset
 	.word	reset
 	.word	irq_hndl
+#endif
