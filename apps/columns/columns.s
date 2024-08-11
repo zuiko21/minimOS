@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240811-1833
+; last modified 20240811-1943
 
 ; ****************************
 ; *** hardware definitions ***
@@ -483,11 +483,14 @@ not_play:
 ; as a placeholder, turn RANDOMLY into BLINK status, as some times will do
 		JSR rnd
 		BIT seed			; check some generated value
-	BPL not_check
-	BVC not_check			; only 25% chance of going into BLINK
+	BPL not_match
+	BVC not_match			; only 25% chance of going into BLINK
 		LDA #STAT_BLNK
-;		STA status, X		; change status
-#echo 488 not go into blink
+		STA status, X		; change status
+		BRA not_check
+not_match:
+	LDA #STAT_PLAY
+	STA status, X			; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 not_check:
 ; * * BLNK STATUS, blink matched pieces * * TO DO
 	LDA status, X
