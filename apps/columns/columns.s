@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240807-1652
+; last modified 20240811-1735
 
 ; ****************************
 ; *** hardware definitions ***
@@ -158,10 +158,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1009			; 1.0a9		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$100A			; 1.0a10		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8600			; time, 16.48		1000 0-110 000-0 0000
-	.word	$5907			; date, 2024/8/7	0101 100-1 000-0 0111
+	.word	$8C80			; time, 17.36		1000 1-100 100-0 0000
+	.word	$590B			; date, 2024/8/11	0101 100-1 000-0 1011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 #ifdef	POCKET
 	.word	file_end-rom_start			; actual executable size
@@ -468,50 +468,50 @@ have_col:
 			JSR gen_col		; another piece
 			PLY
 ; new piece is stored, let's check for matches!
-;			JSR chkmatch	; *** should actually shift state ***
-#echo NO check
+			LDA #STAT_CHK
+			STA status, X	; change status
 is_room:
 		JSR col_upd			; ...as screen must be updated
 not_move:
-not_play:
 
-		LDX select
-;		LDY pad0val, X		; restore and continue evaluation, is this neeed?
+not_play:
+; * * CHK STATUS, check for matching tiles * * TO DO
+	LDA status, X
+	CMP #STAT_CHK
+	BNE not_check
+; as a placeholder, turn RANDOMLY into BLINK status, as some times will do
+		JSR rnd
+		BIT seed			; check some generated value
+	BPL not_check
+	BVC not_check			; only 25% chance of going into BLINK
+		LDA #STAT_BLNK
+		STA status, X		; change status
+
+not_check:
 ; * * BLNK STATUS, blink matched pieces * * TO DO
 	LDA status, X
 	CMP #STAT_BLNK
 	BNE not_blink
-		LDY #0
-		LDA #118			; last piece
-		ORA id_table, X		; for any player
-		TAX					; as read index
-mts_l:
-			LDA mark, X		; check detected
-			BEQ no_mts
-				INY			; count'em * placeholder
-no_mts:
-			DEX
-			TXA
-			AND #%01111111	; eeeek
-			BNE mts_l
-		TYA
-		LSR
-		BEQ no_match
-			JSR match_snd	; placehloder * play match sound
-; another placeholder, clear mark array, maybe separate subroutine?
-;			LDY #118				; number of entries to be cleared
-;bfcl:
-;				STZ mark, X			; clear entry for current player
-;				INX
-;				DEY
-;				BNE bfcl			; 118*11 ~ 1300t, 845 µs or less
-no_match:
-		LDA #STAT_PLAY		; ...and return to play
-		LDX select
-		STA status, X
-not_blink:
 
+; after animation is ended, turn into DROP status
+		LDA #STAT_DROP
+;		LDX select
+		STA status, X
+
+not_blink:
+; * * DROP STATUS, remove matched tiles and reposition whatever is on top * * TO DO
+	LDA status, X
+	CMP #STAT_DROP
+	BNE not_drop
+
+; after finishing DROP, will ALWAYS turn into CHK again, until it resumes back to PLAY
+		LDA #STAT_CHK
+;		LDX select
+		STA status, X
+
+not_drop:
 ; * * DIE STATUS * *
+	LDA status, X			; just in case...
 	CMP #STAT_DIE			; just died?
 	BNE not_die
 		LDA ticks
@@ -538,7 +538,7 @@ st5_rls:
 			LDA #STAT_PLAY
 			STA status, X	; restore play mode
 not_pause:
-
+; * * * all feasible stati checked, switch player thread * * *
 next_player:
 ;	LDX select				; just in case... or just TAX?
 ; check possible colour animation on magic jewel
@@ -1280,7 +1280,7 @@ was_magic:
 ;	select	player [0-128], displayed at (54,12) & (66,12), a 6-byte offset
 ; affects colour (via tileprn) and all registers
 nextcol:
-	LDX select
+;	LDX select
 	LDA psum6, X			; check player for offset
 	STA ptr
 	LDA #FIELD_PG
@@ -1308,7 +1308,7 @@ magic_jewel:
 	LDX magic_colour, Y		; get some valid colour mask
 	LDY select
 	STX mag_col, Y			; set colour mask for magic jewel only
-	LDX select
+	LDX select				; restore as usual
 	RTS
 
 ; **********************
