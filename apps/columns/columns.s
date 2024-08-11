@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240811-1943
+; last modified 20240811-2028
 
 ; ****************************
 ; *** hardware definitions ***
@@ -50,7 +50,7 @@ IO_PSG	= $DFDB				; PSG optional for some effects and background music
 #define	STAT_OVER	0
 #define	STAT_LVL	2
 #define	STAT_PLAY	4
-#define	STAT_PNYN	6
+#define	STAT_CRSH	6
 #define	STAT_CHK	8
 #define	STAT_BLNK	10
 #define	STAT_DROP	12
@@ -435,7 +435,7 @@ p_end:
 			CPY #MOV_DOWN	; tried to go down and failed?
 		BNE not_move		; do not update screen... but check if at bottom
 ; cannot go down any more, update field
-; * maybe here's the place to check for matches *
+; maybe here's the place to check for matches...
 ; but first check peñonazo's height, must be second row or below
 ;			LDA posit, X	; current position * already loaded *
 ;			AND #127		; eeek * old way, check alternative code *
@@ -469,13 +469,38 @@ have_col:
 			JSR gen_col		; another piece
 			PLY
 ; new piece is stored, let's check for matches!
-			LDA #STAT_CHK
+			LDA #STAT_CRSH	; ...but let's go for peñonazo first!
 			STA status, X	; change status
+			LDA #8			; number of peñonazo cliks
+			STA yb, X		; preload counter
+			LDA ticks
+			ADC #2
+			STA ev_dly, X	; and also next click
+; * might prepare here the PSG initial effect *
 is_room:
 		JSR col_upd			; ...as screen must be updated
 not_move:
 
 not_play:
+; * * CRSH STATUS, play peñonazo * * IN THE MAKING
+	LDA status, X
+	CMP #STAT_CRSH
+	BNE not_crash
+; base sound effect starts here
+		LDA ev_dly, X		; check current time
+		CMP ticks			; eeeeek
+		BNE not_crash		; not yet
+			DEC yb, X		; check sound effect progress
+		BEQ crash_end		; all done!
+			ADC #2			; otherwise, add another delay
+			STA ev_dly, X
+			JSR pulse		; make brief tick
+			BRA not_crash	; continue with next thread
+crash_end:
+; * might alter peñonazo PSG effect from here *
+		LDA #STAT_CHK
+		STA status, X		; after peñonazo, check for matches
+not_crash:
 ; * * CHK STATUS, check for matching tiles * * TO DO
 	LDA status, X
 	CMP #STAT_CHK
@@ -1362,6 +1387,7 @@ ps_loop:
 		DEX
 		BNE ps_loop			; ends with buzzer off
 	STX IOBeep
+	LDX select				; restore for convenience
 	RTS
 
 ; *********************************
