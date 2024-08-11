@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240811-1735
+; last modified 20240811-1833
 
 ; ****************************
 ; *** hardware definitions ***
@@ -25,6 +25,7 @@ IO_PSG	= $DFDB				; PSG optional for some effects and background music
 #define	PAD_BUTTONS
 #define	PAD_FIRE	%10000000
 #define	PAD_STRT	%01000000
+
 #define	PAD_B		%00100000
 #define	PAD_SEL		%00010000
 #define	PAD_UP		%00001000
@@ -257,7 +258,7 @@ chk_stat:
 		JSR sel_ban			; after drawing level selection menu
 		BRA loop			; reload player status
 not_over:
-;	LDA status, X			; check status of current player
+	LDA status, X			; check status of current player EEEEK
 ; * * LVL STATUS, level selection * *
 	CMP #STAT_LVL			; selecting level?
 	BNE not_lvl
@@ -322,7 +323,6 @@ not_s1u:
 			BRA not_lvl
 s1_nw:
 		JSR inv_row			; mark new value
-		LDY pad0val, X		; restore and continue evaluation
 not_lvl:
 	LDA status, X
 ; * * PLAY STATUS * *
@@ -330,7 +330,8 @@ not_lvl:
 		BEQ is_play 
 	JMP not_play
 is_play:
-		TYA					; get this player controller status
+		LDA pad0val, X		; restore and continue evaluation * must be here
+;		TYA					; get this player controller status
 		BIT #PAD_STRT		; START will make pause
 		BEQ not_pstart
 ; ** ** TO DO * PAUSE * TO DO ** **
@@ -485,8 +486,8 @@ not_play:
 	BPL not_check
 	BVC not_check			; only 25% chance of going into BLINK
 		LDA #STAT_BLNK
-		STA status, X		; change status
-
+;		STA status, X		; change status
+#echo 488 not go into blink
 not_check:
 ; * * BLNK STATUS, blink matched pieces * * TO DO
 	LDA status, X
@@ -523,6 +524,8 @@ not_drop:
 			JSR palmatoria	; will switch to STAT_OVER when finished
 not_die:
 ; * * PAUS STATUS, pause * * TO DO
+	LDX select
+	LDA status, X			; ...just in case
 	CMP #STAT_PAUS			; in pause
 	BNE not_pause
 		LDA pad0val, X
@@ -556,6 +559,7 @@ nx_nonmagic:
 cl_nonmagic:
 	TXA						; instead of LDA select	; eeek
 	EOR #128				; toggle player in event manager
+;	AND #128				; just in case...
 	STA select
 #ifdef	DEBUG
 	LDA IO8attr				; get current video mode
