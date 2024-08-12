@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240812-2314
+; last modified 20240812-2349
 
 ; ****************************
 ; *** hardware definitions ***
@@ -94,8 +94,9 @@ bcd_arr	= oldposit+1		; level/jewels/score arrays [LJJSSS] in BCD
 yb		= bcd_arr+6			; base row for death animation and crash sound timer
 die_y	= yb+1				; current death animation index (formerly Y)
 mag_col	= die_y+1			; specific magic jewel colour animation
+dr_mj	= mag_col+1			; flag (d7) if magic jewel is dropped
 ; common data (non-duplicated)
-temp2	= mag_col+1			; now another temporary
+temp2	= dr_mj+1			; now another temporary
 temp	= temp2+1
 select	= temp+1			; player index for main loop
 bcd_lim	= select+1
@@ -124,8 +125,10 @@ bcd_arr2= oldpos2+1			; level/jewels/score arrays [LJJSSS] in BCD
 yb2		= bcd_arr2+6		; base row for death animation
 die_y2	= yb2+1				; current death animation index (formerly Y)
 mag_col2= die_y2+1			; specific magic jewel colour animation
+dr_mj2	= mag_col2+1		; flag (d7) if magic jewel is dropped
 
-_end_zp	= mag_col2+1
+_end_zp	= dr_mj2+1
+
 ; these MUST be outside ZP, change start address accordingly
 irq_ptr	= $0200				; for Pocket compatibility
 nmi_ptr	= $0202
@@ -170,10 +173,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$100A			; 1.0a10		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$100B			; 1.0a11		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8C80			; time, 17.36		1000 1-100 100-0 0000
-	.word	$590B			; date, 2024/8/11	0101 100-1 000-0 1011
+	.word	$BA00			; time, 23.16		1011 1-010 000-0 0000
+	.word	$590C			; date, 2024/8/12	0101 100-1 000-0 1100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 #ifdef	POCKET
 	.word	file_end-rom_start			; actual executable size
@@ -458,6 +461,13 @@ have_col:
 			LDY posit, X	; final position of first tile (both players)
 			LDA column, X	; first jewel
 			STA field, Y
+; update magic flag!
+			CMP #MAGIC_JWL	; was it the magic jewel?
+			BNE mj_not		; no, leave flag alone
+				LDA #$FF
+				STA dr_mj, X			; yes, store flag
+mj_not:
+; continue storing column
 			LDA column+1, X	; second jewel
 			STA field+8, Y	; into next row
 			LDA column+2, X	; last jewel
@@ -498,16 +508,29 @@ crash_end:
 		LDA #STAT_CHK
 		STA status, X		; after peñonazo, check for matches
 not_crash:
+
 ; * * CHK STATUS, check for matching tiles * * TO DO
 	LDA status, X
 	CMP #STAT_CHK
 	BNE not_check
+; before anything else, check whether magic tile has dropped
+		LDA dr_mj, X		; get magic flag
+		BEQ no_mjwl			; nope, proceed with standard check
+; otherwise, look for whatever tile is under the fallen one and make all of their type disappear
+.byt$cb
+#echo stop on magic flag and reset
+			STZ dr_mj, X	; reset magic flag
+			BRA do_match	; proceed to eliminate marked matches
+no_mjwl:
 
 ; as a placeholder, turn RANDOMLY into BLINK status, as some times will do
 		JSR rnd
 		BIT seed			; check some generated value
 	BPL not_match
 	BVC not_match			; only 25% chance of going into BLINK
+
+; entry point to shift from CHK to BLNK status
+do_match:
 		LDA #STAT_BLNK
 		STA status, X		; change status
 		BRA not_check
@@ -1275,7 +1298,7 @@ gc_jwl:
 		TAY
 		LDA jwl_ix, Y		; make it valid tile index
 		PLY
-		CMP #7				; is the magic jewel
+		CMP #MAGIC_JWL		; is the magic jewel
 		BNE gc_nomagic
 			LDA temp2		; check stored difficulty
 		BEQ gc_jwl			; not accepted in easy mode
@@ -1292,13 +1315,10 @@ gc_nomagic:
 		INX
 		DEY					; one jewel less
 		BNE gc_jwl			; until the array is done
-;	LDX #$FF
-;	STX colour				; respect original jewel colours
 was_magic:
 	LDX select				; get player eeeek
 	TXA						; I need BOTH registers eeeeek
-	CLC
-	ADC #4					; first row (not visible), fourth column of every player
+	ORA #4					; first row (not visible), fourth column of every player
 	STA posit, X			; position set as matrix index
 	STA oldposit, X			; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 ;	JMP nextcol				; show new column and return
@@ -1309,7 +1329,6 @@ was_magic:
 ;	select	player [0-128], displayed at (54,12) & (66,12), a 6-byte offset
 ; affects colour (via tileprn) and all registers
 nextcol:
-;	LDX select
 	LDA psum6, X			; check player for offset
 	STA ptr
 	LDA #FIELD_PG
