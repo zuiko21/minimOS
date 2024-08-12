@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240811-2028
+; last modified 20240812-2102
 
 ; ****************************
 ; *** hardware definitions ***
@@ -59,15 +59,27 @@ IO_PSG	= $DFDB				; PSG optional for some effects and background music
 
 #define	NUM_LVLS	3
 
+#define	JWL_COL		3
+
 #define	NUM_JWLS	10
 
 #define	MAGIC_JWL	7
+
+; die animation period
+#define	DIE_PER		5
+
+; mask for down key repeat rate
+#define	DMASK		7
+
+; peñonazo cycles and time between pulses
+#define	P_CYC		8
+#define	P_PER		2
 
 ; *************************
 ; *** memory allocation ***
 ; *************************
 ; player-1 data (player 2 has 128-byte offset)
-status	= 64				; player status [0=game over, 1=level select, 2=playing, 3=flashing?]
+status	= 64				; player status
 speed	= status+1			; 7-bit value between events (127 at level 0, halving after that, but never under 5?)
 ev_dly	= speed+1			; 8-bit counter for next event (ditto)
 s_level	= ev_dly+1			; selected difficulty
@@ -79,13 +91,13 @@ next_c	= column+3			; next piece
 posit	= next_c+3			; position in 8x16 matrix
 oldposit= posit+1			; old position
 bcd_arr	= oldposit+1		; level/jewels/score arrays [LJJSSS] in BCD
-yb		= bcd_arr+6			; base row for death animation
+yb		= bcd_arr+6			; base row for death animation and crash sound timer
 die_y	= yb+1				; current death animation index (formerly Y)
 mag_col	= die_y+1			; specific magic jewel colour animation
 ; common data (non-duplicated)
 temp2	= mag_col+1			; now another temporary
 temp	= temp2+1
-select	= temp+1			; player iteration in main loop
+select	= temp+1			; player index for main loop
 bcd_lim	= select+1
 colour	= bcd_lim+1
 seed	= colour+1			; PRNG seed
@@ -148,8 +160,7 @@ rom_start:
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
 	.asc	"Columns", 0	; C-string with filename @ [8], max 238 chars
-	.asc	"Original idea by SEGA"		; comment with IMPORTANT attribution
-	.byt	0				; second terminator for optional comment, just in case
+	.asc	"Original idea by SEGA", 0	; comment with IMPORTANT attribution
 
 ; advance to end of header
 	.dsb	rom_start + $E6 - *, $FF
@@ -178,7 +189,6 @@ reset:
 	TXS
 ; Durango-X specifics
 	STX IOAie				; enable interrupts, as X is an odd value
-;	STZ ticks
 	LDA #$38				; colour mode, screen 3, RGB
 	STA IO8attr				; set video mode
 ; show splash screen
@@ -186,15 +196,12 @@ reset:
 	JSR dispic				; decompress!
 ; * init game stuff * actually whole ZP
 	LDX #0
-;	TXA
 rst_loop:
 		STZ 0, X			; was status, X [CMOS only, use TXA/STA otherwise]
 		INX
 		BNE rst_loop
 ; setup controllers etc (assume minstrel-type kbd)
-;	STZ pad0mask
-;	STZ pad1mask			; need these reset the very first time
-	JSR read_pad			; get initial values
+	JSR read_pad			; get initial values (mask variables already reset)
 	LDX pad0val
 	LDY pad1val
 	STX pad0mask			; ...and store them
@@ -241,7 +248,6 @@ loop:
 	LDY pad0val, X			; ...and its controller status
 	BNE chk_stat			; some buttons were pressed
 		STZ padlast, X		; otherwise clear that
-;		JMP next_player		; does this make sense?
 chk_stat:
 	LDA status, X			; check status of current player
 ; * * STATUS 0, game over * *
@@ -312,7 +318,6 @@ not_s1u:
 			JSR numdisp		; display all values
 ; and go into playing mode
 			JSR clearfield	; init game matrix and all gameplay status
-;			LDX select
 			LDA speed, X	; eeeeek
 			CLC
 			ADC ticks
@@ -331,10 +336,10 @@ not_lvl:
 	JMP not_play
 is_play:
 		LDA pad0val, X		; restore and continue evaluation * must be here
-;		TYA					; get this player controller status
 		BIT #PAD_STRT		; START will make pause
 		BEQ not_pstart
 ; ** ** TO DO * PAUSE * TO DO ** **
+
 			LDA #STAT_PAUS
 			STA status, X
 			JMP not_play
@@ -361,14 +366,11 @@ is_pright:
 not_pright:
 		BIT #PAD_DOWN		; let it drop?
 		BEQ not_pdown		; not if not pressed
-;			CMP padlast, X	; still pressing? don't care, will fall asap
-;		BEQ not_play		; ignore either!
-;			STA padlast, X	; anyway, register this press
 			LDY #MOV_NONE	; default action in most cases
 			LDA ticks
-			AND #7			; will drop quickly...
-			BNE p_end		; ...only every 8 (16) interrupts
-				LDY #MOV_DOWN					; otherwise, y is one more
+			AND #DMASK		; will drop quickly...
+			BNE p_end		; ...only every 8 ticks (16 interrupts)
+				LDY #MOV_DOWN					; otherwise, Y is one more
 			BRA p_end
 not_pdown:
 		BIT #PAD_FIRE|PAD_B	; flip?
@@ -379,9 +381,9 @@ not_pdown:
 do_pfire:
 			STA padlast, X	; anyway, register this press
 ; piece rotation
+; * might launch PSG effect here *
 			LDA #1
 			STA IOBeep		; activate sound...
-;			LDY select		; note different index register
 			LDA column+2, X
 			PHA				; save last piece
 			LDA column+1, X
@@ -398,7 +400,6 @@ do_pfire:
 not_pfire:
 		LDY #MOV_NONE		; eeek
 ; first of all, check for magic jewel
-;		LDX select
 		LDA column, X
 		CMP #MAGIC_JWL
 		BNE do_advance
@@ -410,7 +411,6 @@ do_advance:
 		LDA ticks
 		CMP ev_dly, X
 		BMI p_end			; if timeout expired... but not BCC eeeeeek
-;			LDA ev_dly, X	; better not try to recover from lag
 			CLC
 			ADC speed, X
 			STA ev_dly, X	; update time for next event
@@ -437,10 +437,6 @@ p_end:
 ; cannot go down any more, update field
 ; maybe here's the place to check for matches...
 ; but first check peñonazo's height, must be second row or below
-;			LDA posit, X	; current position * already loaded *
-;			AND #127		; eeek * old way, check alternative code *
-;			CMP #17			; first visible tile at second row, cannot be any higher
-;			BCS have_col	; yeah, continue as usual
 			BIT #%01110000	; at least 16, no matter the player, the row is visible
 			BNE have_col	; any bit on is OK
 ; this is done when no room for the new column
@@ -471,10 +467,10 @@ have_col:
 ; new piece is stored, let's check for matches!
 			LDA #STAT_CRSH	; ...but let's go for peñonazo first!
 			STA status, X	; change status
-			LDA #8			; number of peñonazo cliks
+			LDA #P_CYC		; number of peñonazo cliks
 			STA yb, X		; preload counter
 			LDA ticks
-			ADC #2
+			ADC #P_PER		; time between pulses
 			STA ev_dly, X	; and also next click
 ; * might prepare here the PSG initial effect *
 is_room:
@@ -482,17 +478,18 @@ is_room:
 not_move:
 
 not_play:
-; * * CRSH STATUS, play peñonazo * * IN THE MAKING
+; * * CRSH STATUS, play peñonazo sound * *
 	LDA status, X
 	CMP #STAT_CRSH
 	BNE not_crash
 ; base sound effect starts here
-		LDA ev_dly, X		; check current time
-		CMP ticks			; eeeeek
-		BNE not_crash		; not yet
+
+		LDA ticks			; check current time
+		CMP ev_dly, X		; alternative, safer way
+		BMI not_crash		; if timeout expired... but not BCC eeeeeek
 			DEC yb, X		; check sound effect progress
 		BEQ crash_end		; all done!
-			ADC #2			; otherwise, add another delay
+			ADC #P_PER		; otherwise, add another delay
 			STA ev_dly, X
 			JSR pulse		; make brief tick
 			BRA not_crash	; continue with next thread
@@ -505,6 +502,7 @@ not_crash:
 	LDA status, X
 	CMP #STAT_CHK
 	BNE not_check
+
 ; as a placeholder, turn RANDOMLY into BLINK status, as some times will do
 		JSR rnd
 		BIT seed			; check some generated value
@@ -516,6 +514,7 @@ not_crash:
 not_match:
 	LDA #STAT_PLAY
 	STA status, X			; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
+
 not_check:
 ; * * BLNK STATUS, blink matched pieces * * TO DO
 	LDA status, X
@@ -547,9 +546,9 @@ not_drop:
 		CMP ev_dly, X
 		BMI not_die			; if timeout expired... but not BCC
 			CLC
-			ADC #5			; next in 5 ticks
+			ADC #DIE_PER	; next in 5 ticks
 			STA ev_dly, X	; update time for next event
-			JSR palmatoria	; will switch to STAT_OVER when finished
+			JSR palmatoria	; will switch to STAT_OVER when finished * might be inlined
 not_die:
 ; * * PAUS STATUS, pause * * TO DO
 	LDX select
@@ -571,7 +570,6 @@ st5_rls:
 not_pause:
 ; * * * all feasible stati checked, switch player thread * * *
 next_player:
-;	LDX select				; just in case... or just TAX?
 ; check possible colour animation on magic jewel
 	LDA next_c, X
 	CMP #MAGIC_JWL			; is the magic jewel next?
@@ -587,7 +585,7 @@ nx_nonmagic:
 cl_nonmagic:
 	TXA						; instead of LDA select	; eeek
 	EOR #128				; toggle player in event manager
-;	AND #128				; just in case...
+	AND #128				; just in case...
 	STA select
 #ifdef	DEBUG
 	LDA IO8attr				; get current video mode
@@ -699,7 +697,6 @@ col_upd:
 	LDA posit, X			; update old position
 	STA oldposit, X
 ; this displays falling column at index Y
-;	TAY						; current position already loaded
 coldisp:
 	LDY posit, X			; get current position
 	PHY						; eeeeeek
@@ -891,13 +888,13 @@ ras_nw:
 	PLX
 	RTS
 
-; ** death animation ** (concurrent IN THE MAKING)
+; ** death animation **
 ; input
 ;	select	player [0,128]
 ; affects status, s_level, yb, die_y, temp and all registers
 palmatoria:
 ; these will go after the last one
-; id while changing status
+; id while changing status WTF
 		LDX select			; eeeeeeeeeek
 		LDA #7				; initial explosion tile - 1
 		LDY die_y, X
@@ -1027,7 +1024,7 @@ ch_rpt:
 			DEY				; advance backwards
 			CMP field, Y	; same as pivot?
 			BEQ ch_rpt		; keep counting matches
-		CPX #3				; at least 3-in-a-row? ** CHECK **
+		CPX #JWL_COL		; at least 3-in-a-row? ** CHECK **
 		BCC ch_try			; not enough, try again
 ; compute score from number of matched tiles ** TO DO
 		TYA					; non-zero value, also saves current position
@@ -1040,7 +1037,7 @@ ch_detect:
 		BNE ch_try			; and keep trying
 ch_fin:
 ; now should check for vertical and diagonal matches... TO DO
-; as a placeholder, switch to BLINK mode
+; eventually, switch into BLINK mode
 	LDA #STAT_BLNK
 	LDX select
 	STA status, X
@@ -1260,7 +1257,7 @@ sfh_loop:
 gen_col:
 	LDX select
 ; transfer new column into current
-	LDY #3					; jewels per column
+	LDY #JWL_COL			; jewels per column
 gc_copy:
 		LDA next_c, X
 		STA column, X		; copy next column into actual one
@@ -1270,7 +1267,7 @@ gc_copy:
 	LDX select				; restore player index
 	LDA s_level, X			; check difficulty
 	STA temp2				; must store somewhere eeeek
-	LDY #3					; now I need 3 jewels
+	LDY #JWL_COL			; now I need 3 jewels
 ; generate new jewel
 gc_jwl:
 		PHY
@@ -1317,7 +1314,7 @@ nextcol:
 	STA ptr
 	LDA #FIELD_PG
 	STA ptr+1				; pointer complete
-	LDY #3					; number of tiles per column
+	LDY #JWL_COL			; number of tiles per column
 nc_loop:
 		PHX
 		PHY
@@ -1532,7 +1529,7 @@ ini_score:
 	.byt	0, 2, 5			; "third" byte initial score (BCD)
 
 ini_spd:
-	.byt	125, 32, 8;127, 3, 2		; initial speed value, halving each level, but never below 4 interrupts (note these are HALF values)
+	.byt	125, 32, 8		; 127, 3, 2		; initial speed value, halving each level, but never below 4 interrupts (note these are HALF values)
 
 magic_colour:
 	.byt	$FF, $22, $33, $77, $55, $99, $AA, $FF	; six jewel colours [1..6], note first and last entries void
@@ -1594,9 +1591,9 @@ jwl_ix:						; convert random byte into reasonable tile index [1...6] with a few
 	.byt	1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6										; 240...251
 	.byt	7, 7, 7, 7		; 252...255 are the magic tiles
 
+#ifdef	POCKET
 file_end:					; for pocket format
-
-#ifndef	POCKET
+#else
 ; ***************************
 ; *** ROM padding and end ***
 ; ***************************
@@ -1614,4 +1611,6 @@ switch:
 	.word	nmi_hndl			; NMI as warm reset
 	.word	reset
 	.word	irq_hndl
+
+file_end:						; should be $10000
 #endif
