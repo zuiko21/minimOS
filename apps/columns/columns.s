@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240812-2102
+; last modified 20240812-2314
 
 ; ****************************
 ; *** hardware definitions ***
@@ -72,7 +72,7 @@ IO_PSG	= $DFDB				; PSG optional for some effects and background music
 #define	DMASK		7
 
 ; peñonazo cycles and time between pulses
-#define	P_CYC		8
+#define	P_CYC		5
 #define	P_PER		2
 
 ; *************************
