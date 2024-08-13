@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240813-1811
+; last modified 20240813-2228
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -55,9 +55,10 @@ IO_PSG	= $DFDB				; PSG optional for some effects and background music
 #define	STAT_CRSH	6
 #define	STAT_CHK	8
 #define	STAT_BLNK	10
-#define	STAT_DROP	12
-#define	STAT_PAUS	14
-#define	STAT_DIE	16
+#define	STAT_EXPL	12
+#define	STAT_DROP	14
+#define	STAT_PAUS	16
+#define	STAT_DIE	18
 
 #define	NUM_LVLS	3
 
@@ -66,6 +67,10 @@ IO_PSG	= $DFDB				; PSG optional for some effects and background music
 #define	NUM_JWLS	10
 
 #define	MAGIC_JWL	7
+
+; cycles for blink animation and spacing
+#define	BLINKS		8
+#define	BL_SPC		5
 
 ; die animation period
 #define	DIE_PER		5
@@ -93,10 +98,10 @@ next_c	= column+3			; next piece
 posit	= next_c+3			; position in 8x16 matrix
 oldposit= posit+1			; old position
 bcd_arr	= oldposit+1		; level/jewels/score arrays [LJJSSS] in BCD
-yb		= bcd_arr+6			; base row for death animation and crash sound timer
-die_y	= yb+1				; current death animation index (formerly Y)
+anim	= bcd_arr+6			; base row for death and other animations
+die_y	= anim+1			; current death animation row (formerly Y)
 mag_col	= die_y+1			; specific magic jewel colour animation
-dr_mj	= mag_col+1			; flag (d7) if magic jewel is dropped
+dr_mj	= mag_col+1			; flag (d7) if magic jewel is dropped / show or hide tile during blink
 ; common data (non-duplicated)
 temp2	= dr_mj+1			; now another temporary
 temp	= temp2+1
@@ -124,8 +129,8 @@ next_c2	= column2+3			; next piece
 posit2	= next_c2+3			; position in 8x16 matrix
 oldpos2 = posit2+1			; old position in 8x16 matrix
 bcd_arr2= oldpos2+1			; level/jewels/score arrays [LJJSSS] in BCD
-yb2		= bcd_arr2+6		; base row for death animation
-die_y2	= yb2+1				; current death animation index (formerly Y)
+anim2	= bcd_arr2+6		; base row for death animation
+die_y2	= anim2+1			; current death animation index (formerly Y)
 mag_col2= die_y2+1			; specific magic jewel colour animation
 dr_mj2	= mag_col2+1		; flag (d7) if magic jewel is dropped
 
@@ -448,11 +453,11 @@ p_end:
 				LDA #STAT_DIE			; will trigger palmatoria
 				STA status, X			; eeeeeeeeeeeeeeeeeeeeek
 ; prepare loops for the new status
-				LDA #113				; 14*8+1
-				ORA id_table, X			; first column in new coordinates, plus player offset
+				TXA						; get player index
+				ORA #113				; 14*8+1 is first column in new coordinates, plus player offset
 				STA die_y, X			; eeeek
 				LDY #15					; needs 16 iterations non-visible rows
-				STY yb, X
+				STY anim, X
 ; start this animation immediatly, then once every 5 ticks (10 interrupts ~ 2 fields)
 				LDA ticks
 				STA ev_dly, X
@@ -484,7 +489,7 @@ mj_done:
 			LDA #STAT_CRSH	; ...but let's go for peñonazo first!
 			STA status, X	; change status
 			LDA #P_CYC		; number of peñonazo cliks
-			STA yb, X		; preload counter
+			STA anim, X		; preload counter
 			LDA ticks
 			ADC #P_PER		; time between pulses
 			STA ev_dly, X	; and also next click
@@ -502,7 +507,7 @@ not_play:
 		LDA ticks			; check current time
 		CMP ev_dly, X		; alternative, safer way
 		BMI not_crash		; if timeout expired... but not BCC eeeeeek
-			DEC yb, X		; check sound effect progress
+			DEC anim, X		; check sound effect progress
 		BEQ crash_end		; all done!
 			ADC #P_PER		; otherwise, add another delay
 			STA ev_dly, X
@@ -567,6 +572,8 @@ bra not_match
 
 ; entry point to shift from CHK to BLNK status
 do_match:
+		LDA #BLINKS			; usually 8 cycles
+		STA anim, X			; set counter
 		LDA #STAT_BLNK
 		STA status, X		; change status
 		BRA not_check
@@ -576,38 +583,62 @@ not_match:
 	STA status, X			; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 
 not_check:
-; * * BLNK STATUS, blink matched pieces * * TO DO
+; * * BLNK STATUS, blink matched pieces * *
 	LDA status, X
 	CMP #STAT_BLNK
 	BNE not_blink
-
-; as placeholder, clear marked tiles
-#echo clear marked tiles
-		LDA select			; player index
-		ORA #118			; last position
-		TAY					; index ready
-		TAX					; this one as well
+		LDA ticks			; check current time
+		CMP ev_dly, X		; alternative, safer way
+		BMI not_blink		; if timeout expired... but not BCC eeeeeek
+			ADC #BL_SPC		; ...add another delay for next iteration
+			STA ev_dly, X
+; proceed to hide or show marked tiles
+			LDA anim, X		; check frame
+			LSR				; C set means visible
+			ROR dr_mj, X	; insert C into d7 as flag
+; scan all marked tiles, show or hide depending on dr_mj.D7 flag!
+			TXA					; player index
+			ORA #118			; last position
+			TAY					; index ready (as display coordinate)
+			TAX					; this one as well (as array index)
 mk_cl:
-			LDA mark, Y		; marked for deletion?
-			BEQ not_mark
-				STZ field, X			; clear not only on screen! * maybe later
-				PHX
-				PHY
-				LDA #0		; otherwise clear it (placeholder)
-				JSR tiledis
-				PLY
-				PLX
+				LDA mark, Y		; marked for deletion?
+				BEQ not_mark
+					LDA #0					; hidden by default
+					BIT dr_mj, X			; time to display or hide?
+					BPL bl_hide
+						LDA field, X		; if display, get tile index
+bl_hide:
+					PHX
+					PHY
+					JSR tiledis				; update tile on screen
+					PLY
+					PLX
 not_mark:
-			DEX				; eeek
-			DEY
-			CPY select		; all done?
-			BNE mk_cl
-; after animation is ended, turn into DROP status
-		LDA #STAT_DROP
+				DEX				; eeek
+				DEY
+				CPY select		; all done?
+				BNE mk_cl
+; anything else?
+			DEC anim, X		; one less step
+		BPL not_blink		; still to do, keep this status
+; after animation is ended, turn into EXPLode status
+		LDA #STAT_EXPL
 		LDX select			; needed b/c tiledis
 		STA status, X
 
 not_blink:
+; * * EXPLode STATUS * * TO DO
+	LDA status, X
+	CMP #STAT_EXPL
+	BNE not_explode
+
+; after animation is ended, turn into DROP status
+		LDA #STAT_DROP
+;		LDX select			; needed b/c tiledis
+		STA status, X
+
+not_explode:
 ; * * DROP STATUS, remove matched tiles and reposition whatever is on top * * TO DO
 	LDA status, X
 	CMP #STAT_DROP
@@ -972,7 +1003,7 @@ ras_nw:
 ; ** death animation **
 ; input
 ;	select	player [0,128]
-; affects status, s_level, yb, die_y, temp and all registers
+; affects status, s_level, anim, die_y, temp and all registers
 palmatoria:
 ; these will go after the last one
 ; id while changing status WTF
@@ -1013,7 +1044,7 @@ dz_show:
 		LDA #30
 		JSR tone			; brief beep!
 		LDX select
-		DEC yb, X			; one less row
+		DEC anim, X			; one less row
 		BPL go_exit			; not the last, give CPU back
 ; all finished, change status to definitive
 	LDX select
@@ -1289,10 +1320,7 @@ clp_end:
 ; init matrix
 	LDY #118				; eeeeeeek
 	TYA						; last visible tile index * new way
-	ORA id_table, X			; include player bit d7
-;	LDA select				; check player
-;	CLC
-;	ADC #118				; last visible tile
+	ORA select				; include player bit d7
 	TAX						; use as index, should be recovered later
 cl_loop:
 		STZ field, X		; until all visible tiles are clear
