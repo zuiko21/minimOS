@@ -515,13 +515,21 @@ not_crash:
 	CMP #STAT_CHK
 	BNE not_check
 ; before anything else, check whether magic tile has dropped
-		LDY dr_mj, X		; get magic flag
+		LDA dr_mj, X		; get magic flag
 		BEQ no_mjwl			; nope, proceed with standard check
 ; otherwise, look for whatever tile is under the fallen one and make all of their type disappear
 
-			LDA #0	; placeholder, clear first tile of column
+			CLC
+			ADC #24			; go three rows below from first tile
+			TAY
+			LDA field, Y	; check what was under the magic column
+			CMP #$FF		; if sentinel, we are at the very bottom, do nothing
+		BEQ no_mjwl
+			
+			
+			LDA #0	; placeholder, clear detected bottom
 			JSR tiledis
-#echo clear top magic tile
+#echo clear detected bottom
 			LDX select	; just in case
 
 			STZ dr_mj, X	; reset magic flag
