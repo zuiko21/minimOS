@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240813-1712
+; last modified 20240813-1811
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -466,14 +466,18 @@ have_col:
 ; update magic flag!
 			CMP #MAGIC_JWL	; was it the magic jewel?
 			BNE mj_not		; no, leave flag alone
-				TYA			; get actual posituon for magic flag
-				STA dr_mj, X			; yes, store flag
+				LDA #0
+				STA field, Y			; otherwise, do NOT store magic jewel
+				TYA						; get actual position for magic flag
+				STA dr_mj, X			; store flag
+				BRA mj_done				; do not bother with the remaining tiles
 mj_not:
 ; continue storing column
 			LDA column+1, X	; second jewel
 			STA field+8, Y	; into next row
 			LDA column+2, X	; last jewel
 			STA field+16, Y
+mj_done:
 			JSR gen_col		; another piece
 			PLY
 ; new piece is stored, let's check for matches!
@@ -514,33 +518,52 @@ not_crash:
 	LDA status, X
 	CMP #STAT_CHK
 	BNE not_check
-; before anything else, check whether magic tile has dropped
+; before anything else, clear marked tiles matrix
+		LDA #118			; number of entries to be cleared
+		TAY					; use as counter
+		ORA select			; use player as base
+		TAX					; index ready
+cfcl:
+			STZ mark, X		; clear entry for current player
+			DEX				; eeek
+			DEY
+			BNE cfcl		; 118*11 ~ 1300t, 845 µs or less
+		LDX select			; reload player index
+; then, check whether magic tile has dropped
 		LDA dr_mj, X		; get magic flag
 		BEQ no_mjwl			; nope, proceed with standard check
 ; otherwise, look for whatever tile is under the fallen one and make all of their type disappear
-
 			CLC
 			ADC #24			; go three rows below from first tile
-			TAY
-			LDA field, Y	; check what was under the magic column
-			CMP #$FF		; if sentinel, we are at the very bottom, do nothing
-		BEQ no_mjwl
-			
-			
-			LDA #0	; placeholder, clear detected bottom
-			JSR tiledis
-#echo clear detected bottom
-			LDX select	; just in case
-
+			TAX				; index within field
+			BIT field, X	; check what was under the magic column
+		BMI no_mjwl			; if sentinel, we are at the very bottom, do nothing
+; special case, mark every tile of the same type of that just below the magic jewel
+			LDY field, X	; take note of desired type of jewel
+			LDA select		; player as last position
+			ORA #118		; start from last useable cell, backwards
+			TAX				; index ready
+			TYA				; pivot element ready
+mjml:
+				CMP field, X			; does it match?
+				BNE no_mjmt
+					STA mark, X			; if so, mark it for deletion
+no_mjmt:
+				DEX			; one less
+				CPX select	; already done all of this player's field?
+				BNE mjml	; if not, continue scanning
+; anything else? X is already select!
 			STZ dr_mj, X	; reset magic flag
 			BRA do_match	; proceed to eliminate marked matches
 no_mjwl:
 
 ; as a placeholder, turn RANDOMLY into BLINK status, as some times will do
-		JSR rnd
-		BIT seed			; check some generated value
-	BPL not_match
-	BVC not_match			; only 25% chance of going into BLINK
+;		JSR rnd
+;		BIT seed			; check some generated value
+;	BPL not_match
+;	BVC not_match			; only 25% chance of going into BLINK
+bra not_match
+#echo will only blink for magic tiles
 
 ; entry point to shift from CHK to BLNK status
 do_match:
@@ -548,6 +571,7 @@ do_match:
 		STA status, X		; change status
 		BRA not_check
 not_match:
+	LDX select				; needed, I'm afraid
 	LDA #STAT_PLAY
 	STA status, X			; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 
@@ -557,9 +581,30 @@ not_check:
 	CMP #STAT_BLNK
 	BNE not_blink
 
+; as placeholder, clear marked tiles
+#echo clear marked tiles
+		LDA select			; player index
+		ORA #118			; last position
+		TAY					; index ready
+		TAX					; this one as well
+mk_cl:
+			LDA mark, Y		; marked for deletion?
+			BEQ not_mark
+				STZ field, X			; clear not only on screen! * maybe later
+				PHX
+				PHY
+				LDA #0		; otherwise clear it (placeholder)
+				JSR tiledis
+				PLY
+				PLX
+not_mark:
+			DEX				; eeek
+			DEY
+			CPY select		; all done?
+			BNE mk_cl
 ; after animation is ended, turn into DROP status
 		LDA #STAT_DROP
-;		LDX select
+		LDX select			; needed b/c tiledis
 		STA status, X
 
 not_blink:
@@ -1033,13 +1078,6 @@ chkroom:
 
 ; ** check for matches! **
 chkmatch:
-;	LDX select				; use player as base
-	LDY #118				; number of entries to be cleared
-cfcl:
-		STZ mark, X			; clear entry for current player
-		INX
-		DEY
-		BNE cfcl			; 118*11 ~ 1300t, 845 µs or less
 ; scan for horizontal matches
 	LDA select				; player index
 	ORA #119				; last used cell (plus one)
