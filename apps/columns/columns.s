@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240812-2349
+; last modified 20240813-1700
 
 ; ****************************
 ; *** hardware definitions ***
@@ -464,7 +464,7 @@ have_col:
 ; update magic flag!
 			CMP #MAGIC_JWL	; was it the magic jewel?
 			BNE mj_not		; no, leave flag alone
-				LDA #$FF
+				TYA			; get actual posituon for magic flag
 				STA dr_mj, X			; yes, store flag
 mj_not:
 ; continue storing column
@@ -493,7 +493,6 @@ not_play:
 	CMP #STAT_CRSH
 	BNE not_crash
 ; base sound effect starts here
-
 		LDA ticks			; check current time
 		CMP ev_dly, X		; alternative, safer way
 		BMI not_crash		; if timeout expired... but not BCC eeeeeek
@@ -514,11 +513,15 @@ not_crash:
 	CMP #STAT_CHK
 	BNE not_check
 ; before anything else, check whether magic tile has dropped
-		LDA dr_mj, X		; get magic flag
+		LDY dr_mj, X		; get magic flag
 		BEQ no_mjwl			; nope, proceed with standard check
 ; otherwise, look for whatever tile is under the fallen one and make all of their type disappear
-.byt$cb
-#echo stop on magic flag and reset
+
+			LDA #0	; placeholder, clear first tile of column
+			JSR tiledis
+#echo clear top magic tile
+			LDX select	; just in case
+
 			STZ dr_mj, X	; reset magic flag
 			BRA do_match	; proceed to eliminate marked matches
 no_mjwl:
