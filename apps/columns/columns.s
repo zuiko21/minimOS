@@ -475,6 +475,13 @@ have_col:
 				STA field, Y			; otherwise, do NOT store magic jewel
 				TYA						; get actual position for magic flag
 				STA dr_mj, X			; store flag
+; *** hack to delete magic jewel without any blinking
+#echo magic jewel is deleted
+				STZ column, X
+				STZ column+1, X
+				STZ column+2, X			; clear current column
+				JSR coldisp				; display as none
+; ***
 				BRA mj_done				; do not bother with the remaining tiles
 mj_not:
 ; continue storing column
