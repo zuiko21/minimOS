@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240813-2228
+; last modified 20240814-1628
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -19,7 +19,7 @@ IO9nes1	= $DF9D
 IO9nclk	= IO9nes1
 IOAie	= $DFA0
 IOBeep	= $DFB0
-IO_PSG	= $DFDB				; PSG optional for some effects and background music
+IO_PSG	= $DFDB				; PSG for optional effects and background music
 
 ; ****************************
 ; *** constant definitions ***
@@ -599,23 +599,20 @@ not_check:
 ; scan all marked tiles, show or hide depending on dr_mj.D7 flag!
 			TXA					; player index
 			ORA #118			; last position
-			TAY					; index ready (as display coordinate)
-			TAX					; this one as well (as array index)
+			TAY					; index ready (as array index)
 mk_cl:
 				LDA mark, Y		; marked for deletion?
 				BEQ not_mark
 					LDA #0					; hidden by default
 					BIT dr_mj, X			; time to display or hide?
 					BPL bl_hide
-						LDA field, X		; if display, get tile index
+						LDA field, Y		; if display, get tile index
 bl_hide:
-					PHX
 					PHY
 					JSR tiledis				; update tile on screen
 					PLY
-					PLX
+					LDX select				; eeeeeek * worth doing on tiledis?
 not_mark:
-				DEX				; eeek
 				DEY
 				CPY select		; all done?
 				BNE mk_cl
@@ -624,7 +621,6 @@ not_mark:
 		BPL not_blink		; still to do, keep this status
 ; after animation is ended, turn into EXPLode status
 		LDA #STAT_EXPL
-		LDX select			; needed b/c tiledis
 		STA status, X
 
 not_blink:
