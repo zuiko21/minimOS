@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240814-1841
+; last modified 20240814-2254
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -67,6 +67,9 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 #define	NUM_JWLS	10
 
 #define	MAGIC_JWL	7
+
+; magic jewel animation speed (MUST be one less a power of two!)
+#define	MJ_UPD		15
 
 ; cycles for blink animation and spacing
 #define	BLINKS		8
@@ -409,14 +412,6 @@ do_pfire:
 			BRA p_end
 not_pfire:
 		LDY #MOV_NONE		; eeek
-#echo no longer magic recheck
-; first of all, check for magic jewel
-;		LDA column, X
-;		CMP #MAGIC_JWL
-;		BNE do_advance
-;			LDY posit, X
-;			JSR col_upd
-;			LDY #MOV_NONE
 do_advance:
 ; in case of timeout, put piece down... or take another
 		LDA ticks
@@ -431,7 +426,9 @@ p_end:
 ; move according to Y-direction, if possible
 ; should actually update offset, check availability and, if so, update screen, otherwise revert offset (easily done)
 		CPY #MOV_NONE		; any move?
-			BEQ not_move
+		BNE do_move
+			JMP not_move
+do_move:
 		LDA posit, X
 		CLC
 		ADC ix_dir, Y		; add combined offset
@@ -503,17 +500,8 @@ mj_done:
 			STA ev_dly, X	; and also next click
 ; * might prepare here the PSG initial effect *
 is_room:
-#echo less frantic magic animation
-		LDA column, X
-		CMP #MAGIC_JWL
-		BNE do_upd
-			LDA ticks
-			AND #15
-			BNE not_move
-do_upd:
 		JSR col_upd			; ...as screen must be updated
 not_move:
-
 not_play:
 ; * * CRSH STATUS, play peñonazo sound * *
 	LDA status, X
@@ -1457,7 +1445,7 @@ nc_loop:
 ; affects colour and all registers
 magic_jewel:
 	LDA ticks				; check timing!
-	AND #7					; about every 1/15 s
+	AND #MJ_UPD				; about every 1/15 s
 		BNE mj_end			; skip if not the time
 	JSR rnd
 	TAX
