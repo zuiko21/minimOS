@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240814-1628
+; last modified 20240814-1708
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -70,7 +70,7 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 
 ; cycles for blink animation and spacing
 #define	BLINKS		8
-#define	BL_SPC		5
+#define	BL_SPC		6
 
 ; die animation period
 #define	DIE_PER		5
@@ -620,14 +620,29 @@ not_mark:
 			DEC anim, X		; one less step
 		BPL not_blink		; still to do, keep this status
 ; after animation is ended, turn into EXPLode status
-		LDA #STAT_EXPL
-		STA status, X
+			STZ dr_mj, X	; eeeek
+			LDA #STAT_EXPL
+			STA status, X
 
 not_blink:
 ; * * EXPLode STATUS * * TO DO
 	LDA status, X
 	CMP #STAT_EXPL
 	BNE not_explode
+
+#echo delete matched pieces
+; placeholder (but will stay anyway) delete marked pieces
+		TXA					; get player index
+		ORA #118			; last visible piece
+		TAX					; use as index, STZ-savvy
+exp_cl:
+			LDA mark, X		; is this marked?
+			BEQ not_fd		; nope, leave it
+				STZ field, X			; otherwise, clear it
+not_fd:
+			DEX				; next cell
+			CPX select		; until the top
+			BNE exp_cl
 
 ; after animation is ended, turn into DROP status
 		LDA #STAT_DROP
@@ -1560,6 +1575,10 @@ gameover:
 	.bin	0, 0, "art/gameover.sv24"				; uncompressed, 24-byte wide
 numbers:
 	.bin	0, 0, "art/numbers.sv20"				; generic number images, 20-byte wide
+
+pre_io:						; this should be BEFORE I/O page!
+	.dsb	$E000-*, $FF	; skip I/O page!
+
 levelsel:
 	.bin	0, 0, "art/level.sv24"					; uncompressed, 24-byte wide, 23 lines tall
 data_end:
