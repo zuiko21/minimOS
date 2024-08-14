@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240814-2254
+; last modified 20240814-2331
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -75,6 +75,8 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 #define	BLINKS		8
 #define	BL_SPC		6
 
+; explosion rate
+#define	EXP_SPD		8
 ; die animation period
 #define	DIE_PER		5
 
@@ -624,18 +626,54 @@ not_mark:
 			DEC anim, X		; one less step
 		BPL not_blink		; still to do, keep this status
 ; after animation is ended, turn into EXPLode status
+			LDA #MAGIC_JWL	; index before first explosion tile
+			STA anim, X		; store for next thread
+			LDA ticks
+			INC
+			STA ev_dly, X	; execute on next interrupt
 			STZ dr_mj, X	; eeeek
 			LDA #STAT_EXPL
 			STA status, X
 
 not_blink:
-; * * EXPLode STATUS * * TO DO
+; * * EXPLode STATUS * *
 	LDA status, X
 	CMP #STAT_EXPL
 	BNE not_explode
-
-#echo delete matched pieces
-; placeholder (but will stay anyway) delete marked pieces
+		LDA ticks
+		CMP ev_dly, X		; is it time?
+	BMI not_explode
+		CLC
+		ADC #EXP_SPD		; frame rate
+		STA ev_dly, X		; ready for next time
+		INC anim, X			; preincrement step
+		LDA anim, X			; which step?
+		CMP #NUM_JWLS+2		; over last of explosion
+		BEQ end_expl		; it's over
+; do explode animation
+			TAX				; keep current frame
+			LDA select		; get player index
+			ORA #118		; last visible tile
+			TAY				; use as index
+			TXA				; frame to be saved
+ex_loop:
+				LDX mark, Y	; was this one marked?
+				BEQ tile_noexp
+					PHA
+					PHX
+					PHY
+					JSR tiledis			; display frame
+					PLY
+					PLX
+					PLA
+tile_noexp:
+				DEY
+				CPY select	; until topmost tile
+				BNE ex_loop
+			LDX select		; restore this!
+			BRA not_explode	; leave thread for now
+; delete marked pieces
+end_expl:
 		TXA					; get player index
 		ORA #118			; last visible piece
 		TAX					; use as index, STZ-savvy
@@ -1579,6 +1617,7 @@ playfield:
 sprites:
 	.dsb	32, 0									; first tile is blank
 	.bin	0, 0, "art/jewels.sv4"					; uncompressed file, 4-byte wide!
+	.dsb	32, 0									; add an extra blank tile
 gameover:
 	.bin	0, 0, "art/gameover.sv24"				; uncompressed, 24-byte wide
 numbers:
