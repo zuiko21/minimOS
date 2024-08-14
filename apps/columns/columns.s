@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240814-1708
+; last modified 20240814-1841
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -409,13 +409,14 @@ do_pfire:
 			BRA p_end
 not_pfire:
 		LDY #MOV_NONE		; eeek
+#echo no longer magic recheck
 ; first of all, check for magic jewel
-		LDA column, X
-		CMP #MAGIC_JWL
-		BNE do_advance
-			LDY posit, X
-			JSR col_upd
-			LDY #MOV_NONE
+;		LDA column, X
+;		CMP #MAGIC_JWL
+;		BNE do_advance
+;			LDY posit, X
+;			JSR col_upd
+;			LDY #MOV_NONE
 do_advance:
 ; in case of timeout, put piece down... or take another
 		LDA ticks
@@ -502,6 +503,14 @@ mj_done:
 			STA ev_dly, X	; and also next click
 ; * might prepare here the PSG initial effect *
 is_room:
+#echo less frantic magic animation
+		LDA column, X
+		CMP #MAGIC_JWL
+		BNE do_upd
+			LDA ticks
+			AND #15
+			BNE not_move
+do_upd:
 		JSR col_upd			; ...as screen must be updated
 not_move:
 
@@ -1401,7 +1410,7 @@ gc_jwl:
 		BEQ gc_jwl			; not accepted in easy mode
 ; otherwise the magic jewel fills the whole column
 			LDX select		; retrieve player index
-			LDA #7			; magic tile index
+			LDA #MAGIC_JWL	; magic tile index
 			STA next_c, X
 			STA next_c+1, X
 			STA next_c+2, X	; store three jewels
@@ -1447,6 +1456,9 @@ nc_loop:
 ; ** magic jewel colour animation **
 ; affects colour and all registers
 magic_jewel:
+	LDA ticks				; check timing!
+	AND #7					; about every 1/15 s
+		BNE mj_end			; skip if not the time
 	JSR rnd
 	TAX
 	LDY jwl_ix, X			; get some valid colour index
@@ -1454,6 +1466,7 @@ magic_jewel:
 	LDY select
 	STX mag_col, Y			; set colour mask for magic jewel only
 	LDX select				; restore as usual
+mj_end:
 	RTS
 
 ; **********************
