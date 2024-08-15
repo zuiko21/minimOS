@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240814-2331
+; last modified 20240815-1016
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -1623,8 +1623,10 @@ gameover:
 numbers:
 	.bin	0, 0, "art/numbers.sv20"				; generic number images, 20-byte wide
 
+#ifndef	POCKET
 pre_io:						; this should be BEFORE I/O page!
 	.dsb	$E000-*, $FF	; skip I/O page!
+#endif
 
 levelsel:
 	.bin	0, 0, "art/level.sv24"					; uncompressed, 24-byte wide, 23 lines tall
