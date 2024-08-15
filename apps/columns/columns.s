@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240815-1016
+; last modified 20240815-2354
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -104,12 +104,12 @@ posit	= next_c+3			; position in 8x16 matrix
 oldposit= posit+1			; old position
 bcd_arr	= oldposit+1		; level/jewels/score arrays [LJJSSS] in BCD
 anim	= bcd_arr+6			; base row for death and other animations
-die_y	= anim+1			; current death animation row (formerly Y)
-mag_col	= die_y+1			; specific magic jewel colour animation
+phase	= anim+1			; current animation coordinate (formerly Y and die_y)
+mag_col	= phase+1			; specific magic jewel colour animation
 dr_mj	= mag_col+1			; flag (d7) if magic jewel is dropped / show or hide tile during blink
+tempx	= dr_mj+1			; now another temporary
+temp	= tempx+1
 ; common data (non-duplicated)
-temp2	= dr_mj+1			; now another temporary
-temp	= temp2+1
 select	= temp+1			; player index for main loop
 bcd_lim	= select+1
 colour	= bcd_lim+1
@@ -135,11 +135,13 @@ posit2	= next_c2+3			; position in 8x16 matrix
 oldpos2 = posit2+1			; old position in 8x16 matrix
 bcd_arr2= oldpos2+1			; level/jewels/score arrays [LJJSSS] in BCD
 anim2	= bcd_arr2+6		; base row for death animation
-die_y2	= anim2+1			; current death animation index (formerly Y)
-mag_col2= die_y2+1			; specific magic jewel colour animation
+phase2	= anim2+1			; current death animation index (formerly Y)
+mag_col2= phase2+1			; specific magic jewel colour animation
 dr_mj2	= mag_col2+1		; flag (d7) if magic jewel is dropped
+tempx2	= dr_mj2+1			; now another temporary
+temp2	= tempx2+1
 
-_end_zp	= dr_mj2+1
+_end_zp	= temp2+1
 
 ; these MUST be outside ZP, change start address accordingly
 irq_ptr	= $0200				; for Pocket compatibility
@@ -455,7 +457,7 @@ do_move:
 ; prepare loops for the new status
 				TXA						; get player index
 				ORA #113				; 14*8+1 is first column in new coordinates, plus player offset
-				STA die_y, X			; eeeek
+				STA phase, X			; eeeek
 				LDY #15					; needs 16 iterations non-visible rows
 				STY anim, X
 ; start this animation immediatly, then once every 5 ticks (10 interrupts ~ 2 fields)
@@ -687,8 +689,11 @@ not_fd:
 			BNE exp_cl
 
 ; after animation is ended, turn into DROP status
+;		LDX select
+		LDA #113			; first column on last visible row
+		STA phase, X		; store as external counter...
+		STA anim, X			; ...and as current position
 		LDA #STAT_DROP
-;		LDX select			; needed b/c tiledis
 		STA status, X
 
 not_explode:
@@ -696,7 +701,71 @@ not_explode:
 	LDA status, X
 	CMP #STAT_DROP
 	BNE not_drop
-
+		LDY anim, X			; get bottom coordinate
+dr_l0:
+			LDA field, Y	; check if there's a tile there
+				BEQ dr_1	; if not, scan that void
+			TYA				; check index
+			SEC
+			SBC #8			; up one row
+			TAY				; update index
+			CPY select		; until the top
+			BCC dr_l0		; notice signed comparison as may get below select
+		BCS dr_yield		; otherwise we are done with this column
+dr_1:
+		LDX select			; eeek
+		TYA					; no 'STY a, X' unfortunately
+		STA temp, X			; store position of void bottom
+dr_l1:
+			LDA field, Y	; check if there's a void there
+				BNE dr_2	; if not, we found something to drop
+			PHY
+			LDA #0			; clear tile
+			JSR tiledis		; will clear this unused cell, not very efficient
+			PLY
+			TYA				; check index
+			SEC
+			SBC #8			; up one row
+			TAY				; update index
+			CPY select		; until the top
+			BCC dr_l1		; notice signed comparison as may get below select
+		BCS dr_yield		; otherwise nothing was suspended
+dr_2:
+; actual drop, Y has coordinates of first tile above the void
+		LDX select			; reload player index
+		LDA temp, X			; reload stored position of void bottom
+		TAX					; X is destination, Y is source
+dr_l2:
+			LDA field, Y	; get floating tile
+			STA field, X	; store below
+			PHY
+			PHX				; save previous registers
+			PLY				; Y <- X (destination)
+			PHY				; there must be more efficient ways...
+			JSR tiledis		; display moved tile
+			PLA				; actually stored X
+			SEC
+			SBC #8			; one row up (dest)
+			TAX				; restore register
+			PLA				; actually stored Y
+			SEC
+			SBC #8			; one row up (src)
+			PHX				; awful
+			TAX				; temporary use value from Y for...
+			STZ field+8, X	; ...clearing shifted tile on matrix -- note offset!
+			PLY				; finally restore register
+			CPY select		; until the top
+			BCC dr_l2		; notice signed comparison as may get below select
+		TXA
+		TAY					; will continue just above destination *** CHECK
+		BRA dr_l0
+dr_yield:
+		INC phase, X		; advance column
+		LDA phase, X
+		STA anim, X			; update counter, just in case
+		AND #127			; remove D7 (player bit)
+		CMP #119			; all columns were done?
+	BNE not_drop			; not yet, yield execution to next player
 ; after finishing DROP, will ALWAYS turn into CHK again, until it resumes back to PLAY
 		LDA #STAT_CHK
 ;		LDX select
@@ -889,9 +958,9 @@ coldisp:
 ; input
 ;	Y = position index
 ;	A = tile to print!
-; affects temp2 and all registers (not worth saving here as two entry points)
+; affects tempx, X and all registers (not worth saving here as two entry points)
 tiledis:
-	STA temp2				; eeeeek
+	STA tempx, X				; eeeeek
 	DEY						; let's be consistent...
 	TYA						; will be MSB...
 	AND #%01111000			; filter row
@@ -913,7 +982,7 @@ tiledis:
 	ASL						; times four bytes per column
 	ADC psum36, X			; first pixel in line is 4, perhaps with 36-byte offset, C known clear
 	STA ptr					; LSB is ready
-	LDA temp2				; eeeeek
+	LDA tempx, X				; eeeeek
 ; * external interface for next piece *
 ; input
 ;	A		tile index
@@ -1056,25 +1125,25 @@ ras_nw:
 ; ** death animation **
 ; input
 ;	select	player [0,128]
-; affects status, s_level, anim, die_y, temp and all registers
+; affects status, s_level, anim, phase, temp and all registers
 palmatoria:
 ; these will go after the last one
 ; id while changing status WTF
 		LDX select			; eeeeeeeeeek
 		LDA #7				; initial explosion tile - 1
-		LDY die_y, X
+		LDY phase, X
 dz_tile:
 			INC				; next tile
 			CMP #NUM_JWLS+1
 			BNE dz_nw
 				LDA #0		; 0, then exit
 dz_nw:
-			STA temp		; will hold current tile
+			STA temp, X		; will hold current tile
 			LDX #6			; six columns
 dz_col:
 				PHX
 				PHY
-				LDA temp	; get tile from here
+				LDA temp, X	; get tile from here
 				JSR tiledis
 				PLY
 				PLX
@@ -1086,13 +1155,17 @@ dz_show:
 			CLC
 			ADC #2			; skip 2 sentinels
 			TAY				; next row index
-			LDA temp
+			PHX
+			LDX select		; needed
+			LDA temp, X
+			PLX
+			CMP #0			; unfortunate due to PHX/PLX above
 			BNE dz_tile		; did tile type 0, thus last one
 		TYA
 		SEC
 		SBC #40				; 5 rows back
 		LDX select
-		STA die_y, X		; store for next call!
+		STA phase, X		; store for next call!
 ; no wait here, will be called every 10 interrupts
 		LDA #30
 		JSR tone			; brief beep!
@@ -1106,10 +1179,10 @@ dz_show:
 	STZ s_level, X			; reset this too! eeeeeeeek
 ; now print the game over banner
 	LDY #<gameover
-	LDX #>gameover
+	LDA #>gameover			; no longer X
 	STY src
-	STX src+1				; set origin pointer
-	LDA temp				; get X for player field
+	STA src+1				; set origin pointer
+	LDA temp, X				; get X for player field
 	LDY #10					; raster counter
 ; * alternate entry to print a 24*x banner *
 ;	Y		rasters - 1
@@ -1117,8 +1190,9 @@ dz_show:
 ;	src		points to .sv24
 ; affects temp and all registers
 banner:
-	LDX select
-	STY temp				; counter in memory
+	LDX select				; needed b/c alternate entry
+	TYA						; unfortunately no 'STY a, X'
+	STA temp, X				; counter in memory
 	LDA psum36, X
 	STA ptr
 	LDA #BANNER_PG			; two rows above centre
@@ -1130,7 +1204,7 @@ go_hloop:
 			STA (ptr), Y
 			DEY
 			BPL go_hloop
-		DEC	temp			; one raster is ready
+		DEC	temp, X			; one raster is ready
 	BMI go_exit
 		LDA src
 		CLC
@@ -1350,7 +1424,7 @@ clearfield:
 	LDA #BANNER_PG			; two rows above centre
 	STA ptr+1
 	LDY #22					; banner rasters - 1
-	STY temp
+	STY temp, X
 clp_vloop:
 		LDY #23				; max horizontal offset
 		LDA #0				; will clear area
@@ -1358,7 +1432,7 @@ clp_hloop:
 			STA (ptr), Y
 			DEY
 			BPL clp_hloop
-		DEC temp			; one raster is ready
+		DEC temp, X			; one raster is ready
 	BMI clp_end				; no more rasters
 		LDA ptr
 		CLC
@@ -1421,7 +1495,7 @@ gc_copy:
 		BNE gc_copy
 	LDX select				; restore player index
 	LDA s_level, X			; check difficulty
-	STA temp2				; must store somewhere eeeek
+	STA tempx, X				; must store somewhere eeeek
 	LDY #JWL_COL			; now I need 3 jewels
 ; generate new jewel
 gc_jwl:
@@ -1432,7 +1506,7 @@ gc_jwl:
 		PLY
 		CMP #MAGIC_JWL		; is the magic jewel
 		BNE gc_nomagic
-			LDA temp2		; check stored difficulty
+			LDA tempx, X		; check stored difficulty
 		BEQ gc_jwl			; not accepted in easy mode
 ; otherwise the magic jewel fills the whole column
 			LDX select		; retrieve player index
