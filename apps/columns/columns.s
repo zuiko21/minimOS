@@ -120,7 +120,7 @@ ptr		= src+2				; $FE
 ; these save a few bytes and cycles in ZP
 ; irq_ptr and ticks(h) no longer here
 kbd_ok	= ptr+2				; if non-zero, supported keyboard has been detected
-col_sel	= kbd_ok			; keyboard column counter
+col_sel	= kbd_ok+1			; keyboard column counter
 ; player 2 data for convenience
 status2	= 192				; player status [0=game over, 1=level select, 2=playing, 3=flashing?]
 speed2	= status2+1			; 7-bit value between events (127 at level 0, halving after that, but never under 5?)
@@ -1127,6 +1127,7 @@ ras_nw:
 ;	select	player [0,128]
 ; affects status, s_level, anim, phase, temp and all registers
 palmatoria:
+#echo global temp on palmatoria
 ; these will go after the last one
 ; id while changing status WTF
 		LDX select			; eeeeeeeeeek
@@ -1138,13 +1139,13 @@ dz_tile:
 			BNE dz_nw
 				LDA #0		; 0, then exit
 dz_nw:
-			STA temp, X		; will hold current tile
+			STA temp		; will hold current tile
 			LDX #6			; six columns
 dz_col:
 				PHX
 				PHY
-				LDX select	; eeeeek
-				LDA temp, X	; get tile from here
+;				LDX select	; eeeeek
+				LDA temp	; get tile from here
 				JSR tiledis
 				PLY
 				PLX
@@ -1156,10 +1157,10 @@ dz_show:
 			CLC
 			ADC #2			; skip 2 sentinels
 			TAY				; next row index
-			PHX
-			LDX select		; needed
-			LDA temp, X
-			PLX
+;			PHX
+;			LDX select		; needed
+			LDA temp
+;			PLX
 			CMP #0			; unfortunate due to PHX/PLX above
 			BNE dz_tile		; did tile type 0, thus last one
 		TYA
@@ -1183,7 +1184,7 @@ dz_show:
 	LDA #>gameover			; no longer X
 	STY src
 	STA src+1				; set origin pointer
-	LDA temp, X				; get X for player field
+	LDA temp				; get X for player field
 	LDY #10					; raster counter
 ; * alternate entry to print a 24*x banner *
 ;	Y		rasters - 1
@@ -1191,9 +1192,10 @@ dz_show:
 ;	src		points to .sv24
 ; affects temp and all registers
 banner:
+#echo global temp on banner
 	LDX select				; needed b/c alternate entry
 	TYA						; unfortunately no 'STY a, X'
-	STA temp, X				; counter in memory
+	STA temp				; counter in memory
 	LDA psum36, X
 	STA ptr
 	LDA #BANNER_PG			; two rows above centre
@@ -1205,7 +1207,7 @@ go_hloop:
 			STA (ptr), Y
 			DEY
 			BPL go_hloop
-		DEC	temp, X			; one raster is ready
+		DEC	temp			; one raster is ready
 	BMI go_exit
 		LDA src
 		CLC
@@ -1425,7 +1427,8 @@ clearfield:
 	LDA #BANNER_PG			; two rows above centre
 	STA ptr+1
 	LDY #22					; banner rasters - 1
-	STY temp, X
+#echo global temp on clearfield
+	STY temp
 clp_vloop:
 		LDY #23				; max horizontal offset
 		LDA #0				; will clear area
@@ -1433,7 +1436,7 @@ clp_hloop:
 			STA (ptr), Y
 			DEY
 			BPL clp_hloop
-		DEC temp, X			; one raster is ready
+		DEC temp			; one raster is ready
 	BMI clp_end				; no more rasters
 		LDA ptr
 		CLC
