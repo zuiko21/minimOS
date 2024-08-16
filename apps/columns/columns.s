@@ -699,8 +699,6 @@ not_explode:
 	LDA status, X
 	CMP #STAT_DROP
 	BNE not_drop
-bra exit_drop
-#echo NOW skip all drop
 		LDY anim, X			; get bottom coordinate
 dr_l0:
 			LDA field, Y	; check if there's a tile there
@@ -811,11 +809,8 @@ nx_nonmagic:
 		JSR magic_jewel		; pick one random colour
 		JSR col_upd			; and redisplay it
 cl_nonmagic:
-;	TXA						; instead of LDA select	; eeek
-	LDA select
-#echo take select not X
+	TXA						; instead of LDA select	; eeek
 	EOR #128				; toggle player in event manager
-	AND #128				; just in case...
 	STA select
 #ifdef	DEBUG
 	LDA IO8attr				; get current video mode
@@ -1496,7 +1491,6 @@ gc_jwl:
 		PHY
 		JSR rnd
 		TAY
-#echo reposition LDX for magic jewel
 		LDA jwl_ix, Y		; make it valid tile index
 		PLY
 		CMP #MAGIC_JWL		; is the magic jewel
