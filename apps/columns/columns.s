@@ -766,6 +766,7 @@ dr_l2:
 			CPX temp		; until the top
 			BPL dr_l2		; no longer signed comparison
 		LDX select
+		TYA					; eeeek
 		STA anim, X			; store current destination for multithreading
 		BRA not_drop
 dr_yield:
@@ -824,7 +825,7 @@ nx_nonmagic:
 	CMP #MAGIC_JWL			; is the magic jewel on the field?
 	BNE cl_nonmagic
 		JSR magic_jewel		; pick one random colour
-		JSR col_upd			; and redisplay it
+		JSR coldisp			; and redisplay it
 cl_nonmagic:
 	TXA						; instead of LDA select	; eeek
 	EOR #128				; toggle player in event manager
