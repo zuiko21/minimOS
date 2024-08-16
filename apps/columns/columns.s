@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240816-1217
+; last modified 20240816-1729
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -538,7 +538,7 @@ cfcl:
 			STZ mark, X		; clear entry for current player
 			DEX				; eeek
 			DEY
-			BNE cfcl		; 118*11 ~ 1300t, 845 µs or less
+			BPL cfcl		; 119*11 ~ 1300t, 850 µs or less
 		LDX select			; reload player index
 ; then, check whether magic tile has dropped
 		LDA dr_mj, X		; get magic flag
@@ -580,6 +580,9 @@ bra not_match
 do_match:
 		LDA #BLINKS			; usually 8 cycles
 		STA anim, X			; set counter
+		LDA ticks			; best update this too
+		INC
+		STA ev_dly, X		; will start very soon
 		LDA #STAT_BLNK
 		STA status, X		; change status
 		BRA not_check
@@ -688,8 +691,7 @@ not_fd:
 
 ; after animation is ended, turn into DROP status
 		LDA #113			; first column on last visible row
-;#echo include player on drop vars
-;		ORA select			; eeeeeeeeeeeeeeeeeeeeeeeeek
+		ORA select			; eeeeeeeeeeeeeeeeeeeeeeeeek
 		STA phase, X		; store as external counter...
 		STA anim, X			; ...and as current position
 		LDA #STAT_DROP
@@ -700,6 +702,9 @@ not_explode:
 	LDA status, X
 	CMP #STAT_DROP
 	BNE not_drop
+		LDA #16				; just before first visible cell
+		ORA select			; add player
+		STA temp			; new custom limit
 		LDY anim, X			; get bottom coordinate
 dr_l0:
 			LDA field, Y	; check if there's a tile there
@@ -708,11 +713,11 @@ dr_l0:
 			SEC
 			SBC #8			; up one row
 			TAY				; update index
-			CPY select		; until the top
-			BCS dr_l0		; notice signed comparison as may get below select
-		BCC dr_yield		; otherwise we are done with this column
+			CPY temp		; until the top
+			BPL dr_l0		; no longer signed comparison
+		BMI dr_yield		; otherwise we are done with this column
 dr_1:
-		STY temp			; store position of void bottom
+		STY tempx			; store position of void bottom
 dr_l1:
 			LDA field, Y	; check if there's a void there
 				BNE dr_2	; if not, we found something to drop
@@ -720,36 +725,34 @@ dr_l1:
 			SEC
 			SBC #8			; up one row
 			TAY				; update index
-			CPY select		; until the top
-			BCS dr_l1		; notice signed comparison as may get below select
-		BCC dr_yield		; otherwise nothing was suspended
+			CPY temp		; until the top
+			BPL dr_l1		; no longer signed comparison
+		BMI dr_yield		; otherwise nothing was suspended
 dr_2:
 ; actual drop, Y has coordinates of first tile above the void
-		LDX temp			; X is destination, Y is source
-;.byt$cb
-;#echo stop at dr_l2
+		TYA
+		TAX					; put Y on X
+		LDY tempx			; now Y is destination, X is source
+		LDA #16
+		ORA select			; regenerate custom limit
+		STA temp			; as tempx will be affected
 dr_l2:
-			LDA field, Y	; get floating tile
-			STA field, X	; store below
-			LDA #0
-			STA field, Y	; delete dropped tile
-			PHY
 			PHX
-			JSR tiledis		; and remove it from screen!
-			PLA				; actually stored X
-			SEC
-			SBC #8			; one row up (dest)
-			TAX				; restore register
+			PHY
+			LDA field, X	; get floating tile
+			STZ field, X	; delete dropped tile
+			STA field, Y	; store below
+			JSR tiledis		; and remove deleted one from screen!
 			PLA				; actually stored Y
 			SEC
+			SBC #8			; one row up (dest)
+			TAY				; restore register
+			PLA				; actually stored X
+			SEC
 			SBC #8			; one row up (src)
-			TAY				; finally restore register
-			CPY select		; until the top
-			BCS dr_l2		; notice signed comparison as may get below select
-;		TXA
-;		TAY					; will continue just above destination *** CHECK
-;		BRA dr_l0			; *** should multithread here
-#echo multithreaded column
+			TAX				; finally restore register
+			CPX temp		; until the top
+			BPL dr_l2		; no longer signed comparison
 		LDX select
 		STA anim, X			; store current destination for multithreading
 		BRA not_drop
