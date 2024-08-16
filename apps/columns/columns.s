@@ -687,8 +687,9 @@ not_fd:
 			BNE exp_cl
 
 ; after animation is ended, turn into DROP status
-;		LDX select
 		LDA #113			; first column on last visible row
+;#echo include player on drop vars
+;		ORA select			; eeeeeeeeeeeeeeeeeeeeeeeeek
 		STA phase, X		; store as external counter...
 		STA anim, X			; ...and as current position
 		LDA #STAT_DROP
@@ -711,9 +712,7 @@ dr_l0:
 			BCS dr_l0		; notice signed comparison as may get below select
 		BCC dr_yield		; otherwise we are done with this column
 dr_1:
-		LDX select			; eeek
-		TYA					; no 'STY a, X' unfortunately
-		STA temp			; store position of void bottom
+		STY temp			; store position of void bottom
 dr_l1:
 			LDA field, Y	; check if there's a void there
 				BNE dr_2	; if not, we found something to drop
@@ -726,9 +725,9 @@ dr_l1:
 		BCC dr_yield		; otherwise nothing was suspended
 dr_2:
 ; actual drop, Y has coordinates of first tile above the void
-		LDX select			; reload player index
-		LDA temp			; reload stored position of void bottom
-		TAX					; X is destination, Y is source
+		LDX temp			; X is destination, Y is source
+;.byt$cb
+;#echo stop at dr_l2
 dr_l2:
 			LDA field, Y	; get floating tile
 			STA field, X	; store below
@@ -747,9 +746,13 @@ dr_l2:
 			TAY				; finally restore register
 			CPY select		; until the top
 			BCS dr_l2		; notice signed comparison as may get below select
-		TXA
-		TAY					; will continue just above destination *** CHECK
-		BRA dr_l0
+;		TXA
+;		TAY					; will continue just above destination *** CHECK
+;		BRA dr_l0			; *** should multithread here
+#echo multithreaded column
+		LDX select
+		STA anim, X			; store current destination for multithreading
+		BRA not_drop
 dr_yield:
 		INC phase, X		; advance column
 		LDA phase, X
@@ -760,7 +763,6 @@ dr_yield:
 ; after finishing DROP, will ALWAYS turn into CHK again, until it resumes back to PLAY
 exit_drop:
 		LDA #STAT_CHK
-;		LDX select
 		STA status, X
 
 not_drop:
