@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240816-1113
+; last modified 20240816-1217
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -107,9 +107,9 @@ anim	= bcd_arr+6			; base row for death and other animations
 phase	= anim+1			; current animation coordinate (formerly Y and die_y)
 mag_col	= phase+1			; specific magic jewel colour animation
 dr_mj	= mag_col+1			; flag (d7) if magic jewel is dropped / show or hide tile during blink
+; common data (non-duplicated)
 tempx	= dr_mj+1			; now another temporary
 temp	= tempx+1
-; common data (non-duplicated)
 select	= temp+1			; player index for main loop
 bcd_lim	= select+1
 colour	= bcd_lim+1
@@ -138,10 +138,8 @@ anim2	= bcd_arr2+6		; base row for death animation
 phase2	= anim2+1			; current death animation index (formerly Y)
 mag_col2= phase2+1			; specific magic jewel colour animation
 dr_mj2	= mag_col2+1		; flag (d7) if magic jewel is dropped
-tempx2	= dr_mj2+1			; now another temporary
-temp2	= tempx2+1
 
-_end_zp	= temp2+1
+_end_zp	= dr_mj2+1
 
 ; these MUST be outside ZP, change start address accordingly
 irq_ptr	= $0200				; for Pocket compatibility
@@ -717,7 +715,7 @@ dr_l0:
 dr_1:
 		LDX select			; eeek
 		TYA					; no 'STY a, X' unfortunately
-		STA temp, X			; store position of void bottom
+		STA temp			; store position of void bottom
 dr_l1:
 			LDA field, Y	; check if there's a void there
 				BNE dr_2	; if not, we found something to drop
@@ -731,7 +729,7 @@ dr_l1:
 dr_2:
 ; actual drop, Y has coordinates of first tile above the void
 		LDX select			; reload player index
-		LDA temp, X			; reload stored position of void bottom
+		LDA temp			; reload stored position of void bottom
 		TAX					; X is destination, Y is source
 dr_l2:
 			LDA field, Y	; get floating tile
@@ -958,8 +956,8 @@ coldisp:
 ;	A = tile to print!
 ; affects tempx and all registers (not worth saving here as two entry points)
 tiledis:
-	LDX select				; eeeeek
-	STA tempx, X			; eeeeek
+;	LDX select				; eeeeek
+	STA tempx				; eeeeek
 	DEY						; let's be consistent...
 	TYA						; will be MSB...
 	AND #%01111000			; filter row
@@ -982,7 +980,7 @@ tiledis:
 	ASL						; times four bytes per column
 	ADC psum36, X			; first pixel in line is 4, perhaps with 36-byte offset, C known clear
 	STA ptr					; LSB is ready
-	LDA tempx, X			; eeeeek
+	LDA tempx				; eeeeek
 ; * external interface for next piece *
 ; input
 ;	A		tile index
@@ -1127,7 +1125,6 @@ ras_nw:
 ;	select	player [0,128]
 ; affects status, s_level, anim, phase, temp and all registers
 palmatoria:
-#echo global temp on palmatoria
 ; these will go after the last one
 ; id while changing status WTF
 		LDX select			; eeeeeeeeeek
@@ -1144,7 +1141,6 @@ dz_nw:
 dz_col:
 				PHX
 				PHY
-;				LDX select	; eeeeek
 				LDA temp	; get tile from here
 				JSR tiledis
 				PLY
@@ -1157,11 +1153,7 @@ dz_show:
 			CLC
 			ADC #2			; skip 2 sentinels
 			TAY				; next row index
-;			PHX
-;			LDX select		; needed
 			LDA temp
-;			PLX
-			CMP #0			; unfortunate due to PHX/PLX above
 			BNE dz_tile		; did tile type 0, thus last one
 		TYA
 		SEC
@@ -1192,7 +1184,6 @@ dz_show:
 ;	src		points to .sv24
 ; affects temp and all registers
 banner:
-#echo global temp on banner
 	LDX select				; needed b/c alternate entry
 	TYA						; unfortunately no 'STY a, X'
 	STA temp				; counter in memory
@@ -1427,7 +1418,6 @@ clearfield:
 	LDA #BANNER_PG			; two rows above centre
 	STA ptr+1
 	LDY #22					; banner rasters - 1
-#echo global temp on clearfield
 	STY temp
 clp_vloop:
 		LDY #23				; max horizontal offset
@@ -1499,21 +1489,22 @@ gc_copy:
 		BNE gc_copy
 	LDX select				; restore player index
 	LDA s_level, X			; check difficulty
-	STA tempx, X			; must store somewhere eeeek
+	STA tempx				; must store somewhere eeeek
 	LDY #JWL_COL			; now I need 3 jewels
 ; generate new jewel
 gc_jwl:
 		PHY
 		JSR rnd
 		TAY
-		LDX select			; retrieve player index HERE eeek
+#echo reposition LDX for magic jewel
 		LDA jwl_ix, Y		; make it valid tile index
 		PLY
 		CMP #MAGIC_JWL		; is the magic jewel
 		BNE gc_nomagic
-			LDA tempx, X		; check stored difficulty
+			LDA tempx		; check stored difficulty
 		BEQ gc_jwl			; not accepted in easy mode
 ; otherwise the magic jewel fills the whole column
+			LDX select		; retrieve player index HERE eeek
 			LDA #MAGIC_JWL	; magic tile index
 			STA next_c, X
 			STA next_c+1, X
