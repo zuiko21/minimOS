@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240815-2354
+; last modified 20240816-1058
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -697,7 +697,7 @@ not_fd:
 		STA status, X
 
 not_explode:
-; * * DROP STATUS, remove matched tiles and reposition whatever is on top * * TO DO
+; * * DROP STATUS, remove matched tiles and reposition whatever is on top * *
 	LDA status, X
 	CMP #STAT_DROP
 	BNE not_drop
@@ -710,7 +710,7 @@ dr_l0:
 			SBC #8			; up one row
 			TAY				; update index
 			CPY select		; until the top
-			BCC dr_l0		; notice signed comparison as may get below select
+			BCS dr_l0		; notice signed comparison as may get below select
 		BCS dr_yield		; otherwise we are done with this column
 dr_1:
 		LDX select			; eeek
@@ -728,7 +728,7 @@ dr_l1:
 			SBC #8			; up one row
 			TAY				; update index
 			CPY select		; until the top
-			BCC dr_l1		; notice signed comparison as may get below select
+			BCS dr_l1		; notice signed comparison as may get below select
 		BCS dr_yield		; otherwise nothing was suspended
 dr_2:
 ; actual drop, Y has coordinates of first tile above the void
@@ -755,7 +755,7 @@ dr_l2:
 			STZ field+8, X	; ...clearing shifted tile on matrix -- note offset!
 			PLY				; finally restore register
 			CPY select		; until the top
-			BCC dr_l2		; notice signed comparison as may get below select
+			BCS dr_l2		; notice signed comparison as may get below select
 		TXA
 		TAY					; will continue just above destination *** CHECK
 		BRA dr_l0
