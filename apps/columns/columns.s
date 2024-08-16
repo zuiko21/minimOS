@@ -77,6 +77,10 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 
 ; explosion rate
 #define	EXP_SPD		8
+
+; column drop rate
+#define	CDROP_T		2
+
 ; die animation period
 #define	DIE_PER		5
 
@@ -690,6 +694,9 @@ not_fd:
 			BNE exp_cl
 
 ; after animation is ended, turn into DROP status
+		LDA ticks
+		INC					; almost immediately
+		STA ev_dly, X
 		LDA #113			; first column on last visible row
 		ORA select			; eeeeeeeeeeeeeeeeeeeeeeeeek
 		STA phase, X		; store as external counter...
@@ -702,6 +709,11 @@ not_explode:
 	LDA status, X
 	CMP #STAT_DROP
 	BNE not_drop
+		LDA ticks
+		CMP ev_dly, X		; is it time?
+	BMI not_drop
+		ADC #CDROP_T		; add some delay for next
+		STA ev_dly, X		; perhaps do this at the end?
 		LDA #16				; just before first visible cell
 		ORA select			; add player
 		STA temp			; new custom limit
