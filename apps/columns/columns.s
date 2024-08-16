@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240816-1058
+; last modified 20240816-1113
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -701,6 +701,8 @@ not_explode:
 	LDA status, X
 	CMP #STAT_DROP
 	BNE not_drop
+bra exit_drop
+#echo NOW skip all drop
 		LDY anim, X			; get bottom coordinate
 dr_l0:
 			LDA field, Y	; check if there's a tile there
@@ -711,7 +713,7 @@ dr_l0:
 			TAY				; update index
 			CPY select		; until the top
 			BCS dr_l0		; notice signed comparison as may get below select
-		BCS dr_yield		; otherwise we are done with this column
+		BCC dr_yield		; otherwise we are done with this column
 dr_1:
 		LDX select			; eeek
 		TYA					; no 'STY a, X' unfortunately
@@ -719,17 +721,13 @@ dr_1:
 dr_l1:
 			LDA field, Y	; check if there's a void there
 				BNE dr_2	; if not, we found something to drop
-			PHY
-			LDA #0			; clear tile
-			JSR tiledis		; will clear this unused cell, not very efficient
-			PLY
 			TYA				; check index
 			SEC
 			SBC #8			; up one row
 			TAY				; update index
 			CPY select		; until the top
 			BCS dr_l1		; notice signed comparison as may get below select
-		BCS dr_yield		; otherwise nothing was suspended
+		BCC dr_yield		; otherwise nothing was suspended
 dr_2:
 ; actual drop, Y has coordinates of first tile above the void
 		LDX select			; reload player index
@@ -738,11 +736,11 @@ dr_2:
 dr_l2:
 			LDA field, Y	; get floating tile
 			STA field, X	; store below
+			LDA #0
+			STA field, Y	; delete dropped tile
 			PHY
-			PHX				; save previous registers
-			PLY				; Y <- X (destination)
-			PHY				; there must be more efficient ways...
-			JSR tiledis		; display moved tile
+			PHX
+			JSR tiledis		; and remove it from screen!
 			PLA				; actually stored X
 			SEC
 			SBC #8			; one row up (dest)
@@ -750,10 +748,7 @@ dr_l2:
 			PLA				; actually stored Y
 			SEC
 			SBC #8			; one row up (src)
-			PHX				; awful
-			TAX				; temporary use value from Y for...
-			STZ field+8, X	; ...clearing shifted tile on matrix -- note offset!
-			PLY				; finally restore register
+			TAY				; finally restore register
 			CPY select		; until the top
 			BCS dr_l2		; notice signed comparison as may get below select
 		TXA
@@ -767,6 +762,7 @@ dr_yield:
 		CMP #119			; all columns were done?
 	BNE not_drop			; not yet, yield execution to next player
 ; after finishing DROP, will ALWAYS turn into CHK again, until it resumes back to PLAY
+exit_drop:
 		LDA #STAT_CHK
 ;		LDX select
 		STA status, X
@@ -817,7 +813,9 @@ nx_nonmagic:
 		JSR magic_jewel		; pick one random colour
 		JSR col_upd			; and redisplay it
 cl_nonmagic:
-	TXA						; instead of LDA select	; eeek
+;	TXA						; instead of LDA select	; eeek
+	LDA select
+#echo take select not X
 	EOR #128				; toggle player in event manager
 	AND #128				; just in case...
 	STA select
@@ -958,9 +956,10 @@ coldisp:
 ; input
 ;	Y = position index
 ;	A = tile to print!
-; affects tempx, X and all registers (not worth saving here as two entry points)
+; affects tempx and all registers (not worth saving here as two entry points)
 tiledis:
-	STA tempx, X				; eeeeek
+	LDX select				; eeeeek
+	STA tempx, X			; eeeeek
 	DEY						; let's be consistent...
 	TYA						; will be MSB...
 	AND #%01111000			; filter row
@@ -973,16 +972,17 @@ tiledis:
 	LSR						; ...two pages per row
 	ADC #FIELD_PG			; place into screen 3, 12 rasters below
 	STA ptr+1				; first address is ready!
-	TYA
-	AND #128
-	TAX						; just sign as player index
+;	TYA
+;	AND #128
+;	TAX						; just sign as player index
+	LDX select				; seems simpler ***
 	TYA
 	AND #%00000111			; filter column
 	ASL
 	ASL						; times four bytes per column
 	ADC psum36, X			; first pixel in line is 4, perhaps with 36-byte offset, C known clear
 	STA ptr					; LSB is ready
-	LDA tempx, X				; eeeeek
+	LDA tempx, X			; eeeeek
 ; * external interface for next piece *
 ; input
 ;	A		tile index
@@ -1143,6 +1143,7 @@ dz_nw:
 dz_col:
 				PHX
 				PHY
+				LDX select	; eeeeek
 				LDA temp, X	; get tile from here
 				JSR tiledis
 				PLY
@@ -1495,13 +1496,14 @@ gc_copy:
 		BNE gc_copy
 	LDX select				; restore player index
 	LDA s_level, X			; check difficulty
-	STA tempx, X				; must store somewhere eeeek
+	STA tempx, X			; must store somewhere eeeek
 	LDY #JWL_COL			; now I need 3 jewels
 ; generate new jewel
 gc_jwl:
 		PHY
 		JSR rnd
 		TAY
+		LDX select			; retrieve player index HERE eeek
 		LDA jwl_ix, Y		; make it valid tile index
 		PLY
 		CMP #MAGIC_JWL		; is the magic jewel
@@ -1509,7 +1511,6 @@ gc_jwl:
 			LDA tempx, X		; check stored difficulty
 		BEQ gc_jwl			; not accepted in easy mode
 ; otherwise the magic jewel fills the whole column
-			LDX select		; retrieve player index
 			LDA #MAGIC_JWL	; magic tile index
 			STA next_c, X
 			STA next_c+1, X
