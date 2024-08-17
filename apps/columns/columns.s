@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240817-1309
+; last modified 20240817-1724
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -252,7 +252,7 @@ reset:
 	INX						; was $FF, now 0 is the index of compressed file entry
 	JSR dispic				; decompress!
 ; * init game stuff * actually whole ZP
-	LDX #0
+	LDX #0					; reset index, as dispic affects all
 rst_loop:
 		STZ 0, X			; was status, X [CMOS only, use TXA/STA otherwise]
 		INX
@@ -513,18 +513,18 @@ have_col:
 ; update magic flag!
 			CMP #MAGIC_JWL	; was it the magic jewel?
 			BNE mj_not		; no, leave flag alone
-				LDA #0
-				STA field, Y			; otherwise, do NOT store magic jewel
-				TYA						; get actual position for magic flag
-				STA dr_mj, X			; store flag
+;				LDA #0
+;				STA field, Y			; otherwise, do NOT store magic jewel
+;				TYA						; get actual position for magic flag
+;				STA dr_mj, X			; store flag
 ; *** hack to delete magic jewel without any blinking
-#echo magic jewel is deleted
-				STZ column, X
-				STZ column+1, X
-				STZ column+2, X			; clear current column
-				JSR coldisp				; display as none
-; ***
-				BRA mj_done				; do not bother with the remaining tiles
+;#echo magic jewel is deleted
+;				STZ column, X
+;				STZ column+1, X
+;				STZ column+2, X			; clear current column
+;				JSR coldisp				; display as none
+; *** end of hack ***
+;				BRA mj_done				; do not bother with the remaining tiles
 mj_not:
 ; continue storing column
 			LDA column+1, X				; second jewel
@@ -571,21 +571,11 @@ not_crash:
 	LDA status, X
 	CMP #STAT_CHK
 	BNE not_check
-; before anything else, clear marked tiles matrix
-		LDA #LAST_V			; number of entries to be cleared
-		TAY					; use as counter
-		ORA select			; use player as base
-		TAX					; index ready
-cfcl:
-			STZ mark, X		; clear entry for current player
-			DEX				; eeek
-			DEY
-			BPL cfcl		; 119*11 ~ 1300t, 850 µs or less
-		LDX select			; reload player index
-; then, check whether magic tile has dropped
+		JSR cl_mark			; before anything else, clear marked tiles matrix
+; * then, check whether magic tile has dropped *
 		LDA dr_mj, X		; get magic flag
 		BEQ no_mjwl			; nope, proceed with standard check
-; otherwise, look for whatever tile is under the fallen one and make all of their type disappear
+; if so, look for whatever tile is under the fallen one and make all of their type disappear
 			CLC
 			ADC #COL_HGT	; go three rows below from first tile
 			TAX				; index within field
@@ -609,6 +599,8 @@ no_mjmt:
 			STZ dr_mj, X	; reset magic flag
 			BRA do_match	; proceed to eliminate marked matches
 no_mjwl:
+; * magic jewel is handled, now check for any 3 or more matched tiles *
+;		JSR cl_mark			; clear marked tiles matrix
 
 bra not_match
 #echo will only blink for magic tiles
@@ -700,11 +692,9 @@ ex_loop:
 				LDX mark, Y	; was this one marked?
 				BEQ tile_noexp
 					PHA
-					PHX
 					PHY
 					JSR tiledis			; display frame
 					PLY
-					PLX
 					PLA
 tile_noexp:
 				DEY
@@ -1261,6 +1251,21 @@ go_nw:
 			INC ptr+1		; there was page crossing
 		BRA go_vloop
 go_exit:
+	RTS
+
+; ** clear match detection matrix **
+; affects A & Y, restores player at X
+cl_mark:
+	LDA #LAST_V				; number of entries to be cleared
+	TAY						; use as counter
+	ORA select				; use player as base
+	TAX						; index ready
+cfcl:
+		STZ mark, X			; clear entry for current player
+		DEX					; eeek
+		DEY
+		BPL cfcl			; 119*11 ~ 1300t, 850 µs or less
+	LDX select				; reload player index for good measure
 	RTS
 
 ; ** check for available movements **
