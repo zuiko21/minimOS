@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240817-1247
+; last modified 20240817-1309
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -46,6 +46,8 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 ; * screen addresses *
 #define	FIELD_PG	$63
 #define	BANNER_PG	$6C
+
+#define	RST_BYT		64
 
 ; * score display type *
 #define	DISP_LVL	0
