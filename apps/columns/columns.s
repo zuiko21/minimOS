@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240817-1724
+; last modified 20240817-1823
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -513,18 +513,17 @@ have_col:
 ; update magic flag!
 			CMP #MAGIC_JWL	; was it the magic jewel?
 			BNE mj_not		; no, leave flag alone
-;				LDA #0
-;				STA field, Y			; otherwise, do NOT store magic jewel
-;				TYA						; get actual position for magic flag
-;				STA dr_mj, X			; store flag
-; *** hack to delete magic jewel without any blinking
-;#echo magic jewel is deleted
-;				STZ column, X
-;				STZ column+1, X
-;				STZ column+2, X			; clear current column
-;				JSR coldisp				; display as none
+				LDA #0
+				STA field, Y			; otherwise, do NOT store magic jewel
+				TYA						; get actual position for magic flag
+				STA dr_mj, X			; store flag
+; *** hack to delete magic jewel, will do blinking from dr_mj ***
+				STZ column, X
+				STZ column+1, X
+				STZ column+2, X			; clear current column
+				JSR coldisp				; display as none
 ; *** end of hack ***
-;				BRA mj_done				; do not bother with the remaining tiles
+				BRA mj_done				; do not bother with the remaining tiles
 mj_not:
 ; continue storing column
 			LDA column+1, X				; second jewel
@@ -573,9 +572,18 @@ not_crash:
 	BNE not_check
 		JSR cl_mark			; before anything else, clear marked tiles matrix
 ; * then, check whether magic tile has dropped *
-		LDA dr_mj, X		; get magic flag
+		LDY dr_mj, X		; get magic flag
 		BEQ no_mjwl			; nope, proceed with standard check
 ; if so, look for whatever tile is under the fallen one and make all of their type disappear
+; but first mark it as deletion-pending for the flashing
+;			LDA #MAGIC_JWL
+;			STA field, Y	; store temporarily for proper animation
+;			STA field+ROW_OFF, Y
+;			STA field+ROW_OFF*2, Y
+;			STA mark, Y		; also as pending deletion
+;			STA mark+ROW_OFF, Y
+;			STA mark+ROW_OFF*2, Y
+			TYA				; recover index value
 			CLC
 			ADC #COL_HGT	; go three rows below from first tile
 			TAX				; index within field
@@ -596,7 +604,7 @@ no_mjmt:
 				CPX select	; already done all of this player's field?
 				BNE mjml	; if not, continue scanning
 ; anything else? X is already select!
-			STZ dr_mj, X	; reset magic flag
+no_mjwl2:
 			BRA do_match	; proceed to eliminate marked matches
 no_mjwl:
 ; * magic jewel is handled, now check for any 3 or more matched tiles *
@@ -712,6 +720,11 @@ exp_cl:
 			BEQ not_fd		; nope, leave it
 				STZ field, X			; otherwise, clear it
 not_fd:
+;#echo special clear for magic
+;			CMP #MAGIC_JWL	; special case for any remaining magic jewel
+;			BNE not_mj
+;				STZ field, X
+not_mj:
 			DEX				; next cell
 			CPX select		; until the top
 			BNE exp_cl
