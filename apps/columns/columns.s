@@ -601,8 +601,10 @@ no_mjwl:
 ; * magic jewel is handled, now check for any 3 or more matched tiles *
 		JSR cl_mark			; clear marked tiles matrix
 		JSR chkmatch		; check for horizontal matches
-#echo attempt to detect horizontal matches
-
+		BNE do_match		; found
+; should try other matches...
+	BRA not_match
+	
 ; entry point to shift from CHK to BLNK status
 do_match:
 		LDA #BLINKS			; usually 8 cycles
@@ -1289,6 +1291,7 @@ chkroom:
 ; ** check for matches! **
 chkmatch:
 ; scan for horizontal matches
+	STZ temp				; will be a flag
 	LDA select				; player index
 	ORA #LAST_V+1			; last used cell (plus one)
 	TAY						; read index
@@ -1296,6 +1299,7 @@ ch_try:
 		LDX #255			; -1, will be preincremented
 ch_skip:
 			DEY				; scan for blanks
+			CPY select		; eeek
 		BEQ ch_fin
 			INX				; count blanks
 			LDA field, Y	; get tile in field
@@ -1306,11 +1310,13 @@ ch_skip:
 ch_rpt:
 			INX
 			DEY				; advance backwards
+			CPY select		; eeeek
 			CMP field, Y	; same as pivot?
 			BEQ ch_rpt		; keep counting matches
 		CPX #JWL_COL		; at least 3-in-a-row? ** CHECK **
 		BCC ch_try			; not enough, try again
 ; compute score from number of matched tiles ** TO DO
+		STA temp			; compute match flag
 		TYA					; non-zero value, also saves current position
 ch_detect:
 			STA mark+1, Y	; mark them, one 'before' the first mismatch
@@ -1321,6 +1327,7 @@ ch_detect:
 		BNE ch_try			; and keep trying
 ch_fin:
 	LDX select
+	LDA temp				; return Z if no matches
 	RTS
 
 ; ** gamepad read **
