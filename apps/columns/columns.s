@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240816-1729
+; last modified 20240817-1220
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -24,6 +24,7 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 ; ****************************
 ; *** constant definitions ***
 ; ****************************
+; * controls *
 #define	PAD_BUTTONS
 #define	PAD_FIRE	%10000000
 #define	PAD_STRT	%01000000
@@ -35,20 +36,27 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 #define	PAD_DOWN	%00000010
 #define	PAD_RGHT	%00000001
 
+; * direction flag *
 #define	MOV_LEFT	2
 #define	MOV_RGHT	0
 #define	MOV_DOWN	1
 #define	MOV_ROT		3
 #define	MOV_NONE	3
 
+; * screen addresses *
 #define	FIELD_PG	$63
 #define	BANNER_PG	$6C
 
+; * score display type *
 #define	DISP_LVL	0
 #define	DISP_JWL	1
 #define	DISP_SCO	2
 
-; renumbered status values
+; * compressed pictures indices (always even) *
+#define	SC_INTRO	0
+#define	SC_FIELD	2
+
+; * renumbered status indices (best if even) *
 #define	STAT_OVER	0
 #define	STAT_LVL	2
 #define	STAT_PLAY	4
@@ -60,6 +68,7 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 #define	STAT_PAUS	16
 #define	STAT_DIE	18
 
+; * some game constants *
 #define	NUM_LVLS	3
 
 #define	JWL_COL		3
@@ -68,25 +77,51 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 
 #define	MAGIC_JWL	7
 
+; player array offset
+#define	PLYR_OFF	128
+
+; * tile/column size *
+; tile height in pixels
+#define	TIL_HGT		8
+; column height in pixels (actually JWL_COL*TIL_HGT)
+#define	COL_HGT		24
+; tile width in bytes
+#define	TIL_WDT		4
+
+; banner width in bytes
+#define	BAN_WDT		24
+
+; * notable positions on matrix *
+; last visible cell
+#define	LAST_V		118
+; bottom left cell (actually LAST_V-5)
+#define	BOTT_L		113
+; first visible row
+#define	VTOP_L		16
+; bottom sentinel row
+#define	LASTROW		120
+
+; starting column for new pieces
+#define	INIT_COL	4
+; offset between rows
+#define	ROW_OFF		8
+
+; * animation parameters *
 ; magic jewel animation speed (MUST be one less a power of two!)
 #define	MJ_UPD		15
-
-; cycles for blink animation and spacing
+; cycles for blink animation and spacing between them
 #define	BLINKS		8
 #define	BL_SPC		6
-
 ; explosion rate
 #define	EXP_SPD		8
-
 ; column drop rate
 #define	CDROP_T		2
-
 ; die animation period
 #define	DIE_PER		5
 
+; * other timings *
 ; mask for down key repeat rate
 #define	DMASK		7
-
 ; peñonazo cycles and time between pulses
 #define	P_CYC		5
 #define	P_PER		2
@@ -118,15 +153,15 @@ select	= temp+1			; player index for main loop
 bcd_lim	= select+1
 colour	= bcd_lim+1
 seed	= colour+1			; PRNG seed
-; may let these at $FC for minimOS compliance
-src		= seed+2			; $FC
-ptr		= src+2				; $FE
+; * these NEED to be on zeropage *
+src		= seed+2
+ptr		= src+2
 ; these save a few bytes and cycles in ZP
 ; irq_ptr and ticks(h) no longer here
 kbd_ok	= ptr+2				; if non-zero, supported keyboard has been detected
 col_sel	= kbd_ok+1			; keyboard column counter
 ; player 2 data for convenience
-status2	= 192				; player status [0=game over, 1=level select, 2=playing, 3=flashing?]
+status2	= status+PLYR_OFF	; player status (this is usually 192)
 speed2	= status2+1			; 7-bit value between events (127 at level 0, halving after that, but never under 5?)
 ev_dly2	= speed2+1			; 8-bit counter for next event (ditto)
 s_level2= ev_dly2+1			; selected difficulty
@@ -194,11 +229,7 @@ rom_start:
 	.word	$BA00			; time, 23.16		1011 1-010 000-0 0000
 	.word	$590C			; date, 2024/8/12	0101 100-1 000-0 1100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
-#ifdef	POCKET
 	.word	file_end-rom_start			; actual executable size
-#else
-	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
-#endif
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
 
 reset:
@@ -211,6 +242,7 @@ reset:
 	LDA #$38				; colour mode, screen 3, RGB
 	STA IO8attr				; set video mode
 ; show splash screen
+;	LDX #SC_INTRO			; actually 0
 	INX						; was $FF, now 0 is the index of compressed file entry
 	JSR dispic				; decompress!
 ; * init game stuff * actually whole ZP
@@ -251,7 +283,7 @@ no_kbd:
 	STY seed+1				; quite random seed
 	STX select				; save selected player
 ; display game field
-	LDX #2					; set compressed file index
+	LDX #SC_FIELD			; set compressed file index
 	JSR dispic				; decompress!
 ; then level selection according to player
 	LDX select				; retrieve selected player
@@ -458,7 +490,7 @@ do_move:
 				STA status, X			; eeeeeeeeeeeeeeeeeeeeek
 ; prepare loops for the new status
 				TXA						; get player index
-				ORA #113				; 14*8+1 is first column in new coordinates, plus player offset
+				ORA #BOTT_L				; 14*8+1 is first column in new coordinates, plus player offset
 				STA phase, X			; eeeek
 				LDY #15					; needs 16 iterations non-visible rows
 				STY anim, X
@@ -534,7 +566,7 @@ not_crash:
 	CMP #STAT_CHK
 	BNE not_check
 ; before anything else, clear marked tiles matrix
-		LDA #118			; number of entries to be cleared
+		LDA #LAST_V			; number of entries to be cleared
 		TAY					; use as counter
 		ORA select			; use player as base
 		TAX					; index ready
@@ -549,14 +581,14 @@ cfcl:
 		BEQ no_mjwl			; nope, proceed with standard check
 ; otherwise, look for whatever tile is under the fallen one and make all of their type disappear
 			CLC
-			ADC #24			; go three rows below from first tile
+			ADC #COL_HGT	; go three rows below from first tile
 			TAX				; index within field
 			BIT field, X	; check what was under the magic column
 		BMI no_mjwl			; if sentinel, we are at the very bottom, do nothing
 ; special case, mark every tile of the same type of that just below the magic jewel
 			LDY field, X	; take note of desired type of jewel
 			LDA select		; player as last position
-			ORA #118		; start from last useable cell, backwards
+			ORA #LAST_V		; start from last useable cell, backwards
 			TAX				; index ready
 			TYA				; pivot element ready
 mjml:
@@ -611,7 +643,7 @@ not_check:
 			ROR dr_mj, X	; insert C into d7 as flag
 ; scan all marked tiles, show or hide depending on dr_mj.D7 flag!
 			TXA					; player index
-			ORA #118			; last position
+			ORA #LAST_V			; last position
 			TAY					; index ready (as array index)
 mk_cl:
 				LDA mark, Y		; marked for deletion?
@@ -660,7 +692,7 @@ not_blink:
 ; do explode animation
 			TAX				; keep current frame
 			LDA select		; get player index
-			ORA #118		; last visible tile
+			ORA #LAST_V		; last visible tile
 			TAY				; use as index
 			TXA				; frame to be saved
 ex_loop:
@@ -682,7 +714,7 @@ tile_noexp:
 ; delete marked pieces
 end_expl:
 		TXA					; get player index
-		ORA #118			; last visible piece
+		ORA #LAST_V			; last visible piece
 		TAX					; use as index, STZ-savvy
 exp_cl:
 			LDA mark, X		; is this marked?
@@ -697,7 +729,7 @@ not_fd:
 		LDA ticks
 		INC					; almost immediately
 		STA ev_dly, X
-		LDA #113			; first column on last visible row
+		LDA #BOTT_L			; first column on last visible row
 		ORA select			; eeeeeeeeeeeeeeeeeeeeeeeeek
 		STA phase, X		; store as external counter...
 		STA anim, X			; ...and as current position
@@ -714,7 +746,7 @@ not_explode:
 	BMI not_drop
 		ADC #CDROP_T		; add some delay for next
 		STA ev_dly, X		; perhaps do this at the end?
-		LDA #16				; just before first visible cell
+		LDA #VTOP_L				; just before first visible cell
 		ORA select			; add player
 		STA temp			; new custom limit
 		LDY anim, X			; get bottom coordinate
@@ -723,7 +755,7 @@ dr_l0:
 				BEQ dr_1	; if not, scan that void
 			TYA				; check index
 			SEC
-			SBC #8			; up one row
+			SBC #ROW_OFF	; up one row
 			TAY				; update index
 			CPY temp		; until the top
 			BPL dr_l0		; no longer signed comparison
@@ -735,7 +767,7 @@ dr_l1:
 				BNE dr_2	; if not, we found something to drop
 			TYA				; check index
 			SEC
-			SBC #8			; up one row
+			SBC #ROW_OFF	; up one row
 			TAY				; update index
 			CPY temp		; until the top
 			BPL dr_l1		; no longer signed comparison
@@ -745,7 +777,7 @@ dr_2:
 		TYA
 		TAX					; put Y on X
 		LDY tempx			; now Y is destination, X is source
-		LDA #16
+		LDA #VTOP_L
 		ORA select			; regenerate custom limit
 		STA temp			; as tempx will be affected
 dr_l2:
@@ -757,11 +789,11 @@ dr_l2:
 			JSR tiledis		; and remove deleted one from screen!
 			PLA				; actually stored Y
 			SEC
-			SBC #8			; one row up (dest)
+			SBC #ROW_OFF	; one row up (dest)
 			TAY				; restore register
 			PLA				; actually stored X
 			SEC
-			SBC #8			; one row up (src)
+			SBC #ROW_OFF	; one row up (src)
 			TAX				; finally restore register
 			CPX temp		; until the top
 			BPL dr_l2		; no longer signed comparison
@@ -773,8 +805,8 @@ dr_yield:
 		INC phase, X		; advance column
 		LDA phase, X
 		STA anim, X			; update counter, just in case
-		AND #127			; remove D7 (player bit)
-		CMP #119			; all columns were done?
+		AND #PLYR_OFF-1		; actually 127, remove D7 (player bit)
+		CMP #LAST_V+1		; all columns were done?
 	BNE not_drop			; not yet, yield execution to next player
 ; after finishing DROP, will ALWAYS turn into CHK again, until it resumes back to PLAY
 exit_drop:
@@ -828,7 +860,7 @@ nx_nonmagic:
 		JSR coldisp			; and redisplay it
 cl_nonmagic:
 	TXA						; instead of LDA select	; eeek
-	EOR #128				; toggle player in event manager
+	EOR #PLYR_OFF				; toggle player in event manager
 	STA select
 #ifdef	DEBUG
 	LDA IO8attr				; get current video mode
@@ -923,7 +955,7 @@ col_upd:
 	JSR tiledis				; show top tile
 	PLA
 	CLC
-	ADC #8
+	ADC #ROW_OFF
 	PHA
 	TAY
 	LDX select
@@ -931,7 +963,7 @@ col_upd:
 	JSR tiledis				; middle one
 	PLA
 	CLC
-	ADC #8
+	ADC #ROW_OFF
 	TAY						; last one does not need to be saved
 	LDX select
 	LDA #0					; *
@@ -947,7 +979,7 @@ coldisp:
 	JSR tiledis				; show top tile
 	PLA
 	CLC
-	ADC #8
+	ADC #ROW_OFF
 	PHA
 	TAY
 	LDX select
@@ -955,7 +987,7 @@ coldisp:
 	JSR tiledis				; middle one
 	PLA
 	CLC
-	ADC #8
+	ADC #ROW_OFF
 	TAY						; last one does not need to be saved
 	LDX select
 	LDA column+2, X
@@ -974,17 +1006,17 @@ tiledis:
 	DEY						; let's be consistent...
 	TYA						; will be MSB...
 	AND #%01111000			; filter row
-	CMP #120
+	CMP #LASTROW
 		BCS td_exit			; last row (15) is not-visible
-	CMP #16
+	CMP #VTOP_L
 		BCC td_exit			; first two rows aren't either
-	SBC #16					; first visible row is 2 (C known set)
+	SBC #VTOP_L					; first visible row is 2 (C known set)
 	LSR
 	LSR						; ...two pages per row
 	ADC #FIELD_PG			; place into screen 3, 12 rasters below
 	STA ptr+1				; first address is ready!
 ;	TYA
-;	AND #128
+;	AND #PLYR_OFF
 ;	TAX						; just sign as player index
 	LDX select				; seems simpler ***
 	TYA
@@ -1021,9 +1053,9 @@ tp_nm:
 	LDA src+1
 	ADC #>sprites			; ditto for MSB
 	STA src+1				; pointer complete!
-	LDX #8					; number of rasters
+	LDX #TIL_HGT			; number of rasters
 s_rloop:
-		LDY #3				; max index per raster
+		LDY #TIL_WDT-1		; max index per raster
 s_bloop:
 			LDA (src), Y	; get sprite data...
 			AND colour
@@ -1032,7 +1064,7 @@ s_bloop:
 			BPL s_bloop		; for all 4 bytes in raster
 		LDA src
 		CLC
-		ADC #4				; next raster in sprite file
+		ADC #TIL_WDT		; next raster in sprite file
 		STA src
 		BCC s_rnw
 			INC src+1		; in case of page crossing
@@ -1205,7 +1237,7 @@ banner:
 	LDA #BANNER_PG			; two rows above centre
 	STA ptr+1
 go_vloop:
-		LDY #23				; max horizontal offset
+		LDY #BAN_WDT-1		; max horizontal offset
 go_hloop:
 			LDA (src), Y
 			STA (ptr), Y
@@ -1215,7 +1247,7 @@ go_hloop:
 	BMI go_exit
 		LDA src
 		CLC
-		ADC #24				; next raster in image
+		ADC #BAN_WDT		; next raster in image
 		STA src
 		BCC go_nw
 			INC src+1
@@ -1245,7 +1277,7 @@ chkroom:
 chkmatch:
 ; scan for horizontal matches
 	LDA select				; player index
-	ORA #119				; last used cell (plus one)
+	ORA #LAST_V+1				; last used cell (plus one)
 	TAY						; read index
 ch_try:
 		LDX #255			; -1, will be preincremented
@@ -1317,7 +1349,7 @@ wait_s:
 	BNE release
 		BIT pad1val
 		BEQ wait_s
-	LDX #128				; if arrived here, was player 2
+	LDX #PLYR_OFF				; if arrived here, was player 2
 release:
 ; must wait for release also
 		BIT pad0val
@@ -1452,7 +1484,7 @@ clp_end:
 	JSR gen_col				; create new column, display it and init coordinates
 	JSR gen_col				; needs another one for the current jewel!
 ; init matrix
-	LDY #118				; eeeeeeek
+	LDY #LAST_V				; eeeeeeek
 	TYA						; last visible tile index * new way
 	ORA select				; include player bit d7
 	TAX						; use as index, should be recovered later
@@ -1462,7 +1494,7 @@ cl_loop:
 		DEY					; one less
 		BPL cl_loop
 ; sentinels won't ever change, can be always set for both players!
-	LDY #16					; first visible row index
+	LDY #VTOP_L					; first visible row index
 cl_sent:
 		LDA #$FF			; invalid tile
 		STA field, Y		; left sentinel
@@ -1471,11 +1503,11 @@ cl_sent:
 		STA field2+7, Y
 		TYA
 		CLC
-		ADC #8				; next row
+		ADC #ROW_OFF		; next row
 		TAY
 		BPL cl_sent
 ; bottom row of sentinels
-	LDY #121
+	LDY #LASTROW+1
 	LDA #$FF				; invalid tile
 sfh_loop:
 		STA field, Y
@@ -1531,7 +1563,7 @@ gc_nomagic:
 was_magic:
 	LDX select				; get player eeeek
 	TXA						; I need BOTH registers eeeeek
-	ORA #4					; first row (not visible), fourth column of every player
+	ORA #INIT_COL			; first row (not visible), fourth column of every player
 	STA posit, X			; position set as matrix index
 	STA oldposit, X			; eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeek
 ;	JMP nextcol				; show new column and return
@@ -1847,20 +1879,23 @@ file_end:					; for pocket format
 ; ***************************
 ; *** ROM padding and end ***
 ; ***************************
-	.dsb	$FFD6-*, $FF		; ROM fill
-	.asc	"DmOS"				; minimOS-compliant signature
+	.dsb	$FFD6-*, $FF	; ROM fill
+; standard ROM tail
+	.asc	"DmOS"			; minimOS-compliant signature
+; interrupt handlers fit here
 irq_hndl:
-	JMP (irq_ptr)				; standard IRQ handler @ $FFDA
+	JMP (irq_ptr)			; standard IRQ handler @ $FFDA
 nmi_hndl:
-	JMP (nmi_ptr)				; standard NMI handler @ $FFDD
+	JMP (nmi_ptr)			; standard NMI handler @ $FFDD
+	.byt	$FF				; some padding
 switch:
-	JMP ($FFFC)					; devCart switching support $FFE1
+	JMP ($FFFC)				; devCart switching support $FFE1
 
-	.dsb	$FFFA-*, $FF		; ROM fill, not using checksum
+	.dsb	$FFFA-*, $FF	; ROM fill, not using checksum
 ; 6502 hardware vectors
-	.word	nmi_hndl			; NMI as warm reset
+	.word	nmi_hndl		; NMI as warm reset
 	.word	reset
 	.word	irq_hndl
 
-file_end:						; should be $10000
+file_end:					; should be $10000 for ROM images
 #endif
