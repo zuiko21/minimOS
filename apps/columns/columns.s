@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240817-1823
+; last modified 20240817-1925
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -576,13 +576,10 @@ not_crash:
 		BEQ no_mjwl			; nope, proceed with standard check
 ; if so, look for whatever tile is under the fallen one and make all of their type disappear
 ; but first mark it as deletion-pending for the flashing
-;			LDA #MAGIC_JWL
-;			STA field, Y	; store temporarily for proper animation
-;			STA field+ROW_OFF, Y
-;			STA field+ROW_OFF*2, Y
-;			STA mark, Y		; also as pending deletion
-;			STA mark+ROW_OFF, Y
-;			STA mark+ROW_OFF*2, Y
+			STA mark, Y		; only as pending deletion, value is irrelevant
+			STA mark+ROW_OFF, Y
+			STA mark+ROW_OFF*2, Y
+#echo try marking without field
 			TYA				; recover index value
 			CLC
 			ADC #COL_HGT	; go three rows below from first tile
@@ -653,6 +650,9 @@ mk_cl:
 					BIT dr_mj, X		; time to display or hide?
 					BPL bl_hide
 						LDA field, Y	; if display, get tile index
+#echo if marked, but field is zero, it's magic jewel
+					BNE bl_hide
+						LDA #MAGIC_JWL	; magic jewel is not stored
 bl_hide:
 					PHY
 					JSR tiledis			; update tile on screen
