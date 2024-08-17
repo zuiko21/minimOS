@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240817-1959
+; last modified 20240817-2122
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -599,10 +599,9 @@ no_mjwl2:
 			BRA do_match	; proceed to eliminate marked matches
 no_mjwl:
 ; * magic jewel is handled, now check for any 3 or more matched tiles *
-;		JSR cl_mark			; clear marked tiles matrix
-
-bra not_match
-#echo will only blink for magic tiles
+		JSR cl_mark			; clear marked tiles matrix
+		JSR chkmatch		; check for horizontal matches
+#echo attempt to detect horizontal matches
 
 ; entry point to shift from CHK to BLNK status
 do_match:
@@ -1321,11 +1320,7 @@ ch_detect:
 		TAY					; restore index
 		BNE ch_try			; and keep trying
 ch_fin:
-; now should check for vertical and diagonal matches... TO DO
-; eventually, switch into BLINK mode
-	LDA #STAT_BLNK
 	LDX select
-	STA status, X
 	RTS
 
 ; ** gamepad read **
