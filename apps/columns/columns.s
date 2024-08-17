@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240817-1925
+; last modified 20240817-1959
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -517,12 +517,6 @@ have_col:
 				STA field, Y			; otherwise, do NOT store magic jewel
 				TYA						; get actual position for magic flag
 				STA dr_mj, X			; store flag
-; *** hack to delete magic jewel, will do blinking from dr_mj ***
-				STZ column, X
-				STZ column+1, X
-				STZ column+2, X			; clear current column
-				JSR coldisp				; display as none
-; *** end of hack ***
 				BRA mj_done				; do not bother with the remaining tiles
 mj_not:
 ; continue storing column
@@ -579,13 +573,12 @@ not_crash:
 			STA mark, Y		; only as pending deletion, value is irrelevant
 			STA mark+ROW_OFF, Y
 			STA mark+ROW_OFF*2, Y
-#echo try marking without field
 			TYA				; recover index value
 			CLC
 			ADC #COL_HGT	; go three rows below from first tile
 			TAX				; index within field
 			BIT field, X	; check what was under the magic column
-		BMI no_mjwl			; if sentinel, we are at the very bottom, do nothing
+		BMI no_mjwl2		; if sentinel, we are at the very bottom, do nothing... just flashing
 ; special case, mark every tile of the same type of that just below the magic jewel
 			LDY field, X	; take note of desired type of jewel
 			LDA select		; player as last position
@@ -602,6 +595,7 @@ no_mjmt:
 				BNE mjml	; if not, continue scanning
 ; anything else? X is already select!
 no_mjwl2:
+			LDX select		; needed only when is at the bottom
 			BRA do_match	; proceed to eliminate marked matches
 no_mjwl:
 ; * magic jewel is handled, now check for any 3 or more matched tiles *
@@ -650,9 +644,8 @@ mk_cl:
 					BIT dr_mj, X		; time to display or hide?
 					BPL bl_hide
 						LDA field, Y	; if display, get tile index
-#echo if marked, but field is zero, it's magic jewel
-					BNE bl_hide
-						LDA #MAGIC_JWL	; magic jewel is not stored
+					BNE bl_hide			; if marked, but field is zero, it's magic jewel
+						LDA #MAGIC_JWL	; magic jewel is not stored, thus provide constant index
 bl_hide:
 					PHY
 					JSR tiledis			; update tile on screen
@@ -720,11 +713,6 @@ exp_cl:
 			BEQ not_fd		; nope, leave it
 				STZ field, X			; otherwise, clear it
 not_fd:
-;#echo special clear for magic
-;			CMP #MAGIC_JWL	; special case for any remaining magic jewel
-;			BNE not_mj
-;				STZ field, X
-not_mj:
 			DEX				; next cell
 			CPX select		; until the top
 			BNE exp_cl
@@ -850,13 +838,20 @@ st5_rls:
 not_pause:
 ; * * * all feasible stati checked, switch player thread * * *
 next_player:
-; check possible colour animation on magic jewel
+; check possible colour animation on magic jewel...
+	LDA ticks				; check timing!
+	AND #MJ_UPD				; about every 1/15 s
+		BNE cl_nonmagic		; skip if not the time
+; ...if it's the time to do so
 	LDA next_c, X
 	CMP #MAGIC_JWL			; is the magic jewel next?
 	BNE nx_nonmagic
 		JSR magic_jewel		; pick one random colour
 		JSR nextcol			; and redisplay it
 nx_nonmagic:
+	LDA status, X			; same for the jewel in the field...
+	CMP #STAT_PLAY
+		BCC cl_nonmagic		; ...but only while playing or higher
 	LDA column, X
 	CMP #MAGIC_JWL			; is the magic jewel on the field?
 	BNE cl_nonmagic
@@ -1614,9 +1609,6 @@ nc_loop:
 ; ** magic jewel colour animation **
 ; affects colour and all registers
 magic_jewel:
-	LDA ticks				; check timing!
-	AND #MJ_UPD				; about every 1/15 s
-		BNE mj_end			; skip if not the time
 	JSR rnd
 	TAX
 	LDY jwl_ix, X			; get some valid colour index
@@ -1624,7 +1616,6 @@ magic_jewel:
 	LDY select
 	STX mag_col, Y			; set colour mask for magic jewel only
 	LDX select				; restore as usual
-mj_end:
 	RTS
 
 ; **********************
