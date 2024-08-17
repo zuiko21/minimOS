@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240817-1220
+; last modified 20240817-1247
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -88,8 +88,10 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 ; tile width in bytes
 #define	TIL_WDT		4
 
-; banner width in bytes
+; banner width in bytes (actually TIL_WDT*ROW_WDT)
 #define	BAN_WDT		24
+; banner height in pixels
+#define	BAN_HGT		22
 
 ; * notable positions on matrix *
 ; last visible cell
@@ -105,6 +107,8 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 #define	INIT_COL	4
 ; offset between rows
 #define	ROW_OFF		8
+; visible cells in row
+#define	ROW_WDT		6
 
 ; * animation parameters *
 ; magic jewel animation speed (MUST be one less a power of two!)
@@ -224,10 +228,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$100B			; 1.0a11		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$100C			; 1.0a12		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$BA00			; time, 23.16		1011 1-010 000-0 0000
-	.word	$590C			; date, 2024/8/12	0101 100-1 000-0 1100
+	.word	$6600			; time, 12.48		0110 0-110 000-0 0000
+	.word	$5911			; date, 2024/8/17	0101 100-1 000-1 0001
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -521,10 +525,10 @@ have_col:
 				BRA mj_done				; do not bother with the remaining tiles
 mj_not:
 ; continue storing column
-			LDA column+1, X	; second jewel
-			STA field+8, Y	; into next row
-			LDA column+2, X	; last jewel
-			STA field+16, Y
+			LDA column+1, X				; second jewel
+			STA field+ROW_OFF, Y		; into next row
+			LDA column+2, X				; last jewel
+			STA field+ROW_OFF*2, Y
 mj_done:
 			JSR gen_col		; another piece
 			PLY
@@ -604,11 +608,6 @@ no_mjmt:
 			BRA do_match	; proceed to eliminate marked matches
 no_mjwl:
 
-; as a placeholder, turn RANDOMLY into BLINK status, as some times will do
-;		JSR rnd
-;		BIT seed			; check some generated value
-;	BPL not_match
-;	BVC not_match			; only 25% chance of going into BLINK
 bra not_match
 #echo will only blink for magic tiles
 
@@ -642,24 +641,24 @@ not_check:
 			LSR				; C set means visible
 			ROR dr_mj, X	; insert C into d7 as flag
 ; scan all marked tiles, show or hide depending on dr_mj.D7 flag!
-			TXA					; player index
-			ORA #LAST_V			; last position
-			TAY					; index ready (as array index)
+			TXA				; player index
+			ORA #LAST_V		; last position
+			TAY				; index ready (as array index)
 mk_cl:
-				LDA mark, Y		; marked for deletion?
+				LDA mark, Y	; marked for deletion?
 				BEQ not_mark
-					LDA #0					; hidden by default
-					BIT dr_mj, X			; time to display or hide?
+					LDA #0				; hidden by default
+					BIT dr_mj, X		; time to display or hide?
 					BPL bl_hide
-						LDA field, Y		; if display, get tile index
+						LDA field, Y	; if display, get tile index
 bl_hide:
 					PHY
-					JSR tiledis				; update tile on screen
+					JSR tiledis			; update tile on screen
 					PLY
-					LDX select				; eeeeeek * worth doing on tiledis?
+					LDX select			; eeeeeek * worth doing on tiledis?
 not_mark:
 				DEY
-				CPY select		; all done?
+				CPY select	; all done?
 				BNE mk_cl
 ; anything else?
 			DEC anim, X		; one less step
@@ -746,7 +745,7 @@ not_explode:
 	BMI not_drop
 		ADC #CDROP_T		; add some delay for next
 		STA ev_dly, X		; perhaps do this at the end?
-		LDA #VTOP_L				; just before first visible cell
+		LDA #VTOP_L			; just before first visible cell
 		ORA select			; add player
 		STA temp			; new custom limit
 		LDY anim, X			; get bottom coordinate
@@ -826,7 +825,7 @@ not_drop:
 			STA ev_dly, X	; update time for next event
 			JSR palmatoria	; will switch to STAT_OVER when finished * might be inlined
 not_die:
-; * * PAUS STATUS, pause * * TO DO
+; * * PAUSe STATUS * * TO DO
 	LDX select
 	LDA status, X			; ...just in case
 	CMP #STAT_PAUS			; in pause
@@ -839,7 +838,7 @@ not_die:
 st5_rls:
 		LDA padlast, X		; check previous
 		BIT #PAD_STRT		; just released START?
-		BNE not_pause			; nope, just continue
+		BNE not_pause		; nope, just continue
 ; ** ** TO DO * otherwise, get screen back * TO DO ** **
 			LDA #STAT_PLAY
 			STA status, X	; restore play mode
@@ -857,10 +856,10 @@ nx_nonmagic:
 	CMP #MAGIC_JWL			; is the magic jewel on the field?
 	BNE cl_nonmagic
 		JSR magic_jewel		; pick one random colour
-		JSR coldisp			; and redisplay it
+		JSR coldisp			; and redisplay it eeek
 cl_nonmagic:
-	TXA						; instead of LDA select	; eeek
-	EOR #PLYR_OFF				; toggle player in event manager
+	TXA						; instead of LDA select
+	EOR #PLYR_OFF			; toggle player in event manager
 	STA select
 #ifdef	DEBUG
 	LDA IO8attr				; get current video mode
@@ -1071,7 +1070,7 @@ s_bloop:
 s_rnw:
 		LDA ptr
 		CLC
-		ADC #64				; next raster in screen
+		ADC #RST_BYT		; next raster in screen
 		STA ptr
 		BCC s_wnw
 			INC ptr+1		; in case of page crossing
@@ -1148,7 +1147,7 @@ n_rast:
 		STA (ptr), Y		; copy glyph raster into screen
 		TYA
 		CLC
-		ADC #63				; one raster minus 2 bytes of a number
+		ADC #RST_BYT-1		; one raster minus 2? bytes of a number
 		TAY
 		BCC ras_nw
 			INC ptr+1
@@ -1173,7 +1172,7 @@ palmatoria:
 ; these will go after the last one
 ; id while changing status WTF
 		LDX select			; eeeeeeeeeek
-		LDA #7				; initial explosion tile - 1
+		LDA #MAGIC_JWL		; initial explosion tile - 1
 		LDY phase, X
 dz_tile:
 			INC				; next tile
@@ -1182,7 +1181,7 @@ dz_tile:
 				LDA #0		; 0, then exit
 dz_nw:
 			STA temp		; will hold current tile
-			LDX #6			; six columns
+			LDX #ROW_OFF-2	; six columns
 dz_col:
 				PHX
 				PHY
@@ -1202,7 +1201,7 @@ dz_show:
 			BNE dz_tile		; did tile type 0, thus last one
 		TYA
 		SEC
-		SBC #40				; 5 rows back
+		SBC #ROW_OFF*5		; 5 rows back
 		LDX select
 		STA phase, X		; store for next call!
 ; no wait here, will be called every 10 interrupts
@@ -1254,7 +1253,7 @@ go_hloop:
 go_nw:
 		LDA ptr
 		CLC
-		ADC #64				; next raster in screen
+		ADC #RST_BYT		; next raster in screen
 		STA ptr
 		BCC go_vloop
 			INC ptr+1		; there was page crossing
@@ -1268,8 +1267,8 @@ chkroom:
 	PHY						; keep desired movement
 	LDY posit, X			; desired position of topmost tile, note already contains player offset
 	LDA field, Y			; is it clear?
-	ORA field+8, Y			; what about second tile?
-	ORA field+16, Y			; and bottom one?
+	ORA field+ROW_OFF, Y	; what about second tile?
+	ORA field+ROW_OFF*2, Y	; and bottom one?
 	PLY
 	RTS
 
@@ -1277,7 +1276,7 @@ chkroom:
 chkmatch:
 ; scan for horizontal matches
 	LDA select				; player index
-	ORA #LAST_V+1				; last used cell (plus one)
+	ORA #LAST_V+1			; last used cell (plus one)
 	TAY						; read index
 ch_try:
 		LDX #255			; -1, will be preincremented
@@ -1287,7 +1286,7 @@ ch_skip:
 			INX				; count blanks
 			LDA field, Y	; get tile in field
 			BEQ ch_skip		; if blank, keep skipping
-		CPX #6				; did six consecutive blanks? ** CHECK **
+		CPX #ROW_WDT		; did six consecutive blanks? ** CHECK **
 	BEQ ch_fin				; all done, then
 		LDX #0				; reset match counter
 ch_rpt:
@@ -1349,7 +1348,7 @@ wait_s:
 	BNE release
 		BIT pad1val
 		BEQ wait_s
-	LDX #PLYR_OFF				; if arrived here, was player 2
+	LDX #PLYR_OFF			; if arrived here, was player 2
 release:
 ; must wait for release also
 		BIT pad0val
@@ -1414,7 +1413,7 @@ sel_ban:
 	LDX #>levelsel
 	STY src
 	STX src+1				; set origin pointer
-	LDY #22					; raster counter
+	LDY #BAN_HGT			; raster counter
 	JMP banner				; display and return
 
 ; ** mark one row as inverted **
@@ -1432,7 +1431,7 @@ inv_row:
 	STA ptr+1
 	LDX #7					; number of rasters
 ir_rloop:
-		LDY #23				; max. horiz offset 
+		LDY #BAN_WDT-1		; max. horiz offset 
 ir_bloop:
 			LDA (ptr), Y
 			EOR #$FF		; invert this byte
@@ -1441,7 +1440,7 @@ ir_bloop:
 			BPL ir_bloop
 		LDA ptr
 		CLC
-		ADC #64				; next raster in screen
+		ADC #RST_BYT		; next raster in screen
 		STA ptr
 		BCC ir_nw
 			INC ptr+1
@@ -1462,10 +1461,10 @@ clearfield:
 	STA ptr
 	LDA #BANNER_PG			; two rows above centre
 	STA ptr+1
-	LDY #22					; banner rasters - 1
+	LDY #BAN_HGT			; banner rasters - 1?
 	STY temp
 clp_vloop:
-		LDY #23				; max horizontal offset
+		LDY #BAN_WDT-1		; max horizontal offset
 		LDA #0				; will clear area
 clp_hloop:
 			STA (ptr), Y
@@ -1475,7 +1474,7 @@ clp_hloop:
 	BMI clp_end				; no more rasters
 		LDA ptr
 		CLC
-		ADC #64				; next raster in screen
+		ADC #RST_BYT		; next raster in screen
 		STA ptr
 		BCC clp_vloop
 			INC ptr+1		; there was page crossing
@@ -1494,13 +1493,13 @@ cl_loop:
 		DEY					; one less
 		BPL cl_loop
 ; sentinels won't ever change, can be always set for both players!
-	LDY #VTOP_L					; first visible row index
+	LDY #VTOP_L				; first visible row index
 cl_sent:
-		LDA #$FF			; invalid tile
-		STA field, Y		; left sentinel
-		STA field+7, Y		; right sentinel
-		STA field2, Y		; sentinels (2nd player)
-		STA field2+7, Y
+		LDA #$FF						; invalid tile
+		STA field, Y					; left sentinel
+		STA field+ROW_WDT+1, Y			; right sentinel
+		STA field2, Y					; sentinels (2nd player)
+		STA field2+ROW_WDT+1, Y
 		TYA
 		CLC
 		ADC #ROW_OFF		; next row
@@ -1623,7 +1622,7 @@ match_snd:
 	LDA m_tone+1, Y			; ditto for second one, a semitone lower
 	JSR tone
 	PLY
-	LDA m_tone+1, Y			; last tone
+	LDA m_tone, Y			; last tone
 ;	JMP tone				; will fall and return
 
 tone:
