@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240817-2122
+; last modified 20240818-1708
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -1293,9 +1293,10 @@ chkmatch:
 ; scan for horizontal matches
 	STZ temp				; will be a flag
 	LDA select				; player index
-	ORA #LAST_V+1			; last used cell (plus one)
+	ORA #LAST_V				; last used cell (will add one later)
 	TAY						; read index
 ch_try:
+		INY					; eeek
 		LDX #255			; -1, will be preincremented
 ch_skip:
 			DEY				; scan for blanks
@@ -1311,12 +1312,13 @@ ch_rpt:
 			INX
 			DEY				; advance backwards
 			CPY select		; eeeek
+		BEQ ch_fin			; eeeeeeeeeeeeek
 			CMP field, Y	; same as pivot?
 			BEQ ch_rpt		; keep counting matches
 		CPX #JWL_COL		; at least 3-in-a-row? ** CHECK **
 		BCC ch_try			; not enough, try again
 ; compute score from number of matched tiles ** TO DO
-		STA temp			; compute match flag
+		STA temp			; assert match flag
 		TYA					; non-zero value, also saves current position
 ch_detect:
 			STA mark+1, Y	; mark them, one 'before' the first mismatch
