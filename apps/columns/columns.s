@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240818-1750
+; last modified 20240818-1952
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -740,9 +740,11 @@ not_explode:
 	BMI not_drop
 		ADC #CDROP_T		; add some delay for next
 		STA ev_dly, X		; perhaps do this at the end?
+; scanning routine starts here
 		LDA #VTOP_L			; just before first visible cell
 		ORA select			; add player
 		STA temp			; new custom limit
+dr_rpt:
 		LDY anim, X			; get bottom coordinate
 dr_l0:
 			LDA field, Y	; check if there's a tile there
@@ -794,7 +796,7 @@ dr_l2:
 		LDX select
 		TYA					; eeeek
 		STA anim, X			; store current destination for multithreading
-		BRA not_drop
+		BRA dr_rpt			; is this OK?
 dr_yield:
 		INC phase, X		; advance column
 		LDA phase, X
