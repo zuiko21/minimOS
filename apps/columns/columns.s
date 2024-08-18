@@ -1,7 +1,8 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240818-1708
+; last modified 20240818-1750
+
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -570,17 +571,16 @@ not_crash:
 		BEQ no_mjwl			; nope, proceed with standard check
 ; if so, look for whatever tile is under the fallen one and make all of their type disappear
 ; but first mark it as deletion-pending for the flashing
+			TYA				; recover index value
 			STA mark, Y		; only as pending deletion, value is irrelevant
 			STA mark+ROW_OFF, Y
 			STA mark+ROW_OFF*2, Y
-			TYA				; recover index value
 			CLC
 			ADC #COL_HGT	; go three rows below from first tile
 			TAX				; index within field
-			BIT field, X	; check what was under the magic column
+			LDY field, X	; check what was under the magic column
 		BMI no_mjwl2		; if sentinel, we are at the very bottom, do nothing... just flashing
 ; special case, mark every tile of the same type of that just below the magic jewel
-			LDY field, X	; take note of desired type of jewel
 			LDA select		; player as last position
 			ORA #LAST_V		; start from last useable cell, backwards
 			TAX				; index ready
@@ -731,6 +731,7 @@ not_fd:
 
 not_explode:
 ; * * DROP STATUS, remove matched tiles and reposition whatever is on top * *
+; ERRORS, must somehow compute used top and/or keep same column until no gaps are found (tile after blank loop)
 	LDA status, X
 	CMP #STAT_DROP
 	BNE not_drop
