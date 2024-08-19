@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240818-2121
+; last modified 20240818-2213
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -773,6 +773,7 @@ dr_2:
 		TYA
 		TAX					; put Y on X
 		LDY tempx			; now Y is destination, X is source
+		PHY					; I need this for later and will lose tempx eeeeek^2
 		LDA #VTOP_L
 		ORA select			; regenerate custom limit
 		STA temp			; as tempx will be affected
@@ -794,9 +795,9 @@ dr_l2:
 			CPX temp		; until the top
 			BPL dr_l2		; no longer signed comparison
 		LDX select
-		LDA tempx			; eeeek^2
+		PLA					; eeeek^3
 		STA anim, X			; store PREVIOUS destination for multithreading
-		BRA dr_rpt			; is this OK?
+		BRA not_drop		; this looks nice
 dr_yield:
 		INC phase, X		; advance column
 		LDA phase, X
