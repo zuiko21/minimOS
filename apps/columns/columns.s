@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240818-2213
+; last modified 20240820-1054
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -70,6 +70,12 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 #define	STAT_DROP	14
 #define	STAT_PAUS	16
 #define	STAT_DIE	18
+
+; match check sub-stati (magic jewel uses separate flag)
+#define	HORI_CK		0
+#define	VERT_CK		2
+#define	SLSH_CK		4
+#define	BKSL_CK		6
 
 ; * some game constants *
 #define	NUM_LVLS	3
@@ -557,6 +563,8 @@ not_play:
 			BRA not_crash	; continue with next thread
 crash_end:
 ; * might alter peñonazo PSG effect from here *
+		JSR cl_mark			; before anything else, clear marked tiles matrix
+		STZ phase, X		; store future sub-status (magic jewel uses separate flag)
 		LDA #STAT_CHK
 		STA status, X		; after peñonazo, check for matches
 not_crash:
@@ -565,8 +573,7 @@ not_crash:
 	LDA status, X
 	CMP #STAT_CHK
 	BNE not_check
-		JSR cl_mark			; before anything else, clear marked tiles matrix
-; * then, check whether magic tile has dropped *
+; * check whether magic tile has dropped *
 		LDY dr_mj, X		; get magic flag
 		BEQ no_mjwl			; nope, proceed with standard check
 ; if so, look for whatever tile is under the fallen one and make all of their type disappear
@@ -596,12 +603,19 @@ no_mjmt:
 ; anything else? X is already select!
 no_mjwl2:
 			LDX select		; needed only when is at the bottom
+;			LDA #HORI_CK	; get ready for next horizontal check
+			STZ phase, X	; store current status (magic jewel uses separate flag)
 			BRA do_match	; proceed to eliminate marked matches
 no_mjwl:
 ; * magic jewel is handled, now check for any 3 or more matched tiles *
-		JSR cl_mark			; clear marked tiles matrix
-		JSR chkmatch		; check for horizontal matches
-		BNE do_match		; found
+;		JSR cl_mark			; clear marked tiles matrix
+;		LDA phase, X		; check current sub-status
+;		CMP #HORI_CK		; is it horizontal?
+#echo NO blank substatus check
+;		BNE not_hori
+			JSR chkmatch	; check for horizontal matches
+			BNE do_match	; found
+not_hori:
 ; should try other matches...
 	BRA not_match
 	
@@ -717,7 +731,8 @@ not_fd:
 			DEX				; next cell
 			CPX select		; until the top
 			BNE exp_cl
-
+; this is a good place to clear marked tiles matrix
+		JSR cl_mark
 ; after animation is ended, turn into DROP status
 		LDA ticks
 		INC					; almost immediately
@@ -731,7 +746,6 @@ not_fd:
 
 not_explode:
 ; * * DROP STATUS, remove matched tiles and reposition whatever is on top * *
-; ERRORS, must somehow compute used top and/or keep same column until no gaps are found (tile after blank loop)
 	LDA status, X
 	CMP #STAT_DROP
 	BNE not_drop
@@ -1267,8 +1281,9 @@ go_exit:
 	RTS
 
 ; ** clear match detection matrix **
-; affects A & Y, restores player at X
+; affects A, restores player at X
 cl_mark:
+	PHY						; needed somewhere
 	LDA #LAST_V				; number of entries to be cleared
 	TAY						; use as counter
 	ORA select				; use player as base
@@ -1279,6 +1294,7 @@ cfcl:
 		DEY
 		BPL cfcl			; 119*11 ~ 1300t, 850 µs or less
 	LDX select				; reload player index for good measure
+	PLY						; and this
 	RTS
 
 ; ** check for available movements **
