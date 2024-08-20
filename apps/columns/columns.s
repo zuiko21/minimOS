@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240820-1703
+; last modified 20240820-1733
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -605,6 +605,7 @@ no_mjwl2:
 			BRA do_match	; proceed to eliminate marked matches
 no_mjwl:
 ; * magic jewel is handled, now check for any 3 or more matched tiles *
+		STZ match_c, X		; reset match detection
 		LDA #STAT_HCHK		; horizontal check
 		BRA chk_switch		; will eventually switch thread
 ; *** COMMON entry point to shift from CHK (or BSCK) to BLNK status ***
@@ -629,31 +630,39 @@ not_check:
 	LDA status, X
 	CMP #STAT_HCHK
 	BNE not_hchk
-#echo repositioned H check
-		JSR chkmatch		; check for horizontal matches (to completion)
-		BNE do_match		; found
-; should try other matches... in other states
-	BRA not_match
-	
-
+		JSR hchkmatch		; check for horizontal matches (eventually switching to VCHK)
+	BCC not_hchk
+		LDA #STAT_VCHK
+		BRA chk_switch
 not_hchk:
 ; * * VCHK STATUS, check for matching tiles (vertical) * *
 	LDA status, X
 	CMP #STAT_VCHK
 	BNE not_vchk
-
+		JSR vchkmatch		; check for vertical matches (eventually switching to SLCK)
+	BCC not_vchk
+		LDA #STAT_SLCK
+		BRA chk_switch
 not_vchk:
 ; * * SLCK STATUS, check for matching tiles (slash diagonal) * *
 	LDA status, X
 	CMP #STAT_SLCK
 	BNE not_slck
-
+		JSR slckmatch		; check for horizontal matches (eventually switching to VCHK)
+	BCC not_slck
+		LDA #STAT_BSCK
+		BRA chk_switch
 not_slck:
 ; * * BSCK STATUS, check for matching tiles (backslash diagonal) * *
 	LDA status, X
 	CMP #STAT_BSCK
 	BNE not_bsck
-
+		JSR bsckmatch		; check for horizontal matches (eventually switching to BLINK or PLAY)
+	BCC not_bsck
+; all checks are finished, check for any detected matches
+		LDA match_c, X		; match counter
+		BNE do_match		; yes, proceed to blink, explode and drop
+		BEQ not_match		; no, back to play
 not_bsck:
 ; * * BLNK STATUS, blink matched pieces * *
 	LDA status, X
@@ -1329,9 +1338,9 @@ chkroom:
 	RTS
 
 ; ** check for matches! **
-chkmatch:
+hchkmatch:
 ; scan for horizontal matches
-	STZ temp				; will be a flag
+	STZ temp				; temporary storage for match_c
 	LDA select				; player index
 	ORA #LAST_V				; last used cell (will add one later)
 	TAY						; read index
@@ -1358,7 +1367,9 @@ ch_rpt:
 		CPX #JWL_COL		; at least 3-in-a-row? ** CHECK **
 		BCC ch_try			; not enough, try again
 ; compute score from number of matched tiles ** TO DO
-		STA temp			; assert match flag
+		LDA temp
+		ADC id_table, X		; actually A=A+X
+		STA temp			; update temporary counter
 		TYA					; non-zero value, also saves current position
 ch_detect:
 			STA mark+1, Y	; mark them, one 'before' the first mismatch
@@ -1370,6 +1381,23 @@ ch_detect:
 ch_fin:
 	LDX select
 	LDA temp				; return Z if no matches
+	STA match_c, X			; set counter (this is the first one, no need to add)
+	SEC						; this is run to completion, thus switch thread ASAP
+	RTS
+
+vchkmatch:
+; scan for vertical matches
+	SEC						; placeholder, thus switch thread ASAP
+	RTS
+
+slckmatch:
+; scan for slash diagonal matches
+	SEC						; placeholder, thus switch thread ASAP
+	RTS
+
+bsckmatch:
+; scan for backslash diagonal matches
+	SEC						; placeholder, thus switch thread ASAP
 	RTS
 
 ; ** gamepad read **
