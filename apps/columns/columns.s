@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240820-1054
+; last modified 20240820-1643
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -65,17 +65,15 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 #define	STAT_PLAY	4
 #define	STAT_CRSH	6
 #define	STAT_CHK	8
-#define	STAT_BLNK	10
-#define	STAT_EXPL	12
-#define	STAT_DROP	14
-#define	STAT_PAUS	16
-#define	STAT_DIE	18
-
-; match check sub-stati (magic jewel uses separate flag)
-#define	HORI_CK		0
-#define	VERT_CK		2
-#define	SLSH_CK		4
-#define	BKSL_CK		6
+#define	STAT_HCHK	10
+#define	STAT_VCHK	12
+#define	STAT_SLCK	14
+#define	STAT_BSCK	16
+#define	STAT_BLNK	18
+#define	STAT_EXPL	20
+#define	STAT_DROP	22
+#define	STAT_PAUS	24
+#define	STAT_DIE	26
 
 ; * some game constants *
 #define	NUM_LVLS	3
@@ -159,8 +157,9 @@ anim	= bcd_arr+6			; base row for death and other animations
 phase	= anim+1			; current animation coordinate (formerly Y and die_y)
 mag_col	= phase+1			; specific magic jewel colour animation
 dr_mj	= mag_col+1			; flag (d7) if magic jewel is dropped / show or hide tile during blink
+match_c	= dr_mj+1			; match counter
 ; common data (non-duplicated)
-tempx	= dr_mj+1			; now another temporary
+tempx	= match_c+1			; now another temporary
 temp	= tempx+1
 select	= temp+1			; player index for main loop
 bcd_lim	= select+1
@@ -190,8 +189,9 @@ anim2	= bcd_arr2+6		; base row for death animation
 phase2	= anim2+1			; current death animation index (formerly Y)
 mag_col2= phase2+1			; specific magic jewel colour animation
 dr_mj2	= mag_col2+1		; flag (d7) if magic jewel is dropped
+match_c2= dr_mj2+1			; match counter
 
-_end_zp	= dr_mj2+1
+_end_zp	= match_c2+1
 
 ; these MUST be outside ZP, change start address accordingly
 irq_ptr	= $0200				; for Pocket compatibility
@@ -569,7 +569,7 @@ crash_end:
 		STA status, X		; after peñonazo, check for matches
 not_crash:
 
-; * * CHK STATUS, check for matching tiles * * TO DO
+; * * CHK STATUS, check for matching tiles (magic jewel only) * *
 	LDA status, X
 	CMP #STAT_CHK
 	BNE not_check
@@ -604,22 +604,22 @@ no_mjmt:
 no_mjwl2:
 			LDX select		; needed only when is at the bottom
 ;			LDA #HORI_CK	; get ready for next horizontal check
-			STZ phase, X	; store current status (magic jewel uses separate flag)
+;			STZ phase, X	; store current status (magic jewel uses separate flag)
 			BRA do_match	; proceed to eliminate marked matches
 no_mjwl:
 ; * magic jewel is handled, now check for any 3 or more matched tiles *
 ;		JSR cl_mark			; clear marked tiles matrix
 ;		LDA phase, X		; check current sub-status
 ;		CMP #HORI_CK		; is it horizontal?
-#echo NO blank substatus check
+#echo this will no longer be here
 ;		BNE not_hori
 			JSR chkmatch	; check for horizontal matches
 			BNE do_match	; found
-not_hori:
-; should try other matches...
+;not_hori:
+; should try other matches... in other states
 	BRA not_match
 	
-; entry point to shift from CHK to BLNK status
+; *** COMMON entry point to shift from CHK (or BSCK) to BLNK status ***
 do_match:
 		LDA #BLINKS			; usually 8 cycles
 		STA anim, X			; set counter
@@ -635,6 +635,30 @@ not_match:
 	STA status, X			; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 
 not_check:
+; * * HCHK STATUS, check for matching tiles (horizontal) * *
+	LDA status, X
+	CMP #STAT_HCHK
+	BNE not_hchk
+
+not_hchk:
+; * * VCHK STATUS, check for matching tiles (vertical) * *
+	LDA status, X
+	CMP #STAT_VCHK
+	BNE not_vchk
+
+not_vchk:
+; * * SLCK STATUS, check for matching tiles (slash diagonal) * *
+	LDA status, X
+	CMP #STAT_SLCK
+	BNE not_slck
+
+not_slck:
+; * * BSCK STATUS, check for matching tiles (backslash diagonal) * *
+	LDA status, X
+	CMP #STAT_BSCK
+	BNE not_bsck
+
+not_bsck:
 ; * * BLNK STATUS, blink matched pieces * *
 	LDA status, X
 	CMP #STAT_BLNK
