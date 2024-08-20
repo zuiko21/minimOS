@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240820-1643
+; last modified 20240820-1703
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -564,7 +564,6 @@ not_play:
 crash_end:
 ; * might alter peñonazo PSG effect from here *
 		JSR cl_mark			; before anything else, clear marked tiles matrix
-		STZ phase, X		; store future sub-status (magic jewel uses separate flag)
 		LDA #STAT_CHK
 		STA status, X		; after peñonazo, check for matches
 not_crash:
@@ -600,25 +599,14 @@ no_mjmt:
 				DEX			; one less
 				CPX select	; already done all of this player's field?
 				BNE mjml	; if not, continue scanning
-; anything else? X is already select!
+; anything else?
 no_mjwl2:
 			LDX select		; needed only when is at the bottom
-;			LDA #HORI_CK	; get ready for next horizontal check
-;			STZ phase, X	; store current status (magic jewel uses separate flag)
 			BRA do_match	; proceed to eliminate marked matches
 no_mjwl:
 ; * magic jewel is handled, now check for any 3 or more matched tiles *
-;		JSR cl_mark			; clear marked tiles matrix
-;		LDA phase, X		; check current sub-status
-;		CMP #HORI_CK		; is it horizontal?
-#echo this will no longer be here
-;		BNE not_hori
-			JSR chkmatch	; check for horizontal matches
-			BNE do_match	; found
-;not_hori:
-; should try other matches... in other states
-	BRA not_match
-	
+		LDA #STAT_HCHK		; horizontal check
+		BRA chk_switch		; will eventually switch thread
 ; *** COMMON entry point to shift from CHK (or BSCK) to BLNK status ***
 do_match:
 		LDA #BLINKS			; usually 8 cycles
@@ -627,11 +615,13 @@ do_match:
 		INC
 		STA ev_dly, X		; will start very soon
 		LDA #STAT_BLNK
-		STA status, X		; change status
-		BRA not_check
+		BRA chk_switch		; switch to blink
+; common exit from any kind of unsuccessful check
 not_match:
+	LDA #STAT_PLAY			; no success, back to play
 	LDX select				; needed, I'm afraid
-	LDA #STAT_PLAY
+; common exit from CHK, switching status
+chk_switch:
 	STA status, X			; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 
 not_check:
@@ -639,6 +629,12 @@ not_check:
 	LDA status, X
 	CMP #STAT_HCHK
 	BNE not_hchk
+#echo repositioned H check
+		JSR chkmatch		; check for horizontal matches (to completion)
+		BNE do_match		; found
+; should try other matches... in other states
+	BRA not_match
+	
 
 not_hchk:
 ; * * VCHK STATUS, check for matching tiles (vertical) * *
