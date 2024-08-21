@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240820-1733
+; last modified 20240821-1157
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -630,10 +630,55 @@ not_check:
 	LDA status, X
 	CMP #STAT_HCHK
 	BNE not_hchk
-		JSR hchkmatch		; check for horizontal matches (eventually switching to VCHK)
-	BCC not_hchk
+;		JSR hchkmatch		; check for horizontal matches (eventually switching to VCHK)
+; scan for horizontal matches (now inlined)
+		STZ temp			; temporary storage for mathch_c
+		LDA select			; player index
+		ORA #LAST_V			; last used cell (will add one later)
+		TAY					; read index
+hch_try:
+			INY				; eeek
+			LDX #255		; -1, will be preincremented
+hch_skip:
+				DEY			; scan for blanks
+				CPY select	; eeek
+			BEQ hch_fin
+				INX						; count blanks
+				LDA field, Y			; get tile in field
+				BEQ hch_skip			; if blank, keep skipping
+			CPX #ROW_WDT	; did six consecutive blanks? ** CHECK **
+		BEQ hch_fin			; all done, then
+			LDX #0			; reset match counter
+hch_rpt:
+				INX
+				DEY						; advance backwards
+				CPY select				; eeeek
+			BEQ hch_fin					; eeeeeeeeeeeeek
+				CMP field, Y			; same as pivot?
+				BEQ hch_rpt				; keep counting matches
+			CPX #JWL_COL				; at least 3-in-a-row? ** CHECK **
+			BCC hch_try					; not enough, try again
+; compute score from number of matched tiles ** TO DO
+			LDA temp
+			ADC id_table, X	; actually A=A+X
+			STA temp		; update temporary counter
+			TYA				; non-zero value, also saves current position
+hch_detect:
+				STA mark+1, Y			; mark them, one 'before' the first mismatch
+				INY
+				DEX
+				BNE hch_detect
+			TAY				; restore index
+			BNE hch_try		; and keep trying
+hch_fin:
+		LDX select
+		LDA temp			; return Z if no matches
+		STA mathch_c, X		; set counter (this is the first one, no need to add)
+;		SEC					; this is run to completion, thus switch thread ASAP
+;	BCC not_hchk
 		LDA #STAT_VCHK
 		BRA chk_switch
+
 not_hchk:
 ; * * VCHK STATUS, check for matching tiles (vertical) * *
 	LDA status, X
@@ -1337,54 +1382,7 @@ chkroom:
 	PLY
 	RTS
 
-; ** check for matches! **
-hchkmatch:
-; scan for horizontal matches
-	STZ temp				; temporary storage for match_c
-	LDA select				; player index
-	ORA #LAST_V				; last used cell (will add one later)
-	TAY						; read index
-ch_try:
-		INY					; eeek
-		LDX #255			; -1, will be preincremented
-ch_skip:
-			DEY				; scan for blanks
-			CPY select		; eeek
-		BEQ ch_fin
-			INX				; count blanks
-			LDA field, Y	; get tile in field
-			BEQ ch_skip		; if blank, keep skipping
-		CPX #ROW_WDT		; did six consecutive blanks? ** CHECK **
-	BEQ ch_fin				; all done, then
-		LDX #0				; reset match counter
-ch_rpt:
-			INX
-			DEY				; advance backwards
-			CPY select		; eeeek
-		BEQ ch_fin			; eeeeeeeeeeeeek
-			CMP field, Y	; same as pivot?
-			BEQ ch_rpt		; keep counting matches
-		CPX #JWL_COL		; at least 3-in-a-row? ** CHECK **
-		BCC ch_try			; not enough, try again
-; compute score from number of matched tiles ** TO DO
-		LDA temp
-		ADC id_table, X		; actually A=A+X
-		STA temp			; update temporary counter
-		TYA					; non-zero value, also saves current position
-ch_detect:
-			STA mark+1, Y	; mark them, one 'before' the first mismatch
-			INY
-			DEX
-			BNE ch_detect
-		TAY					; restore index
-		BNE ch_try			; and keep trying
-ch_fin:
-	LDX select
-	LDA temp				; return Z if no matches
-	STA match_c, X			; set counter (this is the first one, no need to add)
-	SEC						; this is run to completion, thus switch thread ASAP
-	RTS
-
+; ** check for matches **
 vchkmatch:
 ; scan for vertical matches
 	SEC						; placeholder, thus switch thread ASAP
