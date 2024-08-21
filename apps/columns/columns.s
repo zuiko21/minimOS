@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240821-2142
+; last modified 20240821-2207
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -605,9 +605,6 @@ no_mjwl2:
 			LDX select		; needed only when is at the bottom
 ; *** COMMON entry point to shift from CHK (or BSCK) to BLNK status ***
 do_match:
-#echo display matches count in A
-lda match_c,x
-.byt$cb
 			LDA #BLINKS		; usually 8 cycles
 			STA anim, X		; set counter
 			LDA ticks		; best update this too
@@ -663,6 +660,7 @@ hch_rpt:
 			BCC hch_try					; not enough, try again
 ; compute score from number of matched tiles ** TO DO
 			LDA temp
+			CLC				; eeeek
 			ADC id_table, X	; actually A=A+X
 			STA temp		; update temporary counter
 			TYA				; non-zero value, also saves current position
@@ -677,8 +675,6 @@ hch_fin:
 		LDX select
 		LDA temp			; return Z if no matches
 		STA match_c, X		; set counter (this is the first one, no need to add)
-#echo after horiz as well
-.byt$cb
 ;		SEC					; this is run to completion, thus switch thread ASAP
 ;	BCC not_hchk
 ; prepare things for switching into VCHK status 
@@ -1401,6 +1397,8 @@ chkroom:
 vchkmatch:
 ; scan for vertical matches
 	LDY anim, X				; get bottom coordinate
+	LDA match_c, X
+	STA tempx				; temporary match counter
 vc_l1:
 		LDX #0				; reset run counter (will be preincremented)
 		LDA field, Y		; load pivot, is it a void?
@@ -1419,6 +1417,10 @@ vc_l2:
 		CPX #JWL_COL		; three at least? CHECK
 		BCC vc_l1			; nope, keep trying
 ; match found, must mark those tiles
+			LDA tempx		; this thread's current matches
+			CLC
+			ADC id_table, X	; A=A+X
+			STA tempx		; update count
 			TYA				; first non-matching position should be kept
 ;			TAX				; will use X as marking index
 vc_l3:
@@ -1430,10 +1432,11 @@ vc_l3:
 				CPX temp	; beyond pivot position?
 				BCC vc_l3	; no, keep marking eeeek
 			LDX select		; all done, but must take note
-			INC match_c, X	; CHECK value
 		BRA vc_l1			; continue until the topmost void
 vc_end:
 	LDX select
+	LDA tempx				; total matched tiles
+	STA match_c, X			; update global counter
 	INC anim, X				; advance column
 	LDA anim, X
 	AND #PLYR_OFF-1			; actually 127, remove D7 (player bit)
