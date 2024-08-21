@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240821-1249
+; last modified 20240821-1324
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -605,6 +605,7 @@ no_mjwl2:
 			BRA do_match	; proceed to eliminate marked matches
 no_mjwl:
 ; * magic jewel is handled, now check for any 3 or more matched tiles *
+		JSR cl_mark			; should be here eeeek
 		STZ match_c, X		; reset match detection
 		LDA #STAT_HCHK		; horizontal check
 		BRA chk_switch		; will eventually switch thread
@@ -816,8 +817,6 @@ not_fd:
 			DEX				; next cell
 			CPX select		; until the top
 			BNE exp_cl
-; this is a good place to clear marked tiles matrix
-		JSR cl_mark
 ; after animation is ended, turn into DROP status
 		LDA ticks
 		INC					; almost immediately
@@ -1407,6 +1406,7 @@ vc_l2:
 			TYA				; check index
 			SEC
 			SBC #ROW_OFF	; up one row
+			TAY				; eeeeeeeeeeeeeeeeeeeeeeeeeeek
 			PLA				; recover pivot
 			INX				; run counter
 			CMP field, Y	; compare against tile above
@@ -1415,12 +1415,15 @@ vc_l2:
 		BCC vc_l1			; nope, keep trying
 ; match found, must mark those tiles
 			TYA				; first non-matching position should be kept
-			TAX				; will use X as marking index
+;			TAX				; will use X as marking index
 vc_l3:
-				DEX
+;				TXA
+				CLC
+				ADC #ROW_OFF; this goes downwards eeeeeek
+				TAX
 				STA mark, X	; any non-zero value will do
 				CPX temp	; beyond pivot position?
-				BCS vc_l3	; no, keep marking
+				BCC vc_l3	; no, keep marking eeeek
 			LDX select		; all done, but must take note
 			INC match_c, X	; CHECK value
 		BRA vc_l1			; continue until the topmost void
