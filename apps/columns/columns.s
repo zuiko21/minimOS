@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240821-1324
+; last modified 20240821-2132
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -602,23 +602,22 @@ no_mjmt:
 ; anything else?
 no_mjwl2:
 			LDX select		; needed only when is at the bottom
-			BRA do_match	; proceed to eliminate marked matches
+; *** COMMON entry point to shift from CHK (or BSCK) to BLNK status ***
+do_match:
+			LDA #BLINKS		; usually 8 cycles
+			STA anim, X		; set counter
+			LDA ticks		; best update this too
+			INC
+			STA ev_dly, X	; will start very soon
+			LDA #STAT_BLNK
+			BRA chk_switch	; switch to blink
 no_mjwl:
 ; * magic jewel is handled, now check for any 3 or more matched tiles *
 		JSR cl_mark			; should be here eeeek
 		STZ match_c, X		; reset match detection
 		LDA #STAT_HCHK		; horizontal check
 		BRA chk_switch		; will eventually switch thread
-; *** COMMON entry point to shift from CHK (or BSCK) to BLNK status ***
-do_match:
-		LDA #BLINKS			; usually 8 cycles
-		STA anim, X			; set counter
-		LDA ticks			; best update this too
-		INC
-		STA ev_dly, X		; will start very soon
-		LDA #STAT_BLNK
-		BRA chk_switch		; switch to blink
-; common exit from any kind of unsuccessful check
+; *** common exit from any kind of unsuccessful check ***
 not_match:
 	LDA #STAT_PLAY			; no success, back to play
 	LDX select				; needed, I'm afraid
@@ -920,9 +919,9 @@ not_drop:
 			ADC #DIE_PER	; next in 5 ticks
 			STA ev_dly, X	; update time for next event
 			JSR palmatoria	; will switch to STAT_OVER when finished * might be inlined
+		LDX select
 not_die:
 ; * * PAUSe STATUS * * TO DO
-	LDX select
 	LDA status, X			; ...just in case
 	CMP #STAT_PAUS			; in pause
 	BNE not_pause
