@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240821-2132
+; last modified 20240821-2142
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -595,6 +595,7 @@ mjml:
 				CMP field, X			; does it match?
 				BNE no_mjmt
 					STA mark, X			; if so, mark it for deletion
+					INC match_c, X		; count it as well
 no_mjmt:
 				DEX			; one less
 				CPX select	; already done all of this player's field?
@@ -604,6 +605,9 @@ no_mjwl2:
 			LDX select		; needed only when is at the bottom
 ; *** COMMON entry point to shift from CHK (or BSCK) to BLNK status ***
 do_match:
+#echo display matches count in A
+lda match_c,x
+.byt$cb
 			LDA #BLINKS		; usually 8 cycles
 			STA anim, X		; set counter
 			LDA ticks		; best update this too
@@ -614,7 +618,6 @@ do_match:
 no_mjwl:
 ; * magic jewel is handled, now check for any 3 or more matched tiles *
 		JSR cl_mark			; should be here eeeek
-		STZ match_c, X		; reset match detection
 		LDA #STAT_HCHK		; horizontal check
 		BRA chk_switch		; will eventually switch thread
 ; *** common exit from any kind of unsuccessful check ***
@@ -674,6 +677,8 @@ hch_fin:
 		LDX select
 		LDA temp			; return Z if no matches
 		STA match_c, X		; set counter (this is the first one, no need to add)
+#echo after horiz as well
+.byt$cb
 ;		SEC					; this is run to completion, thus switch thread ASAP
 ;	BCC not_hchk
 ; prepare things for switching into VCHK status 
@@ -691,7 +696,6 @@ not_hchk:
 	BNE not_vchk
 		JSR vchkmatch		; check for vertical matches (eventually switching to SLCK)
 	BCC not_vchk
-	
 		LDA #STAT_SLCK
 		BRA chk_switch
 not_vchk:
@@ -904,6 +908,7 @@ dr_yield:
 	BNE not_drop			; not yet, yield execution to next player
 ; after finishing DROP, will ALWAYS turn into CHK again, until it resumes back to PLAY
 exit_drop:
+		JSR cl_mark			; before anything else, clear marked tiles matrix
 		LDA #STAT_CHK
 		STA status, X
 
@@ -1377,6 +1382,7 @@ cfcl:
 		DEY
 		BPL cfcl			; 119*11 ~ 1300t, 850 µs or less
 	LDX select				; reload player index for good measure
+	STZ match_c, X			; reset match detection
 	PLY						; and this
 	RTS
 
