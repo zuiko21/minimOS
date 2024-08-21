@@ -673,7 +673,7 @@ hch_detect:
 hch_fin:
 		LDX select
 		LDA temp			; return Z if no matches
-		STA mathch_c, X		; set counter (this is the first one, no need to add)
+		STA match_c, X		; set counter (this is the first one, no need to add)
 ;		SEC					; this is run to completion, thus switch thread ASAP
 ;	BCC not_hchk
 		LDA #STAT_VCHK
@@ -706,8 +706,8 @@ not_slck:
 	BCC not_bsck
 ; all checks are finished, check for any detected matches
 		LDA match_c, X		; match counter
-		BNE do_match		; yes, proceed to blink, explode and drop
-		BEQ not_match		; no, back to play
+	BEQ not_match			; no, back to play
+		JMP do_match		; yes, proceed to blink, explode and drop
 not_bsck:
 ; * * BLNK STATUS, blink matched pieces * *
 	LDA status, X
