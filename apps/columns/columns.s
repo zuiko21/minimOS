@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240821-2207
+; last modified 20240821-2213
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -372,6 +372,8 @@ not_s1u:
 			PHA				; later...
 			LDA ini_score, Y
 			STA bcd_arr+3, X; score counter eeeeek
+			LDA ini_sc_l, Y
+			STA bcd_arr+2, X; CHECK***
 			PLA
 			STA bcd_arr, X	; place initial values in adequate array indices
 			LDY #DISP_LVL
@@ -816,7 +818,9 @@ not_fd:
 			DEX				; next cell
 			CPX select		; until the top
 			BNE exp_cl
-; after animation is ended, turn into DROP status
+; after animation is ended, may display updated score * * TO DO
+
+; turn into DROP status
 		LDA ticks
 		INC					; almost immediately
 		STA ev_dly, X
@@ -1936,7 +1940,9 @@ ini_lev:
 	.byt	0, 5, $10		; initial level (BCD)
 
 ini_score:
-	.byt	0, 2, 5			; "third" byte initial score (BCD)
+	.byt	0, 1, 2			; "third" byte initial score (BCD)
+ini_sc_l:
+	.byt	0, 0, $50		; "second" byte initial score (BCD)
 
 ini_spd:
 	.byt	125, 32, 8		; 127, 3, 2		; initial speed value, halving each level, but never below 4 interrupts (note these are HALF values)
