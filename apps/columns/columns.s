@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240821-2213
+; last modified 20240821-2219
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -373,7 +373,7 @@ not_s1u:
 			LDA ini_score, Y
 			STA bcd_arr+3, X; score counter eeeeek
 			LDA ini_sc_l, Y
-			STA bcd_arr+2, X; CHECK***
+			STA bcd_arr+4, X
 			PLA
 			STA bcd_arr, X	; place initial values in adequate array indices
 			LDY #DISP_LVL
