@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240821-1157
+; last modified 20240821-1249
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -676,19 +676,26 @@ hch_fin:
 		STA match_c, X		; set counter (this is the first one, no need to add)
 ;		SEC					; this is run to completion, thus switch thread ASAP
 ;	BCC not_hchk
+; prepare things for switching into VCHK status 
+		LDA #BOTT_L			; first column on last visible row
+		ORA select			; eeeeeeeeeeeeeeeeeeeeeeeeek
+		STA anim, X			; store  as current position
+; switch thread!
 		LDA #STAT_VCHK
 		BRA chk_switch
-
 not_hchk:
+
 ; * * VCHK STATUS, check for matching tiles (vertical) * *
 	LDA status, X
 	CMP #STAT_VCHK
 	BNE not_vchk
 		JSR vchkmatch		; check for vertical matches (eventually switching to SLCK)
 	BCC not_vchk
+	
 		LDA #STAT_SLCK
 		BRA chk_switch
 not_vchk:
+
 ; * * SLCK STATUS, check for matching tiles (slash diagonal) * *
 	LDA status, X
 	CMP #STAT_SLCK
@@ -698,6 +705,7 @@ not_vchk:
 		LDA #STAT_BSCK
 		BRA chk_switch
 not_slck:
+
 ; * * BSCK STATUS, check for matching tiles (backslash diagonal) * *
 	LDA status, X
 	CMP #STAT_BSCK
@@ -706,9 +714,12 @@ not_slck:
 	BCC not_bsck
 ; all checks are finished, check for any detected matches
 		LDA match_c, X		; match counter
-	BEQ not_match			; no, back to play
-		JMP do_match		; yes, proceed to blink, explode and drop
+	BNE bs_do_mt
+		JMP not_match		; no, back to play
+bs_do_mt:
+	JMP do_match			; yes, proceed to blink, explode and drop
 not_bsck:
+
 ; * * BLNK STATUS, blink matched pieces * *
 	LDA status, X
 	CMP #STAT_BLNK
@@ -1385,8 +1396,41 @@ chkroom:
 ; ** check for matches **
 vchkmatch:
 ; scan for vertical matches
-	SEC						; placeholder, thus switch thread ASAP
-	RTS
+	LDY anim, X				; get bottom coordinate
+vc_l1:
+		LDX #0				; reset run counter (will be preincremented)
+		LDA field, Y		; load pivot, is it a void?
+		STY temp			; store pivot position
+	BEQ vc_end				; if so, we're done with this column
+vc_l2:
+			PHA				; must keep pivot
+			TYA				; check index
+			SEC
+			SBC #ROW_OFF	; up one row
+			PLA				; recover pivot
+			INX				; run counter
+			CMP field, Y	; compare against tile above
+			BEQ vc_l2		; until end of run
+		CPX #JWL_COL		; three at least? CHECK
+		BCC vc_l1			; nope, keep trying
+; match found, must mark those tiles
+			TYA				; first non-matching position should be kept
+			TAX				; will use X as marking index
+vc_l3:
+				DEX
+				STA mark, X	; any non-zero value will do
+				CPX temp	; beyond pivot position?
+				BCS vc_l3	; no, keep marking
+			LDX select		; all done, but must take note
+			INC match_c, X	; CHECK value
+		BRA vc_l1			; continue until the topmost void
+vc_end:
+	LDX select
+	INC anim, X				; advance column
+	LDA anim, X
+	AND #PLYR_OFF-1			; actually 127, remove D7 (player bit)
+	CMP #LAST_V+1			; all columns were done?
+	RTS						; will set C only when all columns are done!
 
 slckmatch:
 ; scan for slash diagonal matches
