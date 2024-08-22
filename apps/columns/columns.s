@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240822-1729
+; last modified 20240822-1813
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -707,7 +707,7 @@ not_vchk:
 	BNE not_slck
 		JSR slckmatch		; check for horizontal matches (eventually switching to VCHK)
 	BCC not_slck
-		LDA #VTOP_L+ROW_WDT+2*ROW_OFF-1	; $26 is first sensible diagonal, top-ish right
+		LDA #VTOP_L+ROW_WDT+2*ROW_OFF	; $26 is first sensible diagonal, top-ish right
 		ORA select			; eeeeeeeeeeeeeeeeeeeeeeeeek
 		STA anim, X			; store as initial position
 		LDA #STAT_BSCK
