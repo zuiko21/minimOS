@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240822-1355
+; last modified 20240822-1423
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -1438,7 +1438,6 @@ vc_l3:
 				STA mark, X	; any non-zero value will do
 				CPX temp	; beyond pivot position?
 				BCC vc_l3	; no, keep marking eeeek
-			LDX select		; all done, but must take note
 		BRA vc_l1			; continue until the topmost void
 vc_end:
 	LDX select
@@ -1457,9 +1456,10 @@ slckmatch:
 	LDA match_c, X
 	STA tempx				; temporary match counter
 slc_l1:
-		CPY #VTOP_L			; is it above visible area?
-	BCC slc_end				; if so, we're done with this diagonal
 		TYA
+		AND #PLYR_OFF-1		; actually 127, remove D7 (player bit)
+		CMP #VTOP_L			; is it above visible area?
+	BCC slc_end				; if so, we're done with this diagonal
 		AND #ROW_OFF-1		; check column bits
 		CMP #ROW_OFF-1		; is it at the very right?
 	BEQ slc_end				; if so, we're done with this diagonal
@@ -1500,7 +1500,6 @@ slc_l3:
 				STA mark, X				; any non-zero value will do
 				CPX temp				; beyond pivot position?
 				BCC slc_l3				; no, keep marking eeeek
-			LDX select		; all done, but must take note
 		BRA slc_l1			; continue until the topmost void
 slc_end:
 	LDX select
@@ -1515,6 +1514,8 @@ slc_end:
 		BRA nx_slc
 slc_hup:
 		SEC
+#echo not only first stage of diagonal threads
+;bra slc_debug
 		SBC #ROW_OFF		; nope, go one up
 nx_slc:
 	ORA select				; include player index
@@ -1522,6 +1523,7 @@ nx_slc:
 	LDA #$20				; starting above this tile is nonsense
 	ORA select				; need player index to be compared
 	CMP anim, X				; all diagonals were done? returns C if so
+slc_debug:
 	RTS
 
 bsckmatch:
