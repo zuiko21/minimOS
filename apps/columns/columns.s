@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240822-1711
+; last modified 20240822-1729
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -1539,13 +1539,13 @@ bsc_l1:
 	BEQ bsc_end				; if at the very LEFT, we're done with this diagonal
 		LDX #0				; reset run counter (will be preincremented)
 		LDA field, Y		; load pivot, is it a void, a sentinel?
-		BNE do_slc			; no blank to be skipped
+		BNE do_bsc			; no blank to be skipped
 			TYA
 			SEC
 			SBC #ROW_OFF+1	; up one row... and one to the LEFT
 			TAY
 			BRA bsc_l1		; keep skipping or get another run
-do_slc:
+do_bsc:
 		STY temp			; store pivot position
 bsc_l2:
 			PHA				; must keep pivot
@@ -2014,14 +2014,14 @@ sprites:
 	.dsb	32, 0									; add an extra blank tile
 gameover:
 	.bin	0, 0, "art/gameover.sv24"				; uncompressed, 24-byte wide
-numbers:
-	.bin	0, 0, "art/numbers.sv20"				; generic number images, 20-byte wide
 
 #ifndef	POCKET
 pre_io:						; this should be BEFORE I/O page!
 	.dsb	$E000-*, $FF	; skip I/O page!
 #endif
 
+numbers:
+	.bin	0, 0, "art/numbers.sv20"				; generic number images, 20-byte wide
 levelsel:
 	.bin	0, 0, "art/level.sv24"					; uncompressed, 24-byte wide, 23 lines tall
 data_end:
