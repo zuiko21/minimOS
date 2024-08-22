@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240821-2219
+; last modified 20240822-1355
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -682,7 +682,7 @@ hch_fin:
 ; prepare things for switching into VCHK status 
 		LDA #BOTT_L			; first column on last visible row
 		ORA select			; eeeeeeeeeeeeeeeeeeeeeeeeek
-		STA anim, X			; store  as current position
+		STA anim, X			; store as initial position
 ; switch thread!
 		LDA #STAT_VCHK
 		BRA chk_switch
@@ -694,6 +694,9 @@ not_hchk:
 	BNE not_vchk
 		JSR vchkmatch		; check for vertical matches (eventually switching to SLCK)
 	BCC not_vchk
+		LDA #LAST_V-2		; first sensible diagonal, bottom right
+		ORA select			; eeeeeeeeeeeeeeeeeeeeeeeeek
+		STA anim, X			; store as initial position
 		LDA #STAT_SLCK
 		BRA chk_switch
 not_vchk:
@@ -1449,7 +1452,76 @@ vc_end:
 
 slckmatch:
 ; scan for slash diagonal matches
-	SEC						; placeholder, thus switch thread ASAP
+; ** ** ** TO DO ** ** ** vchk code below as a reference
+	LDY anim, X				; get bottom coordinate
+	LDA match_c, X
+	STA tempx				; temporary match counter
+slc_l1:
+		CPY #VTOP_L			; is it above visible area?
+	BCC slc_end				; if so, we're done with this diagonal
+		TYA
+		AND #ROW_OFF-1		; check column bits
+		CMP #ROW_OFF-1		; is it at the very right?
+	BEQ slc_end				; if so, we're done with this diagonal
+		LDX #0				; reset run counter (will be preincremented)
+		LDA field, Y		; load pivot, is it a void, a sentinel?
+		BNE do_slc			; no blank to be skipped
+			TYA
+			SEC
+			SBC #ROW_OFF-1	; up one row... and one to the right
+			TAY
+			BRA slc_l1		; keep skipping or get another run
+do_slc:
+		STY temp			; store pivot position
+slc_l2:
+			PHA				; must keep pivot
+			TYA				; check index
+			SEC
+			SBC #ROW_OFF-1	; up one row... and one to the right
+			TAY				; eeeeeeeeeeeeeeeeeeeeeeeeeeek
+			PLA				; recover pivot
+			INX				; run counter
+			CMP field, Y	; compare against tile above
+			BEQ slc_l2		; until end of run
+		CPX #JWL_COL		; three at least? CHECK
+		BCC slc_l1			; nope, keep trying
+; match found, must mark those tiles
+			LDA tempx		; this thread's current matches
+			CLC
+			ADC id_table, X	; A=A+X
+			STA tempx		; update count
+			TYA				; first non-matching position should be kept
+;			TAX				; will use X as marking index
+slc_l3:
+;				TXA
+				CLC
+				ADC #ROW_OFF-1			; this goes downwards, note offset
+				TAX
+				STA mark, X				; any non-zero value will do
+				CPX temp				; beyond pivot position?
+				BCC slc_l3				; no, keep marking eeeek
+			LDX select		; all done, but must take note
+		BRA slc_l1			; continue until the topmost void
+slc_end:
+	LDX select
+	LDA tempx				; total matched tiles
+	STA match_c, X			; update global counter
+; switch to next diagonal
+	LDA anim, X				; base tile
+	AND #PLYR_OFF-1			; actually 127, remove D7 (player bit)
+	CMP #BOTT_L+1			; are we doing horizontal?
+	BCC slc_hup
+		DEC					; yes, simply one backwards
+		BRA nx_slc
+slc_hup:
+		SEC
+		SBC #ROW_OFF		; nope, go one up
+nx_slc:
+	ORA select				; include player index
+	STA anim, X				; next diagonal is set
+	LDA #$20				; starting above this tile is nonsense
+	ORA select				; need player index to be compared
+	CMP anim, X				; all diagonals were done? returns C if so
 	RTS
 
 bsckmatch:
