@@ -237,10 +237,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$100C			; 1.0a12		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1041			; 1.0b1		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$6600			; time, 12.48		0110 0-110 000-0 0000
-	.word	$5911			; date, 2024/8/17	0101 100-1 000-1 0001
+	.word	$5600			; time, 10.48		0101 0-110 000-0 0000
+	.word	$5917			; date, 2024/8/23	0101 100-1 000-1 0111
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
