@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240822-1813
+; last modified 20240823-1031
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -887,9 +887,13 @@ dr_2:
 dr_l2:
 			PHX
 			PHY
-			LDA field, X	; get floating tile
-			STZ field, X	; delete dropped tile
-			STA field, Y	; store below
+			LDA #0			; default is clear
+			CPX temp		; is source above visible area?
+			BPL dr_top		; yes, just clear tile
+				LDA field, X			; otherwise get floating tile
+				STZ field, X			; delete dropped tile
+				STA field, Y			; store below
+dr_top:
 			JSR tiledis		; and remove deleted one from screen!
 			PLA				; actually stored Y
 			SEC
@@ -899,7 +903,7 @@ dr_l2:
 			SEC
 			SBC #ROW_OFF	; one row up (src)
 			TAX				; finally restore register
-			CPX temp		; until the top
+			CPY temp		; until DESTINATION is at the top
 			BPL dr_l2		; no longer signed comparison
 		LDX select
 		PLA					; eeeek^3
