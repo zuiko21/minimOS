@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240823-1042
+; last modified 20240823-1802
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -309,6 +309,13 @@ no_kbd:
 ; *******************************
 loop:
 	LDX select				; check player...
+#echo special select control
+txa
+and#$7f
+beq selok
+.byt$cb
+selok:
+
 	LDY pad0val, X			; ...and its controller status
 	BNE chk_stat			; some buttons were pressed
 		STZ padlast, X		; otherwise clear that
@@ -1945,6 +1952,8 @@ ps_loop:
 ; *********************************
 isr:
 	PHA
+	PHX						; eeeeek best ASAP
+	PHY
 	INC ticks_h				; main will increment every other 2
 	LDA ticks_h
 	AND #1					; check even/odd
@@ -1972,8 +1981,6 @@ tk_nw:
 ;	col 3	>	· · B · · R		>	e D · U · ·
 ;	col 4	>	· · A · · ·		>	t L · · · ·
 ; whereas the entries are in the usual AtBeULDR format
-		PHX					; eeeeek
-		PHY
 		LDY #3				; column 4 and below
 col_loop:
 			LDA pow_col, Y	; get current column bit, note offset EEEEEK
