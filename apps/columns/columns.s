@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240823-1802
+; last modified 20240823-1839
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -309,13 +309,6 @@ no_kbd:
 ; *******************************
 loop:
 	LDX select				; check player...
-#echo special select control
-txa
-and#$7f
-beq selok
-.byt$cb
-selok:
-
 	LDY pad0val, X			; ...and its controller status
 	BNE chk_stat			; some buttons were pressed
 		STZ padlast, X		; otherwise clear that
