@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240823-2326
+; last modified 20240823-2333
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -307,11 +307,6 @@ no_kbd:
 ; *** *** main event loop *** ***
 ; *******************************
 loop:
-#echo status display
-lda status
-sta $6000
-lda status2
-sta $603f
 	LDX select				; check player...
 	LDY pad0val, X			; ...and its controller status
 	BNE chk_stat			; some buttons were pressed
@@ -2018,14 +2013,14 @@ sprites:
 	.dsb	32, 0									; first tile is blank
 	.bin	0, 0, "art/jewels.sv4"					; uncompressed file, 4-byte wide!
 	.dsb	32, 0									; add an extra blank tile
-gameover:
-	.bin	0, 0, "art/gameover.sv24"				; uncompressed, 24-byte wide
 
 #ifndef	POCKET
 pre_io:						; this should be BEFORE I/O page!
 	.dsb	$E000-*, $FF	; skip I/O page!
 #endif
 
+gameover:
+	.bin	0, 0, "art/gameover.sv24"				; uncompressed, 24-byte wide
 numbers:
 	.bin	0, 0, "art/numbers.sv20"				; generic number images, 20-byte wide
 levelsel:
