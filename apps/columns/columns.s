@@ -1,8 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240823-2215
-
+; last modified 20240823-2326
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -308,6 +307,11 @@ no_kbd:
 ; *** *** main event loop *** ***
 ; *******************************
 loop:
+#echo status display
+lda status
+sta $6000
+lda status2
+sta $603f
 	LDX select				; check player...
 	LDY pad0val, X			; ...and its controller status
 	BNE chk_stat			; some buttons were pressed
@@ -326,16 +330,13 @@ chk_stat:
 		LDA #STAT_LVL
 		STA status, X		; go into selection status
 		JSR sel_ban			; after drawing level selection menu
-		BRA loop			; reload player status
 not_over:
 	LDA status, X			; check status of current player EEEEK
 ; * * LVL STATUS, level selection * *
 	CMP #STAT_LVL			; selecting level?
 	BNE not_lvl
 ; selecting level, check up/down and fire/select/start
-#echo display index
-stx$6000
-		TYA					; get this player controller status
+		LDA pad0val, X		; ...and its controller status for proper operation
 		BIT #PAD_DOWN		; increment level
 		BEQ not_s1d			; not if not pressed
 			CMP padlast, X	; still pressing?
@@ -344,8 +345,6 @@ stx$6000
 			JSR inv_row		; deselect current
 			INC s_level, X	; increment level
 			LDY s_level, X
-#echo display index down
-stx$6001
 			CPY #NUM_LVLS	; three levels only, wrap otherwise
 			BNE s1_nw
 				STZ s_level, X
