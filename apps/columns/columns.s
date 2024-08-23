@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240823-1839
+; last modified 20240823-2215
 
 
 ; add -DMAGIC to increase magic jewel chances
@@ -333,6 +333,8 @@ not_over:
 	CMP #STAT_LVL			; selecting level?
 	BNE not_lvl
 ; selecting level, check up/down and fire/select/start
+#echo display index
+stx$6000
 		TYA					; get this player controller status
 		BIT #PAD_DOWN		; increment level
 		BEQ not_s1d			; not if not pressed
@@ -342,6 +344,8 @@ not_over:
 			JSR inv_row		; deselect current
 			INC s_level, X	; increment level
 			LDY s_level, X
+#echo display index down
+stx$6001
 			CPY #NUM_LVLS	; three levels only, wrap otherwise
 			BNE s1_nw
 				STZ s_level, X
@@ -1346,8 +1350,7 @@ dz_show:
 ; affects temp and all registers
 banner:
 	LDX select				; needed b/c alternate entry
-	TYA						; unfortunately no 'STY a, X'
-	STA temp				; counter in memory
+	STY temp				; counter in memory
 	LDA psum36, X
 	STA ptr
 	LDA #BANNER_PG			; two rows above centre
