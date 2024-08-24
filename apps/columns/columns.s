@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240824-0959
+; last modified 20240824-1106
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -157,8 +157,9 @@ phase	= anim+1			; current animation coordinate (formerly Y and die_y)
 mag_col	= phase+1			; specific magic jewel colour animation
 dr_mj	= mag_col+1			; flag (d7) if magic jewel is dropped / show or hide tile during blink
 match_c	= dr_mj+1			; match counter
+cycle	= match_c+1			; check round
 ; common data (non-duplicated)
-tempx	= match_c+1			; now another temporary
+tempx	= cycle+1			; now another temporary
 temp	= tempx+1
 select	= temp+1			; player index for main loop
 bcd_lim	= select+1
@@ -189,8 +190,9 @@ phase2	= anim2+1			; current death animation index (formerly Y)
 mag_col2= phase2+1			; specific magic jewel colour animation
 dr_mj2	= mag_col2+1		; flag (d7) if magic jewel is dropped
 match_c2= dr_mj2+1			; match counter
+cycle2	= match_c2+1		; check round
 
-_end_zp	= match_c2+1
+_end_zp	= cycle2+1
 
 ; these MUST be outside ZP, change start address accordingly
 irq_ptr	= $0200				; for Pocket compatibility
@@ -563,7 +565,8 @@ not_play:
 			BRA not_crash	; continue with next thread
 crash_end:
 ; * might alter peñonazo PSG effect from here *
-		JSR cl_mark			; before anything else, clear marked tiles matrix
+;		JSR cl_mark			; before anything else, clear marked tiles matrix
+		STZ cycle, X		; reset hojalete counter (magic jewel does not count, nor multiplies by level)
 		LDA #STAT_CHK
 		STA status, X		; after peñonazo, check for matches
 not_crash:
@@ -572,6 +575,7 @@ not_crash:
 	LDA status, X
 	CMP #STAT_CHK
 	BNE not_check
+		JSR cl_mark			; before anything else, clear marked tiles matrix
 ; * check whether magic tile has dropped *
 		LDY dr_mj, X		; get magic flag
 		BEQ no_mjwl			; nope, proceed with standard check
@@ -615,7 +619,8 @@ do_match:
 			BRA chk_switch	; switch to blink
 no_mjwl:
 ; * magic jewel is handled, now check for any 3 or more matched tiles *
-		JSR cl_mark			; should be here eeeek
+;		JSR cl_mark			; should be here eeeek
+		INC cycle, X		; every cycle multiplies score
 		LDA #STAT_HCHK		; horizontal check
 		BRA chk_switch		; will eventually switch thread
 ; *** common exit from any kind of unsuccessful check ***
@@ -917,7 +922,7 @@ dr_yield:
 	BNE not_drop			; not yet, yield execution to next player
 ; after finishing DROP, will ALWAYS turn into CHK again, until it resumes back to PLAY
 exit_drop:
-		JSR cl_mark			; before anything else, clear marked tiles matrix
+;		JSR cl_mark			; before anything else, clear marked tiles matrix
 		LDA #STAT_CHK
 		STA status, X
 
