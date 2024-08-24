@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240824-1743
+; last modified 20240824-1855
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -847,6 +847,7 @@ do_explode:
 		BPL upd_explode
 	JMP not_explode
 upd_explode:
+; could do brief tone here IF goal has been reached ** ** TO DO
 		CLC
 		ADC #EXP_SPD		; frame rate
 		STA ev_dly, X		; ready for next time
@@ -917,8 +918,8 @@ no_clock:
 upd_lvl:
 		CLD					; back to binary mode!
 		LDY bcd_arr, X		; recheck current level (BCD)
-		CPY #$10			; already at max speed?
-		BCS max_spd
+		CPY #$11			; already over max speed?
+		BCC max_spd
 			LDY #10			; top speed index
 max_spd:
 		LDA ini_spd, Y		; get rate from table
