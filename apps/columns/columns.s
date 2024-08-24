@@ -375,7 +375,9 @@ not_s1u:
 			LDA ini_sc_l, Y
 			STA bcd_arr+4, X
 			PLA
-			STA bcd_arr, X	; place initial values in adequate array indices
+			STA bcd_arr, X				; place initial values in adequate array indices
+			STZ bcd_arr+1, X
+			STZ bcd_arr+2, X			; reset jewel counter as well
 			LDY #DISP_LVL
 			JSR numdisp
 			LDY #DISP_JWL
@@ -776,7 +778,7 @@ not_mark:
 			TAX				; use as scanning index
 			LDY #0			; reset jewel counter
 jwl_ct:
-				LDA mark, Y	; check whether tile was deleted
+				LDA mark, X	; check whether tile was deleted eeeek
 				BEQ no_jct
 					INY		; if so, count it!
 no_jct:
@@ -792,18 +794,20 @@ no_jct:
 				TAY
 no_3mj:
 ; Y has updated jewel count, convert to BCD
+			SED				; eeeeek
 			LDA bcd_id, Y	; jewel count in BCD
 			CLC
-			ADC bcd_arr+2	; add jewel LSB
-			STA bcd_arr+2
-			LDA bcd_arr+1	; MSB
-			ADC #0			; propagate carry
-			STA bcd_arr+1
+			ADC bcd_arr+2, X			; add jewel LSB eeeeek
+			STA bcd_arr+2, X
+			LDA bcd_arr+1, X			; MSB
+			ADC #0						; propagate carry
+			STA bcd_arr+1, X
 			BCC jw_bcd_cc
 				LDA #$99				; special overflow case
-				STA bcd_arr+1
-				STA bcd_arr+2			; keep at '9999'
+				STA bcd_arr+1, X
+				STA bcd_arr+2, X		; keep at '9999'
 jw_bcd_cc:
+			CLD
 ; print updated jewel count
 			LDY #DISP_JWL	; selects jewel display
 			JSR numdisp		; update display (reloads X as select)
