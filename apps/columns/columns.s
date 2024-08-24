@@ -919,9 +919,10 @@ upd_lvl:
 		LDY bcd_arr, X		; recheck current level (BCD)
 		CPY #$10			; already at max speed?
 		BCS max_spd
-			LDA ini_spd, Y	; otherwise get rate from table (index 0...9 is already binary)
-			STA speed, X	; update speed
+			LDY #10			; top speed index
 max_spd:
+		LDA ini_spd, Y		; get rate from table
+		STA speed, X		; update speed
 		LDY #DISP_LVL
 		JSR numdisp			; display updated level on screen
 no_goal:
