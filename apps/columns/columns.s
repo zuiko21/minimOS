@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240824-1338
+; last modified 20240824-1705
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -83,6 +83,9 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 
 #define	MAGIC_JWL	7
 
+; number of jewels for next level (1-byte BCD)
+#define	GOAL		$50
+
 ; player array offset
 #define	PLYR_OFF	128
 
@@ -158,8 +161,9 @@ mag_col	= phase+1			; specific magic jewel colour animation
 dr_mj	= mag_col+1			; flag (d7) if magic jewel is dropped / show or hide tile during blink
 match_c	= dr_mj+1			; match counter
 cycle	= match_c+1			; check round
+goal	= cycle+1			; jewel count for next level, big-endian BCD (JJ)
 ; common data (non-duplicated)
-tempx	= cycle+1			; now another temporary
+tempx	= goal+2			; now another temporary
 temp	= tempx+1
 select	= temp+1			; player index for main loop
 bcd_lim	= select+1
@@ -191,8 +195,9 @@ mag_col2= phase2+1			; specific magic jewel colour animation
 dr_mj2	= mag_col2+1		; flag (d7) if magic jewel is dropped
 match_c2= dr_mj2+1			; match counter
 cycle2	= match_c2+1		; check round
+goal2	= cycle2+1			; jewel count for next level, big-endian BCD (JJ)
 
-_end_zp	= cycle2+1
+_end_zp	= goal2+2
 
 ; these MUST be outside ZP, change start address accordingly
 irq_ptr	= $0200				; for Pocket compatibility
@@ -331,7 +336,9 @@ not_over:
 	LDA status, X			; check status of current player EEEEK
 ; * * LVL STATUS, level selection * *
 	CMP #STAT_LVL			; selecting level?
-	BNE not_lvl
+		BEQ do_lvl
+	JMP not_lvl
+do_lvl:
 ; selecting level, check up/down and fire/select/start
 		LDA pad0val, X		; ...and its controller status for proper operation
 		BIT #PAD_DOWN		; increment level
@@ -371,13 +378,16 @@ not_s1u:
 			LDA ini_lev, Y	; level as index for initial value
 			PHA				; later...
 			LDA ini_score, Y
-			STA bcd_arr+3, X; score counter eeeeek
+			STA bcd_arr+3, X			; score counter eeeeek
 			LDA ini_sc_l, Y
 			STA bcd_arr+4, X
 			PLA
 			STA bcd_arr, X				; place initial values in adequate array indices
 			STZ bcd_arr+1, X
 			STZ bcd_arr+2, X			; reset jewel counter as well
+			LDA #GOAL
+			STA goal+1, X	; set jewel goal for next level
+			STZ goal, X
 			LDY #DISP_LVL
 			JSR numdisp
 			LDY #DISP_JWL
@@ -825,7 +835,9 @@ not_blink:
 ; * * EXPLode STATUS * *
 	LDA status, X
 	CMP #STAT_EXPL
-	BNE not_explode
+	BEQ do_explode
+		JMP not_explode
+do_explode:
 		LDA ticks
 		CMP ev_dly, X		; is it time?
 	BMI not_explode
@@ -871,7 +883,37 @@ not_fd:
 			BNE exp_cl
 ; after animation is ended, may display updated score * * TO DO
 
-; turn into DROP status
+;		LDX select			; make sure
+; check here if goal is achived for next level
+		LDA bcd_arr+1, X	; jewel count MSB
+		CMP goal, X			; reached goal?
+		BCC no_goal
+			LDA bcd_arr+2, X			; if so, check LSB afterwards
+			CMP goal+1, X
+		BCC no_goal			; nope, stay in current level
+			SED				; otherwise, let's operate in BCD
+			LDA bcd_arr, X	; current level
+			CLC
+			ADC #1
+			STA bcd_arr, X	; update level
+		BCC no_clock		; if below 100, new level is OK
+			LDA #$99		; otherwise is overflow!
+			STA bcd_arr, X	; update level
+		BRA upd_lvl			; and display it
+no_clock:
+			LDA goal+1, X	; target must be updated as well
+			CLC
+			ADC #GOAL		; increase goal threshold
+			STA goal+1, X
+			LDA goal, X
+			ADC #0			; propagate carry
+			STA goal, X
+upd_lvl:
+		CLD					; back to binary mode!
+		LDY #DISP_LVL
+		JSR numdisp			; display updated level on screen
+no_goal:
+; finally turn into DROP status
 		LDA ticks
 		INC					; almost immediately
 		STA ev_dly, X
@@ -2217,6 +2259,19 @@ bcd_id:
 	.byt	$70, $71, $72, $73, $74, $75, $76, $77, $78, $79
 	.byt	$80, $81, $82, $83, $84, $85, $86, $87, $88, $89
 	.byt	$90, $91, $92, $93, $94, $95, $96, $97, $98, $99
+
+; reverse BCD-to-binary table, any use?
+bcd2bin:
+	.byt	 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, $FF, $FF, $FF, $FF, $FF, $FF
+	.byt	10, 11, 12, 13, 14, 15, 16, 17, 18, 19, $FF, $FF, $FF, $FF, $FF, $FF
+	.byt	20, 21, 22, 23, 24, 25, 26, 27, 28, 29, $FF, $FF, $FF, $FF, $FF, $FF
+	.byt	30, 31, 32, 33, 34, 35, 36, 37, 38, 39, $FF, $FF, $FF, $FF, $FF, $FF
+	.byt	40, 41, 42, 43, 44, 45, 46, 47, 48, 49, $FF, $FF, $FF, $FF, $FF, $FF
+	.byt	50, 51, 52, 53, 54, 55, 56, 57, 58, 59, $FF, $FF, $FF, $FF, $FF, $FF
+	.byt	60, 61, 62, 63, 64, 65, 66, 67, 68, 69, $FF, $FF, $FF, $FF, $FF, $FF
+	.byt	70, 71, 72, 73, 74, 75, 76, 77, 78, 79, $FF, $FF, $FF, $FF, $FF, $FF
+	.byt	80, 81, 82, 83, 84, 85, 86, 87, 88, 89, $FF, $FF, $FF, $FF, $FF, $FF
+	.byt	90, 91, 92, 93, 94, 95, 96, 97, 98, 99, $FF, $FF, $FF, $FF, $FF, $FF
 
 #ifdef	POCKET
 file_end:					; for pocket format
