@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240823-2333
+; last modified 20240824-0138
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -307,6 +307,12 @@ no_kbd:
 ; *** *** main event loop *** ***
 ; *******************************
 loop:
+#echo check select
+lda select
+and#$7f
+beq s1ok
+.byt$cb
+s1ok:
 	LDX select				; check player...
 	LDY pad0val, X			; ...and its controller status
 	BNE chk_stat			; some buttons were pressed
@@ -572,6 +578,11 @@ not_crash:
 	LDA status, X
 	CMP #STAT_CHK
 	BNE not_check
+#echo inner check
+lsr
+bcc stok
+.byt$cb
+stok:
 ; * check whether magic tile has dropped *
 		LDY dr_mj, X		; get magic flag
 		BEQ no_mjwl			; nope, proceed with standard check
