@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240824-1106
+; last modified 20240824-1338
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -151,7 +151,7 @@ column	= padlast+1			; current column
 next_c	= column+3			; next piece
 posit	= next_c+3			; position in 8x16 matrix
 oldposit= posit+1			; old position
-bcd_arr	= oldposit+1		; level/jewels/score arrays [LJJSSS] in BCD
+bcd_arr	= oldposit+1		; level/jewels/score arrays [LJJSSS] in BCD, big endian
 anim	= bcd_arr+6			; base row for death and other animations
 phase	= anim+1			; current animation coordinate (formerly Y and die_y)
 mag_col	= phase+1			; specific magic jewel colour animation
@@ -184,7 +184,7 @@ column2	= padlast2+1		; current column
 next_c2	= column2+3			; next piece
 posit2	= next_c2+3			; position in 8x16 matrix
 oldpos2 = posit2+1			; old position in 8x16 matrix
-bcd_arr2= oldpos2+1			; level/jewels/score arrays [LJJSSS] in BCD
+bcd_arr2= oldpos2+1			; level/jewels/score arrays [LJJSSS] in BCD, big endian
 anim2	= bcd_arr2+6		; base row for death animation
 phase2	= anim2+1			; current death animation index (formerly Y)
 mag_col2= phase2+1			; specific magic jewel colour animation
@@ -238,9 +238,9 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1042			; 1.0b2		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1043			; 1.0b3		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5000			; time, 10.00		0101 0-000 000-0 0000
+	.word	$6A00			; time, 13.16		0110 1-010 000-0 0000
 	.word	$5918			; date, 2024/8/24	0101 100-1 000-1 1000
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
@@ -770,7 +770,44 @@ not_mark:
 ; anything else?
 			DEC anim, X		; one less step
 		BPL not_blink		; still to do, keep this status
-; after animation is ended, turn into EXPLode status
+; after animation, update jewel counter
+			LDA #LAST_V		; last visible tile
+			ORA select		; plus player index
+			TAX				; use as scanning index
+			LDY #0			; reset jewel counter
+jwl_ct:
+				LDA mark, Y	; check whether tile was deleted
+				BEQ no_jct
+					INY		; if so, count it!
+no_jct:
+				DEX			; previous tile
+				CPX select	; discarding player bit
+				BNE jwl_ct
+; in case of magic jewel, this counts is three more, subtract if needed
+			LDA cycle, X	; this is zero when doing magic jewel
+			BNE no_3mj
+				TYA						; temporary count storage
+				SEC
+				SBC #JWL_COL			; subtract magic jewel tiles
+				TAY
+no_3mj:
+; Y has updated jewel count, convert to BCD
+			LDA bcd_id, Y	; jewel count in BCD
+			CLC
+			ADC bcd_arr+2	; add jewel LSB
+			STA bcd_arr+2
+			LDA bcd_arr+1	; MSB
+			ADC #0			; propagate carry
+			STA bcd_arr+1
+			BCC jw_bcd_cc
+				LDA #$99				; special overflow case
+				STA bcd_arr+1
+				STA bcd_arr+2			; keep at '9999'
+jw_bcd_cc:
+; print updated jewel count
+			LDY #DISP_JWL	; selects jewel display
+			JSR numdisp		; update display (reloads X as select)
+; finally, turn into EXPLode status
 			LDA #MAGIC_JWL	; index before first explosion tile
 			STA anim, X		; store for next thread
 			LDA ticks
@@ -1206,7 +1243,7 @@ td_exit:
 ;	Y		type of display (0=level, 1=jewels, 2=score)
 ;	bcd_arr	scores array
 ;	select	player [0-128]
-; affects colour, bcd_lim and all registers
+; affects colour, bcd_lim and all registers (X reloaded as select)
 
 ; score=6 digits, level=2 digits, jewels=4 digits
 ; BCD data array [LJJSSS], big endian
@@ -1245,6 +1282,7 @@ bcd_loop:
 		INY					; next two digits!
 		CPY bcd_lim 		; is it the last one?
 		BNE bcd_loop
+	LDX select				; for good measure
 	RTS
 ; * single number printing *
 ; input
@@ -2162,6 +2200,19 @@ jwl_ix:						; convert random byte into reasonable tile index [1...6] with a few
 	.byt	7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7										; 240...251
 #endif
 	.byt	7, 7, 7, 7		; 252...255 are the magic tiles
+
+; BCD conversion tables
+bcd_id:
+	.byt	$00, $01, $02, $03, $04, $05, $06, $07, $08, $09
+	.byt	$10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+	.byt	$20, $21, $22, $23, $24, $25, $26, $27, $28, $29
+	.byt	$30, $31, $32, $33, $34, $35, $36, $37, $38, $39
+	.byt	$40, $41, $42, $43, $44, $45, $46, $47, $48, $49
+	.byt	$50, $51, $52, $53, $54, $55, $56, $57, $58, $59
+	.byt	$60, $61, $62, $63, $64, $65, $66, $67, $68, $69
+	.byt	$70, $71, $72, $73, $74, $75, $76, $77, $78, $79
+	.byt	$80, $81, $82, $83, $84, $85, $86, $87, $88, $89
+	.byt	$90, $91, $92, $93, $94, $95, $96, $97, $98, $99
 
 #ifdef	POCKET
 file_end:					; for pocket format
