@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240824-0138
+; last modified 20240824-0957
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -602,11 +602,12 @@ stok:
 			ORA #LAST_V		; start from last useable cell, backwards
 			TAX				; index ready
 			TYA				; pivot element ready
+			LDY select		; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 mjml:
 				CMP field, X			; does it match?
 				BNE no_mjmt
 					STA mark, X			; if so, mark it for deletion
-					INC match_c, X		; count it as well
+					INC match_c, Y		; count it as well EEEEEEEEEEK
 no_mjmt:
 				DEX			; one less
 				CPX select	; already done all of this player's field?
