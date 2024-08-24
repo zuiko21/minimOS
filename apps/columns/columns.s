@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240824-0957
+; last modified 20240824-0959
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -236,10 +236,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1041			; 1.0b1		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1042			; 1.0b2		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5600			; time, 10.48		0101 0-110 000-0 0000
-	.word	$5917			; date, 2024/8/23	0101 100-1 000-1 0111
+	.word	$5000			; time, 10.00		0101 0-000 000-0 0000
+	.word	$5918			; date, 2024/8/24	0101 100-1 000-1 1000
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -307,12 +307,6 @@ no_kbd:
 ; *** *** main event loop *** ***
 ; *******************************
 loop:
-#echo check select
-lda select
-and#$7f
-beq s1ok
-.byt$cb
-s1ok:
 	LDX select				; check player...
 	LDY pad0val, X			; ...and its controller status
 	BNE chk_stat			; some buttons were pressed
@@ -578,11 +572,6 @@ not_crash:
 	LDA status, X
 	CMP #STAT_CHK
 	BNE not_check
-#echo inner check
-lsr
-bcc stok
-.byt$cb
-stok:
 ; * check whether magic tile has dropped *
 		LDY dr_mj, X		; get magic flag
 		BEQ no_mjwl			; nope, proceed with standard check
@@ -594,23 +583,23 @@ stok:
 			STA mark+ROW_OFF*2, Y
 			CLC
 			ADC #COL_HGT	; go three rows below from first tile
-			TAX				; index within field
-			LDY field, X	; check what was under the magic column
+			TAY				; index within field
+			LDX field, Y	; check what was under the magic column
 		BMI no_mjwl2		; if sentinel, we are at the very bottom, do nothing... just flashing
 ; special case, mark every tile of the same type of that just below the magic jewel
 			LDA select		; player as last position
 			ORA #LAST_V		; start from last useable cell, backwards
-			TAX				; index ready
-			TYA				; pivot element ready
-			LDY select		; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
+			TAY				; index ready
+			TXA				; pivot element ready
+			LDX select		; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 mjml:
-				CMP field, X			; does it match?
+				CMP field, Y			; does it match?
 				BNE no_mjmt
-					STA mark, X			; if so, mark it for deletion
-					INC match_c, Y		; count it as well EEEEEEEEEEK
+					STA mark, Y			; if so, mark it for deletion
+					INC match_c, X		; count it as well EEEEEEEEEEK
 no_mjmt:
-				DEX			; one less
-				CPX select	; already done all of this player's field?
+				DEY			; one less
+				CPY select	; already done all of this player's field?
 				BNE mjml	; if not, continue scanning
 ; anything else?
 no_mjwl2:
