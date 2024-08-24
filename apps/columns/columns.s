@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240824-1705
+; last modified 20240824-1743
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -372,10 +372,14 @@ not_s1u:
 			CMP padlast, X	; still pressing?
 		BEQ not_lvl			; ignore!
 			STA padlast, X	; anyway, register this press
-			LDY s_level, X	; selected level
-			LDA ini_spd, Y
+; set initial parameters
+			LDY s_level, X	; selected difficulty
+			LDA ini_lbin, Y	; get level accordingly
+			TAY				; level index 0, 5 or 10
+			LDA ini_spd, Y	; proper speed for this level
 			STA speed, X	; eeeeek
-			LDA ini_lev, Y	; level as index for initial value
+			LDY s_level, X	; selected difficulty again
+			LDA ini_lev, Y	; level BCD as index for initial value
 			PHA				; later...
 			LDA ini_score, Y
 			STA bcd_arr+3, X			; score counter eeeeek
@@ -840,7 +844,9 @@ not_blink:
 do_explode:
 		LDA ticks
 		CMP ev_dly, X		; is it time?
-	BMI not_explode
+		BPL upd_explode
+	JMP not_explode
+upd_explode:
 		CLC
 		ADC #EXP_SPD		; frame rate
 		STA ev_dly, X		; ready for next time
@@ -910,6 +916,12 @@ no_clock:
 			STA goal, X
 upd_lvl:
 		CLD					; back to binary mode!
+		LDY bcd_arr, X		; recheck current level (BCD)
+		CPY #$10			; already at max speed?
+		BCS max_spd
+			LDA ini_spd, Y	; otherwise get rate from table (index 0...9 is already binary)
+			STA speed, X	; update speed
+max_spd:
 		LDY #DISP_LVL
 		JSR numdisp			; display updated level on screen
 no_goal:
@@ -2171,17 +2183,20 @@ bit_pos:
 ; initial level & scores according to difficulty
 ini_lev:
 	.byt	0, 5, $10		; initial level (BCD)
-
+ini_lbin:
+	.byt	0, 5, 10		; initial level (binary)
 ini_score:
 	.byt	0, 1, 2			; "third" byte initial score (BCD)
 ini_sc_l:
 	.byt	0, 0, $50		; "second" byte initial score (BCD)
 
+; new values for up to 10 levels
 ini_spd:
-	.byt	125, 32, 8		; 127, 3, 2		; initial speed value, halving each level, but never below 4 interrupts (note these are HALF values)
+	.byt	125, 97, 74, 56, 42, 32, 25, 18, 14, 11, 8
 
 magic_colour:
 	.byt	$FF, $22, $33, $77, $55, $99, $AA, $FF	; six jewel colours [1..6], note first and last entries void
+
 
 
 	.dsb	$80*((* & $7F) <> 0) - (* & $7F), $FF	; HALF page alignment EEEEEEK
