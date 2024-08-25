@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240825-1029
+; last modified 20240825-1103
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -121,23 +121,23 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 
 ; * animation parameters *
 ; magic jewel animation speed (MUST be one less a power of two!)
-#define	MJ_UPD		15
+#define	MJ_UPD		31
 ; cycles for blink animation and spacing between them
 #define	BLINKS		8
-#define	BL_SPC		6
+#define	BL_SPC		12
 ; explosion rate
-#define	EXP_SPD		8
+#define	EXP_SPD		16
 ; column drop rate
-#define	CDROP_T		2
+#define	CDROP_T		5
 ; die animation period
-#define	DIE_PER		5
+#define	DIE_PER		10
 
 ; * other timings *
-; mask for down key repeat rate
-#define	DMASK		7
+; mask for down key repeat rate (MUST be one less a power of two!)
+#define	DMASK		15
 ; peñonazo cycles and time between pulses
 #define	P_CYC		5
-#define	P_PER		2
+#define	P_PER		4
 
 ; *************************
 ; *** memory allocation ***
@@ -202,8 +202,8 @@ _end_zp	= goal2+2
 ; these MUST be outside ZP, change start address accordingly
 irq_ptr	= $0200				; for Pocket compatibility
 nmi_ptr	= $0202
-ticks_h	= $0205				; no BRK in use, sort of compatible
 ticks	= $0206				; standard address, although 8-bit only
+ticks_l	= $0207				; older timer for compatibility
 field	= $0400				; 8x16 (6x13 visible) game status arrays (player2 = +128)
 field2	= $0480
 mark	= $0500				; tile match register, mimics the game arrays (player2 = +128)
@@ -243,10 +243,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1043			; 1.0b3		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1044			; 1.0b4		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$6A00			; time, 13.16		0110 1-010 000-0 0000
-	.word	$5918			; date, 2024/8/24	0101 100-1 000-1 1000
+	.word	$5700			; time, 10.56		0101 0-111 000-0 0000
+	.word	$5919			; date, 2024/8/25	0101 100-1 000-1 1001
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -2059,11 +2059,11 @@ isr:
 	PHA
 	PHX						; eeeeek best ASAP
 	PHY
-	INC ticks_h				; main will increment every other 2
-	LDA ticks_h
+	INC ticks
+	LDA ticks
 	AND #1					; check even/odd
 	BNE tk_nw
-		INC ticks
+		INC ticks_l			; will increment every each other
 tk_nw:
 	JSR read_pad
 ; read keyboard as emulated gamepads (assume standard 5x8 keyboard is used)
@@ -2205,7 +2205,7 @@ ini_sc_l:
 
 ; new values for up to 10 levels
 ini_spd:
-	.byt	125, 97, 74, 56, 42, 32, 25, 18, 14, 11, 8
+	.byt	250, 194, 148, 112, 84, 64, 50, 36, 28, 22, 16
 
 magic_colour:
 	.byt	$FF, $22, $33, $77, $55, $99, $AA, $FF	; six jewel colours [1..6], note first and last entries void
