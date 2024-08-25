@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240825-1641
+; last modified 20240825-1658
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -390,6 +390,7 @@ not_s1u:
 			STA bcd_arr+3, X			; score counter eeeeek
 			LDA ini_sc_l, Y
 			STA bcd_arr+4, X
+			STZ bcd_arr+5, X			; clear this one too!
 			PLA
 			STA bcd_arr, X				; place initial values in adequate array indices
 			STZ bcd_arr+1, X
@@ -692,18 +693,21 @@ hch_rpt:
 			CPX #JWL_COL				; at least 3-in-a-row? ** CHECK **
 		BCC hch_try						; not enough, try again
 ; compute score from number of matched tiles, X is run length
-			LDA delta, X	; get accumulated score
+			PHY				; eeeek
+			LDY select		; eeeeek
+			LDA delta, Y	; get accumulated score eeeeeek
 			CLC
 			ADC base_sc, X	; add base points for this match
-			STA delta, X
-			LDA delta+1, X	; propagate carry
+			STA delta, Y
+			LDA delta+1, Y	; propagate carry
 			ADC #0
-			STA delta+1, X
+			STA delta+1, Y
 ; update match counter as well
 			LDA temp
 			CLC				; eeeek
 			ADC id_table, X	; actually A=A+X
 			STA temp		; update temporary counter
+			PLY				; eeek
 			TYA				; non-zero value, also saves current position
 hch_detect:
 				STA mark+1, Y			; mark them, one 'before' the first mismatch
@@ -926,18 +930,19 @@ not_fd:
 		LDA delta+1, X		; get partial score (should be multiplied etc)
 		STY htd_in
 		STA htd_in+1		; input for BCD conversion
-		JSR bcd2bin			; partial BCD string is at htd_out
+		JSR bin2bcd			; partial BCD string is at htd_out EEEEEK
 		SED					; decimal mode
 		CLC
-		LDA bcd_arr+5		; total score low byte
+		LDA bcd_arr+5, X	; total score low byte eeeeek
 		ADC htd_out+2		; add output
-		STA bcd_arr+5		; update
-		LDA bcd_arr+4		; same with mid byte
+		STA bcd_arr+5, X	; update
+		LDA bcd_arr+4, X	; same with mid byte
 		ADC htd_out+1
-		STA bcd_arr+4
-		LDA bcd_arr+3		; same with high byte
+		STA bcd_arr+4, X
+		LDA bcd_arr+3, X	; same with high byte
 		ADC htd_out
-		STA bcd_arr+3
+		STA bcd_arr+3, X
+		CLD					; eeeeeeeeeek
 		LDY #DISP_SCO
 		JSR numdisp			; display updated score
 
