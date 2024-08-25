@@ -128,13 +128,13 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 ; explosion rate
 #define	EXP_SPD		16
 ; column drop rate
-#define	CDROP_T		5
+#define	CDROP_T		2
 ; die animation period
 #define	DIE_PER		10
 
 ; * other timings *
 ; mask for down key repeat rate (MUST be one less a power of two!)
-#define	DMASK		15
+#define	DMASK		7
 ; peñonazo cycles and time between pulses
 #define	P_CYC		5
 #define	P_PER		4
@@ -483,9 +483,9 @@ not_pfire:
 		LDY #MOV_NONE		; eeek
 do_advance:
 ; in case of timeout, put piece down... or take another
-		LDA ticks
+		LDA ticks_l
 		CMP ev_dly, X
-		BMI p_end			; if timeout expired... but not BCC eeeeeek
+		BMI p_end			; if timeout expired... not BCC eeeeeek
 			CLC
 			ADC speed, X
 			STA ev_dly, X	; update time for next event
@@ -2203,14 +2203,12 @@ ini_score:
 ini_sc_l:
 	.byt	0, 0, $50		; "second" byte initial score (BCD)
 
-; new values for up to 10 levels
+; new values for up to 10 levels (coarse granularity, alas)
 ini_spd:
-	.byt	250, 194, 148, 112, 84, 64, 50, 36, 28, 22, 16
+	.byt	125, 87, 74, 56, 42, 32, 25, 18, 14, 11, 8
 
 magic_colour:
 	.byt	$FF, $22, $33, $77, $55, $99, $AA, $FF	; six jewel colours [1..6], note first and last entries void
-
-
 
 	.dsb	$80*((* & $7F) <> 0) - (* & $7F), $FF	; HALF page alignment EEEEEEK
 
