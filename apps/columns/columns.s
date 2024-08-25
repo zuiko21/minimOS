@@ -550,7 +550,7 @@ mj_not:
 			LDA column+2, X				; last jewel
 			STA field+ROW_OFF*2, Y
 mj_done:
-			JSR gen_col		; another piece
+;			JSR gen_col		; another piece
 			PLY
 ; new piece is stored, let's check for matches!
 			LDA #STAT_CRSH	; ...but let's go for peñonazo first!
@@ -641,6 +641,8 @@ no_mjwl:
 		BRA chk_switch		; will eventually switch thread
 ; *** common exit from any kind of unsuccessful check ***
 not_match:
+#echo generate new column after last check
+	JSR gen_col				; is this the correct place?
 	LDA #STAT_PLAY			; no success, back to play
 	LDX select				; needed, I'm afraid
 ; common exit from CHK, switching status
@@ -857,11 +859,12 @@ upd_explode:
 			LDA bcd_arr+2, X			; if so, check LSB afterwards
 			CMP goal+1, X
 		BCC no_warn			; nope, stay in current level
+; sound effect for level change
 			LDA #88
 			JSR tone
 			LDX select		; eeek
 no_warn:
-; above code could be unified, using a flag
+; check above could be unified, using a flag
 		INC anim, X			; preincrement step
 		LDA anim, X			; which step?
 		CMP #NUM_JWLS+2		; over last of explosion
