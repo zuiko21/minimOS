@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240824-2330
+; last modified 20240825-1029
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -851,14 +851,15 @@ upd_explode:
 		ADC #EXP_SPD		; frame rate
 		STA ev_dly, X		; ready for next time
 ; could do brief tone here IF goal has been reached
-;		LDA bcd_arr+1, X	; jewel count MSB
-;		CMP goal, X			; reached goal?
-;		BCC no_warn
-;			LDA bcd_arr+2, X			; if so, check LSB afterwards
-;			CMP goal+1, X
-;		BCC no_warn			; nope, stay in current level
-;			LDA #88
-;			JSR tone
+		LDA bcd_arr+1, X	; jewel count MSB
+		CMP goal, X			; reached goal?
+		BCC no_warn
+			LDA bcd_arr+2, X			; if so, check LSB afterwards
+			CMP goal+1, X
+		BCC no_warn			; nope, stay in current level
+			LDA #88
+			JSR tone
+			LDX select		; eeek
 no_warn:
 ; above code could be unified, using a flag
 		INC anim, X			; preincrement step
