@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240825-1658
+; last modified 20240825-1704
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -1621,6 +1621,17 @@ vc_l2:
 			BEQ vc_l2		; until end of run
 		CPX #JWL_COL		; three at least? CHECK
 		BCC vc_l1			; nope, keep trying
+; compute score from number of matched tiles, X is run length * could be routine
+			PHY				; eeeek
+			LDY select		; eeeeek
+			LDA delta, Y	; get accumulated score eeeeeek
+			CLC
+			ADC base_sc, X	; add base points for this match
+			STA delta, Y
+			LDA delta+1, Y	; propagate carry
+			ADC #0
+			STA delta+1, Y
+			PLY
 ; match found, must mark those tiles
 			LDA tempx		; this thread's current matches
 			CLC
@@ -1682,6 +1693,17 @@ slc_l2:
 			BEQ slc_l2		; until end of run
 		CPX #JWL_COL		; three at least? CHECK
 		BCC slc_l1			; nope, keep trying
+; compute score from number of matched tiles, X is run length * could be routine
+			PHY				; eeeek
+			LDY select		; eeeeek
+			LDA delta, Y	; get accumulated score eeeeeek
+			CLC
+			ADC base_sc, X	; add base points for this match
+			STA delta, Y
+			LDA delta+1, Y	; propagate carry
+			ADC #0
+			STA delta+1, Y
+			PLY
 ; match found, must mark those tiles
 			LDA tempx		; this thread's current matches
 			CLC
@@ -1754,6 +1776,17 @@ bsc_l2:
 			BEQ bsc_l2		; until end of run
 		CPX #JWL_COL		; three at least? CHECK
 		BCC bsc_l1			; nope, keep trying
+; compute score from number of matched tiles, X is run length * could be routine
+			PHY				; eeeek
+			LDY select		; eeeeek
+			LDA delta, Y	; get accumulated score eeeeeek
+			CLC
+			ADC base_sc, X	; add base points for this match
+			STA delta, Y
+			LDA delta+1, Y	; propagate carry
+			ADC #0
+			STA delta+1, Y
+			PLY
 ; match found, must mark those tiles
 			LDA tempx		; this thread's current matches
 			CLC
