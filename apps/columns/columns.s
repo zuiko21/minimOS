@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240825-1147
+; last modified 20240825-1641
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -162,8 +162,9 @@ dr_mj	= mag_col+1			; flag (d7) if magic jewel is dropped / show or hide tile du
 match_c	= dr_mj+1			; match counter
 cycle	= match_c+1			; check round
 goal	= cycle+1			; jewel count for next level, big-endian BCD (JJ)
+delta	= goal+2			; temporary score (binary)
 ; common data (non-duplicated)
-tempx	= goal+2			; now another temporary
+tempx	= delta+2			; now another temporary
 temp	= tempx+1
 select	= temp+1			; player index for main loop
 bcd_lim	= select+1
@@ -176,6 +177,9 @@ ptr		= src+2
 ; irq_ptr and ticks(h) no longer here
 kbd_ok	= ptr+2				; if non-zero, supported keyboard has been detected
 col_sel	= kbd_ok+1			; keyboard column counter
+; * these probably common, but will need indexing if multi-threaded *
+htd_in	= col_sel+1			; 2-byte input
+htd_out	= htd_in+2			; 3-byte output
 ; player 2 data for convenience
 status2	= status+PLYR_OFF	; player status (this is usually 192)
 speed2	= status2+1			; 7-bit value between events (127 at level 0, halving after that, but never under 5?)
@@ -196,8 +200,9 @@ dr_mj2	= mag_col2+1		; flag (d7) if magic jewel is dropped
 match_c2= dr_mj2+1			; match counter
 cycle2	= match_c2+1		; check round
 goal2	= cycle2+1			; jewel count for next level, big-endian BCD (JJ)
+delta2	= goal2+2			; temporary score (binary)
 
-_end_zp	= goal2+2
+_end_zp	= delta2+2
 
 ; these MUST be outside ZP, change start address accordingly
 irq_ptr	= $0200				; for Pocket compatibility
@@ -243,9 +248,9 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1044			; 1.0b4		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1045			; 1.0b5		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5700			; time, 10.56		0101 0-111 000-0 0000
+	.word	$7C00			; time, 10.32		0111 1-100 000-0 0000
 	.word	$5919			; date, 2024/8/25	0101 100-1 000-1 1001
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
@@ -685,8 +690,16 @@ hch_rpt:
 				CMP field, Y			; same as pivot?
 				BEQ hch_rpt				; keep counting matches
 			CPX #JWL_COL				; at least 3-in-a-row? ** CHECK **
-			BCC hch_try					; not enough, try again
-; compute score from number of matched tiles ** TO DO
+		BCC hch_try						; not enough, try again
+; compute score from number of matched tiles, X is run length
+			LDA delta, X	; get accumulated score
+			CLC
+			ADC base_sc, X	; add base points for this match
+			STA delta, X
+			LDA delta+1, X	; propagate carry
+			ADC #0
+			STA delta+1, X
+; update match counter as well
 			LDA temp
 			CLC				; eeeek
 			ADC id_table, X	; actually A=A+X
@@ -737,7 +750,7 @@ not_vchk:
 		ORA select			; eeeeeeeeeeeeeeeeeeeeeeeeek
 		STA anim, X			; store as initial position
 		LDA #STAT_BSCK
-		BRA chk_switch
+		JMP chk_switch
 not_slck:
 
 ; * * BSCK STATUS, check for matching tiles (backslash diagonal) * *
@@ -757,7 +770,9 @@ not_bsck:
 ; * * BLNK STATUS, blink matched pieces * *
 	LDA status, X
 	CMP #STAT_BLNK
-	BNE not_blink
+		BEQ do_blink
+	JMP not_blink
+do_blink:
 		LDA ticks			; check current time
 		CMP ev_dly, X		; alternative, safer way
 		BMI not_blink		; if timeout expired... but not BCC eeeeeek
@@ -892,7 +907,7 @@ tile_noexp:
 				CPY select	; until topmost tile
 				BNE ex_loop
 			LDX select		; restore this!
-			BRA not_explode	; leave thread for now
+			JMP not_explode	; leave thread for now
 ; delete marked pieces
 end_expl:
 		TXA					; get player index
@@ -906,7 +921,25 @@ not_fd:
 			DEX				; next cell
 			CPX select		; until the top
 			BNE exp_cl
-; after animation is ended, may display updated score * * TO DO
+; * after animation is ended, may display updated score ** perhaps after drop **
+		LDY delta, X
+		LDA delta+1, X		; get partial score (should be multiplied etc)
+		STY htd_in
+		STA htd_in+1		; input for BCD conversion
+		JSR bcd2bin			; partial BCD string is at htd_out
+		SED					; decimal mode
+		CLC
+		LDA bcd_arr+5		; total score low byte
+		ADC htd_out+2		; add output
+		STA bcd_arr+5		; update
+		LDA bcd_arr+4		; same with mid byte
+		ADC htd_out+1
+		STA bcd_arr+4
+		LDA bcd_arr+3		; same with high byte
+		ADC htd_out
+		STA bcd_arr+3
+		LDY #DISP_SCO
+		JSR numdisp			; display updated score
 
 ;		LDX select			; make sure
 ; check here if goal is achived for next level
@@ -1362,6 +1395,7 @@ bcd_loop:
 		BNE bcd_loop
 	LDX select				; for good measure
 	RTS
+
 ; * single number printing *
 ; input
 ;	A		BCD nibble
@@ -1399,6 +1433,37 @@ ras_nw:
 	INC ptr
 	PLY
 	PLX
+	RTS
+
+; ** binary to BCD conversion **
+; based on Garth Wilson's work at http://6502.org/source/integers/hex2dec.htm
+; input
+; output
+; affects Y
+bin2bcd:
+	STZ htd_out				; clear result
+	STZ htd_out+1
+	STZ htd_out+2
+	SED						; decimal mode!
+	LDY #15					; will convert 16 bits (0...15)
+b2b_l:
+		ASL htd_in
+		ROL htd_in+1		; if next highest bit was 0
+		BCC b2b_s			; then skip to next bit
+			LDA htd_out+2	; this is actually LSB
+			CLC
+			ADC bcd_p_l, Y	; add bit value, LSB first
+			STA htd_out+2
+			LDA htd_out+1	; then middle byte
+			ADC bcd_p_m, Y
+			STA htd_out+1
+			LDA htd_out		; then high byte
+			ADC bcd_p_h, Y	; summed output
+			STA htd_out		; store result
+b2b_s:
+		DEY
+		BPL b2b_l			; repeat for every source bit
+	CLD						; back to binary mode!
 	RTS
 
 ; ** death animation **
@@ -1512,6 +1577,8 @@ cfcl:
 		BPL cfcl			; 119*11 ~ 1300t, 850 µs or less
 	LDX select				; reload player index for good measure
 	STZ match_c, X			; reset match detection
+	STZ delta, X
+	STZ delta+1, X			; and temporary score, as well
 	PLY						; and this
 	RTS
 
@@ -2124,6 +2191,8 @@ isr_fin:
 isr_end:					; common interrupt exit
 	RTI
 
+code_end:					; for reference
+
 ; ********************
 ; *** picture data ***
 ; ********************
@@ -2147,7 +2216,8 @@ numbers:
 	.bin	0, 0, "art/numbers.sv20"				; generic number images, 20-byte wide
 levelsel:
 	.bin	0, 0, "art/level.sv24"					; uncompressed, 24-byte wide, 23 lines tall
-data_end:
+
+art_end:					; for reference
 
 ; **************
 ; *** tables ***
@@ -2186,14 +2256,19 @@ psum36:
 	.byt	2				; 36-byte x-position, player 1
 
 ; * common data *
+; multimedia
 cmpr_pics:					; to be displayed by dispic
 	.word	splash
 	.word	playfield
+
+magic_colour:
+	.byt	$FF, $22, $33, $77, $55, $99, $AA, $FF	; six jewel colours [1..6], note first and last entries void
 
 m_tone:
 ;			C#6  D6   D#6  E6   F6   F#6  G6  G#6 A6  A#6 B6  C7  C#7 D7  D#7
 	.byt	136, 129, 121, 114, 108, 102, 96, 90, 85, 80, 76, 71, 67, 63, 60	; C#6 to D#7
 
+; * gameplay *
 ix_dir:
 	.byt	1, 8, 255, 0, 0	; matrix index displacement (R/D/L/rot/none)
 
@@ -2210,12 +2285,17 @@ ini_score:
 ini_sc_l:
 	.byt	0, 0, $50		; "second" byte initial score (BCD)
 
+; base score for matching runs (0...7, which is the expected maximum)
+base_sc:
+	.byt	  0,  0,  0, 15, 30, 45, 60, 75					; half of the original game 
+
 ; new values for up to 10 levels (coarse granularity, alas)
 ini_spd:
 	.byt	125, 87, 74, 56, 42, 32, 25, 18, 14, 11, 8
 
-magic_colour:
-	.byt	$FF, $22, $33, $77, $55, $99, $AA, $FF	; six jewel colours [1..6], note first and last entries void
+; * keyboard data *
+pow_col:
+	.byt	1, 2, 4, 8		; read up to 4 columns
 
 	.dsb	$80*((* & $7F) <> 0) - (* & $7F), $FF	; HALF page alignment EEEEEEK
 
@@ -2246,10 +2326,6 @@ poff9_2:
 	.byt	9				; 9-col offset, player 2
 psum36_2:
 	.byt	38				; 36-byte offset, player 2
-
-; *** keyboard data ***
-pow_col:
-	.byt	1, 2, 4, 8		; read up to 4 columns
 
 ; any more?
 
@@ -2293,6 +2369,14 @@ bcd_id:
 	.byt	$80, $81, $82, $83, $84, $85, $86, $87, $88, $89
 	.byt	$90, $91, $92, $93, $94, $95, $96, $97, $98, $99
 
+; powers of two in BCD
+bcd_p_h:					; high byte
+	.byt	  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   1,   3
+bcd_p_m:					; mid byte
+	.byt	  0,   0,   0,   0,   0,   0,   0,   1,   2,   5, $10, $20, $40, $81, $63, $27
+bcd_p_l:					; low byte
+	.byt	  1,   2,   4,   8, $16, $32, $64, $28, $56, $12, $24, $48, $96, $92, $84, $68
+
 ; reverse BCD-to-binary table, any use?
 bcd2bin:
 	.byt	 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, $FF, $FF, $FF, $FF, $FF, $FF
@@ -2305,6 +2389,8 @@ bcd2bin:
 	.byt	70, 71, 72, 73, 74, 75, 76, 77, 78, 79, $FF, $FF, $FF, $FF, $FF, $FF
 	.byt	80, 81, 82, 83, 84, 85, 86, 87, 88, 89, $FF, $FF, $FF, $FF, $FF, $FF
 	.byt	90, 91, 92, 93, 94, 95, 96, 97, 98, 99, $FF, $FF, $FF, $FF, $FF, $FF
+
+data_end:
 
 #ifdef	POCKET
 file_end:					; for pocket format
