@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240825-1704
+; last modified 20240825-1709
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -702,12 +702,12 @@ hch_rpt:
 			LDA delta+1, Y	; propagate carry
 			ADC #0
 			STA delta+1, Y
+			PLY				; eeek
 ; update match counter as well
 			LDA temp
 			CLC				; eeeek
 			ADC id_table, X	; actually A=A+X
 			STA temp		; update temporary counter
-			PLY				; eeek
 			TYA				; non-zero value, also saves current position
 hch_detect:
 				STA mark+1, Y			; mark them, one 'before' the first mismatch
@@ -2238,16 +2238,16 @@ splash:
 	.bin	0, 0, "art/start.rle"
 playfield:
 	.bin	0, 0, "art/columns.rle"
-sprites:
-	.dsb	32, 0									; first tile is blank
-	.bin	0, 0, "art/jewels.sv4"					; uncompressed file, 4-byte wide!
-	.dsb	32, 0									; add an extra blank tile
 
 #ifndef	POCKET
 pre_io:						; this should be BEFORE I/O page!
 	.dsb	$E000-*, $FF	; skip I/O page!
 #endif
 
+sprites:
+	.dsb	32, 0									; first tile is blank
+	.bin	0, 0, "art/jewels.sv4"					; uncompressed file, 4-byte wide!
+	.dsb	32, 0									; add an extra blank tile
 gameover:
 	.bin	0, 0, "art/gameover.sv24"				; uncompressed, 24-byte wide
 numbers:
