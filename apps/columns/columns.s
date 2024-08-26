@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240826-2013
+; last modified 20240826-2223
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -952,11 +952,11 @@ not_fd:
 			SBC match_c, X	; minus one, is times 15
 			STA delta, X
 ; more efficient code to check borrow
-			BCS do_score	; no borrow is OK
-				DEC delta+1, X
-;			LDA delta+1, X	; propagate borrow
-;			SBC #0
-;			STA delta+1, X
+;			BCS do_score	; no borrow is OK
+;				DEC delta+1, X
+			LDA delta+1, X	; propagate borrow
+			SBC #0
+			STA delta+1, X
 do_score:
 		JSR bin2bcd			; partial BCD string is at htd_out EEEEEK
 		SED					; decimal mode
