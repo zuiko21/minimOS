@@ -2327,7 +2327,8 @@ ini_score:
 ;	.byt	0, 1, 2			; "third" byte initial score (BCD)
 	.byt	0, $99, 2			; "third" byte initial score (BCD)
 ini_sc_l:
-	.byt	0, 0, $50		; "second" byte initial score (BCD)
+;	.byt	0, 0, $50		; "second" byte initial score (BCD)
+	.byt	0, $99, $50		; "second" byte initial score (BCD)
 
 ; base score for matching runs (0...7, which is the expected maximum)
 base_sc:
