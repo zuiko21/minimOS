@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240826-1101
+; last modified 20240826-2013
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -931,8 +931,10 @@ not_fd:
 		LDY bcd_arr, X		; this is current level in BCD
 		LDA bcd2bin, Y		; binary equivalent
 		INC					; zero-based!
-		JSR multiply		; level applied!
-; might also check magic jewel score
+		JSR multiply		; level applied
+		LDA cycle, X		; check hojalete's shot
+		JSR multiply		; applied as well
+; might also check magic jewel score (no factors)
 		LDA delta, X
 		ORA delta+1, X		; any non-magic points?
 		BNE do_score		; if so, proceed directly
@@ -1521,7 +1523,7 @@ multiply:
 	LDA delta+1, X
 	STA mult+1				; copy 16-bit factor
 	STZ delta, X
-	STX delta+1, X			; clear result
+	STZ delta+1, X			; clear result
 mu_loop:
 		LSR mul8			; half 8-bit factor
 		BCC mu_skip			; go for next bit
