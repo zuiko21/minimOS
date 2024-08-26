@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240826-0958
+; last modified 20240826-1012
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -937,6 +937,12 @@ not_fd:
 		LDA bcd_arr+3, X	; same with high byte
 		ADC htd_out
 		STA bcd_arr+3, X
+		BCC sc_notc			; already clocked?
+			LDA #$99		; special overflow case
+			STA bcd_arr+3, X
+			STA bcd_arr+4, X
+			STA bcd_arr+5, X
+sc_notc:
 		CLD					; eeeeeeeeeek
 		LDY #DISP_SCO
 		JSR numdisp			; display updated score
@@ -2317,7 +2323,9 @@ ini_lev:
 ini_lbin:
 	.byt	0, 5, 10		; initial level (binary)
 ini_score:
-	.byt	0, 1, 2			; "third" byte initial score (BCD)
+#echo try score overflow
+;	.byt	0, 1, 2			; "third" byte initial score (BCD)
+	.byt	0, $99, 2			; "third" byte initial score (BCD)
 ini_sc_l:
 	.byt	0, 0, $50		; "second" byte initial score (BCD)
 
