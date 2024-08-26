@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240826-1033
+; last modified 20240826-1101
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -179,6 +179,8 @@ kbd_ok	= ptr+2				; if non-zero, supported keyboard has been detected
 col_sel	= kbd_ok+1			; keyboard column counter
 ; * these probably common, but will need indexing if multi-threaded *
 htd_out	= col_sel+1			; 3-byte output
+mult	= htd_out+3			; 16-bit temporary multiply
+mul8	= mult+2			; 8-bit factor
 ; player 2 data for convenience
 status2	= status+PLYR_OFF	; player status (this is usually 192)
 speed2	= status2+1			; 7-bit value between events (127 at level 0, halving after that, but never under 5?)
@@ -925,14 +927,19 @@ not_fd:
 			CPX select		; until the top
 			BNE exp_cl
 ; * after animation is ended, may display updated score ** perhaps after drop **
-; should apply factors here, and might also check magic jewel score
+; should apply factors here
+		LDY bcd_arr, X		; this is current level in BCD
+		LDA bcd2bin, Y		; binary equivalent
+		INC					; zero-based!
+		JSR multiply		; level applied!
+; might also check magic jewel score
 		LDA delta, X
 		ORA delta+1, X		; any non-magic points?
 		BNE do_score		; if so, proceed directly
 			LDA match_c, X	; otherwise, score is number of tiles, times 15
 			STZ delta+1, X	; clear MSB
 			ASL
-			ROL delta+1, X
+;			ROL delta+1, X	; max. match_c is 78, thus delta < 156
 			ASL
 			ROL delta+1, X
 			ASL
@@ -1497,6 +1504,39 @@ b2b_s:
 		DEY
 		BPL b2b_l			; repeat for every source bit
 	CLD						; back to binary mode!
+	RTS
+
+; ** multiply routine 8x16=16-bit **
+; input
+;	A			8-bit factor
+;	delta, X	16-bit factor
+;	X			player (preserved)
+; output
+;	delta, X
+; affects A, plus temporary mult/mul8
+multiply:
+	STA mul8				; copy 8-bit factor
+	LDA delta, X
+	STA mult
+	LDA delta+1, X
+	STA mult+1				; copy 16-bit factor
+	STZ delta, X
+	STX delta+1, X			; clear result
+mu_loop:
+		LSR mul8			; half 8-bit factor
+		BCC mu_skip			; go for next bit
+			LDA delta, X
+			CLC
+			ADC mult		; add this partial result
+			STA delta, X
+			LDA delta+1, X	; same for MSB
+			ADC mult+1
+			STA delta+1, X
+mu_skip:
+		ASL mult
+		ROL mult+1			; 16-bit factor times two
+		LDA mul8			; are we done?
+		BNE mu_loop
 	RTS
 
 ; ** death animation **
