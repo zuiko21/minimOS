@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240826-2223
+; last modified 20240826-2320
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -930,8 +930,6 @@ not_fd:
 ; should apply factors here
 		LDY bcd_arr, X		; this is current level in BCD
 		LDA bcd2bin, Y		; binary equivalent
-#echo check bcd 2 bin before inc
-.byt$cb
 		INC					; zero-based!
 		JSR multiply		; level applied
 		LDA cycle, X		; check hojalete's shot
@@ -2395,9 +2393,9 @@ ini_score:
 ini_sc_l:
 	.byt	0, 0, $50		; middle byte initial score (BCD)
 
-; base score for matching runs (0...7, which is the expected maximum)
+; base score for matching runs (0...9, which is the expected maximum)
 base_sc:
-	.byt	  0,  0,  0, 15, 30, 45, 60, 75					; half of the original game 
+	.byt	  0,  0,  0, 15, 30, 45, 60, 75, 90, 105			; half of the original game 
 
 ; new values for up to 10 levels (coarse granularity, alas)
 ini_spd:
