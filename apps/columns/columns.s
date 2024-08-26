@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240825-1709
+; last modified 20240826-0958
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -178,8 +178,7 @@ ptr		= src+2
 kbd_ok	= ptr+2				; if non-zero, supported keyboard has been detected
 col_sel	= kbd_ok+1			; keyboard column counter
 ; * these probably common, but will need indexing if multi-threaded *
-htd_in	= col_sel+1			; 2-byte input
-htd_out	= htd_in+2			; 3-byte output
+htd_out	= col_sel+1			; 3-byte output
 ; player 2 data for convenience
 status2	= status+PLYR_OFF	; player status (this is usually 192)
 speed2	= status2+1			; 7-bit value between events (127 at level 0, halving after that, but never under 5?)
@@ -926,10 +925,6 @@ not_fd:
 			CPX select		; until the top
 			BNE exp_cl
 ; * after animation is ended, may display updated score ** perhaps after drop **
-		LDY delta, X
-		LDA delta+1, X		; get partial score (should be multiplied etc)
-		STY htd_in
-		STA htd_in+1		; input for BCD conversion
 		JSR bin2bcd			; partial BCD string is at htd_out EEEEEK
 		SED					; decimal mode
 		CLC
@@ -1443,8 +1438,11 @@ ras_nw:
 ; ** binary to BCD conversion **
 ; based on Garth Wilson's work at http://6502.org/source/integers/hex2dec.htm
 ; input
+;	delta, X	binary
+;	X			player (untouched)
 ; output
-; affects Y
+;	htd_out		3-byte BCD, big endian!
+; affects Y & A
 bin2bcd:
 	STZ htd_out				; clear result
 	STZ htd_out+1
@@ -1452,8 +1450,8 @@ bin2bcd:
 	SED						; decimal mode!
 	LDY #15					; will convert 16 bits (0...15)
 b2b_l:
-		ASL htd_in
-		ROL htd_in+1		; if next highest bit was 0
+		ASL delta, X
+		ROL delta+1, X		; if next highest bit was 0
 		BCC b2b_s			; then skip to next bit
 			LDA htd_out+2	; this is actually LSB
 			CLC
