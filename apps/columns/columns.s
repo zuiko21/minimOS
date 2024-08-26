@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240826-1012
+; last modified 20240826-1033
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -925,6 +925,30 @@ not_fd:
 			CPX select		; until the top
 			BNE exp_cl
 ; * after animation is ended, may display updated score ** perhaps after drop **
+; should apply factors here, and might also check magic jewel score
+		LDA delta, X
+		ORA delta+1, X		; any non-magic points?
+		BNE do_score		; if so, proceed directly
+			LDA match_c, X	; otherwise, score is number of tiles, times 15
+			STZ delta+1, X	; clear MSB
+			ASL
+			ROL delta+1, X
+			ASL
+			ROL delta+1, X
+			ASL
+			ROL delta+1, X
+			ASL
+			ROL delta+1, X	; times 16
+			SEC
+			SBC match_c, X	; minus one, is times 15
+			STA delta, X
+; more efficient code to check borrow
+			BCS do_score	; no borrow is OK
+				DEC delta+1, X
+;			LDA delta+1, X	; propagate borrow
+;			SBC #0
+;			STA delta+1, X
+do_score:
 		JSR bin2bcd			; partial BCD string is at htd_out EEEEEK
 		SED					; decimal mode
 		CLC
@@ -2323,12 +2347,9 @@ ini_lev:
 ini_lbin:
 	.byt	0, 5, 10		; initial level (binary)
 ini_score:
-#echo try score overflow
-;	.byt	0, 1, 2			; "third" byte initial score (BCD)
-	.byt	0, $99, 2			; "third" byte initial score (BCD)
+	.byt	0, 1, 2			; high byte initial score (BCD)
 ini_sc_l:
-;	.byt	0, 0, $50		; "second" byte initial score (BCD)
-	.byt	0, $99, $50		; "second" byte initial score (BCD)
+	.byt	0, 0, $50		; middle byte initial score (BCD)
 
 ; base score for matching runs (0...7, which is the expected maximum)
 base_sc:
