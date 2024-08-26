@@ -930,6 +930,8 @@ not_fd:
 ; should apply factors here
 		LDY bcd_arr, X		; this is current level in BCD
 		LDA bcd2bin, Y		; binary equivalent
+#echo check bcd 2 bin before inc
+.byt$cb
 		INC					; zero-based!
 		JSR multiply		; level applied
 		LDA cycle, X		; check hojalete's shot
@@ -952,11 +954,11 @@ not_fd:
 			SBC match_c, X	; minus one, is times 15
 			STA delta, X
 ; more efficient code to check borrow
-;			BCS do_score	; no borrow is OK
-;				DEC delta+1, X
-			LDA delta+1, X	; propagate borrow
-			SBC #0
-			STA delta+1, X
+			BCS do_score	; no borrow is OK
+				DEC delta+1, X
+;			LDA delta+1, X	; propagate borrow
+;			SBC #0
+;			STA delta+1, X
 do_score:
 		JSR bin2bcd			; partial BCD string is at htd_out EEEEEK
 		SED					; decimal mode
