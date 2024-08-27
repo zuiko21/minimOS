@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240827-1703
+; last modified 20240827-1724
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -1678,8 +1678,22 @@ pause:
 		ADC #PAUS_SP		; next blink (around half a second)
 		STA ev_dly, X		; update time for next event
 ; update pause display
-		JSR inv_row			; ***PLACEHOLDER
-		LDX select
+;		JSR inv_row			; ***PLACEHOLDER
+		BIT ticks			; will check actually ~half second
+		BPL paus_clr			; 0=clear, 1=display
+			LDY #<paus_bn
+			LDX #>paus_bn	; pause banner address
+			BRA paus_upd
+paus_clr:
+; clear affected row, maybe simple empty banner?
+		LDY #<clear_bn
+		LDX #>clear_bn		; clear banner address
+paus_upd:
+		STY src
+		STX src+1			; store pointer
+		LDY #TIL_HGT-1		; 8-raster tall banner
+		JSR banner
+		LDX select			; restore status for good measure
 not_pupd:
 	RTS
 
@@ -2363,15 +2377,19 @@ pre_io:						; this should be BEFORE I/O page!
 #endif
 
 sprites:
-	.dsb	32, 0									; first tile is blank
-	.bin	0, 0, "art/jewels.sv4"					; uncompressed file, 4-byte wide!
-	.dsb	32, 0									; add an extra blank tile
+	.dsb	32, 0						; first tile is blank
+	.bin	0, 0, "art/jewels.sv4"		; uncompressed file, 4-byte wide!
+	.dsb	32, 0						; add an extra blank tile
 gameover:
-	.bin	0, 0, "art/gameover.sv24"				; uncompressed, 24-byte wide
+	.bin	0, 0, "art/gameover.sv24"	; uncompressed, 24-byte wide
 numbers:
-	.bin	0, 0, "art/numbers.sv20"				; generic number images, 20-byte wide
+	.bin	0, 0, "art/numbers.sv20"	; generic number images, 20-byte wide
 levelsel:
-	.bin	0, 0, "art/level.sv24"					; uncompressed, 24-byte wide, 23 lines tall
+	.bin	0, 0, "art/level.sv24"		; uncompressed, 24-byte wide, 23 lines tall
+clear_bn:
+	.dsb	BAN_WDT*TIL_HGT, 0			; clear banner
+paus_bn:
+;	.bin	0, 0, "art/pause.sv24"		; uncompressed 24-byte wide pause banner
 
 art_end:					; for reference
 
