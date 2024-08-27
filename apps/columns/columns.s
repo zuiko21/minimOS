@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240827-2235
+; last modified 20240828-0129
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -1692,7 +1692,15 @@ pause:
 			LDY #TIL_HGT	; actually 9-raster tall banner
 			JMP banner
 paus_clr:
+;#echo omit update restore
 		JSR restore			; clear affected row, actually redraw field
+;			LDY #<clear_bn
+;			LDX #>clear_bn	; pause banner address
+;			STY src
+;			STX src+1		; store pointer
+;			LDY #TIL_HGT	; actually 9-raster tall banner
+;			JMP banner
+
 		LDX select			; restore status for good measure
 not_pupd:
 	RTS
@@ -1704,6 +1712,7 @@ restore:
 	TAY						; full print index
 	SEC						; one more...
 	ADC #ROW_OFF+ROW_WDT	; until end of sixth row
+#echo use mul8
 	STA temp				; store safely
 p_rest:
 		PHY
@@ -1715,7 +1724,7 @@ no_rest:
 		PLY					; recover Y index
 		INY
 		CPY temp			; all done?
-		BEQ p_rest
+		BNE p_rest			; EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEK
 	JMP col_upd				; restore column as well, and return
 
 ; ** clear match detection matrix **
