@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240827-0922
+; last modified 20240827-1511
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -459,7 +459,8 @@ not_pright:
 			LDA ticks
 			AND #DMASK		; will drop quickly...
 			BNE p_end		; ...only every 8 ticks (16 interrupts)
-				LDY #MOV_DOWN					; otherwise, Y is one more
+				LDY #MOV_DOWN			; otherwise, Y is one more
+				INC delta, X			; extra score!
 			BRA p_end
 not_pdown:
 		BIT #PAD_FIRE|PAD_B	; flip?
@@ -560,6 +561,7 @@ mj_done:
 			JSR gen_col		; another piece
 			PLY
 ; new piece is stored, let's check for matches!
+			JSR addscore	; add possible drop points
 			LDA #STAT_CRSH	; ...but let's go for peñonazo first!
 			STA status, X	; change status
 			LDA #P_CYC		; number of peñonazo cliks
@@ -2098,6 +2100,8 @@ sfh_loop:
 		INY					; EEEEEEEEEEEEEEEEEEEEK
 		BPL sfh_loop		; last one gets repeated, but no worries
 	LDX select				; for uniformity
+	STZ delta, X			; clear for drop counter
+;	STZ delta+1, X
 	RTS
 
 ; ** generate new column with 3 jewels ** should check here for room, actually
