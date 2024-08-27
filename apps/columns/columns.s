@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240827-1724
+; last modified 20240827-1742
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -1149,8 +1149,27 @@ not_release:
 		LDA pad0val, X
 		BIT #PAD_STRT		; check whether START is pressed again
 	BEQ not_pause			; not yet, stay in pause
-		STA padlast, X		; needed?
-; ** ** TO DO * otherwise, get screen back * TO DO ** **
+		STA padlast, X		; otherwise, this is needed
+; get screen back (fifth and sixth rows)
+		LDA #VTOP_L+4*TIL_HGT			; fifth row start
+		ORA select						; player index
+		TAY								; full print index
+		SEC								; one more...
+		ADC #ROW_OFF+ROW_WDT			; until end of sixth row
+		STA temp						; store safely
+p_rest:
+			PHY
+			LDA field, Y
+			CMP #$FF					; sentinel?
+			BEQ no_rest
+				JSR tiledis				; restore this tile
+no_rest:
+			PLY							; recover Y index
+			INY
+			CPY temp					; all done?
+			BNE p_rest
+		JSR col_upd			; restore column as well
+; continue play
 		LDA paus_t, X		; get remaining time
 		CLC
 		ADC ticks_l			; add to current time
