@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240827-1511
+; last modified 20240827-1703
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -71,8 +71,9 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 #define	STAT_BLNK	18
 #define	STAT_EXPL	20
 #define	STAT_DROP	22
-#define	STAT_PAUS	24
-#define	STAT_DIE	26
+#define	STAT_RLS	24
+#define	STAT_PAUS	26
+#define	STAT_DIE	28
 
 ; * some game constants *
 #define	NUM_LVLS	3
@@ -131,6 +132,8 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 #define	CDROP_T		2
 ; die animation period
 #define	DIE_PER		10
+; pause animation period (around half a second)
+#define	PAUS_SP		64
 
 ; * other timings *
 ; mask for down key repeat rate (MUST be one less a power of two!)
@@ -163,8 +166,9 @@ match_c	= dr_mj+1			; match counter
 cycle	= match_c+1			; check round
 goal	= cycle+1			; jewel count for next level, big-endian BCD (JJ)
 delta	= goal+2			; temporary score (binary)
+paus_t	= delta+2			; stored event count after pause
 ; common data (non-duplicated)
-tempx	= delta+2			; now another temporary
+tempx	= paus_t+1			; now another temporary
 temp	= tempx+1
 select	= temp+1			; player index for main loop
 bcd_lim	= select+1
@@ -202,8 +206,9 @@ match_c2= dr_mj2+1			; match counter
 cycle2	= match_c2+1		; check round
 goal2	= cycle2+1			; jewel count for next level, big-endian BCD (JJ)
 delta2	= goal2+2			; temporary score (binary)
+paus_t2	= delta2+2			; stored event count after pause
 
-_end_zp	= delta2+2
+_end_zp	= paus_t2+2
 
 ; these MUST be outside ZP, change start address accordingly
 irq_ptr	= $0200				; for Pocket compatibility
@@ -413,7 +418,6 @@ not_s1u:
 			STA ev_dly, X	; compute delay until next event
 			LDA #STAT_PLAY
 			STA status, X
-; TODO * I believe some screen init is needed here * TODO
 			BRA not_lvl
 s1_nw:
 		JSR inv_row			; mark new value
@@ -427,9 +431,15 @@ is_play:
 		LDA pad0val, X		; restore and continue evaluation * must be here
 		BIT #PAD_STRT		; START will make pause
 		BEQ not_pstart
-; ** ** TO DO * PAUSE * TO DO ** **
-
-			LDA #STAT_PAUS
+			CMP padlast, X	; still pressing?
+		BEQ not_pstart 
+; in order not to help, store whatever time is left for next down event so it could be restored
+			LDA ev_dly, X	; next event
+			SEC
+			SBC ticks_l		; minus current time
+			STA paus_t, X	; store for later
+; should make initial display ** TO DO
+			LDA #STAT_RLS	; will wait for START key release!
 			STA status, X
 			JMP not_play
 not_pstart:
@@ -1116,22 +1126,37 @@ not_drop:
 			JSR palmatoria	; will switch to STAT_OVER when finished * might be inlined
 		LDX select
 not_die:
+
+; * * ReLeaSe STATUS, wait the release of START button when entering PAUSe mode * *
+	LDA status, X			; ...just in case
+	CMP #STAT_RLS			; entering pause
+	BNE not_release
+		LDA pad0val, X
+		BIT #PAD_STRT
+	BNE not_yet_release		; not yet released
+		LDA #STAT_PAUS		; otherwise, enter pause mode
+		STA status, X
+	BRA not_release			; no longer this mode
+not_yet_release:
+		JSR pause			; update pause display
+not_release:
+
 ; * * PAUSe STATUS * * TO DO
 	LDA status, X			; ...just in case
 	CMP #STAT_PAUS			; in pause
 	BNE not_pause
+		JSR pause			; meanwhile, update display
 		LDA pad0val, X
-		BIT #PAD_STRT
-		BEQ st5_rls			; just released, check previous
-			STA padlast, X	; otherwise register press
-			BRA not_pause
-st5_rls:
-		LDA padlast, X		; check previous
-		BIT #PAD_STRT		; just released START?
-		BNE not_pause		; nope, just continue
+		BIT #PAD_STRT		; check whether START is pressed again
+	BEQ not_pause			; not yet, stay in pause
+		STA padlast, X		; needed?
 ; ** ** TO DO * otherwise, get screen back * TO DO ** **
-			LDA #STAT_PLAY
-			STA status, X	; restore play mode
+		LDA paus_t, X		; get remaining time
+		CLC
+		ADC ticks_l			; add to current time
+		STA ev_dly, X		; this is the next event
+		LDA #STAT_PLAY
+		STA status, X		; restore play mode
 not_pause:
 ; * * * all feasible stati checked, switch player thread * * *
 next_player:
@@ -1642,6 +1667,20 @@ go_nw:
 			INC ptr+1		; there was page crossing
 		BRA go_vloop
 go_exit:
+	RTS
+
+; ** pause mode display update **
+pause:
+	LDA ticks_l
+	CMP ev_dly, X
+	BMI not_pupd			; if timeout expired... but not BCC
+		CLC
+		ADC #PAUS_SP		; next blink (around half a second)
+		STA ev_dly, X		; update time for next event
+; update pause display
+		JSR inv_row			; ***PLACEHOLDER
+		LDX select
+not_pupd:
 	RTS
 
 ; ** clear match detection matrix **
