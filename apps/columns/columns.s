@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240827-1754
+; last modified 20240827-2221
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -132,8 +132,8 @@ IO_PSG	= $DFDB				; PSG for optional effects and background music
 #define	CDROP_T		2
 ; die animation period
 #define	DIE_PER		10
-; pause animation period (around half a second)
-#define	PAUS_SP		64
+; pause animation period (around 1/4 second)
+#define	PAUS_SP		32
 
 ; * other timings *
 ; mask for down key repeat rate (MUST be one less a power of two!)
@@ -254,9 +254,9 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1046			; 1.0b6		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1081			; 1.0RC1		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$4A00			; time, 09.16		0100 1-010 000-0 0000
+	.word	$B2C0			; time, 22.22		1011 0-010 110-0 0000
 	.word	$591B			; date, 2024/8/27	0101 100-1 000-1 1011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
@@ -1150,25 +1150,7 @@ not_release:
 		BIT #PAD_STRT		; check whether START is pressed again
 	BEQ not_pause			; not yet, stay in pause
 		STA padlast, X		; otherwise, this is needed
-; get screen back (fifth and sixth rows)
-		LDA #VTOP_L+4*TIL_HGT			; fifth row start
-		ORA select						; player index
-		TAY								; full print index
-		SEC								; one more...
-		ADC #ROW_OFF+ROW_WDT			; until end of sixth row
-		STA temp						; store safely
-p_rest:
-			PHY
-			LDA field, Y
-			CMP #$FF					; sentinel?
-			BEQ no_rest
-				JSR tiledis				; restore this tile
-no_rest:
-			PLY							; recover Y index
-			INY
-			CPY temp					; all done?
-			BNE p_rest
-		JSR col_upd			; restore column as well
+		JSR restore			; get screen back (fifth and sixth rows)
 ; continue play
 		LDA paus_t, X		; get remaining time
 		CLC
@@ -1177,6 +1159,7 @@ no_rest:
 		LDA #STAT_PLAY
 		STA status, X		; restore play mode
 not_pause:
+
 ; * * * all feasible stati checked, switch player thread * * *
 next_player:
 ; check possible colour animation on magic jewel...
@@ -1699,22 +1682,41 @@ pause:
 ; update pause display
 ;		JSR inv_row			; ***PLACEHOLDER
 		BIT ticks			; will check actually ~half second
-		BPL paus_clr			; 0=clear, 1=display
+		BVC paus_clr		; 0=clear, 1=display
 			LDY #<paus_bn
 			LDX #>paus_bn	; pause banner address
+			STY src
+			STX src+1		; store pointer
+			LDY #TIL_HGT	; actually 9-raster tall banner
+			JSR banner
 			BRA paus_upd
 paus_clr:
-; clear affected row, maybe simple empty banner?
-		LDY #<clear_bn
-		LDX #>clear_bn		; clear banner address
+		JSR restore			; clear affected row, actually redraw field
 paus_upd:
-		STY src
-		STX src+1			; store pointer
-		LDY #TIL_HGT		; actually 9-raster tall banner
-		JSR banner
 		LDX select			; restore status for good measure
 not_pupd:
 	RTS
+
+; ** restore pause banner area **
+restore:
+	LDA #VTOP_L+4*TIL_HGT	; fifth row start
+	ORA select				; player index
+	TAY						; full print index
+	SEC						; one more...
+	ADC #ROW_OFF+ROW_WDT	; until end of sixth row
+	STA temp				; store safely
+p_rest:
+		PHY
+		LDA field, Y
+		CMP #$FF			; sentinel?
+		BEQ no_rest
+			JSR tiledis		; restore this tile
+no_rest:
+		PLY					; recover Y index
+		INY
+		CPY temp			; all done?
+		BNE p_rest
+	JMP col_upd				; restore column as well, and return
 
 ; ** clear match detection matrix **
 ; affects A, restores player at X
@@ -2397,8 +2399,6 @@ numbers:
 	.bin	0, 0, "art/numbers.sv20"	; generic number images, 20-byte wide
 levelsel:
 	.bin	0, 0, "art/level.sv24"		; uncompressed, 24-byte wide, 23 lines tall
-clear_bn:
-	.dsb	BAN_WDT*(1+TIL_HGT), 0		; 24*9 clear banner
 paus_bn:
 	.bin	0, 0, "art/pause.sv24"		; uncompressed 24-byte wide pause banner
 
