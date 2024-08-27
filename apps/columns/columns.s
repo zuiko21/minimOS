@@ -2387,14 +2387,6 @@ code_end:					; for reference
 ; ********************
 splash:
 	.bin	0, 0, "art/start.rle"
-playfield:
-	.bin	0, 0, "art/columns.rle"
-
-#ifndef	POCKET
-pre_io:						; this should be BEFORE I/O page!
-	.dsb	$E000-*, $FF	; skip I/O page!
-#endif
-
 sprites:
 	.dsb	32, 0						; first tile is blank
 	.bin	0, 0, "art/jewels.sv4"		; uncompressed file, 4-byte wide!
@@ -2409,6 +2401,14 @@ clear_bn:
 	.dsb	BAN_WDT*(1+TIL_HGT), 0		; 24*9 clear banner
 paus_bn:
 	.bin	0, 0, "art/pause.sv24"		; uncompressed 24-byte wide pause banner
+
+#ifndef	POCKET
+pre_io:						; this should be BEFORE I/O page!
+	.dsb	$E000-*, $FF	; skip I/O page!
+#endif
+
+playfield:
+	.bin	0, 0, "art/columns.rle"
 
 art_end:					; for reference
 
