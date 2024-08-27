@@ -559,9 +559,14 @@ mj_not:
 			STA field+ROW_OFF*2, Y
 mj_done:
 			JSR gen_col		; another piece
+			LDA delta, X	; any drop points?
+			BEQ no_droppt
+				JSR addscore			; add possible drop points
+				LDY #DISP_SCO
+				JSR numdisp				; display updated score
+no_droppt:
 			PLY
 ; new piece is stored, let's check for matches!
-			JSR addscore	; add possible drop points
 			LDA #STAT_CRSH	; ...but let's go for peñonazo first!
 			STA status, X	; change status
 			LDA #P_CYC		; number of peñonazo cliks
