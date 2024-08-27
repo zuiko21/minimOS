@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240826-2320
+; last modified 20240827-0922
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -249,10 +249,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1045			; 1.0b5		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1046			; 1.0b6		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$7C00			; time, 10.32		0111 1-100 000-0 0000
-	.word	$5919			; date, 2024/8/25	0101 100-1 000-1 1001
+	.word	$4A00			; time, 09.16		0100 1-010 000-0 0000
+	.word	$591B			; date, 2024/8/27	0101 100-1 000-1 1011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -958,25 +958,7 @@ not_fd:
 ;			SBC #0
 ;			STA delta+1, X
 do_score:
-		JSR bin2bcd			; partial BCD string is at htd_out EEEEEK
-		SED					; decimal mode
-		CLC
-		LDA bcd_arr+5, X	; total score low byte eeeeek
-		ADC htd_out+2		; add output
-		STA bcd_arr+5, X	; update
-		LDA bcd_arr+4, X	; same with mid byte
-		ADC htd_out+1
-		STA bcd_arr+4, X
-		LDA bcd_arr+3, X	; same with high byte
-		ADC htd_out
-		STA bcd_arr+3, X
-		BCC sc_notc			; already clocked?
-			LDA #$99		; special overflow case
-			STA bcd_arr+3, X
-			STA bcd_arr+4, X
-			STA bcd_arr+5, X
-sc_notc:
-		CLD					; eeeeeeeeeek
+		JSR addscore		; get BCD string from delta and add it to global score
 		LDY #DISP_SCO
 		JSR numdisp			; display updated score
 
@@ -1475,14 +1457,15 @@ ras_nw:
 	RTS
 
 ; ** binary to BCD conversion **
+; now adds to BCD score too
 ; based on Garth Wilson's work at http://6502.org/source/integers/hex2dec.htm
 ; input
-;	delta, X	binary
-;	X			player (untouched)
+;	delta, X		binary
+;	X				player (untouched)
 ; output
-;	htd_out		3-byte BCD, big endian!
-; affects Y & A
-bin2bcd:
+;	bcd_arr+3, X	3-byte BCD, big endian!
+; affects Y & A, plus local htd_out
+addscore:
 	STZ htd_out				; clear result
 	STZ htd_out+1
 	STZ htd_out+2
@@ -1505,6 +1488,23 @@ b2b_l:
 b2b_s:
 		DEY
 		BPL b2b_l			; repeat for every source bit
+; now add the temporary result in htd_out to global BCD score
+	CLC
+	LDA bcd_arr+5, X		; total score low byte eeeeek
+	ADC htd_out+2			; add output
+	STA bcd_arr+5, X		; update
+	LDA bcd_arr+4, X		; same with mid byte
+	ADC htd_out+1
+	STA bcd_arr+4, X
+	LDA bcd_arr+3, X		; same with high byte
+	ADC htd_out
+	STA bcd_arr+3, X
+	BCC sc_notc				; already clocked?
+		LDA #$99			; special overflow case
+		STA bcd_arr+3, X
+		STA bcd_arr+4, X
+		STA bcd_arr+5, X
+sc_notc:
 	CLD						; back to binary mode!
 	RTS
 
