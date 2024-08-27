@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240827-1742
+; last modified 20240827-1754
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -1710,7 +1710,7 @@ paus_clr:
 paus_upd:
 		STY src
 		STX src+1			; store pointer
-		LDY #TIL_HGT-1		; 8-raster tall banner
+		LDY #TIL_HGT		; actually 9-raster tall banner
 		JSR banner
 		LDX select			; restore status for good measure
 not_pupd:
@@ -2406,9 +2406,9 @@ numbers:
 levelsel:
 	.bin	0, 0, "art/level.sv24"		; uncompressed, 24-byte wide, 23 lines tall
 clear_bn:
-	.dsb	BAN_WDT*TIL_HGT, 0			; clear banner
+	.dsb	BAN_WDT*(1+TIL_HGT), 0		; 24*9 clear banner
 paus_bn:
-;	.bin	0, 0, "art/pause.sv24"		; uncompressed 24-byte wide pause banner
+	.bin	0, 0, "art/pause.sv24"		; uncompressed 24-byte wide pause banner
 
 art_end:					; for reference
 
