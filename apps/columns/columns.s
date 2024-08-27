@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240827-2221
+; last modified 20240827-2235
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -429,7 +429,7 @@ not_lvl:
 	JMP not_play
 is_play:
 		LDA pad0val, X		; restore and continue evaluation * must be here
-		BIT #PAD_STRT		; START will make pause
+		BIT #PAD_STRT|PAD_SEL			; START will make pause
 		BEQ not_pstart
 			CMP padlast, X	; still pressing?
 		BEQ not_pstart 
@@ -1132,7 +1132,7 @@ not_die:
 	CMP #STAT_RLS			; entering pause
 	BNE not_release
 		LDA pad0val, X
-		BIT #PAD_STRT
+		BIT #PAD_STRT|PAD_SEL
 	BNE not_yet_release		; not yet released
 		LDA #STAT_PAUS		; otherwise, enter pause mode
 		STA status, X
@@ -1147,10 +1147,12 @@ not_release:
 	BNE not_pause
 		JSR pause			; meanwhile, update display
 		LDA pad0val, X
-		BIT #PAD_STRT		; check whether START is pressed again
+		BIT #PAD_STRT|PAD_SEL			; check whether START is pressed again
 	BEQ not_pause			; not yet, stay in pause
 		STA padlast, X		; otherwise, this is needed
+; THIS FAILS
 		JSR restore			; get screen back (fifth and sixth rows)
+		LDX select			; just in case
 ; continue play
 		LDA paus_t, X		; get remaining time
 		CLC
@@ -1623,7 +1625,7 @@ dz_show:
 		BPL go_exit			; not the last, give CPU back
 ; all finished, change status to definitive
 	LDX select
-;	LDA STAT_OVER			; conveniently zero, and X is proper player offset
+;	LDA #STAT_OVER			; conveniently zero, and X is proper player offset
 	STZ status, X			; back to gameover status
 	STZ s_level, X			; reset this too! eeeeeeeek
 ; now print the game over banner
@@ -1688,11 +1690,9 @@ pause:
 			STY src
 			STX src+1		; store pointer
 			LDY #TIL_HGT	; actually 9-raster tall banner
-			JSR banner
-			BRA paus_upd
+			JMP banner
 paus_clr:
 		JSR restore			; clear affected row, actually redraw field
-paus_upd:
 		LDX select			; restore status for good measure
 not_pupd:
 	RTS
@@ -1715,7 +1715,7 @@ no_rest:
 		PLY					; recover Y index
 		INY
 		CPY temp			; all done?
-		BNE p_rest
+		BEQ p_rest
 	JMP col_upd				; restore column as well, and return
 
 ; ** clear match detection matrix **
@@ -2401,7 +2401,7 @@ levelsel:
 	.bin	0, 0, "art/level.sv24"		; uncompressed, 24-byte wide, 23 lines tall
 paus_bn:
 	.bin	0, 0, "art/pause.sv24"		; uncompressed 24-byte wide pause banner
-
+clear_bn:
 #ifndef	POCKET
 pre_io:						; this should be BEFORE I/O page!
 	.dsb	$E000-*, $FF	; skip I/O page!
