@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240828-1028
+; last modified 20240828-1130
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -254,9 +254,9 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1081			; 1.0RC1		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1082			; 1.0RC2		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5380			; time, 10.28		0101 0-011 100-0 0000
+	.word	$5B00			; time, 11.24		0101 1-011 000-0 0000
 	.word	$591C			; date, 2024/8/28	0101 100-1 000-1 1100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
@@ -645,9 +645,15 @@ no_mjmt:
 				DEY			; one less
 				CPY select	; already done all of this player's field?
 				BNE mjml	; if not, continue scanning
-; anything else?
+			BRA do_match
 no_mjwl2:
+; magic jewel bottomed alone, add 10000 points
 			LDX select		; needed only when is at the bottom
+			LDY mj_alone
+			LDA mj_alone+1	; get score in binary
+			STY delta, X
+			STA delta+1, X	; store as function input
+			JSR addscore	; display extra points
 ; *** COMMON entry point to shift from CHK (or BSCK) to BLNK status ***
 do_match:
 			LDA #BLINKS		; usually 8 cycles
@@ -2457,7 +2463,7 @@ poff9:
 psum36:
 	.byt	2				; 36-byte x-position, player 1
 
-; * common data *
+; * * common data * *
 ; multimedia
 cmpr_pics:					; to be displayed by dispic
 	.word	splash
@@ -2491,6 +2497,10 @@ ini_sc_l:
 base_sc:
 	.byt	  0,  0,  0, 15, 30, 45, 60, 75, 90, 105			; half of the original game 
 
+; magic jewel score when dropped alone (binary)
+mj_alone:
+	.word	10000
+	
 ; new values for up to 10 levels (coarse granularity, alas)
 ini_spd:
 	.byt	125, 87, 74, 56, 42, 32, 25, 18, 14, 11, 8
