@@ -1,7 +1,7 @@
 ; COLUMNS for Durango-X
 ; original idea by SEGA
 ; (c) 2022-2024 Carlos J. Santisteban
-; last modified 20240828-0129
+; last modified 20240828-1028
 
 ; add -DMAGIC to increase magic jewel chances
 
@@ -256,8 +256,8 @@ rom_start:
 ; NEW coded version number
 	.word	$1081			; 1.0RC1		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$B2C0			; time, 22.22		1011 0-010 110-0 0000
-	.word	$591B			; date, 2024/8/27	0101 100-1 000-1 1011
+	.word	$5380			; time, 10.28		0101 0-011 100-0 0000
+	.word	$591C			; date, 2024/8/28	0101 100-1 000-1 1100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -1404,6 +1404,7 @@ s_wnw:
 		DEX
 		BNE s_rloop			; until all rasters done
 td_exit:
+	LDX select				; eeeeeeeeeeeeeeeeeeeeeek
 	RTS
 
 ; ** number display **
@@ -1712,7 +1713,6 @@ restore:
 	TAY						; full print index
 	SEC						; one more...
 	ADC #ROW_OFF+ROW_WDT	; until end of sixth row
-#echo use mul8
 	STA temp				; store safely
 p_rest:
 		PHY
