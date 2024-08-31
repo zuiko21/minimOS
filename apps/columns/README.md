@@ -1,3 +1,3 @@
-#Columns
+# Columns
 
-Moved to its own repository (https://github.com/durangoretro/columns)
+Moved to its [own repository](../../../columns) ([https://github.com/durangoretro/columns](https://github.com/durangoretro/columns))
