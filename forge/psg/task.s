@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240901-1750
+; last modified 20240901-1959
 
 ; use -DSCORE to activate the score reader task!
 
@@ -99,61 +99,57 @@ psg_end		= sg_c3h+1		; * * * psg_end = psg_if+13 * * *
 ; *** sound generator task ***
 ; ****************************
 ; check for new note on noise channel
-	LDA sg_nc
-	BEQ chk_not				; nothing new, check remaining channels
-; update noise parameters
-		ORA #%11100000		; will set noise parameters
-		STA IO_PSG			; send to PSG!
-; update volume settings
-		LDA sg_nve			; this is envelope (MSN) and volume (LSN)
-		BMI nc_attk			; negative envelope is slow attack, start at zero
-			AND #$0F		; otherwise start at current volume
-			STZ psg_nt		; eventually will fade out
-			BRA set_nv
-nc_attk:
-		AND #$0F			; if slow attack, this will be target volume instead
-		STA psg_nt
-		LDA #0				; default null volume
-set_nv:
-		STA psg_nv			; this is current volume
-		ORA #%11110000		; set noise volume
-		EOR #%00001111		; invert bits for attenuation!
-		JSR delay			; 12t should suffice
-		STA IO_PSG			; send to PSG!
-		JSR delay24			; may need this before next
-chk_not:
-	LDX #2					; max channel offset, will scan backwards
+	LDX #3					; max channel offset, will scan backwards
 ch_upd:
 		LDA sg_c1l, X		; anything new?
 		BEQ nx_cht
 ; update tone
+			STZ sg_c1l, X	; clear this entry for next time
 			ORA ch_lowt, X	; will set low-order tone
 			STA IO_PSG
-			LDA sg_c1h, X	; now for high order bits
-			JSR delay24		; is this enough?
-			NOP				; to be safe
-			STA IO_PSG
+			CPX #3			; noise channel...
+			BEQ ch_noise	; ...has no high order bits
+				LDA sg_c1h, X			; now for high order bits
+				JSR delay24				; is this enough?
+				STA IO_PSG
+ch_noise:
 ; update volume settings
-		LDA sg_c1ve, X		; this is envelope (MSN) and volume (LSN)
-		BMI cc_attk			; negative envelope is slow attack, start at zero
-			AND #$0F		; otherwise start at current volume
-			STZ psg_ct, X	; eventually will fade out
-			BRA set_cv
+			LDA sg_c1ve, X	; this is envelope (MSN) and volume (LSN)
+			BMI cc_attk		; negative envelope is slow attack, start at zero
+				AND #$0F				; otherwise start at current volume
+				STZ psg_ct, X			; eventually will fade out
+				BRA set_cv
 cc_attk:
-		AND #$0F			; if slow attack, this will be target volume instead
-		STA psg_ct, X
-		LDA #0				; default null volume
+			AND #$0F		; if slow attack, this will be target volume instead
+			STA psg_ct, X
+			LDA #0			; default null volume
 set_cv:
-		STA psg_cv, X		; this is current volume
-		ORA ch_vol, X		; set noise volume
-		EOR #%00001111		; invert bits for attenuation!
-		JSR delay			; 12t should suffice
-		STA IO_PSG			; send to PSG!
-		JSR delay24			; may need this before next
+			STA psg_cv, X	; this is current volume
+			ORA ch_vol, X	; will set volume
+			EOR #%00001111	; invert bits for attenuation!
+			JSR delay		; 12t should suffice
+			STA IO_PSG		; send to PSG!
+			LDA sg_envsp	; get generic envelope speed
+			STA psg_ce, X	; store into this channel envelope timer
+			JSR delay24		; may need this before next
 nx_cht:
 		DEX					; one less to go
 		BPL ch_upd
-		; TO DO *** STZs...
+; now let's update volume according to envelopes
+	LDX #3					; max channel offset, will scan backwards
+ev_upd:
+		LDA psg_ce, X		; time for update?
+		BNE nx_env
+			LDA sg_envsp	; yes, reload timer
+			STA psg_ce, X
+; do actual envelope ********
+			BRA env_ok
+nx_env:
+		DEC psg_ce, X		; one less to go
+env_ok:
+		DEX
+		BPL ev_upd
+
 #ifdef	SCORE
 ; *************************
 ; *** score reader task ***
