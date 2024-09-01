@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240813-1420
+; last modified 20240901-1750
 
 ; use -DSCORE to activate the score reader task!
 
@@ -9,13 +9,15 @@
 ; *** hardware definitions ***
 ; ****************************
 
-IO_PSG	= $DFDB
+-IO_PSG	= $DFDB
 
 ; **************************
 ; *** external interface ***
 ; **************************
-; SCORE PLAYER
-;sr_c1		.word			; pointer to Channel 1 score
+
+#ifdef	SCORE
+; SCORE PLAYER					supply address sr_if, returns sr_end
+sr_c1	= sr_if				; pointer to Channel 1 score
 ;							; groups of three bytes
 ;							; terminator byte = 0 for END of score, 128...255 for REPEAT (nominally $FF)
 ;							; first byte = note (1...63/127 chromatic scale)
@@ -23,33 +25,39 @@ IO_PSG	= $DFDB
 ;							; * could use 128...254 for more alternative indices as well
 ;							; second byte = envelope and volume (%eeeevvvv, where e>0 is decay, e<0 is soft attack, e=0 is constant; v=0 is silent, max. 15)
 ;							; third byte = length (in jiffies, $00=256)
-;sr_c2		.word			; same for channel 2
-;sr_c3		.word			; same for channel 3
-;sr_nc		.word			; pointer to noise channel, same as above except
+sr_c2	= sr_c1+2			; same for channel 2
+sr_c3	= sr_c2+2			; same for channel 3
+sr_nc	= sr_c3+2			; pointer to noise channel, same as above except
 ;							; "note", which is %01000frr (see below)
+sr_ena	= sr_nc+2			; enable/pause channels %n321n321, where high nybble controls score run (%1=run) and low nybble controls muting (%0=mute)
+sr_rst	= sr_ena+1			; reset (and preload address) channels %xxxxn321 (%1=reset), will be automatically reset
+sr_tempo= sr_rst+1			; tempo divider (234.375 bpm/n+1)
+sr_end	= sr_tempo+1		; * * * sr_end = sr_if+11 * * *
 
 ; SCALE
 ; Score readers converts note index into 10-bit value for PSG
 ; Maximum value is $1FF (TURBO mode will turn it into $3FE)
 ; this makes a minimum 107 Hz on v2, which fits [1]=A2, [63]=B7, albeit notes over F7 are quite off
 ; v1 plays ~1 tone lower, with 2 MHz overclock ~1 tone higher, not worth considering
+#endif
 
-; COMMON INTERFACE
-;sr_ena		.byt			; enable/pause channels %n321n321, where high nybble controls score run (%1=run) and low nybble controls muting (%0=mute)
-;sg_turbo	.byt			; d7 is on for faster machines (remaining bits reserved, nominally 0)
-
-; SOUND GENERATOR
-;sg_c1l		.byt			; channel 1 period low-order 4 bits  %0000llll
-;sg_c1h		.byt			; channel 1 period high-order 6 bits %00hhhhhh
-;sg_c1ve	.byt			; channel 1 envelope and volume, see score player format
-;sg_c2l		.byt			; ditto for channel 2
-;sg_c2h		.byt
-;sg_c2ve	.byt
-;sg_c3l		.byt			; ditto for channel 3
-;sg_c3h		.byt
-;sg_c3ve	.byt
-;sg_nc		.byt			; noise channel rate and feedback, %00000frr
-;sg_nve		.byt			; noise channel envelope and volume, same as above
+; SOUND GENERATOR				supply address psg_if, returns psg_end
+sg_turbo	= psg_if		; d7 is on for faster machines (remaining bits reserved, nominally 0)
+sg_envsp	= sg_turbo+1	; envelope update in ticks (typically 16 for max. 1s envelope)
+; note indexing-savvy addresses
+sg_c1ve		= sg_envsp+1	; channel 1 envelope and volume, see score player format
+sg_c2ve		= sg_c1ve+1		; channel 2
+sg_c3ve		= sg_c2ve+1		; channel 3
+sg_nve		= sg_c3ve+1		; noise channel envelope and volume, same as above
+sg_c1l		= sg_nve+1		; channel 1 period low-order 4 bits  %0000llll
+sg_c2l		= sg_c1l+1		; ditto for channel 2
+sg_c3l		= sg_c2l+1		; ditto for channel 3
+sg_nc		= sg_c3l+1		; noise channel rate and feedback, %00000frr
+sg_c1h		= sg_nc+1		; channel 1 period high-order 6 bits %00hhhhhh
+sg_c2h		= sg_c1h+1		; ditto for remaining channels
+sg_c3h		= sg_c2h+1
+; noise channel has no second tone value
+psg_end		= sg_c3h+1		; * * * psg_end = psg_if+13 * * *
 
 ; ****************************
 ; *** constants definition ***
@@ -58,7 +66,7 @@ IO_PSG	= $DFDB
 ; ***************************
 ; *** zeropage allocation ***
 ; ***************************
-;sr_ptr		.word			; score reader pointer (will keep LSB as zero)
+-sr_ptr	= $FC				; Score player NEEDS this in zeropage (will keep LSB as zero)
 
 ; *************************
 ; *** memory allocation ***
@@ -72,7 +80,6 @@ IO_PSG	= $DFDB
 ; *****************
 ; *** main code ***
 ; *****************
-
 ; ** ** this is to be inserted into a regular ISR ** **
 ; *** assume commented code below as the bare minimum ***
 
@@ -91,7 +98,62 @@ IO_PSG	= $DFDB
 ; ****************************
 ; *** sound generator task ***
 ; ****************************
-
+; check for new note on noise channel
+	LDA sg_nc
+	BEQ chk_not				; nothing new, check remaining channels
+; update noise parameters
+		ORA #%11100000		; will set noise parameters
+		STA IO_PSG			; send to PSG!
+; update volume settings
+		LDA sg_nve			; this is envelope (MSN) and volume (LSN)
+		BMI nc_attk			; negative envelope is slow attack, start at zero
+			AND #$0F		; otherwise start at current volume
+			STZ psg_nt		; eventually will fade out
+			BRA set_nv
+nc_attk:
+		AND #$0F			; if slow attack, this will be target volume instead
+		STA psg_nt
+		LDA #0				; default null volume
+set_nv:
+		STA psg_nv			; this is current volume
+		ORA #%11110000		; set noise volume
+		EOR #%00001111		; invert bits for attenuation!
+		JSR delay			; 12t should suffice
+		STA IO_PSG			; send to PSG!
+		JSR delay24			; may need this before next
+chk_not:
+	LDX #2					; max channel offset, will scan backwards
+ch_upd:
+		LDA sg_c1l, X		; anything new?
+		BEQ nx_cht
+; update tone
+			ORA ch_lowt, X	; will set low-order tone
+			STA IO_PSG
+			LDA sg_c1h, X	; now for high order bits
+			JSR delay24		; is this enough?
+			NOP				; to be safe
+			STA IO_PSG
+; update volume settings
+		LDA sg_c1ve, X		; this is envelope (MSN) and volume (LSN)
+		BMI cc_attk			; negative envelope is slow attack, start at zero
+			AND #$0F		; otherwise start at current volume
+			STZ psg_ct, X	; eventually will fade out
+			BRA set_cv
+cc_attk:
+		AND #$0F			; if slow attack, this will be target volume instead
+		STA psg_ct, X
+		LDA #0				; default null volume
+set_cv:
+		STA psg_cv, X		; this is current volume
+		ORA ch_vol, X		; set noise volume
+		EOR #%00001111		; invert bits for attenuation!
+		JSR delay			; 12t should suffice
+		STA IO_PSG			; send to PSG!
+		JSR delay24			; may need this before next
+nx_cht:
+		DEX					; one less to go
+		BPL ch_upd
+		; TO DO *** STZs...
 #ifdef	SCORE
 ; *************************
 ; *** score reader task ***
@@ -118,12 +180,12 @@ ni_hi:						; indexed note values 6-bit MSB, A2-B7
 	.byt	 6,  6,  5,  5,  5,  4,  4,  4,  4,  3,  3,  3	; C5-B5
 	.byt	 3,  3,  2,  2,  2,  2,  2,  2,  2,  1,  1,  1	; C6-B6
 	.byt	 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0	; C7-B7 
-
+; NOTE; octave 7 will be poorly tuned, unless you use values for TURBO only
+ 
 task_exit:
-
 ; ** ** after the module, finish the ISR the usual way ** **
 ; ** ** you migh want to check for BRK as well         ** **
-; *** assume commented code below as the bare minimum ***
+; *** assume commented code below as the bare minimum    ***
 
 ;	PLY
 ;	PLX
