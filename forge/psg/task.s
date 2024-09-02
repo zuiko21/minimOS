@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240902-1643
+; last modified 20240902-1701
 
 ; use -DSCORE to activate the score reader task!
 
@@ -82,14 +82,14 @@ sr_ptr	= $FC				; Score player NEEDS this in zeropage (will keep LSB as zero)
 ; *** memory allocation ***
 ; *************************
 psg_cv	= sg_local			; current volume for channel 1
-psg_ct	= psg_cv+1			; target volume for channel 1
-psg_ce	= psg_ct+1			; envelope counter for channel 1
-psg_cv2	= psg_ce+1			; same for channel 2
-psg_ct2	= psg_cv2+1	
-psg_ce2	= psg_ct2+1
-psg_cv3	= psg_ce2+1			; same for channel 2
-psg_ct3	= psg_cv3+1	
-psg_ce3	= psg_ct3+1
+psg_tg	= psg_cv+1			; target volume for channel 1
+psg_ec	= psg_tg+1			; envelope counter for channel 1
+psg_cv2	= psg_ec+1			; same for channel 2
+psg_tg2	= psg_cv2+1
+psg_ec2	= psg_tg2+1
+psg_cv3	= psg_ec2+1			; same for channel 2
+psg_tg3	= psg_cv3+1
+psg_ec3	= psg_tg3+1
 ;sr_p1		.word			; pointer to current position on channel 1 score
 ;sr_p2		.word			; pointer to current position on channel 2 score
 ;sr_p3		.word			; pointer to current position on channel 3 score
@@ -136,12 +136,17 @@ ch_noise:
 			LDA sg_c1ve, X	; this is envelope (MSN) and volume (LSN)
 			BMI cc_attk		; negative envelope is slow attack, start at zero
 				AND #$0F				; otherwise start at current volume
-				STZ psg_ct, X			; eventually will fade out
+				STZ psg_tg, X			; eventually will fade out
 				BRA set_cv
 cc_attk:
 			AND #$0F		; if slow attack, this will be target volume instead
-			STA psg_ct, X
-			LDA #0			; default null volume
+			STA psg_tg, X
+			LDA sg_c1ve		; envelope speed...
+			LSR
+			LSR
+			LSR
+			LSR				; ...over 16...
+			EOR #%00001111	; ...and back to positive should be the initial volume
 set_cv:
 			STA psg_cv, X	; this is current volume
 			ORA ch_vol, X	; will set volume
@@ -149,18 +154,21 @@ set_cv:
 			NOP				; would suffice?
 			STA IO_PSG		; send to PSG!
 			LDA sg_envsp	; get generic envelope speed
-			STA psg_ce, X	; store into this channel envelope timer
+			STA psg_ec, X	; store into this channel envelope timer
 ;			JSR delay24		; may need this before next
 ; now let's update volume according to envelopes
 ev_upd:
-		LDA psg_ce, X		; time for update?
+		LDA psg_ec, X		; time for update?
 		BMI env_ok			; if expired, leave it alone
 		BNE nx_env			; not yet, wait for next
 ; reload timer for next envelope update, unless is completed
 			LDA sg_envsp	; yes, reload timer
-			STA psg_ce, X
+			STA psg_ec, X
 ; do actual envelope
 			LDA sg_c1ve, X	; get envelope data
+			BNE not_sus		; sustain notes will do no more changes
+				STZ psg_ec, X
+not_sus:
 			LSR
 			LSR
 			LSR
@@ -175,16 +183,16 @@ e_attack:
 			ADC psg_cv, X	; modify current volume
 			BIT sg_c1ve, X	; recheck envelope sign
 			BPL e_decay		; was slow attack?
-				CMP psg_ct, X			; if so, check whether it went over target
+				CMP psg_tg, X			; if so, check whether it went over target
 			BMI sv_upd					; nope, all ok
-				LDA psg_ct, X			; otherwise, keep target value
-				STZ psg_ce, X			; no more cycles
+				LDA psg_tg, X			; otherwise, keep target value
+				STZ psg_ec, X			; no more cycles
 			BRA sv_upd
 e_decay:
 				CMP #0					; if decay, check whether it went negative
 			BPL sv_upd					; nope, all is ok
 				LDA #0					; otherwise, we've reached null target
-				STZ psg_ce, X			; no more cycles
+				STZ psg_ec, X			; no more cycles
 sv_upd:
 			AND #$0F		; filter out possible half-carry
 			STA psg_cv, X	; update current volume
@@ -192,10 +200,12 @@ sv_upd:
 			ORA ch_vol, X	; convert into PSG command
 			STA IO_PSG		; send it!
 nx_env:
-		DEC psg_ce, X		; one tick passed
+		DEC psg_ec, X		; one tick passed
 env_ok:
 		DEX
-		BPL ch_upd			; next channel
+	BMI sg_end
+		JMP ch_upd			; next channel
+sg_end:
 
 #ifdef	SCORE
 ; *************************
