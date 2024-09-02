@@ -1,10 +1,20 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240902-0806
+; last modified 20240902-1643
 
 ; use -DSCORE to activate the score reader task!
 
+#ifdef	TEST
+	psg_if		= 0
+	sg_local	= $10
+
+	* = $800
+delay24:
+	JSR delay
+delay:
+	RTS
+#endif
 ; ****************************
 ; *** hardware definitions ***
 ; ****************************
@@ -32,7 +42,7 @@ sr_nc	= sr_c3+2			; pointer to noise channel, same as above except
 sr_ena	= sr_nc+2			; enable/pause channels %n321n321, where high nybble controls score run (%1=run) and low nybble controls muting (%0=mute)
 sr_rst	= sr_ena+1			; reset (and preload address) channels %xxxxn321 (%1=reset), will be automatically reset
 sr_tempo= sr_rst+1			; tempo divider (234.375 bpm/n+1)
-sr_end	= sr_tempo+1		; * * * sr_end = sr_if+11 * * *
+sr_end	= sr_tempo+1		; * * * sr_end = sr_if+13 * * *
 
 ; SCALE
 ; Score readers converts note index into 10-bit value for PSG
@@ -144,11 +154,43 @@ set_cv:
 ; now let's update volume according to envelopes
 ev_upd:
 		LDA psg_ce, X		; time for update?
-		BNE nx_env
+		BMI env_ok			; if expired, leave it alone
+		BNE nx_env			; not yet, wait for next
+; reload timer for next envelope update, unless is completed
 			LDA sg_envsp	; yes, reload timer
 			STA psg_ce, X
-; do actual envelope ********
-			BRA env_ok
+; do actual envelope
+			LDA sg_c1ve, X	; get envelope data
+			LSR
+			LSR
+			LSR
+			LSR				; envelope as value to be subtracted
+			BIT #$08		; non-extended envelope sign
+			BNE e_attack	; attack envelope will add value instead of subtract
+				EOR #$0F
+				INC			; 2's complement for subtract
+				AND #$0F	; filter out possible half-carry
+e_attack:
+			CLC
+			ADC psg_cv, X	; modify current volume
+			BIT sg_c1ve, X	; recheck envelope sign
+			BPL e_decay		; was slow attack?
+				CMP psg_ct, X			; if so, check whether it went over target
+			BMI sv_upd					; nope, all ok
+				LDA psg_ct, X			; otherwise, keep target value
+				STZ psg_ce, X			; no more cycles
+			BRA sv_upd
+e_decay:
+				CMP #0					; if decay, check whether it went negative
+			BPL sv_upd					; nope, all is ok
+				LDA #0					; otherwise, we've reached null target
+				STZ psg_ce, X			; no more cycles
+sv_upd:
+			AND #$0F		; filter out possible half-carry
+			STA psg_cv, X	; update current volume
+			EOR #%00001111	; is attenuation eeeeek
+			ORA ch_vol, X	; convert into PSG command
+			STA IO_PSG		; send it!
 nx_env:
 		DEC psg_ce, X		; one tick passed
 env_ok:
@@ -187,7 +229,7 @@ ni_hi:						; indexed note values 6-bit MSB, A2-B7
 	.byt	 3,  3,  2,  2,  2,  2,  2,  2,  2,  1,  1,  1	; C6-B6
 	.byt	 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0	; C7-B7 
 ; NOTE; octave 7 will be poorly tuned, unless you use values for TURBO only
- 
+
 task_exit:
 ; ** ** after the module, finish the ISR the usual way ** **
 ; ** ** you migh want to check for BRK as well         ** **
