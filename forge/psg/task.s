@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240902-1701
+; last modified 20240902-1719
 
 ; use -DSCORE to activate the score reader task!
 
@@ -151,11 +151,10 @@ set_cv:
 			STA psg_cv, X	; this is current volume
 			ORA ch_vol, X	; will set volume
 			EOR #%00001111	; invert bits for attenuation!
-			NOP				; would suffice?
+			NOP: NOP: NOP	; would suffice?
 			STA IO_PSG		; send to PSG!
 			LDA sg_envsp	; get generic envelope speed
 			STA psg_ec, X	; store into this channel envelope timer
-;			JSR delay24		; may need this before next
 ; now let's update volume according to envelopes
 ev_upd:
 		LDA psg_ec, X		; time for update?
@@ -199,6 +198,7 @@ sv_upd:
 			EOR #%00001111	; is attenuation eeeeek
 			ORA ch_vol, X	; convert into PSG command
 			STA IO_PSG		; send it!
+			NOP: NOP		; needed after the loop
 nx_env:
 		DEC psg_ec, X		; one tick passed
 env_ok:
