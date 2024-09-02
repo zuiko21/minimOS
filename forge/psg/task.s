@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240901-1959
+; last modified 20240902-0806
 
 ; use -DSCORE to activate the score reader task!
 
@@ -66,11 +66,20 @@ psg_end		= sg_c3h+1		; * * * psg_end = psg_if+13 * * *
 ; ***************************
 ; *** zeropage allocation ***
 ; ***************************
--sr_ptr	= $FC				; Score player NEEDS this in zeropage (will keep LSB as zero)
+sr_ptr	= $FC				; Score player NEEDS this in zeropage (will keep LSB as zero)
 
 ; *************************
 ; *** memory allocation ***
 ; *************************
+psg_cv	= sg_local			; current volume for channel 1
+psg_ct	= psg_cv+1			; target volume for channel 1
+psg_ce	= psg_ct+1			; envelope counter for channel 1
+psg_cv2	= psg_ce+1			; same for channel 2
+psg_ct2	= psg_cv2+1	
+psg_ce2	= psg_ct2+1
+psg_cv3	= psg_ce2+1			; same for channel 2
+psg_ct3	= psg_cv3+1	
+psg_ce3	= psg_ct3+1
 ;sr_p1		.word			; pointer to current position on channel 1 score
 ;sr_p2		.word			; pointer to current position on channel 2 score
 ;sr_p3		.word			; pointer to current position on channel 3 score
@@ -102,7 +111,7 @@ psg_end		= sg_c3h+1		; * * * psg_end = psg_if+13 * * *
 	LDX #3					; max channel offset, will scan backwards
 ch_upd:
 		LDA sg_c1l, X		; anything new?
-		BEQ nx_cht
+		BEQ ev_upd
 ; update tone
 			STZ sg_c1l, X	; clear this entry for next time
 			ORA ch_lowt, X	; will set low-order tone
@@ -127,16 +136,12 @@ set_cv:
 			STA psg_cv, X	; this is current volume
 			ORA ch_vol, X	; will set volume
 			EOR #%00001111	; invert bits for attenuation!
-			JSR delay		; 12t should suffice
+			NOP				; would suffice?
 			STA IO_PSG		; send to PSG!
 			LDA sg_envsp	; get generic envelope speed
 			STA psg_ce, X	; store into this channel envelope timer
-			JSR delay24		; may need this before next
-nx_cht:
-		DEX					; one less to go
-		BPL ch_upd
+;			JSR delay24		; may need this before next
 ; now let's update volume according to envelopes
-	LDX #3					; max channel offset, will scan backwards
 ev_upd:
 		LDA psg_ce, X		; time for update?
 		BNE nx_env
@@ -145,10 +150,10 @@ ev_upd:
 ; do actual envelope ********
 			BRA env_ok
 nx_env:
-		DEC psg_ce, X		; one less to go
+		DEC psg_ce, X		; one tick passed
 env_ok:
 		DEX
-		BPL ev_upd
+		BPL ch_upd			; next channel
 
 #ifdef	SCORE
 ; *************************
@@ -161,6 +166,11 @@ env_ok:
 ; ********************
 ; *** data segment ***
 ; ********************
+; PSG command tables
+ch_lowt:
+	.byt	%10000000, %10100000, %11000000, %11100000
+ch_vol:
+	.byt	%10010000, %10110000, %11010000, %11110000
 ; indexed-note periods, calibrated for 1.75 MHz
 ni_low:						; indexed note values 4-bit LSB, A2-B7
 	.byt	 0,  1,  5, 11	; A2-B2, note padding [0]
