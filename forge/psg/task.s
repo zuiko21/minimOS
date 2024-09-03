@@ -38,7 +38,7 @@ sr_c1	= sr_if				; pointer to Channel 1 score
 sr_c2	= sr_c1+2			; same for channel 2
 sr_c3	= sr_c2+2			; same for channel 3
 sr_nc	= sr_c3+2			; pointer to noise channel, same as above except
-;							; "note", which is %01000frr (see below)
+;							; "note", which is %10000frr (see below)
 sr_ena	= sr_nc+2			; enable/pause channels %n321n321, where high nybble controls score run (%1=run) and low nybble controls muting (%0=mute)
 sr_rst	= sr_ena+1			; reset (and preload address) channels %xxxxn321 (%1=reset), will be automatically reset
 sr_tempo= sr_rst+1			; tempo divider (234.375 bpm/n+1)
@@ -59,10 +59,10 @@ sg_c1ve		= sg_envsp+1	; channel 1 envelope and volume, see score player format
 sg_c2ve		= sg_c1ve+1		; channel 2
 sg_c3ve		= sg_c2ve+1		; channel 3
 sg_nve		= sg_c3ve+1		; noise channel envelope and volume, same as above
-sg_c1l		= sg_nve+1		; channel 1 period low-order 4 bits  %0000llll
+sg_c1l		= sg_nve+1		; channel 1 period low-order 4 bits  %1000llll
 sg_c2l		= sg_c1l+1		; ditto for channel 2
 sg_c3l		= sg_c2l+1		; ditto for channel 3
-sg_nc		= sg_c3l+1		; noise channel rate and feedback, %00000frr
+sg_nc		= sg_c3l+1		; noise channel rate and feedback, %10000frr
 sg_c1h		= sg_nc+1		; channel 1 period high-order 6 bits %00hhhhhh
 sg_c2h		= sg_c1h+1		; ditto for remaining channels
 sg_c3h		= sg_c2h+1
@@ -165,6 +165,7 @@ ev_upd:
 		BNE nx_env			; not yet, wait for next
 ; reload timer for next envelope update, unless is completed
 			LDA sg_envsp	; yes, reload timer
+sta$7020
 			STA psg_ec, X
 ; do actual envelope
 			LDA sg_c1ve, X	; get envelope data
@@ -177,10 +178,12 @@ not_sus:
 			LSR				; envelope as value to be subtracted
 			BIT #$08		; non-extended envelope sign
 			BNE e_attack	; attack envelope will add value instead of subtract
+sta$7830
 				EOR #$0F
 				INC			; 2's complement for subtract
 				AND #$0F	; filter out possible half-carry
 e_attack:
+sta$7810
 			CLC
 			ADC psg_cv, X	; modify current volume
 			BIT sg_c1ve, X	; recheck envelope sign
