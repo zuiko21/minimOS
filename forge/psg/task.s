@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240903-1417
+; last modified 20240903-1726
 
 ; use -DSCORE to activate the score reader task!
 
@@ -136,7 +136,7 @@ ch_upd:
 				JSR delay24				; is this enough?
 				STA IO_PSG
 ch_noise:
-; update volume settings
+; preset volume settings
 			LDA sg_c1ve, X	; this is envelope (MSN) and volume (LSN)
 			BMI cc_attk		; negative envelope is slow attack, start at TARGET
 				AND #$0F				; otherwise start at current volume
@@ -172,27 +172,27 @@ ev_upd:
 			STA psg_ec, X
 ; do actual envelope
 			LDA sg_c1ve, X	; get envelope data
-			BNE not_sus		; sustain notes will do no more changes
-				STZ psg_ec, X
-not_sus:
 			LSR
 			LSR
 			LSR
 			LSR				; envelope as value to be subtracted
+			BNE not_sus		; sustain notes will do no more changes
+				STZ psg_ec, X
+not_sus:
 			SEC
-			EOR #$FF		; actual 2's complement eeeeeek
+			EOR #$0F		; actual 2's complement
 			ADC psg_cv, X	; modify current volume
 			BIT sg_c1ve, X	; recheck envelope sign
 			BPL e_decay		; was slow attack?
-				AND #$0F				; filter any half-carry eeek
+;				AND #$1F				; filter some bits eeek
 				CMP psg_tg, X			; if so, check whether it went over target
 			BMI sv_upd					; nope, all ok
 				LDA psg_tg, X			; otherwise, keep target value
 				STZ psg_ec, X			; no more cycles
 			BRA sv_upd
 e_decay:
-				CMP #%00010000			; if decay, check whether it went negative (note half-carry trick)
-			BPL sv_upd					; nope, all is ok
+				BIT #%00010000			; if decay, check whether it went negative (note half-carry trick)
+			BNE sv_upd					; nope, all is ok
 				LDA #0					; otherwise, we've reached null target
 				STZ psg_ec, X			; no more cycles
 sv_upd:
