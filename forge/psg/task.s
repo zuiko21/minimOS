@@ -120,6 +120,10 @@ psg_nec	= psg_ec3+1
 ; ****************************
 ; *** sound generator task ***
 ; ****************************
+lda#$bb
+sta$7020
+sta$7810
+sta$7830
 ; check for new note on noise channel
 	LDX #3					; max channel offset, will scan backwards
 ch_upd:

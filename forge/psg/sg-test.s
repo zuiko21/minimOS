@@ -149,7 +149,7 @@ cl_loop:
 	LDA #16
 	STA sg_envsp			; set envelope speed
 ; setup
-	LDA #%00010111			; max vol, slow decay
+	LDA #%01001111			; max vol, slow decay
 	STA sg_nve
 	LDA #%01000100			; rnd, fast
 	STA sg_nc
