@@ -1,6 +1,6 @@
 ; Test for Interrupt-driven SN76489 PSG controller for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240903-1753
+; last modified 20240903-2347
 
 ; *** firmware definitions ***
 	irq_ptr	= $0200
@@ -15,6 +15,7 @@
 ; *** library definitions ***
 	psg_if		= 0
 	sg_local	= $10
+	sr_if		= $20
 
 	sysptr		= $FC
 
@@ -52,9 +53,9 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1043			; 1.0b3		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1044			; 1.0b4		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8E00			; time, 17.48		1000 1-110 000-0 0000
+	.word	$BB00			; time, 23.24		1011 1-011 000-0 0000
 	.word	$5923			; date, 2024/9/03	0101 100-1 001-0 0011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size

@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240903-2033
+; last modified 20240903-2344
 
 ; use -DSCORE to activate the score reader task!
 
@@ -31,7 +31,7 @@ sr_c1	= sr_if				; pointer to Channel 1 score
 ;							; groups of three bytes
 ;							; terminator byte = 0 for END of score, 128...255 for REPEAT (nominally $FF)
 ;							; first byte = note (1...63/127 chromatic scale)
-;							; * may use 64 as PCM, 65...127 for alternative tuning
+;							; * may use 64 as rest/PCM, 65...127 for alternative tuning
 ;							; * could use 128...254 for more alternative indices as well
 ;							; second byte = envelope and volume (%eeeevvvv, where e>0 is decay, e<0 is soft attack, e=0 is constant; v=0 is silent, max. 15)
 ;							; third byte = length (in jiffies, $00=256)
@@ -94,11 +94,21 @@ psg_ec2	= psg_ec+1
 psg_ec3	= psg_ec2+1
 psg_nec	= psg_ec3+1
 pr_tmp	= psg_nec+1
-;sr_p1		.word			; pointer to current position on channel 1 score
-;sr_p2		.word			; pointer to current position on channel 2 score
-;sr_p3		.word			; pointer to current position on channel 3 score
-;sr_np		.word			; pointer to current position on noise score
-;
+pr_dly	= pr_tmp+1
+pr_ena	= pr_dly+1
+pr_rst	= pr_ena+1
+pr_p1l	= pr_rst+1			; pointer to current position on channel 1 score (LSB)
+pr_p2l	= pr_p1l+1			; pointer to current position on channel 2 score
+pr_p3l	= pr_p2l+1			; pointer to current position on channel 3 score
+pr_pnl	= pr_p3l+1			; pointer to current position on noise channel score
+pr_p1h	= pr_pnl+1			; pointer to current position on channel 1 score (MSB)
+pr_p2h	= pr_p1h+1			; pointer to current position on channel 2 score
+pr_p3h	= pr_p2h+1			; pointer to current position on channel 3 score
+pr_pnh	= pr_p3h+1			; pointer to current position on noise channel score
+pr_cnt	= pr_pnh+1			; note length counters
+pr_cnt2	= pr_cnt+1
+pr_cnt3	= pr_cnt2+1
+pr_ncnt	= pr_cnt3+1
 
 ; *****************
 ; *** main code ***
@@ -237,7 +247,7 @@ sc_adv:
 ; ...check whether it's time to get a new note
 			LDA pr_cnt, X	; get current counter
 			BNE nx_count	; if expired...
-get note:					; ...time to get a new note!
+get_note:					; ...time to get a new note!
 				LDA pr_p1h, X			; get cursor MSB
 				LDY pr_p1l, X			; get cursor LSB
 				STZ sr_ptr				; just in case
@@ -249,6 +259,13 @@ get note:					; ...time to get a new note!
 rst_sc:
 					LDA rflag, X		; get reset flag from channel index...
 					TRB sr_rst			; ...and reset it as acknowledge
+					LDA rflag, X		; get reset flag again...
+					LSR
+					LSR
+					LSR
+					LSR					; over 16 turns into mute index
+					ORA rflag, X		; add play flag
+					TSB sr_ena			; un-mute and enable this channel
 					TXA					; channel index...
 					ASL					; ...times two...
 					TAY					; ...is pointer index
@@ -296,14 +313,27 @@ nx_count:
 			DEC pr_cnt, X	; one less to go
 not_ena:
 		LDA #%00010000		; position of current mute bit
-		BIT psr_ena			; is this channel muted?
+		BIT pr_ena			; is this channel muted?
 		BNE not_muted
+do_mute:
 			STZ sg_c1ve, X	; if so, mute it *** should do only ONCE
 not_muted:
 		DEX
-		BPL sc_adv
+	BMI go_away 
+		JMP sc_adv
 #endif
+go_away:
 	JMP task_exit			; skip all data before returning!
+; this will end playing current (X) score
+pr_stop:
+	LDA rflag, X			; get channel flag
+	LSR
+	LSR
+	LSR
+	LSR						; mute bit position
+	ORA rflag, X			; and disable it as well
+	TRB sr_ena				; clear corresponding bits for stop & mute
+	BRA do_mute
 
 ; ********************
 ; *** data segment ***
@@ -324,6 +354,7 @@ ni_low:						; indexed note values 4-bit LSB, A2-B7
 	.byt	 9,  3, 13,  8,  3, 14, 10,  6,  2, 14, 11,  7	; C5-B5
 	.byt	 4,  1, 15, 12,  9,  7,  5,  3,  1, 15, 13, 12	; C6-B6
 	.byt	10,  9,  7,  6,  5,  4,  2,  1,  0,  0, 15, 14	; C7-B7
+	.byt	128				; void value for rests (detectable)
 ni_hi:						; indexed note values 6-bit MSB, A2-B7
 	.byt	 0, 31, 29, 27	; A2-B2, note padding [0]
 	.byt	26, 24, 23, 22, 20, 19, 18, 17, 16, 15, 14, 13	; C3-B3
@@ -331,6 +362,7 @@ ni_hi:						; indexed note values 6-bit MSB, A2-B7
 	.byt	 6,  6,  5,  5,  5,  4,  4,  4,  4,  3,  3,  3	; C5-B5
 	.byt	 3,  3,  2,  2,  2,  2,  2,  2,  2,  1,  1,  1	; C6-B6
 	.byt	 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0	; C7-B7 
+	.byt	 0				; void value for rests
 ; NOTE; octave 7 will be poorly tuned, unless you use values for TURBO only
 
 task_exit:
