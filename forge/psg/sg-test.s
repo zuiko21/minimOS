@@ -142,17 +142,23 @@ cl_loop:
 	STZ sg_c2l
 	STZ sg_c3l
 	STZ sg_nc
-	STZ psg_ec
-	STZ psg_ec2
-	STZ psg_ec3
-	STZ psg_nec
-	LDA #16
+	STZ psg_cv
+	STZ psg_cv2
+	STZ psg_cv3
+	STZ psg_nc
+	LDA #$FF
+	STA psg_ec
+	STA psg_ec2
+	STA psg_ec3
+	STA psg_nec
+	LDA #50
 	STA sg_envsp			; set envelope speed
 ; setup
-	LDA #%01001111			; max vol, slow decay
+	LDA #%00011111			; max vol, slow decay
 	STA sg_nve
 	LDA #%01000100			; rnd, fast
 	STA sg_nc
+	STA sg_c3h
 ; *** enable interrupts and launch player ***
 	CLI
 lock:
