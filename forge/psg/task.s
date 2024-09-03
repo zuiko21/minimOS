@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240903-1321
+; last modified 20240903-1417
 
 ; use -DSCORE to activate the score reader task!
 
@@ -121,9 +121,6 @@ psg_nec	= psg_ec3+1
 ; *** sound generator task ***
 ; ****************************
 lda#$bb
-sta$7020
-sta$7810
-sta$7830
 ; check for new note on noise channel
 	LDX #3					; max channel offset, will scan backwards
 ch_upd:
@@ -141,7 +138,7 @@ ch_upd:
 ch_noise:
 ; update volume settings
 			LDA sg_c1ve, X	; this is envelope (MSN) and volume (LSN)
-			BMI cc_attk		; negative envelope is slow attack, start at zero
+			BMI cc_attk		; negative envelope is slow attack, start at TARGET
 				AND #$0F				; otherwise start at current volume
 				STZ psg_tg, X			; eventually will fade out
 				BRA set_cv
@@ -154,22 +151,24 @@ cc_attk:
 			LSR
 			LSR				; ...over 16...
 			EOR #%00001111	; ...and back to positive should be the initial volume
+			INC				; eeek
 set_cv:
 			STA psg_cv, X	; this is current volume
 			ORA ch_vol, X	; will set volume
 			EOR #%00001111	; invert bits for attenuation!
-			NOP: NOP: NOP	; would suffice?
+;			NOP: NOP: NOP	; would suffice?
 			STA IO_PSG		; send to PSG!
 			LDA sg_envsp	; get generic envelope speed
+;			INC
 			STA psg_ec, X	; store into this channel envelope timer
-; now let's update volume according to envelopes
+; now let's update volume according to envelope
 ev_upd:
 		LDA psg_ec, X		; time for update?
 		BMI env_ok			; if expired, leave it alone
 		BNE nx_env			; not yet, wait for next
 ; reload timer for next envelope update, unless is completed
 			LDA sg_envsp	; yes, reload timer
-sta$7020
+;			INC
 			STA psg_ec, X
 ; do actual envelope
 			LDA sg_c1ve, X	; get envelope data
@@ -180,25 +179,19 @@ not_sus:
 			LSR
 			LSR
 			LSR				; envelope as value to be subtracted
-			BIT #$08		; non-extended envelope sign
-			BNE e_attack	; attack envelope will add value instead of subtract
-sta$7830
-				EOR #$0F
-				INC			; 2's complement for subtract
-				AND #$0F	; filter out possible half-carry
-e_attack:
-sta$7810
-			CLC
+			SEC
+			EOR #$FF		; actual 2's complement eeeeeek
 			ADC psg_cv, X	; modify current volume
 			BIT sg_c1ve, X	; recheck envelope sign
 			BPL e_decay		; was slow attack?
+				AND #$0F				; filter any half-carry eeek
 				CMP psg_tg, X			; if so, check whether it went over target
 			BMI sv_upd					; nope, all ok
 				LDA psg_tg, X			; otherwise, keep target value
 				STZ psg_ec, X			; no more cycles
 			BRA sv_upd
 e_decay:
-				CMP #0					; if decay, check whether it went negative
+				CMP #%00010000			; if decay, check whether it went negative (note half-carry trick)
 			BPL sv_upd					; nope, all is ok
 				LDA #0					; otherwise, we've reached null target
 				STZ psg_ec, X			; no more cycles
