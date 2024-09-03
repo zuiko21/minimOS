@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240903-1726
+; last modified 20240903-2033
 
 ; use -DSCORE to activate the score reader task!
 
@@ -38,11 +38,12 @@ sr_c1	= sr_if				; pointer to Channel 1 score
 sr_c2	= sr_c1+2			; same for channel 2
 sr_c3	= sr_c2+2			; same for channel 3
 sr_nc	= sr_c3+2			; pointer to noise channel, same as above except
-;							; "note", which is %10000frr (see below)
+;							; "note", which is %01000frr (see below)
 sr_ena	= sr_nc+2			; enable/pause channels %n321n321, where high nybble controls score run (%1=run) and low nybble controls muting (%0=mute)
-sr_rst	= sr_ena+1			; reset (and preload address) channels %xxxxn321 (%1=reset), will be automatically reset
+sr_rst	= sr_ena+1			; reset (and preload address) channels %n321xxxx (%1=reset), will be automatically reset
 sr_tempo= sr_rst+1			; tempo divider (234.375 bpm/n+1)
-sr_end	= sr_tempo+1		; * * * sr_end = sr_if+13 * * *
+sr_turbo= sr_tempo+1		; d7 is on for faster machines (remaining bits reserved, nominally 0)
+sr_end	= sr_turbo+1		; * * * sr_end = sr_if+14 * * *
 
 ; SCALE
 ; Score readers converts note index into 10-bit value for PSG
@@ -52,22 +53,21 @@ sr_end	= sr_tempo+1		; * * * sr_end = sr_if+13 * * *
 #endif
 
 ; SOUND GENERATOR				supply address psg_if, returns psg_end
-sg_turbo	= psg_if		; d7 is on for faster machines (remaining bits reserved, nominally 0)
-sg_envsp	= sg_turbo+1	; envelope update in ticks (typically 16 for max. 1s envelope)
+sg_envsp	= psg_if		; envelope update in ticks (typically 16 for max. 1s envelope)
 ; note indexing-savvy addresses
 sg_c1ve		= sg_envsp+1	; channel 1 envelope and volume, see score player format
 sg_c2ve		= sg_c1ve+1		; channel 2
 sg_c3ve		= sg_c2ve+1		; channel 3
 sg_nve		= sg_c3ve+1		; noise channel envelope and volume, same as above
-sg_c1l		= sg_nve+1		; channel 1 period low-order 4 bits  %1000llll
+sg_c1l		= sg_nve+1		; channel 1 period low-order 4 bits  %x000llll
 sg_c2l		= sg_c1l+1		; ditto for channel 2
 sg_c3l		= sg_c2l+1		; ditto for channel 3
-sg_nc		= sg_c3l+1		; noise channel rate and feedback, %10000frr
+sg_nc		= sg_c3l+1		; noise channel rate and feedback, %xxx00frr
 sg_c1h		= sg_nc+1		; channel 1 period high-order 6 bits %00hhhhhh
 sg_c2h		= sg_c1h+1		; ditto for remaining channels
 sg_c3h		= sg_c2h+1
 ; noise channel has no second tone value
-psg_end		= sg_c3h+1		; * * * psg_end = psg_if+13 * * *
+psg_end		= sg_c3h+1		; * * * psg_end = psg_if+12 * * *
 
 ; ****************************
 ; *** constants definition ***
@@ -93,6 +93,7 @@ psg_ec	= psg_nt+1			; envelope counter for channel 1
 psg_ec2	= psg_ec+1
 psg_ec3	= psg_ec2+1
 psg_nec	= psg_ec3+1
+pr_tmp	= psg_nec+1
 ;sr_p1		.word			; pointer to current position on channel 1 score
 ;sr_p2		.word			; pointer to current position on channel 2 score
 ;sr_p3		.word			; pointer to current position on channel 3 score
@@ -120,8 +121,7 @@ psg_nec	= psg_ec3+1
 ; ****************************
 ; *** sound generator task ***
 ; ****************************
-lda#$bb
-; check for new note on noise channel
+; check for new note on every channel
 	LDX #3					; max channel offset, will scan backwards
 ch_upd:
 		LDA sg_c1l, X		; anything new?
@@ -180,7 +180,7 @@ ev_upd:
 				STZ psg_ec, X
 not_sus:
 			SEC
-			EOR #$0F		; actual 2's complement
+			EOR #$0F		; actual 4-bit 2's complement
 			ADC psg_cv, X	; modify current volume
 			BIT sg_c1ve, X	; recheck envelope sign
 			BPL e_decay		; was slow attack?
@@ -214,7 +214,94 @@ sg_end:
 ; *************************
 ; *** score reader task ***
 ; *************************
-
+; some control for base tempo
+	LDA pr_dly				; is this the moment to check it all?
+	BEQ do_gets				; if so, do it
+		DEC pr_dly			; otherwise, count it...
+		JMP task_exit		; ...and go away
+do_gets:
+	LDA sr_tempo			; when it's time, reload counter
+	STA pr_dly
+; proceed to check all scores
+	LDA sr_ena				; get enabled channels mask
+	STA pr_ena				; will get shifted several times
+	LDA sr_rst				; reset control as well
+	STA pr_rst
+	LDX #3					; max. channel offset
+sc_adv:
+; *** *** must add RESET control *** *** TO DO *** *** TO DO
+		ASL pr_rst			; is this channel going to reset?
+			BCS rst_sc		; if so, reload address
+		ASL pr_ena			; get most significant bit out (N, 3, 2, 1)
+		BCC not_ena			; if this channel is enabled...
+; ...check whether it's time to get a new note
+			LDA pr_cnt, X	; get current counter
+			BNE nx_count	; if expired...
+get note:					; ...time to get a new note!
+				LDA pr_p1h, X			; get cursor MSB
+				LDY pr_p1l, X			; get cursor LSB
+				STZ sr_ptr				; just in case
+				STA sr_ptr+1			; pointer is ready
+				LDA (sr_ptr), Y			; get note
+			BEQ pr_stop		; NULL ends score
+				CMP #$FF	; $FF (or any negative?) repeats score
+				BNE do_note
+rst_sc:
+					LDA rflag, X		; get reset flag from channel index...
+					TRB sr_rst			; ...and reset it as acknowledge
+					TXA					; channel index...
+					ASL					; ...times two...
+					TAY					; ...is pointer index
+					LDA sr_c1, Y		; copy start pointer LSB
+					STA pr_p1l, X		; note different index
+					LDA sr_c1+1, Y		; ditto for MSB
+					STA pr_p1h, X
+					STZ pr_cnt, X		; reset its counter, just in case
+					BRA get_note		; and try again
+do_note:					; A is loaded with a valid note, and it's time to send it to the PSG daemon
+				TAY			; index for frequency table
+				LDA ni_hi, Y			; this is high byte
+				STA pr_tmp				; store temporarily
+				LDA ni_low, Y			; low byte
+				BIT sr_turbo			; how fast am I?
+				BPL non_turbo			; not that much, values are OK
+					ASL					; or if a fast machine, use twice the value
+					BIT #%00010000		; overflow?
+					BEQ no_ovf
+						AND #%00001111	; clear that...
+						SEC				; ...but keep on carry...
+no_ovf:
+					ROL pr_tmp			; ...to be inserted on high part
+non_turbo:
+				STA sg_c1l, X			; low byte into daemon
+				LDA pr_tmp
+				STA sg_c1h, X			; ditto for high byte (order is meaningless)
+				LDY pr_p1l, X			; retrieve cursor LSB...
+				INC sr_ptr				; ...offset by one...
+				LDA (sr_ptr), Y			; ...pointing to length
+				STA pr_cnt, X			; update counter
+				INC sr_ptr				; advance one more byte...
+				LDA (sr_ptr), Y			; ...for the envelope/volume...
+				STA sg_c1ve, X			; ...which goes into daemon
+nx_note:
+				LDA pr_p1l, X			; next note...
+				CLC
+				ADC #3					; ...is three bytes ahead
+				STA pr_p1l, X
+				LDA pr_p1h, X			; maybe MSB...
+				ADC #0					; ...get propagated carry...
+				STA pr_p1h, X			; ...for next page
+				BRA not_ena	; *** is this OK? ***
+nx_count:
+			DEC pr_cnt, X	; one less to go
+not_ena:
+		LDA #%00010000		; position of current mute bit
+		BIT psr_ena			; is this channel muted?
+		BNE not_muted
+			STZ sg_c1ve, X	; if so, mute it *** should do only ONCE
+not_muted:
+		DEX
+		BPL sc_adv
 #endif
 	JMP task_exit			; skip all data before returning!
 
@@ -226,6 +313,9 @@ ch_lowt:
 	.byt	%10000000, %10100000, %11000000, %11100000
 ch_vol:
 	.byt	%10010000, %10110000, %11010000, %11110000
+; channel reset bit positions
+rflag:
+	.byt	%00010000, %00100000, %01000000, %10000000
 ; indexed-note periods, calibrated for 1.75 MHz
 ni_low:						; indexed note values 4-bit LSB, A2-B7
 	.byt	 0,  1,  5, 11	; A2-B2, note padding [0]
