@@ -1,6 +1,6 @@
 ; Test for Interrupt-driven SN76489 PSG controller for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240903-1309
+; last modified 20240903-1753
 
 ; *** firmware definitions ***
 	irq_ptr	= $0200
@@ -52,9 +52,9 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1042			; 1.0b2		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1043			; 1.0b3		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$6400			; time, 12.32		0110 0-100 000-0 0000
+	.word	$8E00			; time, 17.48		1000 1-110 000-0 0000
 	.word	$5923			; date, 2024/9/03	0101 100-1 001-0 0011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
@@ -142,23 +142,29 @@ cl_loop:
 	STZ sg_c2l
 	STZ sg_c3l
 	STZ sg_nc
-	STZ psg_cv
-	STZ psg_cv2
-	STZ psg_cv3
-	STZ psg_nc
-	LDA #$FF
-	STA psg_ec
-	STA psg_ec2
-	STA psg_ec3
-	STA psg_nec
-	LDA #50
+;	STZ psg_cv
+;	STZ psg_cv2
+;	STZ psg_cv3
+;	STZ psg_nc
+	LDA #32
 	STA sg_envsp			; set envelope speed
 ; setup
 	LDA #%00011111			; max vol, slow decay
-	STA sg_nve
-	LDA #%01000100			; rnd, fast
-	STA sg_nc
+	STA sg_nve-1
+	LDA #%00111111			; not so slow
+	STA sg_nve-2
+	LDA #%11110111			; slow attack, softer
+	sta sg_nve-3
+	LDX #%10000000
+	LDA #%00001000			; low
+	STX sg_nc-1
 	STA sg_c3h
+	LSR			; mid
+	STX sg_nc-2
+	STA sg_c2h
+	LSR			; hi
+	STX sg_nc-3
+	STA sg_c1h
 ; *** enable interrupts and launch player ***
 	CLI
 lock:
