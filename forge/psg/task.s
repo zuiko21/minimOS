@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240902-1719
+; last modified 20240903-1321
 
 ; use -DSCORE to activate the score reader task!
 
@@ -82,14 +82,17 @@ sr_ptr	= $FC				; Score player NEEDS this in zeropage (will keep LSB as zero)
 ; *** memory allocation ***
 ; *************************
 psg_cv	= sg_local			; current volume for channel 1
-psg_tg	= psg_cv+1			; target volume for channel 1
-psg_ec	= psg_tg+1			; envelope counter for channel 1
-psg_cv2	= psg_ec+1			; same for channel 2
-psg_tg2	= psg_cv2+1
-psg_ec2	= psg_tg2+1
-psg_cv3	= psg_ec2+1			; same for channel 2
-psg_tg3	= psg_cv3+1
-psg_ec3	= psg_tg3+1
+psg_cv2	= psg_cv+1			; same for channel 2
+psg_cv3	= psg_cv2+1			; same for channel 3
+psg_nc	= psg_cv3+1
+psg_tg	= psg_nc+1			; target volume for channel 1
+psg_tg2	= psg_tg+1
+psg_tg3	= psg_tg2+1
+psg_nt	= psg_tg3+1
+psg_ec	= psg_nt+1			; envelope counter for channel 1
+psg_ec2	= psg_ec+1
+psg_ec3	= psg_ec2+1
+psg_nec	= psg_ec3+1
 ;sr_p1		.word			; pointer to current position on channel 1 score
 ;sr_p2		.word			; pointer to current position on channel 2 score
 ;sr_p3		.word			; pointer to current position on channel 3 score
