@@ -165,7 +165,7 @@ cl_loop:
 	STY sr_nc
 	STX sr_nc+1				; set pointer
 ; *** enable interrupts and launch player ***
-	LDA #%10000000			; start noise channel only
+	LDA #%10010000			; start noise channel only
 	STA sr_rst
 	CLI
 lock:
@@ -174,6 +174,9 @@ lock:
 ; three-byte strings -> note, length, envelope/volume
 ; note 0 -> end, note $FF -> repeat
 score1:
+	.byt	20, 128, $FF
+	.byt	20, 256, $0F
+	.byt	32, 128, $2F
 	.byt	0				; end
 
 score2:
