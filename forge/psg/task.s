@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240903-2344
+; last modified 20240904-1234
 
 ; use -DSCORE to activate the score reader task!
 
@@ -260,11 +260,7 @@ rst_sc:
 					LDA rflag, X		; get reset flag from channel index...
 					TRB sr_rst			; ...and reset it as acknowledge
 					LDA rflag, X		; get reset flag again...
-					LSR
-					LSR
-					LSR
-					LSR					; over 16 turns into mute index
-					ORA rflag, X		; add play flag
+					ORA mflag, X		; add mute flag
 					TSB sr_ena			; un-mute and enable this channel
 					TXA					; channel index...
 					ASL					; ...times two...
@@ -326,12 +322,8 @@ go_away:
 	JMP task_exit			; skip all data before returning!
 ; this will end playing current (X) score
 pr_stop:
-	LDA rflag, X			; get channel flag
-	LSR
-	LSR
-	LSR
-	LSR						; mute bit position
-	ORA rflag, X			; and disable it as well
+	LDA rflag, X			; get flag for channel to be disabled
+	ORA mflag, X			; and mute it as well
 	TRB sr_ena				; clear corresponding bits for stop & mute
 	BRA do_mute
 
@@ -343,7 +335,9 @@ ch_lowt:
 	.byt	%10000000, %10100000, %11000000, %11100000
 ch_vol:
 	.byt	%10010000, %10110000, %11010000, %11110000
-; channel reset bit positions
+; channel mute/reset bit positions
+mflag:
+	.byt	%00000001, %00000010, %00000100, %00001000
 rflag:
 	.byt	%00010000, %00100000, %01000000, %10000000
 ; indexed-note periods, calibrated for 1.75 MHz
@@ -354,15 +348,14 @@ ni_low:						; indexed note values 4-bit LSB, A2-B7
 	.byt	 9,  3, 13,  8,  3, 14, 10,  6,  2, 14, 11,  7	; C5-B5
 	.byt	 4,  1, 15, 12,  9,  7,  5,  3,  1, 15, 13, 12	; C6-B6
 	.byt	10,  9,  7,  6,  5,  4,  2,  1,  0,  0, 15, 14	; C7-B7
-	.byt	128				; void value for rests (detectable)
 ni_hi:						; indexed note values 6-bit MSB, A2-B7
-	.byt	 0, 31, 29, 27	; A2-B2, note padding [0]
+	.byt	 1, 31, 29, 27	; A2-B2, note padding [0] is actually void value for PCM/rests
 	.byt	26, 24, 23, 22, 20, 19, 18, 17, 16, 15, 14, 13	; C3-B3
 	.byt	13, 12, 11, 11, 10,  9,  9,  8,  8,  7,  7,  6	; C4-B4
 	.byt	 6,  6,  5,  5,  5,  4,  4,  4,  4,  3,  3,  3	; C5-B5
 	.byt	 3,  3,  2,  2,  2,  2,  2,  2,  2,  1,  1,  1	; C6-B6
 	.byt	 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0	; C7-B7 
-	.byt	 0				; void value for rests
+	.byt	 0				; void value for PCM/rests
 ; NOTE; octave 7 will be poorly tuned, unless you use values for TURBO only
 
 task_exit:
