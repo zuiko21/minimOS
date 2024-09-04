@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240904-1801
+; last modified 20240905-0040
 
 ; use -DSCORE to activate the score reader task!
 
@@ -202,12 +202,12 @@ not_sus:
 				CMP psg_tg, X			; if so, check whether it went over target
 			BMI sv_upd					; nope, all ok
 				LDA psg_tg, X			; otherwise, keep target value
-				STZ psg_ec, X			; no more cycles
-			BRA sv_upd
+			BRA sv_nmc
 e_decay:
 				BIT #%00010000			; if decay, check whether it went negative (note half-carry trick)
 			BNE sv_upd					; nope, all is ok
 				LDA #0					; otherwise, we've reached null target
+sv_nmc:
 				STZ psg_ec, X			; no more cycles
 sv_upd:
 			AND #$0F		; filter out possible half-carry
@@ -256,7 +256,7 @@ get_note:					; ...time to get a new note!
 				LDY pr_p1l, X			; get cursor LSB
 				STY sr_ptr				; just in case
 				STA sr_ptr+1			; pointer is ready
-				LDA (sr_ptr)			; get note
+				LDA (sr_ptr)			; get note (no offset)
 			BEQ pr_stop		; NULL ends score
 				CMP #$FF	; $FF (or any negative?) repeats score
 				BNE do_note
@@ -294,12 +294,11 @@ non_turbo:
 				STA sg_c1l, X			; low byte into daemon
 				LDA pr_tmp
 				STA sg_c1h, X			; ditto for high byte (order is meaningless)
-				LDY pr_p1l, X			; retrieve cursor LSB...
-				INC sr_ptr				; ...offset by one...
-				LDA (sr_ptr)			; ...pointing to length
+				LDY #1					; cursor offset by one...
+				LDA (sr_ptr), Y			; ...pointing to length
 				STA pr_cnt, X			; update counter
-				INC sr_ptr				; advance one more byte...
-				LDA (sr_ptr)			; ...for the envelope/volume...
+				INY						; advance one more byte...
+				LDA (sr_ptr), Y			; ...for the envelope/volume...
 				STA sg_c1ve, X			; ...which goes into daemon
 nx_note:
 				LDA pr_p1l, X			; next note...
@@ -309,7 +308,6 @@ nx_note:
 				LDA pr_p1h, X			; maybe MSB...
 				ADC #0					; ...get propagated carry...
 				STA pr_p1h, X			; ...for next page
-;				BRA not_ena	; *** is this OK? ***
 nx_count:
 			DEC pr_cnt, X	; one less to go
 not_ena:
