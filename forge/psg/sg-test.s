@@ -1,6 +1,6 @@
 ; Test for Interrupt-driven SN76489 PSG controller for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240904-1751
+; last modified 20240904-1757
 
 ; *** firmware definitions ***
 	irq_ptr	= $0200
@@ -188,7 +188,7 @@ cl_loop:
 	STY sr_nc
 	STX sr_nc+1				; set pointer
 ; *** enable interrupts and launch player ***
-	LDA #%10010000			; start noise channel only
+	LDA #%11110000			; start noise channel only
 	STA sr_rst
 	CLI
 lock:

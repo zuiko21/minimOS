@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240904-1747
+; last modified 20240904-1801
 
 ; use -DSCORE to activate the score reader task!
 
@@ -309,7 +309,7 @@ nx_note:
 				LDA pr_p1h, X			; maybe MSB...
 				ADC #0					; ...get propagated carry...
 				STA pr_p1h, X			; ...for next page
-				BRA not_ena	; *** is this OK? ***
+;				BRA not_ena	; *** is this OK? ***
 nx_count:
 			DEC pr_cnt, X	; one less to go
 not_ena:
