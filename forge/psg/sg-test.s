@@ -163,11 +163,11 @@ cl_loop:
 	STZ pr_cnt2
 	STZ pr_cnt3
 	STZ pr_ncnt
-	LDA #16
+	LDA #32
 	STA sg_envsp			; set envelope speed
 	STZ sr_turbo
-	dec sr_turbo
-	LDA #0					; 0 = 234 bpm, then half, third...
+;	dec sr_turbo
+	LDA #1					; 0 = 234 bpm, then half, third...
 	STA sr_tempo
 	STZ sr_ena
 ; setup
@@ -188,7 +188,7 @@ cl_loop:
 	STY sr_nc
 	STX sr_nc+1				; set pointer
 ; *** enable interrupts and launch player ***
-	LDA #%11110000			; start noise channel only
+	LDA #%11000000			; start noise channel only
 	STA sr_rst
 	CLI
 lock:
@@ -198,8 +198,9 @@ lock:
 ; note 0 -> end, note $FF -> repeat
 score1:
 	.byt	20, 128, $FF
-	.byt	20, 255, $0F
-	.byt	20, 1, $0F
+	.byt	20, 128, $0F
+	.byt	20, 128, $0F
+;	.byt	20, 1, $0F
 ;	.byt	20, 128, $0F
 	.byt	32, 128, $2F
 	.byt	$ff				; end
@@ -212,8 +213,8 @@ score2:
 	.byt	$ff				; end
 
 score3:
-	.byt	27, 255, 0
-	.byt	27, 1, 0
+	.byt	27, 0, 0
+;	.byt	27, 1, 0
 	.byt	27, 128, $FF
 	.byt	39, 128, $2F
 	.byt	$ff				; end
