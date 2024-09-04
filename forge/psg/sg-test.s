@@ -1,6 +1,6 @@
 ; Test for Interrupt-driven SN76489 PSG controller for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240904-1302
+; last modified 20240904-1345
 
 ; *** firmware definitions ***
 	irq_ptr	= $0200
@@ -147,11 +147,18 @@ cl_loop:
 ;	STZ psg_cv2
 ;	STZ psg_cv3
 ;	STZ psg_nc
-	LDA #32
+	STZ pr_dly
+	STZ pr_cnt
+	STZ pr_cnt2
+	STZ pr_cnt3
+	STZ pr_ncnt
+	LDA #16
 	STA sg_envsp			; set envelope speed
 	STZ sr_turbo
+	dec sr_turbo
 	LDA #0					; 0 = 234 bpm, then half, third...
 	STA sr_tempo
+	STZ sr_ena
 ; setup
 	LDY #<nscore
 	LDX #>nscore			; noise score pointer
@@ -179,10 +186,10 @@ nscore:
 	.byt $44, 64, $1F		; open hihat, black, slow decay, max vol
 	.byt $44, 32, $2F		; open hihat, crochet, not so slow decay
 	.byt $44, 32, $2F		; open hihat, crochet, not so slow decay
-	.byt $45, 32, $48		; closed lohat, crochet, fast decay, mid volume
+	.byt $45, 32, $2C		; closed lohat, crochet, fast decay, mid volume
 	.byt $45, 96, 0			; rest, dotted black
 	.byt $44, 128, $1F		; open hihat, white, slow decay, max vol
-	.byt $45, 32, $48		; closed lohat, crochet, fast decay, mid volume
+	.byt $45, 32, $2C		; closed lohat, crochet, fast decay, mid volume
 	.byt $45, 96, 0			; rest, dotted black
 	.byt $FF				; repeat this forever
 

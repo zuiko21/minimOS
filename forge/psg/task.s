@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240904-1241
+; last modified 20240904-1341
 
 ; use -DSCORE to activate the score reader task!
 
@@ -242,7 +242,7 @@ do_gets:
 	STA pr_rst
 	LDX #3					; max. channel offset
 sc_adv:
-; *** *** must add RESET control *** *** TO DO *** *** TO DO
+; RESET control
 		ASL pr_rst			; is this channel going to reset?
 			BCS rst_sc		; if so, reload address
 		ASL pr_ena			; get most significant bit out (N, 3, 2, 1)
@@ -253,9 +253,9 @@ sc_adv:
 get_note:					; ...time to get a new note!
 				LDA pr_p1h, X			; get cursor MSB
 				LDY pr_p1l, X			; get cursor LSB
-				STZ sr_ptr				; just in case
+				STY sr_ptr				; just in case
 				STA sr_ptr+1			; pointer is ready
-				LDA (sr_ptr), Y			; get note
+				LDA (sr_ptr)			; get note
 			BEQ pr_stop		; NULL ends score
 				CMP #$FF	; $FF (or any negative?) repeats score
 				BNE do_note
@@ -275,6 +275,8 @@ rst_sc:
 					STZ pr_cnt, X		; reset its counter, just in case
 					BRA get_note		; and try again
 do_note:					; A is loaded with a valid note, and it's time to send it to the PSG daemon
+				CPX #3		; noise channel?
+			BEQ non_turbo	; no need to correct frequencies!
 				TAY			; index for frequency table
 				LDA ni_hi, Y			; this is high byte
 				STA pr_tmp				; store temporarily
@@ -294,10 +296,10 @@ non_turbo:
 				STA sg_c1h, X			; ditto for high byte (order is meaningless)
 				LDY pr_p1l, X			; retrieve cursor LSB...
 				INC sr_ptr				; ...offset by one...
-				LDA (sr_ptr), Y			; ...pointing to length
+				LDA (sr_ptr)			; ...pointing to length
 				STA pr_cnt, X			; update counter
 				INC sr_ptr				; advance one more byte...
-				LDA (sr_ptr), Y			; ...for the envelope/volume...
+				LDA (sr_ptr)			; ...for the envelope/volume...
 				STA sg_c1ve, X			; ...which goes into daemon
 nx_note:
 				LDA pr_p1l, X			; next note...
