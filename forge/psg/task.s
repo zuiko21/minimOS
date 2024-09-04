@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240904-1234
+; last modified 20240904-1241
 
 ; use -DSCORE to activate the score reader task!
 
@@ -43,6 +43,7 @@ sr_ena	= sr_nc+2			; enable/pause channels %n321n321, where high nybble controls
 sr_rst	= sr_ena+1			; reset (and preload address) channels %n321xxxx (%1=reset), will be automatically reset
 sr_tempo= sr_rst+1			; tempo divider (234.375 bpm/n+1)
 sr_turbo= sr_tempo+1		; d7 is on for faster machines (remaining bits reserved, nominally 0)
+
 sr_end	= sr_turbo+1		; * * * sr_end = sr_if+14 * * *
 
 ; SCALE
@@ -109,6 +110,8 @@ pr_cnt	= pr_pnh+1			; note length counters
 pr_cnt2	= pr_cnt+1
 pr_cnt3	= pr_cnt2+1
 pr_ncnt	= pr_cnt3+1
+
+local_end	= pr_ncnt+1
 
 ; *****************
 ; *** main code ***

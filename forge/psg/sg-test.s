@@ -1,6 +1,6 @@
 ; Test for Interrupt-driven SN76489 PSG controller for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240903-2347
+; last modified 20240904-1302
 
 ; *** firmware definitions ***
 	irq_ptr	= $0200
@@ -15,8 +15,8 @@
 ; *** library definitions ***
 	psg_if		= 0
 	sg_local	= $10
+#define	SCORE
 	sr_if		= $20
-
 	sysptr		= $FC
 
 ; *** load address ***
@@ -138,7 +138,7 @@ cl_loop:
 	STX nmi_ptr+1			; ...installed for NMI button, as usual
 	STZ ticks
 	STZ ticks+1				; reset interrupt counter for good measure
-; init player *** TBD
+; init player
 	STZ sg_c1l
 	STZ sg_c2l
 	STZ sg_c3l
@@ -149,27 +149,42 @@ cl_loop:
 ;	STZ psg_nc
 	LDA #32
 	STA sg_envsp			; set envelope speed
+	STZ sr_turbo
+	LDA #0					; 0 = 234 bpm, then half, third...
+	STA sr_tempo
 ; setup
-	LDA #%00011111			; max vol, slow decay
-	STA sg_nve-1
-	LDA #%00111111			; not so slow
-	STA sg_nve-2
-	LDA #%11110111			; slow attack, softer
-	sta sg_nve-3
-	LDX #%10000000
-	LDA #%00001000			; low
-	STX sg_nc-1
-	STA sg_c3h
-	LSR			; mid
-	STX sg_nc-2
-	STA sg_c2h
-	LSR			; hi
-	STX sg_nc-3
-	STA sg_c1h
+	LDY #<nscore
+	LDX #>nscore			; noise score pointer
+	STY sr_nc
+	STX sr_nc+1				; set pointer
 ; *** enable interrupts and launch player ***
+	LDA #%10000000			; start noise channel only
+	STA sr_rst
 	CLI
 lock:
 	BRA lock				; infinite loop as end
+
+; three-byte strings -> note, length, envelope/volume
+; note 0 -> end, note $FF -> repeat
+score1:
+	.byt	0				; end
+
+score2:
+	.byt	0				; end
+
+score3:
+	.byt	0				; end
+
+nscore:
+	.byt $44, 64, $1F		; open hihat, black, slow decay, max vol
+	.byt $44, 32, $2F		; open hihat, crochet, not so slow decay
+	.byt $44, 32, $2F		; open hihat, crochet, not so slow decay
+	.byt $45, 32, $48		; closed lohat, crochet, fast decay, mid volume
+	.byt $45, 96, 0			; rest, dotted black
+	.byt $44, 128, $1F		; open hihat, white, slow decay, max vol
+	.byt $45, 32, $48		; closed lohat, crochet, fast decay, mid volume
+	.byt $45, 96, 0			; rest, dotted black
+	.byt $FF				; repeat this forever
 
 ; ---------------------------
 #ifdef	POCKET
