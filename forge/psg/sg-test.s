@@ -1,6 +1,6 @@
 ; Test for Interrupt-driven SN76489 PSG controller for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240904-1412
+; last modified 20240904-1415
 
 ; *** firmware definitions ***
 	irq_ptr	= $0200
@@ -76,8 +76,19 @@ isr:
 ;;	BNE jiffies
 ;;	INC ticks+3
 jiffies:
+	LDA IO8attr
+	AND #$F0
+	ORA #8
+	EOR #64
+	STA IO8attr
 
 #include "task.s"
+
+	LDA IO8attr
+	AND #$F0
+	ORA #8
+	EOR #64
+	STA IO8attr
 
 	PLY
 	PLX
