@@ -1,6 +1,6 @@
 ; Test for Interrupt-driven SN76489 PSG controller for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240904-1415
+; last modified 20240904-1751
 
 ; *** firmware definitions ***
 	irq_ptr	= $0200
@@ -14,9 +14,9 @@
 
 ; *** library definitions ***
 	psg_if		= 0
-	sg_local	= $10
+	sr_if		= $10
+	sg_local	= $20		; EEEEEEEEK
 #define	SCORE
-	sr_if		= $20
 	sysptr		= $FC
 
 ; *** load address ***

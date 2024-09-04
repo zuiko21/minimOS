@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240904-1351
+; last modified 20240904-1747
 
 ; use -DSCORE to activate the score reader task!
 
@@ -44,7 +44,7 @@ sr_rst	= sr_ena+1			; reset (and preload address) channels %n321xxxx (%1=reset),
 sr_tempo= sr_rst+1			; tempo divider (234.375 bpm/n+1)
 sr_turbo= sr_tempo+1		; d7 is on for faster machines (remaining bits reserved, nominally 0)
 
-sr_end	= sr_turbo+1		; * * * sr_end = sr_if+14 * * *
+sr_end	= sr_turbo+1		; * * * sr_end = sr_if+12 * * *
 
 ; SCALE
 ; Score readers converts note index into 10-bit value for PSG
@@ -67,8 +67,9 @@ sg_nc		= sg_c3l+1		; noise channel rate and feedback, %xxx00frr
 sg_c1h		= sg_nc+1		; channel 1 period high-order 6 bits %00hhhhhh
 sg_c2h		= sg_c1h+1		; ditto for remaining channels
 sg_c3h		= sg_c2h+1
+sg_nch		= sg_c3h+1		; NOT USED but needed as score reader may write meaningless data
 ; noise channel has no second tone value
-psg_end		= sg_c3h+1		; * * * psg_end = psg_if+12 * * *
+psg_end		= sg_nch+1		; * * * psg_end = psg_if+13 * * *
 
 ; ****************************
 ; *** constants definition ***
@@ -111,7 +112,7 @@ pr_cnt2	= pr_cnt+1
 pr_cnt3	= pr_cnt2+1
 pr_ncnt	= pr_cnt3+1
 
-local_end	= pr_ncnt+1
+local_end	= pr_ncnt+1		; sg_local + $3C
 
 ; *****************
 ; *** main code ***
@@ -262,7 +263,6 @@ get_note:					; ...time to get a new note!
 rst_sc:
 					LDA rflag, X		; get reset flag from channel index...
 					TRB sr_rst			; ...and reset it as acknowledge
-					LDA rflag, X		; get reset flag again...
 					ORA mflag, X		; add mute flag
 					TSB sr_ena			; un-mute and enable this channel
 					TXA					; channel index...
