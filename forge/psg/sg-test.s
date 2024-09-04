@@ -1,6 +1,6 @@
 ; Test for Interrupt-driven SN76489 PSG controller for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240904-1345
+; last modified 20240904-1412
 
 ; *** firmware definitions ***
 	irq_ptr	= $0200
@@ -160,6 +160,18 @@ cl_loop:
 	STA sr_tempo
 	STZ sr_ena
 ; setup
+	LDY #<score1
+	LDX #>score1			; score 1 pointer
+	STY sr_c1
+	STX sr_c1+1				; set pointer
+	LDY #<score2
+	LDX #>score2			; score 2 pointer
+	STY sr_c2
+	STX sr_c2+1				; set pointer
+	LDY #<score3
+	LDX #>score3			; score 3 pointer
+	STY sr_c3
+	STX sr_c3+1				; set pointer
 	LDY #<nscore
 	LDX #>nscore			; noise score pointer
 	STY sr_nc
@@ -175,15 +187,25 @@ lock:
 ; note 0 -> end, note $FF -> repeat
 score1:
 	.byt	20, 128, $FF
-	.byt	20, 256, $0F
+	.byt	20, 255, $0F
+	.byt	20, 1, $0F
+;	.byt	20, 128, $0F
 	.byt	32, 128, $2F
-	.byt	0				; end
+	.byt	$ff				; end
 
 score2:
-	.byt	0				; end
+	.byt	24, 128, 0
+	.byt	24, 128, $FF
+	.byt	24, 128, $0F
+	.byt	36, 128, $2F
+	.byt	$ff				; end
 
 score3:
-	.byt	0				; end
+	.byt	27, 255, 0
+	.byt	27, 1, 0
+	.byt	27, 128, $FF
+	.byt	39, 128, $2F
+	.byt	$ff				; end
 
 nscore:
 	.byt $44, 64, $1F		; open hihat, black, slow decay, max vol
