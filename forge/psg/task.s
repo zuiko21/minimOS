@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240905-1656
+; last modified 20240905-1726
 
 ; use -DSCORE to activate the score reader task!
 
@@ -198,10 +198,9 @@ not_sus:
 			ADC psg_cv, X	; modify current volume
 			BIT sg_c1ve, X	; recheck envelope sign
 			BPL e_decay		; was slow attack?
-#echo keep 5 lower bits
-				AND #$1F				; filter some bits eeek (was removed)
+;				AND #$1F				; filter some bits eeek (was removed)
 				CMP psg_tg, X			; if so, check whether it went over target
-			BMI sv_upd					; nope, all ok *** CHECK
+			BMI sv_upd					; nope, all ok
 				LDA psg_tg, X			; otherwise, keep target value
 			BRA sv_nmc
 e_decay:

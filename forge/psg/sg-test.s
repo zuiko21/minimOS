@@ -1,6 +1,6 @@
 ; Test for Interrupt-driven SN76489 PSG controller for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240905-1656
+; last modified 20240905-1725
 
 ; *** firmware definitions ***
 	irq_ptr	= $0200
@@ -163,11 +163,11 @@ cl_loop:
 	STZ pr_cnt2
 	STZ pr_cnt3
 	STZ pr_ncnt
-	LDA #16
+	LDA #12
 	STA sg_envsp			; set envelope speed
 	STZ sr_turbo
 ;	dec sr_turbo
-	LDA #0					; 0 = 234 bpm, then half, third...
+	LDA #1					; 0 = 234 bpm, then half, third...
 	STA sr_tempo
 	STZ sr_ena
 ; setup
@@ -197,14 +197,14 @@ lock:
 ; three-byte strings -> note, length, envelope/volume
 ; note 0 -> end, note $FF -> repeat
 score1:
-	.byt	20, 128, $EF
+	.byt	20, 128, $FF
 	.byt	20, 0, $0F
 	.byt	32, 128, $2F
 	.byt	$ff				; end
 
 score2:
 	.byt	24, 128, 0
-	.byt	24, 128, $EF
+	.byt	24, 128, $eF
 	.byt	24, 128, $0F
 	.byt	36, 128, $2F
 	.byt	$ff				; end
@@ -212,7 +212,7 @@ score2:
 score3:
 	.byt	27, 0, 0
 ;	.byt	27, 1, 0
-	.byt	27, 128, $EF
+	.byt	27, 128, $df
 	.byt	39, 128, $2F
 	.byt	$ff				; end
 
