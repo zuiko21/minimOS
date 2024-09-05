@@ -1,6 +1,6 @@
 ; Test for Interrupt-driven SN76489 PSG controller for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240904-1757
+; last modified 20240905-1656
 
 ; *** firmware definitions ***
 	irq_ptr	= $0200

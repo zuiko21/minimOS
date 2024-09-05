@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240905-0848
+; last modified 20240905-1656
 
 ; use -DSCORE to activate the score reader task!
 
@@ -198,9 +198,10 @@ not_sus:
 			ADC psg_cv, X	; modify current volume
 			BIT sg_c1ve, X	; recheck envelope sign
 			BPL e_decay		; was slow attack?
-;				AND #$1F				; filter some bits eeek
+#echo keep 5 lower bits
+				AND #$1F				; filter some bits eeek (was removed)
 				CMP psg_tg, X			; if so, check whether it went over target
-			BMI sv_upd					; nope, all ok
+			BMI sv_upd					; nope, all ok *** CHECK
 				LDA psg_tg, X			; otherwise, keep target value
 			BRA sv_nmc
 e_decay:
@@ -283,7 +284,7 @@ do_note:					; A is loaded with a valid note, and it's time to send it to the PS
 				LDA ni_low, Y			; low byte
 				BIT sr_turbo			; how fast am I?
 				BPL non_turbo			; not that much, values are OK
-					ASL					; or if a fast machine, use twice the value
+					ASL					; or if a fast machine, use twice the value (should clear C as well)
 					BIT #%00010000		; overflow?
 					BEQ no_ovf
 						AND #%00001111	; clear that...
@@ -305,9 +306,8 @@ nx_note:
 				CLC
 				ADC #3					; ...is three bytes ahead
 				STA pr_p1l, X
-				LDA pr_p1h, X			; maybe MSB...
-				ADC #0					; ...get propagated carry...
-				STA pr_p1h, X			; ...for next page
+				BCC nx_count			; no carry...
+					INC pr_p1h, X		; ...or maybe MSB...
 nx_count:
 			DEC pr_cnt, X	; one less to go
 not_ena:
