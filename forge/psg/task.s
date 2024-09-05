@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240905-0040
+; last modified 20240905-0848
 
 ; use -DSCORE to activate the score reader task!
 
@@ -153,8 +153,7 @@ ch_noise:
 ; preset volume settings
 			LDA sg_c1ve, X	; this is envelope (MSN) and volume (LSN)
 			BMI cc_attk		; negative envelope is slow attack, start at TARGET
-				AND #$0F				; otherwise start at current volume
-				STZ psg_tg, X			; eventually will fade out
+				STZ psg_tg, X			; otherwise will fade out
 				BRA set_cv
 cc_attk:
 			AND #$0F		; if slow attack, this will be target volume instead
@@ -167,6 +166,7 @@ cc_attk:
 			EOR #%00001111	; ...and back to positive should be the initial volume
 			INC				; eeek
 set_cv:
+			AND #$0F		; eeek (needed both ways)
 			STA psg_cv, X	; this is current volume
 			ORA ch_vol, X	; will set volume
 			EOR #%00001111	; invert bits for attenuation!
