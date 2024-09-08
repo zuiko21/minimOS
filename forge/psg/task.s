@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240905-1726
+; last modified 20240908-1726
 
 ; use -DSCORE to activate the score reader task!
 
@@ -264,7 +264,10 @@ rst_sc:
 					LDA rflag, X		; get reset flag from channel index...
 					TRB sr_rst			; ...and reset it as acknowledge
 					ORA mflag, X		; add mute flag
-					TSB sr_ena			; un-mute and enable this channel
+					TSB sr_ena			; un-mute and enable this channel...
+					LDA pr_ena			; ...but un-mute current register as well!
+					ORA #%00010000		; position of current mute bit
+					STA pr_ena
 					TXA					; channel index...
 					ASL					; ...times two...
 					TAY					; ...is pointer index
