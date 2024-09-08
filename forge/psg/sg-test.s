@@ -13,11 +13,12 @@
 	IO_PSG	= $DFDB
 
 ; *** library definitions ***
-	psg_if		= 0
-	sr_if		= $10
-	sg_local	= $20		; EEEEEEEEK
+	psg_if		= $0000
+	sr_if		= $0010
+	sg_local	= $0020		; EEEEEEEEK
 #define	SCORE
 	sysptr		= $FC
+#define	PSG_ZP	$40
 
 ; *** load address ***
 #ifdef	POCKET
@@ -163,11 +164,11 @@ cl_loop:
 	STZ pr_cnt2
 	STZ pr_cnt3
 	STZ pr_ncnt
-	LDA #12
+	LDA #16
 	STA sg_envsp			; set envelope speed
 	STZ sr_turbo
-;	dec sr_turbo
-	LDA #1					; 0 = 234 bpm, then half, third...
+	dec sr_turbo
+	LDA #0					; 0 = 234 bpm, then half, third...
 	STA sr_tempo
 	STZ sr_ena
 ; setup

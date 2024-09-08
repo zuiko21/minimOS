@@ -78,7 +78,11 @@ psg_end		= sg_nch+1		; * * * psg_end = psg_if+13 * * *
 ; ***************************
 ; *** zeropage allocation ***
 ; ***************************
+#ifdef	PSG_ZP
+sr_ptr	= PSG_ZP
+#else
 sr_ptr	= $FC				; Score player NEEDS this in zeropage (will keep LSB as zero)
+#endif
 
 ; *************************
 ; *** memory allocation ***
@@ -112,7 +116,7 @@ pr_cnt2	= pr_cnt+1
 pr_cnt3	= pr_cnt2+1
 pr_ncnt	= pr_cnt3+1
 
-local_end	= pr_ncnt+1		; sg_local + $3C
+local_end	= pr_ncnt+1		; sg_local + 28
 
 ; *****************
 ; *** main code ***
@@ -247,10 +251,13 @@ sc_adv:
 		ASL pr_rst			; is this channel going to reset?
 			BCS rst_sc		; if so, reload address
 		ASL pr_ena			; get most significant bit out (N, 3, 2, 1)
-		BCC not_ena			; if this channel is enabled...
+		BCS is_ena			; if this channel is enabled...
+			JMP not_ena
+is_ena:
 ; ...check whether it's time to get a new note
 			LDA pr_cnt, X	; get current counter
-			BNE nx_count	; if expired...
+			BEQ get_note	; if expired...
+				JMP nx_count
 get_note:					; ...time to get a new note!
 				LDA pr_p1h, X			; get cursor MSB
 				LDY pr_p1l, X			; get cursor LSB
@@ -277,6 +284,13 @@ rst_sc:
 					STA pr_p1h, X
 					STZ pr_cnt, X		; reset its counter, just in case
 					BRA get_note		; and try again
+; this will end playing current (X) score
+pr_stop:
+			LDA rflag, X				; get flag for channel to be disabled
+			ORA mflag, X				; and mute it as well
+			TRB sr_ena					; clear corresponding bits for stop & mute
+			BRA do_mute
+; proceed to play note
 do_note:					; A is loaded with a valid note, and it's time to send it to the PSG daemon
 				CPX #3		; noise channel?
 			BEQ non_turbo	; no need to correct frequencies!
@@ -325,12 +339,6 @@ not_muted:
 #endif
 go_away:
 	JMP task_exit			; skip all data before returning!
-; this will end playing current (X) score
-pr_stop:
-	LDA rflag, X			; get flag for channel to be disabled
-	ORA mflag, X			; and mute it as well
-	TRB sr_ena				; clear corresponding bits for stop & mute
-	BRA do_mute
 
 ; ********************
 ; *** data segment ***
