@@ -1,6 +1,6 @@
 ; Test for Interrupt-driven SN76489 PSG controller for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240908-1721
+; last modified 20240908-1813
 
 ; *** firmware definitions ***
 	irq_ptr	= $0200
@@ -17,7 +17,6 @@
 	sr_if		= $0010
 	sg_local	= $0020		; EEEEEEEEK
 #define	SCORE
-	sysptr		= $FC
 #define	PSG_ZP	$40
 
 ; *** load address ***
@@ -26,6 +25,7 @@
 #else
 	* = $C000
 #endif
+	sysptr		= $FC		; for init use only
 
 ; ***********************
 ; *** standard header ***
@@ -54,10 +54,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$1044			; 1.0b4		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$1044			; 1.0b5		%vvvvrrrr sshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$BB00			; time, 23.24		1011 1-011 000-0 0000
-	.word	$5923			; date, 2024/9/03	0101 100-1 001-0 0011
+	.word	$9300			; time, 18.24		1001 0-011 000-0 0000
+	.word	$5928			; date, 2024/9/08	0101 100-1 001-0 1000
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	file_end-rom_start			; actual executable size
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -72,10 +72,6 @@ isr:
 	INC ticks				; increment jiffy counter (typically at $0206)
 	BNE jiffies				; usually will use more bytes, but not needed for this
 		INC ticks+1
-;;	BNE jiffies
-;;		INC ticks+2
-;;	BNE jiffies
-;;	INC ticks+3
 jiffies:
 	LDA IO8attr
 	AND #$F0
@@ -150,22 +146,29 @@ cl_loop:
 	STX nmi_ptr+1			; ...installed for NMI button, as usual
 	STZ ticks
 	STZ ticks+1				; reset interrupt counter for good measure
+; * for testing, make dirty zp *
+	LDX #0
+dirty:
+		LDA $5F00, X
+		STA 0, X
+		INX
+		BNE dirty
 ; init player
-	STZ sg_c1l
+	STZ sg_c1l				; first four bytes from psg_if
 	STZ sg_c2l
 	STZ sg_c3l
 	STZ sg_nc
-	STZ pr_cnt
+	STZ pr_cnt				; first 5 bytes from sg_local
 	STZ pr_cnt2
 	STZ pr_cnt3
 	STZ pr_ncnt
-	STZ pr_dly				; must reset
-	STZ sr_ena				; must reset!
+	STZ pr_dly
+	STZ sr_ena				; must reset! 8th byte from sr_if
 ; configure
-	LDA #16
-	STA sg_envsp			; set envelope speed
+	LDA #12					; set envelope speed
+	STA sg_envsp
 	STZ sr_turbo
-;	dec sr_turbo
+;	DEC sr_turbo			; alternate turbo clock for v2
 	LDA #0					; 0 = 234 bpm, then half, third...
 	STA sr_tempo
 ; setup
@@ -186,7 +189,7 @@ cl_loop:
 	STY sr_nc
 	STX sr_nc+1				; set pointer
 ; *** enable interrupts and launch player ***
-	LDA #%01010000			; start noise channel only
+	LDA #%11110000			; start all channels
 	STA sr_rst
 	CLI
 lock:
@@ -195,34 +198,33 @@ lock:
 ; three-byte strings -> note, length, envelope/volume
 ; note 0 -> end, note $FF -> repeat
 score1:
-	.byt	20, 128, $FF
-	.byt	20, 0, $0F
+	.byt	20, 0, $FF
+	.byt	20, 128, $0F
 	.byt	32, 128, $2F
-	.byt	$ff				; end
+	.byt	$FF				; end
 
 score2:
 	.byt	24, 128, 0
-	.byt	24, 128, $eF
+	.byt	24, 128, $EF
 	.byt	24, 128, $0F
 	.byt	36, 128, $2F
-	.byt	$ff				; end
+	.byt	$FF				; end
 
 score3:
 	.byt	27, 0, 0
-;	.byt	27, 1, 0
-	.byt	27, 128, $df
+	.byt	27, 128, $DF
 	.byt	39, 128, $2F
-	.byt	$ff				; end
+	.byt	$FF				; end
 
 nscore:
-	.byt $44, 64, $1F		; open hihat, black, slow decay, max vol
-	.byt $44, 32, $2F		; open hihat, crochet, not so slow decay
-	.byt $44, 32, $2F		; open hihat, crochet, not so slow decay
-	.byt $45, 32, $2C		; closed lohat, crochet, fast decay, mid volume
-	.byt $45, 96, 0			; rest, dotted black
-	.byt $44, 128, $1F		; open hihat, white, slow decay, max vol
-	.byt $45, 32, $2C		; closed lohat, crochet, fast decay, mid volume
-	.byt $45, 96, 0			; rest, dotted black
+	.byt $44, 64, $1F		; open hihat, crotchet, slow decay, max vol
+	.byt $44, 32, $2F		; open hihat, quaver, not so slow decay
+	.byt $44, 32, $2F		; open hihat, quaver, not so slow decay
+	.byt $45, 32, $2C		; closed lohat, quaver, not so slow decay, mid volume
+	.byt $45, 96, 0			; rest, dotted crotchet
+	.byt $44, 128, $1F		; open hihat, minim, slow decay, max vol
+	.byt $45, 32, $2C		; closed lohat, quaver, fast decay, mid volume
+	.byt $45, 96, 0			; rest, dotted crotchet
 	.byt $FF				; repeat this forever
 
 ; ---------------------------
