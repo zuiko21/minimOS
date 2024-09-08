@@ -155,22 +155,19 @@ cl_loop:
 	STZ sg_c2l
 	STZ sg_c3l
 	STZ sg_nc
-;	STZ psg_ec
-;	STZ psg_ec2
-;	STZ psg_ec3
-;	STZ psg_nec
 	STZ pr_dly
 	STZ pr_cnt
 	STZ pr_cnt2
 	STZ pr_cnt3
 	STZ pr_ncnt
+	STZ sr_ena
+; configure
 	LDA #16
 	STA sg_envsp			; set envelope speed
 	STZ sr_turbo
-	dec sr_turbo
+;	dec sr_turbo
 	LDA #0					; 0 = 234 bpm, then half, third...
 	STA sr_tempo
-	STZ sr_ena
 ; setup
 	LDY #<score1
 	LDX #>score1			; score 1 pointer
