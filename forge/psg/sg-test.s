@@ -155,12 +155,12 @@ cl_loop:
 	STZ sg_c2l
 	STZ sg_c3l
 	STZ sg_nc
-	STZ pr_dly
 	STZ pr_cnt
 	STZ pr_cnt2
 	STZ pr_cnt3
 	STZ pr_ncnt
-	STZ sr_ena
+	STZ pr_dly				; must reset
+	STZ sr_ena				; must reset!
 ; configure
 	LDA #16
 	STA sg_envsp			; set envelope speed
@@ -186,7 +186,7 @@ cl_loop:
 	STY sr_nc
 	STX sr_nc+1				; set pointer
 ; *** enable interrupts and launch player ***
-	LDA #%11110000			; start noise channel only
+	LDA #%01010000			; start noise channel only
 	STA sr_rst
 	CLI
 lock:

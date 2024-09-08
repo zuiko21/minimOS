@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240908-1726
+; last modified 20240908-1804
 
 ; use -DSCORE to activate the score reader task!
 
@@ -39,7 +39,7 @@ sr_c2	= sr_c1+2			; same for channel 2
 sr_c3	= sr_c2+2			; same for channel 3
 sr_nc	= sr_c3+2			; pointer to noise channel, same as above except
 ;							; "note", which is %01000frr (see below)
-sr_ena	= sr_nc+2			; enable/pause channels %n321n321, where high nybble controls score run (%1=run) and low nybble controls muting (%0=mute)
+sr_ena	= sr_nc+2			; (MUST RESET 8TH) enable/pause channels %n321n321, where high nybble controls score run (%1=run) and low nybble controls muting (%0=mute)
 sr_rst	= sr_ena+1			; reset (and preload address) channels %n321xxxx (%1=reset), will be automatically reset
 sr_tempo= sr_rst+1			; tempo divider (234.375 bpm/n+1)
 sr_turbo= sr_tempo+1		; d7 is on for faster machines (remaining bits reserved, nominally 0)
@@ -54,13 +54,8 @@ sr_end	= sr_turbo+1		; * * * sr_end = sr_if+12 * * *
 #endif
 
 ; SOUND GENERATOR				supply address psg_if, returns psg_end
-sg_envsp	= psg_if		; envelope update in ticks (typically 16 for max. 1s envelope)
-; note indexing-savvy addresses
-sg_c1ve		= sg_envsp+1	; channel 1 envelope and volume, see score player format
-sg_c2ve		= sg_c1ve+1		; channel 2
-sg_c3ve		= sg_c2ve+1		; channel 3
-sg_nve		= sg_c3ve+1		; noise channel envelope and volume, same as above
-sg_c1l		= sg_nve+1		; channel 1 period low-order 4 bits  %x000llll
+; note indexing-savvy addresses (MUST RESET FIRST 4 BYTES, set 9th)
+sg_c1l		= psg_if		; channel 1 period low-order 4 bits  %x000llll
 sg_c2l		= sg_c1l+1		; ditto for channel 2
 sg_c3l		= sg_c2l+1		; ditto for channel 3
 sg_nc		= sg_c3l+1		; noise channel rate and feedback, %xxx00frr
@@ -69,7 +64,12 @@ sg_c2h		= sg_c1h+1		; ditto for remaining channels
 sg_c3h		= sg_c2h+1
 sg_nch		= sg_c3h+1		; NOT USED but needed as score reader may write meaningless data
 ; noise channel has no second tone value
-psg_end		= sg_nch+1		; * * * psg_end = psg_if+13 * * *
+sg_envsp	= sg_nch+1		; envelope update in ticks (typically 16 for max. 1s envelope)
+sg_c1ve		= sg_envsp+1	; channel 1 envelope and volume, see score player format
+sg_c2ve		= sg_c1ve+1		; channel 2
+sg_c3ve		= sg_c2ve+1		; channel 3
+sg_nve		= sg_c3ve+1		; noise channel envelope and volume, same as above
+psg_end		= sg_nve+1		; * * * psg_end = psg_if+13 * * *
 
 ; ****************************
 ; *** constants definition ***
@@ -85,9 +85,25 @@ sr_ptr	= $FC				; Score player NEEDS this in zeropage (will keep LSB as zero)
 #endif
 
 ; *************************
-; *** memory allocation ***
+; *** memory allocation *** MUST RESET FIRST 5 BYTES
 ; *************************
-psg_cv	= sg_local			; current volume for channel 1
+pr_cnt	= sg_local			; note length counters
+pr_cnt2	= pr_cnt+1
+pr_cnt3	= pr_cnt2+1
+pr_ncnt	= pr_cnt3+1
+pr_dly	= pr_ncnt+1
+pr_tmp	= pr_dly+1
+pr_ena	= pr_tmp+1
+pr_rst	= pr_ena+1
+pr_p1l	= pr_rst+1			; pointer to current position on channel 1 score (LSB)
+pr_p2l	= pr_p1l+1			; pointer to current position on channel 2 score
+pr_p3l	= pr_p2l+1			; pointer to current position on channel 3 score
+pr_pnl	= pr_p3l+1			; pointer to current position on noise channel score
+pr_p1h	= pr_pnl+1			; pointer to current position on channel 1 score (MSB)
+pr_p2h	= pr_p1h+1			; pointer to current position on channel 2 score
+pr_p3h	= pr_p2h+1			; pointer to current position on channel 3 score
+pr_pnh	= pr_p3h+1			; pointer to current position on noise channel score
+psg_cv	= pr_pnh+1			; current volume for channel 1
 psg_cv2	= psg_cv+1			; same for channel 2
 psg_cv3	= psg_cv2+1			; same for channel 3
 psg_nc	= psg_cv3+1
@@ -99,24 +115,8 @@ psg_ec	= psg_nt+1			; envelope counter for channel 1
 psg_ec2	= psg_ec+1
 psg_ec3	= psg_ec2+1
 psg_nec	= psg_ec3+1
-pr_tmp	= psg_nec+1
-pr_dly	= pr_tmp+1
-pr_ena	= pr_dly+1
-pr_rst	= pr_ena+1
-pr_p1l	= pr_rst+1			; pointer to current position on channel 1 score (LSB)
-pr_p2l	= pr_p1l+1			; pointer to current position on channel 2 score
-pr_p3l	= pr_p2l+1			; pointer to current position on channel 3 score
-pr_pnl	= pr_p3l+1			; pointer to current position on noise channel score
-pr_p1h	= pr_pnl+1			; pointer to current position on channel 1 score (MSB)
-pr_p2h	= pr_p1h+1			; pointer to current position on channel 2 score
-pr_p3h	= pr_p2h+1			; pointer to current position on channel 3 score
-pr_pnh	= pr_p3h+1			; pointer to current position on noise channel score
-pr_cnt	= pr_pnh+1			; note length counters
-pr_cnt2	= pr_cnt+1
-pr_cnt3	= pr_cnt2+1
-pr_ncnt	= pr_cnt3+1
 
-local_end	= pr_ncnt+1		; sg_local + 28
+local_end	= psg_nec+1		; sg_local + 28
 
 ; *****************
 ; *** main code ***
