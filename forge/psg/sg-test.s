@@ -1,6 +1,6 @@
 ; Test for Interrupt-driven SN76489 PSG controller for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240908-1813
+; last modified 20240909-1854
 
 ; *** firmware definitions ***
 	irq_ptr	= $0200
@@ -165,11 +165,11 @@ dirty:
 	STZ pr_dly
 	STZ sr_ena				; must reset! 8th byte from sr_if
 ; configure
-	LDA #12					; set envelope speed
+	LDA #16					; set envelope speed
 	STA sg_envsp
 	STZ sr_turbo
 ;	DEC sr_turbo			; alternate turbo clock for v2
-	LDA #0					; 0 = 234 bpm, then half, third...
+	LDA #7					; 0 = 234 bpm, then half, third...
 	STA sr_tempo
 ; setup
 	LDY #<score1
@@ -198,33 +198,33 @@ lock:
 ; three-byte strings -> note, length, envelope/volume
 ; note 0 -> end, note $FF -> repeat
 score1:
-	.byt	20, 0, $FF
-	.byt	20, 128, $0F
-	.byt	32, 128, $2F
+	.byt	20, 32, $FF
+	.byt	20, 16, $0F
+	.byt	32, 16, $1F
 	.byt	$FF				; end
 
 score2:
-	.byt	24, 128, 0
-	.byt	24, 128, $EF
-	.byt	24, 128, $0F
-	.byt	36, 128, $2F
+	.byt	24, 16, 0
+	.byt	24, 16, $EF
+	.byt	24, 16, $0F
+	.byt	36, 16, $1F
 	.byt	$FF				; end
 
 score3:
-	.byt	27, 0, 0
-	.byt	27, 128, $DF
-	.byt	39, 128, $2F
+	.byt	27, 32, 0
+	.byt	27, 16, $DF
+	.byt	39, 16, $1F
 	.byt	$FF				; end
 
 nscore:
-	.byt $44, 64, $1F		; open hihat, crotchet, slow decay, max vol
-	.byt $44, 32, $2F		; open hihat, quaver, not so slow decay
-	.byt $44, 32, $2F		; open hihat, quaver, not so slow decay
-	.byt $45, 32, $2C		; closed lohat, quaver, not so slow decay, mid volume
-	.byt $45, 96, 0			; rest, dotted crotchet
-	.byt $44, 128, $1F		; open hihat, minim, slow decay, max vol
-	.byt $45, 32, $2C		; closed lohat, quaver, fast decay, mid volume
-	.byt $45, 96, 0			; rest, dotted crotchet
+	.byt $44, 8, $1F		; open hihat, crotchet, slow decay, max vol
+	.byt $44, 4, $2F		; open hihat, quaver, not so slow decay
+	.byt $44, 4, $2F		; open hihat, quaver, not so slow decay
+	.byt $45, 4, $2C		; closed lohat, quaver, not so slow decay, mid volume
+	.byt $45, 12, 0			; rest, dotted crotchet
+	.byt $44, 16, $1F		; open hihat, minim, slow decay, max vol
+	.byt $45, 4, $2C		; closed lohat, quaver, fast decay, mid volume
+	.byt $45, 12, 0			; rest, dotted crotchet
 	.byt $FF				; repeat this forever
 
 ; ---------------------------
