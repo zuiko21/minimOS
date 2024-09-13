@@ -1,6 +1,6 @@
 ; Test for Interrupt-driven SN76489 PSG controller for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240913-1538
+; last modified 20240913-1633
 
 ; *** firmware definitions ***
 	irq_ptr	= $0200
@@ -189,7 +189,7 @@ dirty:
 	STY sr_nc
 	STX sr_nc+1				; set pointer
 ; *** enable interrupts and launch player ***
-	LDA #%10010000			; start all channels
+	LDA #%00010000			; start all channels
 	STA sr_rst
 	CLI
 lock:
@@ -208,129 +208,129 @@ score1:
 	.byt	14, 64, $1F		; quarter
 	.byt	14, 64, $1F		; quarter
 	.byt	14, 0, 0		; whole rest
-	.byt	14, 32, $1F		; 1/8 - corchea
-	.byt	14, 32, $1F		; 1/8
-	.byt	14, 32, $1F		; 1/8
-	.byt	14, 32, $1F		; 1/8
-	.byt	14, 32, $1F		; 1/8
-	.byt	14, 32, $1F		; 1/8
-	.byt	14, 32, $1F		; 1/8
-	.byt	14, 32, $1F		; 1/8
+	.byt	14, 32, $2F		; 1/8 - corchea
+	.byt	14, 32, $2F		; 1/8
+	.byt	14, 32, $2F		; 1/8
+	.byt	14, 32, $2F		; 1/8
+	.byt	14, 32, $2F		; 1/8
+	.byt	14, 32, $2F		; 1/8
+	.byt	14, 32, $2F		; 1/8
+	.byt	14, 32, $2F		; 1/8
 	.byt	14, 0, 0		; whole rest
-	.byt	14, 16, $1F		; 1/16 - semicorchea
-	.byt	14, 16, $1F		; 1/16
-	.byt	14, 16, $1F		; 1/16
-	.byt	14, 16, $1F		; 1/16
-	.byt	14, 16, $1F		; 1/16
-	.byt	14, 16, $1F		; 1/16
-	.byt	14, 16, $1F		; 1/16
-	.byt	14, 16, $1F		; 1/16
-	.byt	14, 16, $1F		; 1/16
-	.byt	14, 16, $1F		; 1/16
-	.byt	14, 16, $1F		; 1/16
-	.byt	14, 16, $1F		; 1/16
-	.byt	14, 16, $1F		; 1/16
-	.byt	14, 16, $1F		; 1/16
-	.byt	14, 16, $1F		; 1/16
-	.byt	14, 16, $1F		; 1/16
+	.byt	14, 16, $5F		; 1/16 - semicorchea
+	.byt	14, 16, $5F		; 1/16
+	.byt	14, 16, $5F		; 1/16
+	.byt	14, 16, $5F		; 1/16
+	.byt	14, 16, $5F		; 1/16
+	.byt	14, 16, $5F		; 1/16
+	.byt	14, 16, $5F		; 1/16
+	.byt	14, 16, $5F		; 1/16
+	.byt	14, 16, $5F		; 1/16
+	.byt	14, 16, $5F		; 1/16
+	.byt	14, 16, $5F		; 1/16
+	.byt	14, 16, $5F		; 1/16
+	.byt	14, 16, $5F		; 1/16
+	.byt	14, 16, $5F		; 1/16
+	.byt	14, 16, $5F		; 1/16
+	.byt	14, 16, $5F		; 1/16
 	.byt	14, 0, 0		; whole rest
-	.byt	14, 8, $1F		; 1/32 - fusa
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
-	.byt	14, 8, $1F		; 1/32
+	.byt	14, 8, $4F		; 1/32 - fusa
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
+	.byt	14, 8, $4F		; 1/32
 	.byt	14, 0, 0		; whole rest
-	.byt	14, 4, $1F		; 1/64 - semifusa
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
-	.byt	14, 4, $1F		; 1/64
+	.byt	14, 4, $5F		; 1/64 - semifusa
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
+	.byt	14, 4, $5F		; 1/64
 	.byt	14, 0, 0		; whole rest
 	.byt	$FF				; end
 
@@ -474,69 +474,69 @@ score2:
 score3:
 	.byt	14, 0, $0F		; whole - redonda
 	.byt	14, 0, 0		; whole rest
-	.byt	14, 127, $0F	; half - blanca
-	.byt	14, 1, 0		; minirest
-	.byt	14, 127, $0F	; half - blanca
-	.byt	14, 1, 0		; minirest
+	.byt	14, 124, $0F	; half - blanca
+	.byt	14, 4, 0		; minirest
+	.byt	14, 124, $0F	; half - blanca
+	.byt	14, 4, 0		; minirest
 	.byt	14, 0, 0		; whole rest
-	.byt	14, 63, $0F		; quarter - negra
-	.byt	14, 1, 0		; minirest
-	.byt	14, 63, $0F		; quarter - negra
-	.byt	14, 1, 0		; minirest
-	.byt	14, 63, $0F		; quarter - negra
-	.byt	14, 1, 0		; minirest
-	.byt	14, 63, $0F		; quarter - negra
-	.byt	14, 1, 0		; minirest
+	.byt	14, 60, $0F		; quarter - negra
+	.byt	14, 4, 0		; minirest
+	.byt	14, 60, $0F		; quarter - negra
+	.byt	14, 4, 0		; minirest
+	.byt	14, 60, $0F		; quarter - negra
+	.byt	14, 4, 0		; minirest
+	.byt	14, 60, $0F		; quarter - negra
+	.byt	14, 4, 0		; minirest
 	.byt	14, 0, 0		; whole rest
-	.byt	14, 31, $0F		; 1/8 - corchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 31, $0F		; 1/8 - corchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 31, $0F		; 1/8 - corchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 31, $0F		; 1/8 - corchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 31, $0F		; 1/8 - corchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 31, $0F		; 1/8 - corchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 31, $0F		; 1/8 - corchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 31, $0F		; 1/8 - corchea
-	.byt	14, 1, 0		; minirest
+	.byt	14, 28, $0F		; 1/8 - corchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 28, $0F		; 1/8 - corchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 28, $0F		; 1/8 - corchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 28, $0F		; 1/8 - corchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 28, $0F		; 1/8 - corchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 28, $0F		; 1/8 - corchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 28, $0F		; 1/8 - corchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 28, $0F		; 1/8 - corchea
+	.byt	14, 4, 0		; minirest
 	.byt	14, 0, 0		; whole rest
-	.byt	14, 15, $0F		; 1/16 - semicorchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 15, $0F		; 1/16 - semicorchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 15, $0F		; 1/16 - semicorchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 15, $0F		; 1/16 - semicorchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 15, $0F		; 1/16 - semicorchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 15, $0F		; 1/16 - semicorchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 15, $0F		; 1/16 - semicorchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 15, $0F		; 1/16 - semicorchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 15, $0F		; 1/16 - semicorchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 15, $0F		; 1/16 - semicorchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 15, $0F		; 1/16 - semicorchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 15, $0F		; 1/16 - semicorchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 15, $0F		; 1/16 - semicorchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 15, $0F		; 1/16 - semicorchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 15, $0F		; 1/16 - semicorchea
-	.byt	14, 1, 0		; minirest
-	.byt	14, 15, $0F		; 1/16 - semicorchea
-	.byt	14, 1, 0		; minirest
+	.byt	14, 12, $0F		; 1/16 - semicorchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 12, $0F		; 1/16 - semicorchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 12, $0F		; 1/16 - semicorchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 12, $0F		; 1/16 - semicorchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 12, $0F		; 1/16 - semicorchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 12, $0F		; 1/16 - semicorchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 12, $0F		; 1/16 - semicorchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 12, $0F		; 1/16 - semicorchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 12, $0F		; 1/16 - semicorchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 12, $0F		; 1/16 - semicorchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 12, $0F		; 1/16 - semicorchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 12, $0F		; 1/16 - semicorchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 12, $0F		; 1/16 - semicorchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 12, $0F		; 1/16 - semicorchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 12, $0F		; 1/16 - semicorchea
+	.byt	14, 4, 0		; minirest
+	.byt	14, 12, $0F		; 1/16 - semicorchea
+	.byt	14, 4, 0		; minirest
 	.byt	14, 0, 0		; whole rest
 	.byt	14, 7, $0F		; 1/32 - fusa
 	.byt	14, 1, 0		; minirest
