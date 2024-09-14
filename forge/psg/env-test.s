@@ -1,6 +1,6 @@
 ; Test for Interrupt-driven SN76489 PSG controller for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240913-1633
+; last modified 20240914-1757
 
 ; *** firmware definitions ***
 	irq_ptr	= $0200
@@ -118,9 +118,9 @@ reset:
 	LDA #$FF				; max. attenuation for noise channel
 psg_mute:
 		STA IO_PSG			; send command to PSG (4)
+		JSR delay24			; wait for next PSG command (24)
 		SEC					; used for subtraction (2)
 		SBC #32				; next channel (2)
-		JSR delay24			; wait for next PSG command (24)
 		BMI psg_mute		; until all four channels done (3)
 ; clear screen for good measure
 	LDA #$BB				; lavender pink
@@ -738,11 +738,11 @@ nscore:
 	.byt	64, 0, $3F		; periodic, fast rate
 	.byt	65, 0, $3F		; periodic, mid rate
 	.byt	66, 0, $3F		; periodic, slow rate
-	.byt	67, 0, $5F		; periodic, C3 rate
-	.byt	68, 0, $1F		; random, fast rate
-	.byt	69, 0, $1F		; random, mid rate
-	.byt	70, 0, $1F		; random, slow rate
-	.byt	71, 0, $5F		; random, C3 rate
+	.byt	67, 0, $0F		; periodic, C3 rate
+	.byt	68, 0, $2F		; random, fast rate
+	.byt	69, 0, $2F		; random, mid rate
+	.byt	70, 0, $2F		; random, slow rate
+	.byt	71, 0, $0F		; random, C3 rate
 	.byt $FF				; repeat this forever
 
 ; ---------------------------
