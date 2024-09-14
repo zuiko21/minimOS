@@ -189,7 +189,7 @@ dirty:
 	STY sr_nc
 	STX sr_nc+1				; set pointer
 ; *** enable interrupts and launch player ***
-	LDA #%00010000			; start all channels
+	LDA #%10000000			; start all channels
 	STA sr_rst
 	CLI
 lock:
@@ -735,15 +735,14 @@ score3:
 	.byt	$FF				; end
 
 nscore:
-	.byt	0				; SAFETY
-	.byt $44, 8, $1F		; open hihat, crotchet, slow decay, max vol
-	.byt $44, 4, $2F		; open hihat, quaver, not so slow decay
-	.byt $44, 4, $2F		; open hihat, quaver, not so slow decay
-	.byt $45, 4, $2C		; closed lohat, quaver, not so slow decay, mid volume
-	.byt $45, 12, 0			; rest, dotted crotchet
-	.byt $44, 16, $1F		; open hihat, minim, slow decay, max vol
-	.byt $45, 4, $2C		; closed lohat, quaver, fast decay, mid volume
-	.byt $45, 12, 0			; rest, dotted crotchet
+	.byt	64, 0, $3F		; periodic, fast rate
+	.byt	65, 0, $3F		; periodic, mid rate
+	.byt	66, 0, $3F		; periodic, slow rate
+	.byt	67, 0, $5F		; periodic, C3 rate
+	.byt	68, 0, $1F		; random, fast rate
+	.byt	69, 0, $1F		; random, mid rate
+	.byt	70, 0, $1F		; random, slow rate
+	.byt	71, 0, $5F		; random, C3 rate
 	.byt $FF				; repeat this forever
 
 ; ---------------------------
