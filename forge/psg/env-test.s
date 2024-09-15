@@ -1,6 +1,6 @@
 ; Test for Interrupt-driven SN76489 PSG controller for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240915-1929
+; last modified 20240915-1937
 
 ; *** firmware definitions ***
 	irq_ptr	= $0200
@@ -170,7 +170,7 @@ dirty:
 	STZ sr_turbo
 ;	DEC sr_turbo			; alternate turbo clock for v2
 #ifdef	COLUMNS
-	LDA #31
+	LDA #63
 #else
 	LDA #0					; 0 = 234 bpm, then half, third...
 #endif
