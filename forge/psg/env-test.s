@@ -1,6 +1,6 @@
 ; Test for Interrupt-driven SN76489 PSG controller for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240914-1757
+; last modified 20240915-1929
 
 ; *** firmware definitions ***
 	irq_ptr	= $0200
@@ -169,7 +169,11 @@ dirty:
 	STA sg_envsp
 	STZ sr_turbo
 ;	DEC sr_turbo			; alternate turbo clock for v2
+#ifdef	COLUMNS
+	LDA #31
+#else
 	LDA #0					; 0 = 234 bpm, then half, third...
+#endif
 	STA sr_tempo
 ; setup
 	LDY #<score1
@@ -189,7 +193,7 @@ dirty:
 	STY sr_nc
 	STX sr_nc+1				; set pointer
 ; *** enable interrupts and launch player ***
-	LDA #%10000000			; start all channels
+	LDA #%01110000			; start all channels
 	STA sr_rst
 	CLI
 lock:
@@ -197,6 +201,11 @@ lock:
 
 ; three-byte strings -> note, length, envelope/volume
 ; note 0 -> end, note $FF -> repeat
+#ifdef	COLUMNS
+#include "../../../columns/music/clotho.s"
+-nscore:
+	.byt	0
+#else
 score1:
 	.byt	14, 0, $1F		; whole - redonda
 	.byt	14, 0, 0		; whole rest
@@ -744,6 +753,7 @@ nscore:
 	.byt	70, 0, $2F		; random, slow rate
 	.byt	71, 0, $0F		; random, C3 rate
 	.byt $FF				; repeat this forever
+#endif
 
 ; ---------------------------
 #ifdef	POCKET
