@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240908-1804
+; v1.1 last modified 20240916-1759
 
 ; use -DSCORE to activate the score reader task!
 
@@ -92,7 +92,7 @@ pr_cnt2	= pr_cnt+1
 pr_cnt3	= pr_cnt2+1
 pr_ncnt	= pr_cnt3+1
 pr_dly	= pr_ncnt+1
-pr_tmp	= pr_dly+1
+pr_tmp	= pr_dly+1			; *** NO LONGER USED this far
 pr_ena	= pr_tmp+1
 pr_rst	= pr_ena+1
 pr_p1l	= pr_rst+1			; pointer to current position on channel 1 score (LSB)
@@ -272,9 +272,8 @@ rst_sc:
 					TRB sr_rst			; ...and reset it as acknowledge
 					ORA mflag, X		; add mute flag
 					TSB sr_ena			; un-mute and enable this channel...
-					LDA pr_ena			; ...but un-mute current register as well!
-					ORA #%00010000		; position of current mute bit
-					STA pr_ena
+					LDA #%00010000		; position of current mute bit
+					TSB pr_ena			; ...but un-mute current register as well!
 					TXA					; channel index...
 					ASL					; ...times two...
 					TAY					; ...is pointer index
@@ -293,24 +292,20 @@ pr_stop:
 ; proceed to play note
 do_note:					; A is loaded with a valid note, and it's time to send it to the PSG daemon
 				CPX #3		; noise channel?
-			BEQ non_turbo	; no need to correct frequencies!
+			BEQ is_noise	; no need to correct frequencies!
 				TAY			; index for frequency table
-				LDA ni_hi, Y			; this is high byte
-				STA pr_tmp				; store temporarily
-				LDA ni_low, Y			; low byte
 				BIT sr_turbo			; how fast am I?
 				BPL non_turbo			; not that much, values are OK
-					ASL					; or if a fast machine, use twice the value (should clear C as well)
-					BIT #%00010000		; overflow?
-					BEQ no_ovf
-						AND #%00001111	; clear that...
-						SEC				; ...but keep on carry...
-no_ovf:
-					ROL pr_tmp			; ...to be inserted on high part
+					LDA ni_thi, Y		; this is high byte (TURBO version)
+					STA sg_c1h, X		; store it
+					LDA ni_tlo, Y		; low byte
+					BRA is_noise		; set all values
 non_turbo:
+				LDA ni_hi, Y			; this is high byte (non-TURBO)
+				STA sg_c1h, X			; store it
+				LDA ni_low, Y			; low byte
+is_noise:
 				STA sg_c1l, X			; low byte into daemon
-				LDA pr_tmp
-				STA sg_c1h, X			; ditto for high byte (order is meaningless)
 				LDY #1					; cursor offset by one...
 				LDA (sr_ptr), Y			; ...pointing to length
 				STA pr_cnt, X			; update counter
@@ -353,23 +348,29 @@ mflag:
 	.byt	%00000001, %00000010, %00000100, %00001000
 rflag:
 	.byt	%00010000, %00100000, %01000000, %10000000
-; indexed-note periods, calibrated for 1.75 MHz
+; indexed-note periods, calibrated for 1.75 MHz (3.5 MHz)
+ni_tlo:						; indexed note values 4-bit LSB, A2-B7 for TURBO
+	.byt	 0,  2, 10,  6	; (A2-B2) TURBO only, note padding [0]
+	.byt	 4,  5,  9, 15,  8,  2, 15, 14					; (C3-G3) TURBO only
 ni_low:						; indexed note values 4-bit LSB, A2-B7
-	.byt	 0,  1,  5, 11	; A2-B2, note padding [0]
-	.byt	 2, 11,  4,  0, 12,  9,  8,  7,  7,  9, 11, 13	; C3-B3
-	.byt	 1,  5, 10,  0,  6, 13,  4, 12,  4, 12,  5, 15	; C4-B4
-	.byt	 9,  3, 13,  8,  3, 14, 10,  6,  2, 14, 11,  7	; C5-B5
-	.byt	 4,  1, 15, 12,  9,  7,  5,  3,  1, 15, 13, 12	; C6-B6
-	.byt	10,  9,  7,  6,  5,  4,  2,  1,  0,  0, 15, 14	; C7-B7
+	.byt	15,  1,  5, 11	; Ab2-B2 (Ab3-B3), no longer padding [0]
+	.byt	 2, 11,  4,  0, 12,  9,  8,  7,  7,  9, 11, 13	; C3-B3 (C4-B4)
+	.byt	 1,  5, 10,  0,  6, 13,  4, 12,  4, 12,  5, 15	; C4-B4 (C5-B5)
+	.byt	 9,  3, 13,  8,  3, 14, 10,  6,  2, 14, 11,  7	; C5-B5 (C6-B6)
+	.byt	 4,  1, 15, 12,  9,  7,  5,  3,  1, 15, 13, 12	; C6-B6 (C7-B7)
+	.byt	10,  9,  7,  6,  5,  4,  2,  1,  0,  0, 15, 14	; C7-B7 non-TURBO only
+ni_thi:						; indexed note values 6-bit MSB, A2-B7 for TURBO
+	.byt	 0, 62, 58, 55	; (A2-B2) TURBO only, note padding [0]
+	.byt	52, 49, 46, 43, 41, 39, 36, 34					; (C3-G3) TURBO only
 ni_hi:						; indexed note values 6-bit MSB, A2-B7
-	.byt	 1, 31, 29, 27	; A2-B2, note padding [0] is actually void value for PCM/rests
-	.byt	26, 24, 23, 22, 20, 19, 18, 17, 16, 15, 14, 13	; C3-B3
-	.byt	13, 12, 11, 11, 10,  9,  9,  8,  8,  7,  7,  6	; C4-B4
-	.byt	 6,  6,  5,  5,  5,  4,  4,  4,  4,  3,  3,  3	; C5-B5
-	.byt	 3,  3,  2,  2,  2,  2,  2,  2,  2,  1,  1,  1	; C6-B6
-	.byt	 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0	; C7-B7 
-	.byt	 0				; void value for PCM/rests
-; NOTE; octave 7 will be poorly tuned, unless you use values for TURBO only
+	.byt	32, 31, 29, 27	; Ab2-B2 (Ab3-B3), no longer padding [0]
+	.byt	26, 24, 23, 22, 20, 19, 18, 17, 16, 15, 14, 13	; C3-B3 (C4-B4)
+	.byt	13, 12, 11, 11, 10,  9,  9,  8,  8,  7,  7,  6	; C4-B4 (C5-B5)
+	.byt	 6,  6,  5,  5,  5,  4,  4,  4,  4,  3,  3,  3	; C5-B5 (C6-B6)
+	.byt	 3,  3,  2,  2,  2,  2,  2,  2,  2,  1,  1,  1	; C6-B6 (C7-B7)
+	.byt	 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0	; C7-B7 non-TURBO only
+;	.byt	 0				; void value for PCM/rests
+; NOTE; octave 7 will be poorly tuned, unless you run in TURBO mode
 
 task_exit:
 ; ** ** after the module, finish the ISR the usual way ** **
