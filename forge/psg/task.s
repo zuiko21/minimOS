@@ -147,14 +147,14 @@ ch_upd:
 ; update tone
 			STZ sg_c1l, X	; clear this entry for next time
 			ORA ch_lowt, X	; will set low-order tone
+			NOP
 			STA IO_PSG
-nop:nop
 			CPX #3			; noise channel...
 			BEQ ch_noise	; ...has no high order bits
 				LDA sg_c1h, X			; now for high order bits
 				JSR delay24				; is this enough?
 				STA IO_PSG
-nop:nop
+				NOP: NOP
 ch_noise:
 ; preset volume settings
 			LDA sg_c1ve, X	; this is envelope (MSN) and volume (LSN)
@@ -178,7 +178,6 @@ set_cv:
 			EOR #%00001111	; invert bits for attenuation!
 ;			NOP: NOP: NOP	; would suffice?
 			STA IO_PSG		; send to PSG!
-nop:nop
 			LDA sg_envsp	; get generic envelope speed
 ;			INC
 			STA psg_ec, X	; store into this channel envelope timer
@@ -221,9 +220,9 @@ sv_upd:
 			STA psg_cv, X	; update current volume
 			EOR #%00001111	; is attenuation eeeeek
 			ORA ch_vol, X	; convert into PSG command
+;			NOP: NOP
 			STA IO_PSG		; send it!
-			NOP: NOP		; needed after the loop
-nop:nop
+			NOP: NOP: NOP	; ABSOLUTELY needed after the loop
 nx_env:
 		DEC psg_ec, X		; one tick passed
 env_ok:
