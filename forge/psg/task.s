@@ -1,7 +1,7 @@
 ; Interrupt-driven SN76489 PSG player for Durango-X
 ; assume all registers saved, plus 'ticks' (usually $206) updated!
 ; (c) 2024 Carlos J. Santisteban
-; v1.1 last modified 20240919-1748
+; v1.1 last modified 20240919-1851
 
 ; use -DSCORE to activate the score reader task!
 
@@ -147,14 +147,14 @@ ch_upd:
 ; update tone
 			STZ sg_c1l, X	; clear this entry for next time
 			ORA ch_lowt, X	; will set low-order tone
-			NOP
+			NOP				; actually needed
 			STA IO_PSG
 			CPX #3			; noise channel...
 			BEQ ch_noise	; ...has no high order bits
 				LDA sg_c1h, X			; now for high order bits
 				JSR delay24				; is this enough?
 				STA IO_PSG
-				NOP: NOP
+				NOP: NOP	; actually needed
 ch_noise:
 ; preset volume settings
 			LDA sg_c1ve, X	; this is envelope (MSN) and volume (LSN)
@@ -176,7 +176,6 @@ set_cv:
 			STA psg_cv, X	; this is current volume
 			ORA ch_vol, X	; will set volume
 			EOR #%00001111	; invert bits for attenuation!
-;			NOP: NOP: NOP	; would suffice?
 			STA IO_PSG		; send to PSG!
 			LDA sg_envsp	; get generic envelope speed
 ;			INC
@@ -220,7 +219,6 @@ sv_upd:
 			STA psg_cv, X	; update current volume
 			EOR #%00001111	; is attenuation eeeeek
 			ORA ch_vol, X	; convert into PSG command
-;			NOP: NOP
 			STA IO_PSG		; send it!
 			NOP: NOP: NOP	; ABSOLUTELY needed after the loop
 nx_env:

@@ -168,7 +168,7 @@ dirty:
 	LDA #16					; set envelope speed
 	STA sg_envsp
 	STZ sr_turbo
-	DEC sr_turbo			; alternate turbo clock for v2
+;	DEC sr_turbo			; alternate turbo clock for v2
 #ifdef	COLUMNS
 	LDA #63
 #else
