@@ -1,4 +1,6 @@
-; PRNG test
+; PRNG test for Durango-X
+; (c) 2024 Carlos J. Santisteban
+; last modified 20240924-1828
 
 ; legacy nanoBoot @ $1000
 ; use -x 0x1000
@@ -35,9 +37,11 @@ reset:
 	STY $0202
 	STX $0203				; ...as a cold reset via NMI
 ; clear the screen
+start:
 	LDY #<screen3
 	LDX #>screen3			; screen 3 address
 	TYA						; will clear the screen
+	STZ ptr					; eeeeek
 c_page:
 		STX ptr+1
 c_loop:
@@ -52,6 +56,16 @@ a_loop:
 		STZ array, X
 		INX
 		BNE a_loop
+; start statistics
+loop:
+		JSR rnd
+		TAX					; use result as index (horizontal position)
+		LDY array, X		; current count (going towards bottom)
+		INC array, X		; count one more
+	BEQ exit				; if wrapped, end test
+		JSR dxplot			; display bar at coordinates
+		BRA loop
+exit:
 ; wait for any key on column 1 (e.g. space, enter) and set seed
 	LDA #1					; first keyboard column
 	STA IO9kbd
@@ -64,17 +78,7 @@ wait:
 set:
 	STX seed
 	STY seed+1
-; start statistics
-loop:
-		JSR rnd
-		TAX					; use result as index (horizontal position)
-		LDY array, X		; current count (going towards bottom)
-		INC array, X		; count one more
-	BEQ exit				; if wrapped, end test
-		JSR dxplot			; display bar at coordinates
-		BRA loop
-exit:
-	BRA exit				; just wait for NMI
+	BRA start				; and again
 
 ; ** PRNG **
 ; based on code from https://codebase64.org/doku.php?id=base:small_fast_16-bit_prng
