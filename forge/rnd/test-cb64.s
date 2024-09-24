@@ -1,6 +1,6 @@
 ; PRNG test for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240924-1828
+; last modified 20240924-1850
 
 ; legacy nanoBoot @ $1000
 ; use -x 0x1000
@@ -59,6 +59,7 @@ a_loop:
 ; start statistics
 loop:
 		JSR rnd
+;ror
 		TAX					; use result as index (horizontal position)
 		LDY array, X		; current count (going towards bottom)
 		INC array, X		; count one more
@@ -100,6 +101,7 @@ do_eor2:
 		LDA seed
 		EOR #$2D
 		STA seed
+		ROR
 	RTS
 lo_z:
 	LDA seed+1
@@ -109,6 +111,7 @@ lo_z:
 	BCS do_eor
 no_eor:
 	STA seed+1
+	ROR
 	RTS
 
 ; *** PLOT library ***
