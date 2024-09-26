@@ -8,7 +8,7 @@
 ; ** NO MORE **-DITER=xx for iterations
 
 ; *** memory allocation ***
-tmp		= $F4				; temporary storage
+temp	= $F4				; temporary storage
 count	= $F6				; 16-bit pixel counter
 coords	= $F8				; current XY
 px_col	= $FA				; pixel colour (must have d7 set for HIRES)
@@ -184,9 +184,9 @@ chk:
 ; linear PRNG (9377n+39119)
 rnd:
 	LDA seed
-	STA tmp
+	STA temp
 	LDA seed+1
-	STA tmp+1				; copy seed into tmp as factor has d0 set
+	STA temp+1				; copy seed into temp as factor has d0 set
 	ASL seed
 	ROL seed+1
 	ASL seed
@@ -199,22 +199,22 @@ rnd:
 	ROL seed+1				; shift five bits
 	LDA seed
 	CLC
-	ADC tmp
-	STA tmp
+	ADC temp
+	STA temp
 	LDA seed+1
-	ADC tmp+1
-	STA tmp+1				; add to tmp
+	ADC temp+1
+	STA temp+1				; add to temp
 	ASL seed
 	ROL seed+1
 	ASL seed
 	ROL seed+1				; shift two bits
 	LDA seed
 	CLC
-	ADC tmp
-	STA tmp
+	ADC temp
+	STA temp
 	LDA seed+1
-	ADC tmp+1
-	STA tmp+1				; add to tmp
+	ADC temp+1
+	STA temp+1				; add to temp
 	ASL seed
 	ROL seed+1
 	ASL seed
@@ -223,11 +223,11 @@ rnd:
 	ROL seed+1				; shift three bits
 	LDA seed
 	CLC
-	ADC tmp
-	STA tmp
+	ADC temp
+	STA temp
 	LDA seed+1
-	ADC tmp+1
-	STA tmp+1				; add to tmp
+	ADC temp+1
+	STA temp+1				; add to temp
 	ASL seed
 	ROL seed+1
 	ASL seed
@@ -236,19 +236,19 @@ rnd:
 	ROL seed+1				; shift three bits
 	LDA seed
 	CLC
-	ADC tmp
-	STA tmp
+	ADC temp
+	STA temp
 	LDA seed+1
-	ADC tmp+1
-	STA tmp+1				; add to tmp
-	LDA tmp
+	ADC temp+1
+	STA temp+1				; add to temp
+	LDA temp
 	CLC
 	ADC #<39119
 	STA seed
-	LDA tmp+1
+	LDA temp+1
 	ADC #>39119
 	STA seed+1				; add constant
-	LDA seed				; is this OK, or will be A valid?
+;	LDA seed				; is this OK, or will be A valid?
 	RTS
 
 ; *** PLOT library ***
