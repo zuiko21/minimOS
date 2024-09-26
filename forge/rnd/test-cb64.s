@@ -1,11 +1,14 @@
 ; PRNG test for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240924-1850
+; last modified 20240926-1651
 
 ; legacy nanoBoot @ $1000
 ; use -x 0x1000
+; NMI to switch into colour pixel test
 
 ; *** memory allocation ***
+count	= $F6				; 16-bit pixel counter
+coords	= $F8				; current XY
 px_col	= $FA				; pixel colour (must have d7 set for HIRES)
 ptr		= $FC				; generic pointer
 seed	= $FE				; random seed
@@ -29,15 +32,77 @@ reset:
 	LDX #$FF
 	TXS
 	STX IO8attr				; turn error LED off
-	STX px_col				; valid colour in HIRES
+; * probability array display test *
+start:
 	LDA #%10110000			; HIRES mode, screen 3 as usual
 	STA $DF80
-	LDY #<reset
-	LDX #>reset				; start address...
+	STA px_col				; valid colour in HIRES
+	JSR cls					; clear the screen
+; clear the array
+	LDX #0
+a_loop:
+		STZ array, X
+		INX
+		BNE a_loop
+; start statistics
+loop:
+		JSR rnd
+		TAX					; use result as index (horizontal position)
+		LDY array, X		; current count (going towards bottom)
+		INC array, X		; count one more
+	BEQ exit				; if wrapped, end test
+		JSR dxplot			; display bar at coordinates
+		BRA loop
+exit:
+	LDY #<pixel
+	LDX #>pixel				; random pixel test address...
 	STY $0202
-	STX $0203				; ...as a cold reset via NMI
+	STX $0203				; ...to be switched in via NMI
+; wait for any key on column 1 (e.g. space, enter) and set seed
+	JSR press
+	BRA start				; and again
+; * random pixel display test *
+pixel:
+	LDA #%00111000			; colour mode, RGB, screen 3 as usual
+	STA $DF80
+	JSR cls
+; start display
+	STZ count
+	STZ count+1				; reset counter
+ploop:
+		JSR rnd
+		LSR					; eeeek
+		STA coords			; set X
+		JSR rnd
+		LSR
+		STA coords+1		; set Y
+		JSR rnd
+		AND #15
+		STA px_col
+		ASL
+		ASL
+		ASL
+		ASL
+		ORA px_col
+		STA px_col			; set colour
+		LDX coords
+		LDY coords+1
+		JSR dxplot			; draw random pixel
+		INC count			; anther one...
+	BNE ploop				; eeek
+		INC count+1
+		BNE ploop			; ...up to 64K
+	LDY #<start
+	LDX #>start				; probability array test address...
+	STY $0202
+	STX $0203				; ...to be switched back in via NMI
+; wait for any key on column 1 (e.g. space, enter) and set seed
+	JSR press
+	BRA pixel				; and again
+
+; *** support routines ***
 ; clear the screen
-start:
+cls:
 	LDY #<screen3
 	LDX #>screen3			; screen 3 address
 	TYA						; will clear the screen
@@ -50,24 +115,10 @@ c_loop:
 			BNE c_loop
 		INX
 		BPL c_page
-; clear the array
-	LDX #0
-a_loop:
-		STZ array, X
-		INX
-		BNE a_loop
-; start statistics
-loop:
-		JSR rnd
-;ror
-		TAX					; use result as index (horizontal position)
-		LDY array, X		; current count (going towards bottom)
-		INC array, X		; count one more
-	BEQ exit				; if wrapped, end test
-		JSR dxplot			; display bar at coordinates
-		BRA loop
-exit:
-; wait for any key on column 1 (e.g. space, enter) and set seed
+	RTS
+
+; wait for column 1 key and set seed
+press:
 	LDA #1					; first keyboard column
 	STA IO9kbd
 wait:
@@ -79,7 +130,7 @@ wait:
 set:
 	STX seed
 	STY seed+1
-	BRA start				; and again
+	RTS
 
 ; ** PRNG **
 ; based on code from https://codebase64.org/doku.php?id=base:small_fast_16-bit_prng
