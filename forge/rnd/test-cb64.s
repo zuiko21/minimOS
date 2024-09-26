@@ -1,13 +1,14 @@
 ; PRNG test for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240926-1845
+; last modified 20240926-2334
 
 ; legacy nanoBoot @ $1000
 ; use -x 0x1000
 ; NMI to switch into colour pixel test
-; -DITER=xx for iterations
+; ** NO MORE **-DITER=xx for iterations
 
 ; *** memory allocation ***
+tmp		= $F4				; temporary storage
 count	= $F6				; 16-bit pixel counter
 coords	= $F8				; current XY
 px_col	= $FA				; pixel colour (must have d7 set for HIRES)
@@ -132,7 +133,7 @@ set:
 	STX seed
 	STY seed+1
 	RTS
-
+/*
 ; ** PRNG **
 ; based on code from https://codebase64.org/doku.php?id=base:small_fast_16-bit_prng
 ; input
@@ -177,6 +178,77 @@ chk:
 	DEY						; 2
 	BNE rloop				; 3
 #endif
+	RTS
+*/
+
+; linear PRNG (9377n+39119)
+rnd:
+	LDA seed
+	STA tmp
+	LDA seed+1
+	STA tmp+1				; copy seed into tmp as factor has d0 set
+	ASL seed
+	ROL seed+1
+	ASL seed
+	ROL seed+1
+	ASL seed
+	ROL seed+1
+	ASL seed
+	ROL seed+1
+	ASL seed
+	ROL seed+1				; shift five bits
+	LDA seed
+	CLC
+	ADC tmp
+	STA tmp
+	LDA seed+1
+	ADC tmp+1
+	STA tmp+1				; add to tmp
+	ASL seed
+	ROL seed+1
+	ASL seed
+	ROL seed+1				; shift two bits
+	LDA seed
+	CLC
+	ADC tmp
+	STA tmp
+	LDA seed+1
+	ADC tmp+1
+	STA tmp+1				; add to tmp
+	ASL seed
+	ROL seed+1
+	ASL seed
+	ROL seed+1
+	ASL seed
+	ROL seed+1				; shift three bits
+	LDA seed
+	CLC
+	ADC tmp
+	STA tmp
+	LDA seed+1
+	ADC tmp+1
+	STA tmp+1				; add to tmp
+	ASL seed
+	ROL seed+1
+	ASL seed
+	ROL seed+1
+	ASL seed
+	ROL seed+1				; shift three bits
+	LDA seed
+	CLC
+	ADC tmp
+	STA tmp
+	LDA seed+1
+	ADC tmp+1
+	STA tmp+1				; add to tmp
+	LDA tmp
+	CLC
+	ADC #<39119
+	STA seed
+	LDA tmp+1
+	ADC #>39119
+	STA seed+1				; add constant
+	LDA seed				; is this OK, or will be A valid?
 	RTS
 
 ; *** PLOT library ***
