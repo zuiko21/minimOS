@@ -1,10 +1,11 @@
 ; PRNG test for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240926-1651
+; last modified 20240926-1845
 
 ; legacy nanoBoot @ $1000
 ; use -x 0x1000
 ; NMI to switch into colour pixel test
+; -DITER=xx for iterations
 
 ; *** memory allocation ***
 count	= $F6				; 16-bit pixel counter
@@ -44,6 +45,10 @@ a_loop:
 		STZ array, X
 		INX
 		BNE a_loop
+	LDY #<pixel
+	LDX #>pixel				; random pixel test address...
+	STY $0202
+	STX $0203				; ...to be switched in via NMI
 ; start statistics
 loop:
 		JSR rnd
@@ -54,10 +59,6 @@ loop:
 		JSR dxplot			; display bar at coordinates
 		BRA loop
 exit:
-	LDY #<pixel
-	LDX #>pixel				; random pixel test address...
-	STY $0202
-	STX $0203				; ...to be switched in via NMI
 ; wait for any key on column 1 (e.g. space, enter) and set seed
 	JSR press
 	BRA start				; and again
@@ -66,6 +67,10 @@ pixel:
 	LDA #%00111000			; colour mode, RGB, screen 3 as usual
 	STA $DF80
 	JSR cls
+	LDY #<start
+	LDX #>start				; probability array test address...
+	STY $0202
+	STX $0203				; ...to be switched back in via NMI
 ; start display
 	STZ count
 	STZ count+1				; reset counter
@@ -92,10 +97,6 @@ ploop:
 	BNE ploop				; eeek
 		INC count+1
 		BNE ploop			; ...up to 64K
-	LDY #<start
-	LDX #>start				; probability array test address...
-	STY $0202
-	STX $0203				; ...to be switched back in via NMI
 ; wait for any key on column 1 (e.g. space, enter) and set seed
 	JSR press
 	BRA pixel				; and again
@@ -140,29 +141,42 @@ set:
 ;	A	random value
 ; affects seed and A
 rnd:
-	LDA seed
-		BEQ lo_z
-	ASL seed
-	LDA seed+1
-	ROL
-	BCC no_eor
+#ifdef	ITER
+	LDY #ITER				; 2
+rloop:
+#endif
+	LDA seed				; 3 if on zp
+		BEQ lo_z			; 2, usually
+	ASL seed				; 5
+	LDA seed+1				; 3
+	ROL						; 2
+	BCC no_eor				; 3/2 (if d7=0 or 1)
 do_eor:
-		STA seed+1
+		STA seed+1			; 0/3
 do_eor2:
-		LDA seed
-		EOR #$2D
-		STA seed
-		ROR
-	RTS
+		LDA seed			; 0/3
+		EOR #$2D			; 0/2
+		STA seed			; 0/3
+		ROR					; 0/2
+#ifdef	ITER
+		BRA chk				; 0/(3)
+#else
+		RTS
+#endif
 lo_z:
-	LDA seed+1
-		BEQ do_eor2
-	ASL
-	BEQ no_eor
-	BCS do_eor
+	LDA seed+1				; 3/0
+		BEQ do_eor;2		; 2, mostly
+	ASL						; 2/0
+	BEQ no_eor				; 2, mostly
+	BCS do_eor				; 2 or 3
 no_eor:
-	STA seed+1
-	ROR
+	STA seed+1				; 3
+	ROR						; 2
+#ifdef	ITER
+chk:
+	DEY						; 2
+	BNE rloop				; 3
+#endif
 	RTS
 
 ; *** PLOT library ***
