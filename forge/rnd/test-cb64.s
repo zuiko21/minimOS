@@ -1,13 +1,23 @@
 ; PRNG test for Durango-X
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240926-2334
+; last modified 20240927-0854
+
+; set PRNG parameters via -DMUL=x, -DSUM=x
 
 ; legacy nanoBoot @ $1000
-; use -x 0x1000
+; use -x 0x1000 (-a 0x1000 on Perdita)
 ; NMI to switch into colour pixel test
-; ** NO MORE **-DITER=xx for iterations
+
+#ifndef	MUL
+#define	MUL	9377
+#endif
+
+#ifndef	SUM
+#define	SUM 39119
+#endif
 
 ; *** memory allocation ***
+factor	= $F2				; for generic multiply
 temp	= $F4				; temporary storage
 count	= $F6				; 16-bit pixel counter
 coords	= $F8				; current XY
@@ -134,14 +144,16 @@ set:
 	STY seed+1
 	RTS
 /*
-; ** PRNG **
+
+; *** *** PRNG under test *** ***
+rnd:
+; ** LFSR ** DEPRECATED
 ; based on code from https://codebase64.org/doku.php?id=base:small_fast_16-bit_prng
 ; input
 ;	seed
 ; output
 ;	A	random value
 ; affects seed and A
-rnd:
 #ifdef	ITER
 	LDY #ITER				; 2
 rloop:
@@ -181,8 +193,8 @@ chk:
 	RTS
 */
 
-; linear PRNG (9377n+39119)
-rnd:
+/*
+; ** linear PRNG ** (9377n+39119, takes 240t constant)
 	LDA seed
 	STA temp
 	LDA seed+1
@@ -250,6 +262,47 @@ rnd:
 	STA seed+1				; add constant
 ;	LDA seed				; is this OK, or will be A valid?
 	RTS
+*/
 
+; ** linear PRNG (generic version) **
+; overhead = 33t + call - 1t for last iteration
+; iteration without add = 28n t
+; iteration with add = 47n t, let's make it 38t average
+; for generic 16-bit factor that's 32+16*38 = 32+608 = 640t
+; 9377 is a 14-bit number with only 5 additions, 32+235+252= 519t
+	LDY #<MUL				; 2
+	LDX #>MUL				; 2
+ 	STY factor				; 3
+	STX factor+1			; 3
+	STZ temp				; 3
+	STZ temp+1				; 3
+	LDY #16					; 2, used bits on factor, change as needed
+lp_loop:
+		LSR factor+1		; 5n
+		ROR factor			; 5n, extract least significant bit
+		BCC no_add			; 3n/2n, if enabled...
+			LDA temp		; /3n
+			CLC				; /2n
+			ADC seed		; /3n
+			STA temp		; /3n
+			LDA temp+1		; /3n
+			ADC seed+1		; /3n
+			STA temp+1		; /3n ...add current shifted seed to temp
+no_add:
+		ASL seed			; 5n
+		ROL seed+1			; 5n, in any case, shift seed to the left
+		DEY					; 2n
+		BNE lp_loop			; 3n, until no more bits on factor
+	LDA temp				; 3, get multiply result...
+	CLC						; 2
+	ADC #<SUM				; 2 ...and add constant...
+	STA seed				; 3 ...for the new seed
+	LDA temp+1				; 3, same for MSB
+	ADC #>SUM				; 2
+	STA seed+1				; 3, this is already the return value!
+	RTS
+
+; ********************
 ; *** PLOT library ***
+; ********************
 #include "../../OS/firmware/modules/durango-plot.s"
