@@ -1,6 +1,6 @@
 ; nanoBoot v2 (w/ support for Durango Cartridge & Pocket format, plus Chihuahua·D)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20240716-1717
+; last modified 20241001-1715
 
 ; add -DALONE for standalone version (otherwise module after multiboot.s)
 #echo	Chihuahua-D compatible (with feedback even for data)
@@ -31,7 +31,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"nanoBoot v2.1"	; C-string with filename @ [8], max 220 chars
+	.asc	"nanoBoot v2.1.1"	; C-string with filename @ [8], max 220 chars
 ; note terminator below
 ; optional C-string with comment after filename, filename+comment up to 220 chars
 	.asc	0, 0
@@ -44,10 +44,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$2143			; 2.1b3		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$21C1			; 2.1f1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8800			; time, 17.00		%1000 1-000 000-0 0000
-	.word	$58F0			; date, 2024/7/16	%0101 100-0 111-1 0000
+	.word	$8A00			; time, 17.16		%1000 1-010 000-0 0000
+	.word	$5941			; date, 2024/10/1	%0101 100-1 010-0 0001
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -436,7 +436,7 @@ prog_pat:
 	.dsb	$FFDC-*, $FF
 
 switch:
-	LDA #%01100100			; ROM disabled, protected RAM, and SD disabled just in case
+	LDA #%01111100			; ROM disabled, protected RAM, and SD disabled just in case
 do_sw:
 	STA IOCart
 
