@@ -2,7 +2,7 @@
 ; (c) 2024 Carlos J. Santisteban
 ; last modified 20241001-1418
 
-*	= $FE00					; 0.5K file with 256-byte payload
+*	= $8000					; 0.5K file with 256-byte payload
 ; *** *** standard header *** ***
 rom_start:
 ; header ID
