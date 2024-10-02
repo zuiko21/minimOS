@@ -684,9 +684,14 @@ m_cyc:
 ; ************************
 ; *** hardware vectors ***
 ; ************************
+	.dsb	$FFD6-*, $FF
+	.asc	"DmOS"				; standard signature
 
-	.dsb	$FFFA-*, $FF	; usual filling to end-of-ROM
+	.dsb	$FFE1-*, $FF
+	JMP ($FFFC)					; shadow-RAM support
 
+; standard ROM end
+	.dsb	$FFFA-*, $FF
 	.word	intexit			; no NMI
 	.word	start			; code begins here
 	.word	intexit			; no interrupts for now

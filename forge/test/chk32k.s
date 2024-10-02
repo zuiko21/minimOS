@@ -1,6 +1,6 @@
 ; Durango-X ROM download test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241003-0002
+; last modified 20241003-0012
 
 #define	CHKVALUE	156
 #define	SUMVALUE	244
@@ -7885,6 +7885,7 @@ tFF0:
 	.byt	72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87
 
 ; *** all tests finished ***
+sFF8:
 	LDA #$BB				; lavender pink
 	LDX #0
 streak:
