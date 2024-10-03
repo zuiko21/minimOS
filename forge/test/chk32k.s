@@ -1,6 +1,6 @@
 ; Durango-X ROM download test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241003-1000
+; last modified 20241003-1347
 
 #define	CHKVALUE	156
 #define	SUMVALUE	244
@@ -30,9 +30,9 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$0102			; 0.1a2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$0141			; 0.1b1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$4C00			; time, 9.32		%0100 1-100 000-0 0000
+	.word	$6E00			; time, 13.48		%0110 1-110 000-0 0000
 	.word	$5943			; date, 2024/10/3	%0101 100-1 010-0 0011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -7928,18 +7928,41 @@ tFF0:
 	.byt	55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71
 	.byt	72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87
 
+; last half-page specific test
+sfoot:
+	STZ sum					; re-reset for partial test
+ 	STZ chk
+lfoot:
+		LDA sum
+		CLC
+		ADC tfoot, X		; compute sum
+		STA sum
+		CLC
+		ADC chk				; compute sum of sums
+		STA chk
+		INX
+		BNE lfoot			; will check the whole page (expected to have a checksum of 0)
+	CMP #CHKINIT			; compare sum of sums for this reduced case
+		BNE xfoot			; skip if bad
+	LDA sum
+	CMP #SUMINIT			; compare specific sum
+	BNE xfoot				; skip if bad
+		STA $6F00, Y		; indicate on screen otherwise
+xfoot:
+	JMP finish				; complete test!
+tfoot:						; shorter table at $8167-$817F
+	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+	.byt	16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+
 ; *** all tests finished ***
-sFF8:
+finish:
 	LDA #$EB				; lavender pink
 	LDX #0
 streak:
 		STA $7100, X
 		INX
 		BNE streak
-
-; *****************************
-; *** alignment and ROM end ***
-; *****************************
+; *** lock routine ***
 lock:
 				INX
 				BNE lock
@@ -7948,6 +7971,10 @@ lock:
 		INC
 		STA IOAie
 		BRA lock			; do some blinking
+end:
+; *****************************
+; *** alignment and ROM end ***
+; *****************************
 	.dsb	$FFD6-*, $FF	; padding
 
 	.asc	"DmOS"			; standard minimOS signature
