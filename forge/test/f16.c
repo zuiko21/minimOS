@@ -10,13 +10,14 @@ int main(void) {
 	int sum=0, chk=0;
 	int i;
 
-	for (i=0;i<25;i++) {
+	for (i=0;i<21;i++) {
 		sum += a[i];
 		sum &= 255;
 		chk += sum;
 		chk &= 255;
+		printf("[%d]=%d: sum=%d, chk=%d\n", i, a[i], sum, chk);
 	}
-	printf("SUM=%d, CHK=%d\n",sum,chk);
+	printf("\nSUM=%d, CHK=%d\n",sum,chk);
 
 	return 0;
 }

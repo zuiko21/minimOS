@@ -1,13 +1,14 @@
 ; Durango-X ROM download test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241003-1347
+; last modified 20241003-1423
 
 #define	CHKVALUE	156
 #define	SUMVALUE	244
 #define	SIZE		87
 
-#define	CHKINIT		109
-#define	SUMINIT		69
+#define	CHKINIT		235
+#define	SUMINIT		231
+#define	SHORT		21
 
 *	= $8000
 ; *** *** standard header *** ***
@@ -23,7 +24,7 @@ rom_start:
 	.byt	0				; second terminator for optional comment, just in case
 
 ; advance to end of header *** NEW format
-	.dsb	rom_start + $E6 - *, $FF
+	.dsb	rom_start + $E6 - *, $FF	; $E4-$E5 may hold signature
 
 ; NEW library commit (user field 2)
 	.asc	"$$$$$$$$"
@@ -97,7 +98,7 @@ xhead:
 	INY						; second page
 ; specific init half-page check
 	STZ sum					; re-reset for partial test
- 	STZ chk
+	STZ chk
 linit:
 		LDA sum
 		CLC
@@ -107,18 +108,20 @@ linit:
 		ADC chk				; compute sum of sums
 		STA chk
 		INX
-		BNE linit			; will check the whole page (expected to have a checksum of 0)
+		CPX #SHORT			; eeeeek
+		BNE linit			; will check the shorter list
 	CMP #CHKINIT			; compare sum of sums for this reduced case
-		BNE xinit			; skip if bad
-	LDA sum
-	CMP #SUMINIT			; compare specific sum
 	BNE xinit				; skip if bad
+		LDA sum
+		CMP #SUMINIT		; compare specific sum
+	BNE xinit				; skip if bad
+		LDA #$CC			; bluish
 		STA $6F00, Y		; indicate on screen otherwise
 xinit:
 	JMP $8180				; first standard test!
 tinit:						; shorter table at $8167-$817F
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
-	.byt	16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+	.byt	16, 17, 18, 19, 20, 21
 
 ; $8xxx, minus header and init
 
@@ -7931,7 +7934,8 @@ tFF0:
 ; last half-page specific test
 sfoot:
 	STZ sum					; re-reset for partial test
- 	STZ chk
+	STZ chk
+	LDX #0					; eeeeeek
 lfoot:
 		LDA sum
 		CLC
@@ -7941,25 +7945,27 @@ lfoot:
 		ADC chk				; compute sum of sums
 		STA chk
 		INX
-		BNE lfoot			; will check the whole page (expected to have a checksum of 0)
+		CPX #SHORT			; eeeeeek
+		BNE lfoot			; will check the  shorter list
 	CMP #CHKINIT			; compare sum of sums for this reduced case
-		BNE xfoot			; skip if bad
-	LDA sum
-	CMP #SUMINIT			; compare specific sum
 	BNE xfoot				; skip if bad
-		STA $6F00, Y		; indicate on screen otherwise
+		LDA sum
+		CMP #SUMINIT		; compare specific sum
+	BNE xfoot				; skip if bad
+		LDA #$CC			; bluish
+		STA $70FF			; indicate on screen otherwise
 xfoot:
 	JMP finish				; complete test!
-tfoot:						; shorter table at $8167-$817F
+tfoot:						; shorter table
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
-	.byt	16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+	.byt	16, 17, 18, 19, 20, 21
 
 ; *** all tests finished ***
 finish:
 	LDA #$EB				; lavender pink
 	LDX #0
 streak:
-		STA $7100, X
+		STA $7140, X
 		INX
 		BNE streak
 ; *** lock routine ***
