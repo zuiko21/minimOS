@@ -10,7 +10,7 @@ int main(void) {
 	int sum=0, chk=0;
 	int i;
 
-	for (i=0;i<87;i++) {
+	for (i=0;i<25;i++) {
 		sum += a[i];
 		sum &= 255;
 		chk += sum;

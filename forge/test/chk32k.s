@@ -6,8 +6,8 @@
 #define	SUMVALUE	244
 #define	SIZE		87
 
-#define	CHKINIT		0
-#define	SUMINIT		0
+#define	CHKINIT		109
+#define	SUMINIT		69
 
 *	= $8000
 ; *** *** standard header *** ***
