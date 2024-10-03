@@ -1,6 +1,6 @@
 ; Durango-X ROM download test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241003-0707
+; last modified 20241003-0930
 
 #define	CHKVALUE	156
 #define	SUMVALUE	244
@@ -16,7 +16,7 @@ rom_start:
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
 	.asc	"Download integrity test", 0		; C-string with filename @ [8], max 238 chars
-	.asc	"for Durango·X + devCart and DurangoPLUS"		; comment with IMPORTANT attribution
+	.asc	"for Durango-X + devCart and DurangoPLUS"		; optional comment
 	.byt	0				; second terminator for optional comment, just in case
 
 ; advance to end of header *** NEW format
@@ -27,10 +27,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$0101			; 0.1a1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$0102			; 0.1a2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$B800			; time, 23.00		%1011 1-000 000-0 0000
-	.word	$5941			; date, 2024/10/1	%0101 100-1 010-0 0001
+	.word	$4C00			; time, 9.32		%0100 1-100 000-0 0000
+	.word	$5943			; date, 2024/10/3	%0101 100-1 010-0 0011
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -70,11 +70,51 @@ l_cls:
 			BNE l_cls		; clear full page
 		INX					; next page
 		BPL p_cls			; valid until the end of mux-RAM
-; prepare for testing
-	LDY #>p_cls				; page index
-
+; prepare for specific header testing
+	LDY #>rom_start			; page index
+	STZ sum
+	STZ chk
+	LDX #0
+lhead:
+		LDA sum
+		CLC
+		ADC rom_start, X	; compute sum
+		STA sum
+		CLC
+		ADC chk				; compute sum of sums
+		STA chk
+		INX
+		BNE lhead			; will check the whole page (expected to have a checksum of 0)
+	ORA sum					; A was chk, expected sum 0 as well
+	BNE xhead				; lock if bad
+		LDA #$55			; green for header
+		STA $6F80			; indicate on screen (both half pages)
+		STA $7080
+xhead:
+	INY						; second page
+; specific init half-page check
+	STZ sum					; re-reset for partial test
+ 	STZ chk
+linit:
+		LDA sum
+		CLC
+		ADC tinit, X		; compute sum
+		STA sum
+		CLC
+		ADC chk				; compute sum of sums
+		STA chk
+		INX
+		BNE linit			; will check the whole page (expected to have a checksum of 0)
+	CMP #CHKINIT			; compare sum of sums for this reduced case
+		BNE xinit			; skip if bad
+	LDA sum
+	CMP #SUMINIT			; compare specific sum
+	BNE xinit				; skip if bad
+		STA $6F00, Y		; indicate on screen otherwise
+xinit:
 	JMP $8180				; first standard test!
-	.dsb	$8180-*, $FF
+tinit:
+	.byt	1
 
 ; $8xxx, minus header and init
 
