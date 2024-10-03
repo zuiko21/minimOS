@@ -1,6 +1,6 @@
 ; Durango-X ROM download test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241003-0012
+; last modified 20241003-0707
 
 #define	CHKVALUE	156
 #define	SUMVALUE	244
@@ -1004,7 +1004,7 @@ l900:
 	STA $6F00, Y			; indicate on screen otherwise
 x900:
 	NOP
-	JMP $9280				; next test
+	JMP $9080				; next test
 t900:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -1035,7 +1035,7 @@ l908:
 	STA $7000, Y			; indicate on screen otherwise
 x908:
 	INY						; this was odd half-page
-	JMP $9300				; next test
+	JMP $9100				; next test
 t908:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -1066,7 +1066,7 @@ l910:
 	STA $6F00, Y			; indicate on screen otherwise
 x910:
 	NOP
-	JMP $9380				; next test
+	JMP $9180				; next test
 t910:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -1999,7 +1999,7 @@ lA00:
 	STA $6F00, Y			; indicate on screen otherwise
 xA00:
 	NOP
-	JMP $A280				; next test
+	JMP $A080				; next test
 tA00:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -2030,7 +2030,7 @@ lA08:
 	STA $7000, Y			; indicate on screen otherwise
 xA08:
 	INY						; this was odd half-page
-	JMP $A300				; next test
+	JMP $A100				; next test
 tA08:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -2061,7 +2061,7 @@ lA10:
 	STA $6F00, Y			; indicate on screen otherwise
 xA10:
 	NOP
-	JMP $A380				; next test
+	JMP $A180				; next test
 tA10:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -2994,7 +2994,7 @@ lB00:
 	STA $6F00, Y			; indicate on screen otherwise
 xB00:
 	NOP
-	JMP $B280				; next test
+	JMP $B080				; next test
 tB00:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -3025,7 +3025,7 @@ lB08:
 	STA $7000, Y			; indicate on screen otherwise
 xB08:
 	INY						; this was odd half-page
-	JMP $B300				; next test
+	JMP $B100				; next test
 tB08:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -3056,7 +3056,7 @@ lB10:
 	STA $6F00, Y			; indicate on screen otherwise
 xB10:
 	NOP
-	JMP $B380				; next test
+	JMP $B180				; next test
 tB10:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -3989,7 +3989,7 @@ lC00:
 	STA $6F00, Y			; indicate on screen otherwise
 xC00:
 	NOP
-	JMP $C280				; next test
+	JMP $C080				; next test
 tC00:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -4020,7 +4020,7 @@ lC08:
 	STA $7000, Y			; indicate on screen otherwise
 xC08:
 	INY						; this was odd half-page
-	JMP $C300				; next test
+	JMP $C100				; next test
 tC08:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -4051,7 +4051,7 @@ lC10:
 	STA $6F00, Y			; indicate on screen otherwise
 xC10:
 	NOP
-	JMP $C380				; next test
+	JMP $C180				; next test
 tC10:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -4984,7 +4984,7 @@ lD00:
 	STA $6F00, Y			; indicate on screen otherwise
 xD00:
 	NOP
-	JMP $D280				; next test
+	JMP $D080				; next test
 tD00:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -5015,7 +5015,7 @@ lD08:
 	STA $7000, Y			; indicate on screen otherwise
 xD08:
 	INY						; this was odd half-page
-	JMP $D300				; next test
+	JMP $D100				; next test
 tD08:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -5046,7 +5046,7 @@ lD10:
 	STA $6F00, Y			; indicate on screen otherwise
 xD10:
 	NOP
-	JMP $D380				; next test
+	JMP $D180				; next test
 tD10:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -5951,7 +5951,7 @@ lE00:
 	STA $6F00, Y			; indicate on screen otherwise
 xE00:
 	NOP
-	JMP $E280				; next test
+	JMP $E080				; next test
 tE00:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -5982,7 +5982,7 @@ lE08:
 	STA $7000, Y			; indicate on screen otherwise
 xE08:
 	INY						; this was odd half-page
-	JMP $E300				; next test
+	JMP $E100				; next test
 tE08:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -6013,7 +6013,7 @@ lE10:
 	STA $6F00, Y			; indicate on screen otherwise
 xE10:
 	NOP
-	JMP $E380				; next test
+	JMP $E180				; next test
 tE10:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -6946,7 +6946,7 @@ lF00:
 	STA $6F00, Y			; indicate on screen otherwise
 xF00:
 	NOP
-	JMP $F280				; next test
+	JMP $F080				; next test
 tF00:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -6977,7 +6977,7 @@ lF08:
 	STA $7000, Y			; indicate on screen otherwise
 xF08:
 	INY						; this was odd half-page
-	JMP $F300				; next test
+	JMP $F100				; next test
 tF08:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -7008,7 +7008,7 @@ lF10:
 	STA $6F00, Y			; indicate on screen otherwise
 xF10:
 	NOP
-	JMP $F380				; next test
+	JMP $F180				; next test
 tF10:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
@@ -7886,7 +7886,7 @@ tFF0:
 
 ; *** all tests finished ***
 sFF8:
-	LDA #$BB				; lavender pink
+	LDA #$EB				; lavender pink
 	LDX #0
 streak:
 		STA $7100, X
