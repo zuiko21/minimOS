@@ -1,10 +1,13 @@
 ; Durango-X ROM download test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241003-0930
+; last modified 20241003-1000
 
 #define	CHKVALUE	156
 #define	SUMVALUE	244
 #define	SIZE		87
+
+#define	CHKINIT		0
+#define	SUMINIT		0
 
 *	= $8000
 ; *** *** standard header *** ***
@@ -113,8 +116,9 @@ linit:
 		STA $6F00, Y		; indicate on screen otherwise
 xinit:
 	JMP $8180				; first standard test!
-tinit:
-	.byt	1
+tinit:						; shorter table at $8167-$817F
+	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+	.byt	16, 17, 18, 19, 20, 21, 22, 23, 24, 25
 
 ; $8xxx, minus header and init
 
