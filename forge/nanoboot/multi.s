@@ -1,9 +1,9 @@
 ; Durango-X devcart SD multi-boot loader, now with sidecar/fast SPI support
-; v2.1.9 with volume-into-FAT32, Pocket and nanoBoot support!
+; v2.1.10 with volume-into-FAT32, Pocket and nanoBoot support!
 ; compatible with Chihuhua·D (nanoBoot only) and DurangoPLUS
 ; (c) 2023-2024 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20241001-1713
+; last modified 20241004-1913
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware
 ; add -DSCREEN for screenshots display capability
@@ -187,10 +187,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$21C9			; 2.1f9		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$21CA			; 2.1f10	%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$8A00			; time, 17.16		%1000 1-010 000-0 0000
-	.word	$5941			; date, 2024/10/1	%0101 100-1 010-0 0001
+	.word	$9900			; time, 19.08		%1001 1-001 000-0 0000
+	.word	$5944			; date, 2024/10/4	%0101 100-1 010-0 0100
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -1423,7 +1423,15 @@ progress:
 ;	BEQ no_bar				; if it's a screenshot, do not display progress
 #endif
 	LDA ptr+1				; check new page
+	LDY bootsig
+	CPY #'d'				; looking for dX, which is NOT allowed for Chihuahua
+	BNE ok_via				; Pocket is OK
+		LDY bootsig+1		; data or ROM image?
+		CPY #'X'			; if ROM image...
+		BEQ no_via			; ...then VIA access is not allowed
+ok_via:
 	STA D_IORB				; * Display page in binary thru Chihuahua simple I/O *
+no_via:
 	DEC						; last completed page
 	TAY						; save!
 	LSR
@@ -1500,7 +1508,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " bootloader 2.1.9", 13, 13, 0
+	.asc	14,"Durango·X", 15, " bootloader 2.1.10", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
