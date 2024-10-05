@@ -1,6 +1,6 @@
 ; Durango-X ROM download test
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241003-1423
+; last modified 20241005-1013
 
 #define	CHKVALUE	156
 #define	SUMVALUE	244
@@ -31,10 +31,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$0141			; 0.1b1		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$0141			; 0.1b2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$6E00			; time, 13.48		%0110 1-110 000-0 0000
-	.word	$5943			; date, 2024/10/3	%0101 100-1 010-0 0011
+	.word	$5200			; time, 10.16		%0101 0-010 000-0 0000
+	.word	$5945			; date, 2024/10/5	%0101 100-1 010-0 0101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -5930,46 +5930,15 @@ lDE8:
 	STA $7000, Y			; indicate on screen otherwise
 xDE8:
 	INY						; this was odd half-page
-	JMP $DF00				; next test
+	JMP $E000				; next test *** MUST skip I/O ***
 tDE8:
 	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
 	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
 	.byt	38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54
 	.byt	55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71
 	.byt	72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87
-; *** test code ***
-sDF0:
-	STZ sum
-	STZ chk
-	LDX #0
-lDF0:
-		LDA sum
-		CLC
-		ADC tDF0, X			; compute sum
-		STA sum
-		CLC
-		ADC chk				; compute sum of sums
-		STA chk
-		INX
-		CPX #SIZE			; until end of tDble
-		BNE lDF0
-	CMP #CHKVALUE			; compare sum of sums
-		BNE xDF0			; lock if bad
-	LDA sum
-	CMP #SUMVALUE			; compare simple sum
-		BNE xDF0			; lock if bad
-	STA $6F00, Y			; indicate on screen otherwise
-xDF0:
-	INY						; note this
-	JMP $E000				; next test *** MUST skip I/O ***
-tDF0:
-	.byt	1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
-	.byt	21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37
-	.byt	38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54
-	.byt	55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71
-	.byt	72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87
-; *** must skip I/O ***
-sDF8:
+
+; *** must skip whole I/O page ***
 	.dsb	$E000-*, $FF	; padding until next test
 
 ; Exxx
