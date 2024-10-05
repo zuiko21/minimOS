@@ -3,7 +3,7 @@
 ; compatible with Chihuhua·D (nanoBoot only) and DurangoPLUS
 ; (c) 2023-2024 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20241005-1127
+; last modified 20241005-1329
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware
 ; add -DSCREEN for screenshots display capability
@@ -95,6 +95,7 @@ cnt		= ptr	+ 2	; $FE
 tmpba	= cnt	- 1	; actually $FE-$FF, as $FD will NOT be used
 
 -ptr	= $DE		; *** same as RasPi module ***
+-nb_type= $E2		; *** same as RasPi module ***
 
 ; *** sector buffer and header pointers ***
 buffer	= $400
@@ -189,7 +190,7 @@ rom_start:
 ; NEW coded version number
 	.word	$21CA			; 2.1f10	%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$5B00			; time, 11.24		%0101 1-011 000-0 0000
+	.word	$6B80			; time, 13.28		%0110 1-011 100-0 0000
 	.word	$5945			; date, 2024/10/5	%0101 100-1 010-0 0101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
@@ -370,6 +371,7 @@ skip_err:
 ; *******************************************
 do_boot:
 	SEI						; no more interaction needed, slight performance improvement.
+	STZ nb_type				; new, assume ShadowRAM is not needed
 ; reload sector of selected entry into buffer
 	LDX #>buffer			; temporary load address
 	STX ptr+1
@@ -427,6 +429,8 @@ ev_pg:						; *
 		BRA set_ptr			; *
 ; ROM images go towards the end of 64K space
 set_image:
+	LDA #$4C				; new, ROM image magic number
+	STA nb_type				; will serve as unified progress indicator
 	LDA #0
 	SEC
 	SBC fsize+1				; subtract number of pages
@@ -1423,14 +1427,10 @@ progress:
 ;	BEQ no_bar				; if it's a screenshot, do not display progress
 #endif
 	LDA ptr+1				; check new page
-#echo no VIA feedback for ROM images
-	LDY bootsig				; check type
-	CPY #'d'				; Pocket is always OK
-	BNE ok_via
-		LDY bootsig+1		; check specific type
-		CPY #'X'			; actually executable? It's ROM image, thus...
-	BEQ no_via				; ...VIA access is not allowed
-ok_via:
+#echo unified VIA feedback for ROM images
+	LDY nb_type
+	CPY #$4C				; looking for dX, which is NOT allowed for Chihuahua
+	BEQ no_via				; do not interact with VIA
 		STA D_IORB			; * Display page in binary thru Chihuahua simple I/O *
 no_via:
 	DEC						; last completed page
