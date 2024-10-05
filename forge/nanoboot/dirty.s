@@ -1,6 +1,6 @@
 ; nanoBoot v2 (w/ support for Durango Cartridge & Pocket format, plus Chihuahua·D)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241004-1916
+; last modified 20241005-0940
 
 ; add -DALONE for standalone version (otherwise module after multiboot.s)
 #echo	Chihuahua-D compatible (with feedback even for data)
@@ -46,8 +46,8 @@ rom_start:
 ; NEW coded version number
 	.word	$21C2			; 2.1f2		%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$9A00			; time, 19.16		%1001 1-010 000-0 0000
-	.word	$5944			; date, 2024/10/4	%0101 100-1 010-0 0001
+	.word	$4E00			; time, 09.48		%0100 1-110 000-0 0000
+	.word	$5945			; date, 2024/10/5	%0101 100-1 010-0 0101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -57,7 +57,7 @@ rom_start:
 	nb_ex	= $DC			; copy of initial address, or execution address (no longer $F8)
 	nb_ptr	= nb_ex+2		; initial address, will be used as pointer (will reuse for screen drawing)
 	nb_end	= nb_ptr+2		; final address (consecutive) after downloaded chunk
-	nb_type	= nb_end+2		; magic number
+	nb_type	= nb_end+2		; magic number at $E2
 
 ; *******************
 ; *** actual code ***
@@ -322,18 +322,14 @@ nb_bad:
 #ifdef	ALONE
 ; progress bar routine (already installed for SD)
 progress:
-;	LDA nb_type
-;	CMP #$4D
+;	LDY nb_type
+;	CPY #$4D
 ;	BEQ no_bar				; if it's generic data (could be screenshot), do not display progress
 		LDA nb_ptr+1		; check new page
-		LDY bootsig
-		CPY #'d'			; looking for dX, which is NOT allowed for Chihuahua
-		BNE ok_via			; Pocket is OK
-			LDY bootsig+1	; data or ROM image?
-			CPY #'X'		; if ROM image...
-			BEQ no_via		; ...then VIA access is not allowed
-ok_via:
-		STA D_IORB			; * Display page in binary thru Chihuahua simple I/O *
+		LDY nb_type
+		CPY #$4C			; looking for dX, which is NOT allowed for Chihuahua
+		BEQ no_via			; do not interact with VIA
+			STA D_IORB		; * Display page in binary thru Chihuahua simple I/O *
 no_via:
 		DEC					; last completed page
 		TAY					; save!
