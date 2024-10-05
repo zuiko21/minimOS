@@ -3,7 +3,7 @@
 ; compatible with Chihuhua·D (nanoBoot only) and DurangoPLUS
 ; (c) 2023-2024 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20241004-1913
+; last modified 20241005-1127
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware
 ; add -DSCREEN for screenshots display capability
@@ -81,7 +81,7 @@ D_IFR	= $BFFD
 D_IER	= $BFFE
 
 ; *** memory usage ***
-dev_id	= $EB		; $EB 1...4=SPI, 241=devCart, 0=RasPi; will turn into '0...3' and ' ' (and '/') for display
+dev_id	= $EA		; $EB 1...4=SPI, 241=devCart, 0=RasPi; will turn into '0...3' and ' ' (and '/') for display
 crc		= dev_id+ 1	; $EC
 en_ix	= crc	+ 1	; $ED ### directory storage ###
 sd_ver	= en_ix	+ 1 ; $EE ### not so temporary ###
@@ -189,8 +189,8 @@ rom_start:
 ; NEW coded version number
 	.word	$21CA			; 2.1f10	%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$9900			; time, 19.08		%1001 1-001 000-0 0000
-	.word	$5944			; date, 2024/10/4	%0101 100-1 010-0 0100
+	.word	$5B00			; time, 11.24		%0101 1-011 000-0 0000
+	.word	$5945			; date, 2024/10/5	%0101 100-1 010-0 0101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -1423,14 +1423,15 @@ progress:
 ;	BEQ no_bar				; if it's a screenshot, do not display progress
 #endif
 	LDA ptr+1				; check new page
-	LDY bootsig
-	CPY #'d'				; looking for dX, which is NOT allowed for Chihuahua
-	BNE ok_via				; Pocket is OK
-		LDY bootsig+1		; data or ROM image?
-		CPY #'X'			; if ROM image...
-		BEQ no_via			; ...then VIA access is not allowed
+#echo no VIA feedback for ROM images
+	LDY bootsig				; check type
+	CPY #'d'				; Pocket is always OK
+	BNE ok_via
+		LDY bootsig+1		; check specific type
+		CPY #'X'			; actually executable? It's ROM image, thus...
+	BEQ no_via				; ...VIA access is not allowed
 ok_via:
-	STA D_IORB				; * Display page in binary thru Chihuahua simple I/O *
+		STA D_IORB			; * Display page in binary thru Chihuahua simple I/O *
 no_via:
 	DEC						; last completed page
 	TAY						; save!
