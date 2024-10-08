@@ -1,0 +1,63 @@
+; RTC test via the I2C inteface on FastSPI card
+; (c) 2024 Carlos J. Santisteban
+; last modified 20241008-0929
+
+; send as binary blob via nanoBoot (-x 0x1000 option)
+
+; *** constants ***
+#define	SCL		%00010000
+#define	SDA		%00100000
+#define	I2C_C	%01000000
+#define	I2C_D	%10000000
+#define	A_SPI	%00001111
+#define	RTC		$68
+
+; *** hardware addresses ***
+IO9rtc	= $DF97			; I2C port on FastSPI card
+
+; ******************
+; *** code start ***
+; ******************
+	*	= $1000
+
+start:
+ 	LDA #A_SPI
+	STA IO9rtc			; disable all SPI ports, just in case
+
+; **************************
+; *** interface routines ***
+; **************************
+i2send:				; send byte in A
+	ASL				; put 0 at d0 as is a write operation
+	TAX				; save for later
+	LDA #SCL
+	TSB IO9rtc		; make sure clock is high
+	LDA #SDA
+	TSB IO9rtc
+	TRB IO9rtc		; high-to-low SDA is START condition
+	LDY #8			; number of bits per byte
+is_loop:
+		TXA			; get remaining bits
+		ASL			; shift MSB out
+		TAX			; keep current state
+		LDA #SCL
+		TRB IO9rtc	; clock goes low, may change data
+		LDA #SDA
+		BCS was_one	; if C is set, bit was 1
+			TRB IO9rtc			; otherwise will set SDA bit low
+		BRA sda_set
+was_one:
+		TSB IO9rtc				; in this case, SDA goes high
+sda_set:
+		LDA #SCL
+		TSB IO9rtc	; SCL goes high, data bit is sampled
+		DEY			; one bit less
+		BNE is_loop
+	TRB IO9rtc		; SCL goes low again for SDA to go low
+	LDA #SDA
+	TRB IO9rtc		; SDA goes low, prepare for STOP condition
+	LDA #SCL
+	TSB IO9rtc		; SCL goes high, maybe check it?
+	LDA #SDA
+	TSB IO9rtc		; low-to-high transition in SDA while SCL is high, is STOP condition
+	RTS
