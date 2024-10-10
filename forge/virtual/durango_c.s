@@ -1,7 +1,7 @@
 ; VirtualDurango emulator for DurangoPLUS! *** COMPACT VERSION ***
 ; v0.1a1
 ; (c) 2016-2024 Carlos J. Santisteban
-; last modified 20241010-0832
+; last modified 20241010-1526
 ; needs at least 128K RAM
 
 ; ** some useful macros **
@@ -212,31 +212,2501 @@ ind_nz:
 	STA (tmptr)				; store at pointed address
 	BRA check_nz			; check flags and exit
 
-; update A and check N & Z bits
+; update A and check N & Z bits +21
 a_nz:
 	STA a65					; update accumulator A
-; just check N & Z, then exit
+; just check N & Z, then exit +18
 check_nz:
 ; LUT approach for N & Z flags (10b, 15t, was 14b 23t)
 	TAX						; use A as index (2)
+x2nz:						; +16 from here, assume X loaded
 	LDA ccr65				; check previous state (3)
 	AND #N_MASK&Z_MASK		; clear just N & Z... (2)
 	ORA nz_lut, X			; ...and set accordingly (4)
 	STA ccr65				; update P (3)
 	BRA next_op
 
-; check V & C bits, then N & Z
+; check V & C bits, then N & Z +26
 check_flags:
-	PHP						; get current status
+	PHP						; get current status (3+4)
 	PLA
-	AND #C_FLAG|V_FLAG|N_FLAG|Z_FLAG	; keep relevant flags
-	STA temp				; store flags to be set
-	LDA #C_MASK&V_MASK&N_MASK&Z_MASK	; relevant bits
+	AND #C_FLAG|V_FLAG|N_FLAG|Z_FLAG	; keep relevant flags (2)
+	STA temp							; store flags to be set (3)
+	LDA #C_MASK&V_MASK&N_MASK&Z_MASK	; relevant bits (2)
 	AND ccr65				; clear bits by default on previous CCR (3)
 	ORA temp				; set where needed (3)
 	STA ccr65				; update CCR (3)
 	BRA next_op
 
+; *** implicit instructions ***
+
+; * flag settings *
+_18:
+; CLC (2) +10
+	LDA #C_FLAG				; C flag...
+	TRB ccr65				; gets cleared
+	JMP next_op
+
+_D8:
+; CLD (2) +10
+	LDA #D_FLAG				; D flag...
+	TRB ccr65				; gets cleared
+	JMP next_op
+
+_58:
+; CLI (2) +10
+	LDA #I_FLAG				; I flag...
+	TRB ccr65				; gets cleared
+	JMP next_op
+
+_B8:
+; CLV (2) +10
+	LDA #V_FLAG				; V flag...
+	TRB ccr65				; gets cleared
+	JMP next_op
+
+_38:
+; SEC (2) +10
+	LDA #C_FLAG				; C flag...
+	TSB ccr65				; gets set
+	JMP next_op
+
+_F8:
+; SED (2) +10
+	LDA #D_FLAG				; D flag...
+	TSB ccr65				; gets set
+	JMP next_op
+
+_78:
+; SEI (2) +10
+	LDA #I_FLAG				; I flag...
+	TSB ccr65				; gets set
+	JMP next_op
+
+; * register inc/dec *
+_CA:
+; DEX (2) +27
+	DEC x65					; decrement index (5)
+; LUT-based flag setting
+	LDX x65					; check result (3)
+	JMP x2nz				; 3+16
+
+_88:
+; DEY (2) +27
+	DEC y65					; decrement index (5)
+; LUT-based flag setting
+	LDX y65					; check result (3)
+	JMP x2nz				; 3+16
+
+_E8:
+; INX (2) +27
+	INC x65					; increment index (5)
+; LUT-based flag setting
+	LDX x65					; check result (3)
+	JMP x2nz				; 3+16
+
+_C8:
+; INY (2) +27
+	INC y65					; increment index (5)
+; LUT-based flag setting
+	LDX y65					; check result (3)
+	JMP x2nz				; 3+16
+
+_3A:
+; DEC [DEC A] (2) +27
+	DEC a65					; decrement A
+; LUT-based flag setting
+	LDX a65					; check result
+	JMP x2nz				; 3+16
+
+_1A:
+; INC [INC A] (2) +27
+	INC a65					; increment A
+; LUT-based flag setting
+	LDX a65					; check result
+	JMP x2nz				; 3+16
+
+; * register transfer *
+_AA:
+; TAX (2) +25
+	LDX a65					; copy accumulator... (3)
+	STX x65					; ...to index X (3)
+	JMP x2nz				; ...and update flags 3+16
+
+_A8:
+; TAY (2) +25
+	LDX a65					; copy accumulator... (3)
+	STX y65					; ...to index Y, value in X (3)
+	JMP x2nz				; ...and update flags 3+16
+
+_BA:
+; TSX (2) +25
+	LDX sp65				; copy stack pointer... (3)
+	STX x65					; ...to index X (3)
+	JMP x2nz				; ...and update flags 3+16
+
+_8A:
+; TXA (2) +25
+	LDX x65					; copy X... (3)
+	STX a65					; ...to accumulator, value in X (3)
+	JMP x2nz				; ...and update flags 3+16
+
+_9A:
+; TXS (2) +25
+	LDX x65					; copy X... (3)
+	STX sp65				; ...to stack pointer, value in X (3)
+	JMP x2nz				; ...and update flags 3+16
+
+_98:
+; TYA (2) +25
+	LDX y65					; copy Y... (3)
+	STX a65					; ...to accumulator, value in X (3)
+	JMP x2nz				; ...and update flags 3+16
+
+; *** stack operations ***  CONTINUE HERE * * * * * * * *
+
+; * push *
+_48:
+; PHA
+; +18
+	LDA a65		; get accumulator
+; standard push of value in A, does not affect flags
+; new code, same speed but 1 byte less
+	LDX s65		; and current SP
+	STA $0100, X	; push into stack
+	DEC s65		; post-decrement
+; all done
+	JMP next_op
+
+_DA:
+; PHX
+; +18
+	LDA x65		; get index
+; standard push of value in A, does not affect flags
+; new code, same speed but 1 byte less
+	LDX s65		; and current SP
+	STA $0100, X	; push into stack
+	DEC s65		; post-decrement
+; all done
+	JMP next_op
+
+_5A:
+; PHY
+; +18
+	LDA y65		; get index
+; standard push of value in A, does not affect flags
+; new code, same speed but 1 byte less
+	LDX s65		; and current SP
+	STA $0100, X	; push into stack
+	DEC s65		; post-decrement
+; all done
+	JMP next_op
+
+_08:
+; PHP
+; +18
+	LDA ccr65		; get status
+; standard push of value in A, does not affect flags
+; new code, same speed but 1 byte less
+	LDX s65		; and current SP
+	STA $0100, X	; push into stack
+	DEC s65		; post-decrement
+; all done
+	JMP next_op
+
+; * pull *
+
+_68:
+; PLA
+; +32
+	INC s65		; pre-increment SP
+	LDX s65		; use as index
+	LDA $0100, X	; pull from stack
+	STA a65		; pulled value goes to A
+	TAX		; operation result in X
+; standard NZ flag setting
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_FA:
+; PLX
+; +32
+	INC s65		; pre-increment SP
+	LDX s65		; use as index
+	LDA $0100, X	; pull from stack
+	STA x65		; pulled value goes to X
+	TAX		; operation result in X
+; standard NZ flag setting
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_7A:
+; PLY
+; +32
+	INC s65		; pre-increment SP
+	LDX s65		; use as index
+	LDA $0100, X	; pull from stack
+	STA y65		; pulled value goes to Y
+	TAX		; operation result in X
+; standard NZ flag setting
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_28:
+; PLP
+; +32
+	INC s65		; pre-increment SP
+	LDX s65		; use as index
+	LDA $0100, X	; pull from stack
+	STA ccr65		; pulled value goes to PSR
+	TAX		; operation result in X
+; standard NZ flag setting
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+; * return instructions *
+
+_40:
+; RTI
+; +34
+	LDX s65		; get current SP
+	INX		; pre-increment
+	LDA $0100, X	; pull from stack
+	STA ccr65		; pulled value goes to PSR
+	INX		; pre-increment
+	LDY $0100, X	; pull from stack PC-LSB eeeeeeek
+	INX		; pre-increment
+	LDA $0100, X	; pull from stack
+	STA pc65+1	; pulled value goes to PC-MSB
+	STX s65		; update SP
+; all done
+	JMP execute	; PC already set!
+
+_60:
+; RTS
+; +29
+	LDX s65		; get current SP
+	INX		; pre-increment
+	.al: REP #$20	; worth going 16-bit
+	LDA $0100, X	; pull full return address from stack
+	INC		; correct it!
+	.as: SEP #$20	; back to 8-bit
+	TAY		; eeeeeeeeeeek
+	XBA		; LSB done, now for MSB
+	STA pc65+1	; pulled value goes to PC
+	INX		; skip both bytes
+	STX s65		; update SP
+; all done
+	JMP execute	; PC already set!
+
+; *** WDC-exclusive instructions ***
+
+;_db:
+; STP
+; should print some results or message...
+
+;_cb:
+; WAI
+
+; *** bit testing ***
+
+_89:
+; BIT imm
+; +25/25/30
+	_PC_ADV		; get immediate operand
+	LDA (pc65), Y
+	AND a65		; AND with memory
+	BEQ g89z	; will set Z
+		LDA #2		; or clear Z in previous status
+		TRB ccr65		; updated
+		JMP next_op
+g89z:
+	LDA #2		; set Z in previous status
+	TSB ccr65		; updated
+; all done
+	JMP next_op
+
+_24:
+; BIT zp
+; +50/50/56
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+; operand in A, common BIT routine (34/34/36)
+	AND a65		; AND with memory
+	TAX		; keep this value
+	BNE g24z	; will clear Z
+		LDA #2		; or set Z in previous status
+		TSB ccr65		; updated
+		JMP g24nv	; check highest bits
+g24z:
+	LDA #2		; clear Z in previous status
+	TRB ccr65		; updated
+g24nv:
+	LDA #$C0	; pre-clear NV
+	TRB ccr65
+	TXA		; retrieve old result
+	AND #$C0	; only two highest bits
+	TSB ccr65		; final status
+; all done
+	JMP next_op
+
+_34:
+; BIT zp, X
+; +55/55/61
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+; operand in A, common BIT routine
+	AND a65		; AND with memory
+	TAX		; keep this value
+	BNE g34z	; will clear Z
+		LDA #2		; or set Z in previous status
+		TSB ccr65		; updated
+		JMP g34nv	; check highest bits
+g34z:
+	LDA #2		; clear Z in previous status
+	TRB ccr65		; updated
+g34nv:
+	LDA #$C0	; pre-clear NV
+	TRB ccr65
+	TXA		; retrieve old result
+	AND #$C0	; only two highest bits
+	TSB ccr65		; final status
+; all done
+	JMP next_op
+
+_2C:
+; BIT abs
+; +65/65/75
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; get operand
+; operand in A, common BIT routine
+	AND a65		; AND with memory
+	TAX		; keep this value
+	BNE g2cz		; will clear Z
+		LDA #2		; or set Z in previous status
+		TSB ccr65		; updated
+		JMP g2cnv	; check highest bits
+g2cz:
+	LDA #2		; clear Z in previous status
+	TRB ccr65		; updated
+g2cnv:
+	LDA #$C0	; pre-clear NV
+	TRB ccr65
+	TXA		; retrieve old result
+	AND #$C0	; only two highest bits
+	TSB ccr65		; final status
+; all done
+	JMP next_op
+
+_3C:
+; BIT abs, X
+; +72/72/82
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; get operand
+; operand in A, common BIT routine
+	AND a65		; AND with memory
+	TAX		; keep this value
+	BNE g3cz	; will reset Z
+		LDA #2		; or set Z in previous status
+		TSB ccr65		; updated
+		JMP g3cnv	; check highest bits
+g3cz:
+	LDA #2		; set Z in previous status
+	TRB ccr65		; updated
+g3cnv:
+	LDA #$C0	; pre-clear NV
+	TRB ccr65
+	TXA		; retrieve old result
+	AND #$C0	; only two highest bits
+	TSB ccr65		; final status
+; all done
+	JMP next_op
+
+; *** jumps ***
+
+; * conditional branches *
+
+_90:
+; BCC rel
+; +16/16/20 if not taken
+; +// * if taken
+	_PC_ADV		; PREPARE relative address
+	LDA #1		; will check C flag
+	BIT ccr65
+	BNE g90		; will not branch
+		LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+		JMP execute	; PC is ready!
+g90:
+	JMP next_op
+
+_B0:
+; BCS rel
+; +16/16/20 if not taken
+; +// * if taken
+	_PC_ADV		; PREPARE relative address
+	LDA #1		; will check C flag
+	BIT ccr65
+	BEQ gb0		; will not branch
+		LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+		JMP execute	; PC is ready!
+gb0:
+	JMP next_op
+
+_30:
+; BMI rel
+; +16/16/20 if not taken
+; +// * if taken
+	_PC_ADV		; PREPARE relative address
+	LDA #128	; will check N flag
+	BIT ccr65
+	BEQ g30		; will not branch
+		LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+		JMP execute	; PC is ready!
+g30:
+	JMP next_op
+
+_10:
+; BPL rel
+; +16/16/20 if not taken
+; +// * if taken
+	_PC_ADV		; PREPARE relative address
+	LDA #128	; will check N flag
+	BIT ccr65
+	BNE g10		; will not branch
+		LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+		JMP execute	; PC is ready!
+g10:
+	JMP next_op
+
+_F0:
+; BEQ rel
+; +16/16/20 if not taken
+; +// * if taken
+	_PC_ADV		; PREPARE relative address
+	LDA #2		; will check Z flag
+	BIT ccr65
+	BEQ gf0		; will not branch
+		LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+		JMP execute	; PC is ready!
+gf0:
+	JMP next_op
+
+_D0:
+; BNE rel
+; +16/16/20 if not taken
+; +// * if taken
+	_PC_ADV		; PREPARE relative address
+	LDA #2		; will check Z flag
+	BIT ccr65
+	BNE gd0		; will not branch
+		LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+		JMP execute	; PC is ready!
+gd0:
+	JMP next_op
+
+_50:
+; BVC rel
+; +16/16/20 if not taken
+; +// * if taken
+	_PC_ADV		; PREPARE relative address
+	LDA #64		; will check V flag
+	BIT ccr65
+	BNE g50		; will not branch
+		LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+		JMP execute	; PC is ready!
+g50:
+	JMP next_op
+
+_70:
+; BVS rel
+; +16/16/20 if not taken
+; +// * if taken
+	_PC_ADV		; PREPARE relative address
+	LDA #64		; will check V flag
+	BIT ccr65
+	BNE g70		; will not branch
+		LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+		JMP execute	; PC is ready!
+g70:
+	JMP next_op
+
+_80:
+; BRA rel
+; +// *
+	_PC_ADV		; get relative address
+	LDA (pc65), Y
+; *** to do *** to do *** to do *** to do ***
+	JMP execute	; PC is ready!
+
+; * absolute jumps *
+
+_4C:
+; JMP abs
+; +30/30/38*
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	TAX		; store temporarily
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA pc65+1	; update PC
+	TXY		; pointer is ready!
+	JMP execute
+
+_6C:
+; JMP indirect
+; +46/46/54*
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store temporarily
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; indirect pointer ready
+	LDY #1		; indirect MSB offset
+	LDA (tmptr), Y	; final MSB
+	STA pc65+1
+	LDA (tmptr)	; final LSB
+	TAY		; pointer is ready!
+	JMP execute
+
+_7C:
+; JMP indirect indexed
+; +51/51/59*
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store temporarily
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; indirect pointer ready
+	LDY x65		; indexing
+	INY		; but get MSB first
+	LDA (tmptr), Y	; final MSB
+ 	STA pc65+1
+	DEY		; go for LSB
+	LDA (tmptr), Y	; final LSB
+	TAY		; pointer is ready!
+	JMP execute
+
+; * subroutine call *
+
+_20:
+; JSR abs
+; +63/63/71*
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store temporarily
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; destination ready
+; now push the CURRENT address as we are at the last byte of the instruction
+	TYX			; eeeeeeeeek
+	LDA pc65+1		; get PC MSB...
+	LDY s65			; and current SP
+	STA $0100, Y		; store in emulated stack
+	DEY			; post-decrement
+	TXA			; same for LSB eeeeeeeeek!
+	STA $0100, Y		; store in emulated stack
+	DEY			; post-decrement
+	STY s65			; update SP
+; jump to previously computed address
+	LDA tmptr+1	; retrieve MSB
+	STA pc65+1
+	LDY tmptr	; pointer is ready!
+	JMP execute
+
+; *** load / store ***
+
+; * load *
+
+_A2:
+; LDX imm
+; +30/30/34
+	_PC_ADV		; get immediate operand
+	LDA (pc65), Y
+	STA x65		; update register
+; standard NZ flag setting (+17)
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_A6:
+; LDX zp
+; +36/36/40
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA x65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_B6:
+; LDX zp, Y
+; +41/41/45
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC y65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA x65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_AE:
+; LDX abs
+; +51/51/59
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; load operand
+	STA x65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_BE:
+; LDX abs, Y
+; +58/58/66
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC y65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; load operand
+	STA x65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_A0:
+; LDY imm
+; +30/30/34
+	_PC_ADV		; get immediate operand
+	LDA (pc65), Y
+	STA x65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_A4:
+; LDY zp
+; +36/36/40
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA y65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_B4:
+; LDY zp, X
+; +41/41/45
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA y65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_AC:
+; LDY abs
+; +51/51/59
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; load operand
+	STA y65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_BC:
+; LDY abs, X
+; +58/58/66
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; load operand
+	STA y65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_A9:
+; LDA imm
+; +30/30/34
+	_PC_ADV		; get immediate operand
+	LDA (pc65), Y
+	STA a65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_A5:
+; LDA zp
+; +36/36/40
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA a65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_B5:
+; LDA zp, X
+; +41/41/45
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA a65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_AD:
+; LDA abs
+; +51/51/59
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; load operand
+	STA a65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_BD:
+; LDA abs, X
+; +58/58/66
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; load operand
+	STA a65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_B9:
+; LDA abs, Y
+; +58/58/66
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC y65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; load operand
+	STA a65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_B2:
+; LDA (zp)
+; +51/51/55
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+	STA a65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_B1:
+; LDA (zp), Y
+; +58/58/62
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	CLC
+	ADC y65		; indexed
+	LDA !1, X	; same for MSB
+	ADC #0		; in case of boundary crossing
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+	STA a65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_A1:
+; LDA (zp, X)
+; +56/56/60
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	CLC
+	ADC x65		; preindexing, forget C as will wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+	STA a65		; update register
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+; * store *
+
+_86:
+; STX zp
+; +22/22/26
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA x65		; value to be stored
+	STA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	JMP next_op
+
+_96:
+; STX zp, Y
+; +27/27/31
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC y65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA x65		; value to be stored
+	STA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	JMP next_op
+
+_8E:
+; STX abs
+; +37/37/45
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA x65		; value to be stored
+	STA (tmptr)	; store operand
+	JMP next_op
+
+_84:
+; STY zp
+; +22/22/26
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA y65		; value to be stored
+	STA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	JMP next_op
+
+_94:
+; STY zp, X
+; +27/27/31
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA y65		; value to be stored
+	STA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	JMP next_op
+
+_8C:
+; STY abs
+; +37/37/45
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA y65		; value to be stored
+	STA (tmptr)	; store operand
+	JMP next_op
+
+_64:
+; STZ zp
+; +19/19/23
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	STZ !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	JMP next_op
+
+_74:
+; STZ zp, X
+; +24/24/28
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	STZ !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	JMP next_op
+
+_9C:
+; STZ abs
+; +36/36/44
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA #0
+	STA (tmptr)	; clear operand
+	JMP next_op
+
+_9E:
+; STZ abs, X
+; +43/43/51
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA #0
+	STA (tmptr)	; clear operand
+	JMP next_op
+
+_8D:
+; STA abs
+; +37/37/45
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA a65		; value to be stored
+	STA (tmptr)	; store operand
+	JMP next_op
+
+_9D:
+; STA abs, X
+; +44/44/52
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA a65		; value to be stored
+	STA (tmptr)	; store operand
+	JMP next_op
+
+_99:
+; STA abs, Y
+; +44/44/52
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC y65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA a65		; value to be stored
+	STA (tmptr)	; store operand
+	JMP next_op
+
+_85:
+; STA zp
+; +22/22/26
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA a65		; value to be stored
+	STA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	JMP next_op
+
+_95:
+; STA zp, X
+; +27/27/31
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA a65		; value to be stored
+	STA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	JMP next_op
+
+_92:
+; STA (zp)
+; +37/37/41
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA a65		; value to be stored
+	STA (tmptr)
+	JMP next_op
+
+_91:
+; STA (zp), Y
+; +44/44/48
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	CLC
+	ADC y65		; indexed
+	LDA !1, X	; same for MSB
+	ADC #0		; in case of boundary crossing
+	STA tmptr+1
+	LDA a65		; value to be stored
+	STA (tmptr)
+	JMP next_op
+
+_81:
+; STA (zp, X)
+; +42/42/46
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	CLC
+	ADC x65		; preindexing, forget C as will wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA a65		; value to be stored
+	STA (tmptr)
+	JMP next_op
+
+; *** bitwise ops ***
+
+; * logic and *
+
+_29:
+; AND imm
+; +33/33/37
+	_PC_ADV		; get immediate operand
+	LDA (pc65), Y
+	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting (17)
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_25:
+; AND zp
+; +39/39/43
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_35:
+; AND zp, X
+; +44/44/48
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_2D:
+; AND abs
+; +54/54/62
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_3D:
+; AND abs, X
+; +61/61/69
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_39:
+; AND abs, Y
+; +61/61/69
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC y65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_32:
+; AND (zp)
+; +54/54/58
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_31:
+; AND (zp), Y
+; +61/61/65
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	CLC
+	ADC y65		; indexed
+	LDA !1, X	; same for MSB
+	ADC #0		; in case of boundary crossing
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_21:
+; AND (zp, X)
+; +59/59/63
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	CLC
+	ADC x65		; preindexing, forget C as will wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+	AND a65		; do AND
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+; * logic or *
+
+_09:
+; ORA imm
+; +33/33/37
+	_PC_ADV		; get immediate operand
+	LDA (pc65), Y
+	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_05:
+; ORA zp
+; +39/39/43
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_15:
+; ORA zp, X
+; +44/44/48
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_0D:
+; ORA abs
+; +54/54/62
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_1D:
+; ORA abs, X
+; +61/61/69
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_19:
+; ORA abs, Y
+; +61/61/69
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC y65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_12:
+; ORA (zp)
+; +54/54/58
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_11:
+; ORA (zp), Y
+; +61/61/65
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	CLC
+	ADC y65		; indexed
+	LDA !1, X	; same for MSB
+	ADC #0		; in case of boundary crossing
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_01:
+; ORA (zp, X)
+; +59/59/63
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	CLC
+	ADC x65		; preindexing, forget C as will wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+	ORA a65		; do OR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+; * exclusive or *
+
+_49:
+; EOR imm
+; +33/33/37
+	_PC_ADV		; get immediate operand
+	LDA (pc65), Y
+	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_45:
+; EOR zp
+; +39/39/43
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_55:
+; EOR zp, X
+; +44/44/48
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_4D:
+; EOR abs
+; +54/54/62
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_5D:
+; EOR abs, X
+; +61/61/69
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_59:
+; EOR abs, Y
+; +61/61/69
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC y65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_52:
+; EOR (zp)
+; +54/54/58
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_51:
+; EOR (zp), Y
+; +61/61/65
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	CLC
+	ADC y65		; indexed
+	LDA !1, X	; same for MSB
+	ADC #0		; in case of boundary crossing
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_41:
+; EOR (zp, X)
+; +59/59/63
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	CLC
+	ADC x65		; preindexing, forget C as will wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+	EOR a65		; do XOR
+	STA a65		; eeeeeeeeeeeeek
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+; *** arithmetic ***
+
+; * add with carry *
+
+_69:
+; ADC imm
+; +46/46/50
+	_PC_ADV		; get immediate operand
+	LDA (pc65), Y
+; copy virtual status (+36)
+	PHP
+	LDX ccr65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_65:
+; ADC zp
+; +52/52/56
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+; copy virtual status
+	PHP
+	LDX ccr65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_75:
+; ADC zp, X
+; +57/57/61
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+; copy virtual status
+	PHP
+	LDX ccr65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_6D:
+; ADC abs
+; +67/67/75
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+; copy virtual status
+	PHP
+	LDX ccr65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_7D:
+; ADC abs, X
+; +74/74/82
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+; copy virtual status
+	PHP
+	LDX ccr65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_79:
+; ADC abs, Y
+; +74/74/82
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC y65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+; copy virtual status
+	PHP
+	LDX ccr65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_72:
+; ADC (zp)
+; +67/67/71
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+; copy virtual status
+	PHP
+	LDX ccr65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_71:
+; ADC (zp), Y
+; +74/74/78
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	CLC
+	ADC y65		; indexed
+	LDA !1, X	; same for MSB
+	ADC #0		; in case of boundary crossing
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+; copy virtual status
+	PHP
+	LDX ccr65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_61:
+; ADC (zp, X)
+; +72/72/76
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	CLC
+	ADC x65		; preindexing, forget C as will wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+	LDA (tmptr)	; read operand
+; copy virtual status
+	PHP
+	LDX ccr65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	ADC a65		; do add
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+; * subtract with borrow *
+
+_E9:
+; SBC imm
+; +
+	_PC_ADV		; PREPARE immediate operand
+; copy virtual status
+	PHP
+	LDX ccr65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	LDA a65
+	SBC (pc65), Y	; subtract operand
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_E5:
+; SBC zp
+; +
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+; copy virtual status
+	PHP
+	LDA ccr65		; assume virtual status
+	PHA
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	LDA a65
+	SBC !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_F5:
+; SBC zp, X
+; +
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+; copy virtual status
+	PHP
+	LDA ccr65		; assume virtual status
+	PHA
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	LDA a65
+	SBC !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_ED:
+; SBC abs
+; +
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+; copy virtual status
+	PHP
+	LDX ccr65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	LDA a65
+	SBC (tmptr)	; subtract operand
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_FD:
+; SBC abs, X
+; +
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+; copy virtual status
+	PHP
+	LDX ccr65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	LDA a65
+	SBC (tmptr)	; subtract operand
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_F9:
+; SBC abs, Y
+; +
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC y65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+; copy virtual status
+	PHP
+	LDX ccr65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	LDA a65
+	SBC (pc65), Y	; subtract operand
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_F2:
+; SBC (zp)
+; +
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+; copy virtual status
+	PHP
+	LDX ccr65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	LDA a65
+	SBC (tmptr)	; subtract operand
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_F1:
+; SBC (zp), Y
+; +
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	CLC
+	ADC y65		; indexed
+	LDA !1, X	; same for MSB
+	ADC #0		; in case of boundary crossing
+	STA tmptr+1
+; copy virtual status
+	PHP
+	LDX ccr65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	LDA a65
+	SBC (tmptr)	; subtract operand
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+_E1:
+; ADC (zp, X)
+; +72/72/76
+	_PC_ADV		; get zeropage pointer
+	LDA (pc65), Y
+	CLC
+	ADC x65		; preindexing, forget C as will wrap
+	TAX		; temporary index...
+	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	STA tmptr	; this was LSB
+	LDA !1, X	; same for MSB
+	STA tmptr+1
+; copy virtual status
+	PHP
+	LDX ccr65		; assume virtual status
+	PHX
+	PLP		; as both d5 and d4 are kept 1, no problem
+; proceed
+	LDA a65
+	SBC (tmptr)	; subtract operand
+	STA a65		; update value
+; with so many flags to set, best sync with virtual P
+	PHP		; new status
+	PLA
+	STA ccr65		; update virtual
+	PLP
+; all done
+	JMP next_op
+
+; * inc/dec memory *
+
+_E6:
+; INC zp
+; +
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	INC !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	LDA !0, X	; retrieve value
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_F6:
+; INC zp, X
+; +
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	INC !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	LDA !0, X	; retrieve value
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_EE
+; INC abs
+; +
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	INC
+	STA (tmptr)	; update
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_FE:
+; INC abs, X
+; +
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	INC
+	STA (tmptr)	; update
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+_C6:
+; DEC zp
+; +
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	TAX		; temporary index...
+	DEC !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	LDA !0, X	; retrieve value
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_D6:
+; DEC zp, X
+; +
+	_PC_ADV		; get zeropage address
+	LDA (pc65), Y
+	CLC
+	ADC x65		; add index, forget carry as will page-wrap
+	TAX		; temporary index...
+	DEC !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
+	LDA !0, X	; retrieve value
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_CE:
+; DEC abs
+; +
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	DEC
+	STA (tmptr)	; update
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+_DE:
+; DEC abs, X
+; +
+	_PC_ADV		; get LSB
+	LDA (pc65), Y
+	CLC		; do indexing
+	ADC x65
+	STA tmptr	; store in vector
+	_PC_ADV		; get MSB
+	LDA (pc65), Y
+	ADC #0		; in case of page boundary crossing
+	STA tmptr+1	; vector is complete
+	LDA (tmptr)	; read operand
+	DEC
+	STA (tmptr)	; update
+; standard NZ flag setting
+	TAX		; index for LUT
+	LDA ccr65		; previous status...
+	AND #$82	; ...minus NZ...
+	ORA nz_lut, X	; ...adds flag mask
+	STA ccr65
+; all done
+	JMP next_op
+
+
+; ** ** ** old 6800 stuff ** ** **
 ; ** accumulator and memory ** CONTINUE HERE
 
 ; add to A
