@@ -1,7 +1,7 @@
 ; VirtualDurango emulator for DurangoPLUS! *** COMPACT VERSION ***
 ; v0.1a1
 ; (c) 2016-2024 Carlos J. Santisteban
-; last modified 20241010-0021
+; last modified 20241010-0832
 ; needs at least 128K RAM
 
 ; ** some useful macros **
@@ -25,11 +25,18 @@
 #define	N_FLAG	%10110000
 #define	V_FLAG	%01110000
 ; note there's no B flag, IRQ will actually set it low, otherwise is high
-#define	B_MASK	%11101111
 #define	D_FLAG	%00111000
 #define	I_FLAG	%00110100
 #define	Z_FLAG	%00110010
 #define	C_FLAG	%00110001
+
+#define	N_MASK	%01111111
+#define	V_MASK	%10111111
+#define	B_MASK	%11101111
+#define	D_MASK	%11110111
+#define	I_MASK	%11111011
+#define	Z_MASK	%11111101
+#define	C_MASK	%11111110
 
 ; vector offsets from $FFFA
 #define	NMI_VEC	0
@@ -173,21 +180,20 @@ nmi65:						; hardware interrupts, when available, to be checked AFTER increment
 	LDX #NMI_VEC			; offset for NMI vector (2)
 
 intr65:						; ** generic interrupt entry point, offset in X **
-; save processor status * CHECK
-	LDA sp65				; get stack pointer LSB (3)
-	SEC						; prepare subtraction (2)
-	SBC #3					; make room for stack frame (2)
-	STA sp65				; room already made (3)
-	LDY #3					; max index for stack area, note offset (2)
-; new stack frame code 
-	LDA pc65 + 1
-	STA (sp65), Y			; push PCH
-	DEY
-	LDA pc65
-	STA (sp65), Y			; push PCL
-	DEY
-	LDA ccr65
-	STA (sp65), Y			; push PSR, no need to change index
+; save processor status, new way (26b, 41t)
+	LDX sp65				; current SP, pointing to first free byte in stack (3)
+	LDA pc65 +1				; get PCH (3)
+	STA $0100, X			; push it within bank 1 (5)
+	DEX						; post-decrement (2)
+	LDA pc65				; get PCL (3)
+	STA $0100, X			; push it (5)
+	DEX						; post-decrement (2)
+	LDA ccr65 +1			; get PSR (3)
+	STA $0100, X			; push it (5)
+	ORA #B_FLAG				; current PSR has always B flag set (2)
+	STA ccr65				; update status (3)
+	DEX						; post-decrement to free byte (2)
+	STX sp65				; update SP (3)
 vector_pull:				; ** standard vector pull entry point, offset in X **
 	LDA #I_FLAG
 	TSB ccr65				; mask interrupts! (2+5)
@@ -196,46 +202,47 @@ vector_pull:				; ** standard vector pull entry point, offset in X **
 	STA pc65 + 1			; update PC (3)
 	BRA execute				; continue with NMI handler
 
+; ********************************
 ; *** valid opcode definitions ***
+; ********************************
 
-; ** common endings **
+; *** common endings ***
+; update indirect pointer and check NZ
+ind_nz:
+	STA (tmptr)				; store at pointed address
+	BRA check_nz			; check flags and exit
 
 ; update A and check N & Z bits
 a_nz:
 	STA a65					; update accumulator A
 ; just check N & Z, then exit
 check_nz:
-	PHP						; actual status from op
-	PLA
-	AND #N_FLAG|Z_FLAG		; keep just N & Z
-	STA temp				; store flags to be set
-	LDA #%01111101			; relevant bits
-upd_flg:
-	AND ccr65				; clear bits by default on previous CCR
-	ORA temp				; set where needed
-	STA ccr65				; update CCR
+; LUT approach for N & Z flags (10b, 15t, was 14b 23t)
+	TAX						; use A as index (2)
+	LDA ccr65				; check previous state (3)
+	AND #N_MASK&Z_MASK		; clear just N & Z... (2)
+	ORA nz_lut, X			; ...and set accordingly (4)
+	STA ccr65				; update P (3)
 	BRA next_op
 
-; update indirect pointer and check NZ
-ind_nz:
-	STA (tmptr)				; store at pointed address
-	BRA check_nz			; check flags and exit
-
-; check V & C bits, then N & V * EEEEEEK
+; check V & C bits, then N & Z
 check_flags:
-	PHP
+	PHP						; get current status
 	PLA
 	AND #C_FLAG|V_FLAG|N_FLAG|Z_FLAG	; keep relevant flags
 	STA temp				; store flags to be set
-	LDA #%00111100			; relevant bits
-	BRA upd_flg				; save 6 bytes, lose 3 cycles (rarely)
+	LDA #C_MASK&V_MASK&N_MASK&Z_MASK	; relevant bits
+	AND ccr65				; clear bits by default on previous CCR (3)
+	ORA temp				; set where needed (3)
+	STA ccr65				; update CCR (3)
+	BRA next_op
 
 ; ** accumulator and memory ** CONTINUE HERE
 
 ; add to A
 _89:
 ; ADC imm (2)
-;  +75/81.5/
+
 	_PC_ADV			; not worth using the macro (5)
 	STY tmptr		; store LSB of pointer (3)
 	LDA pc65 + 1	; get address MSB (3)
@@ -1434,6 +1441,41 @@ _0f:
 ; +5
 	SMB4 ccr65	; set I bit (5) *** Rockwell only! ***
 	JMP next_op	; standard end of routine
+
+; *** LUT for Z & N status bits directly based on result as index ***
+nz_lut:
+	.byt	Z_FLAG, 0, 0, 0, 0, 0, 0, 0	; zero to 7
+	.byt	0, 0, 0, 0, 0, 0, 0, 0	; 8-15
+	.byt	0, 0, 0, 0, 0, 0, 0, 0	; 16-23
+	.byt	0, 0, 0, 0, 0, 0, 0, 0	; 24-31
+	.byt	0, 0, 0, 0, 0, 0, 0, 0	; 32-39
+	.byt	0, 0, 0, 0, 0, 0, 0, 0	; 40-47
+	.byt	0, 0, 0, 0, 0, 0, 0, 0	; 48-55
+	.byt	0, 0, 0, 0, 0, 0, 0, 0	; 56-63
+	.byt	0, 0, 0, 0, 0, 0, 0, 0	; 64-71
+	.byt	0, 0, 0, 0, 0, 0, 0, 0	; 72-79
+	.byt	0, 0, 0, 0, 0, 0, 0, 0	; 80-87
+	.byt	0, 0, 0, 0, 0, 0, 0, 0	; 88-95
+	.byt	0, 0, 0, 0, 0, 0, 0, 0	; 96-103
+	.byt	0, 0, 0, 0, 0, 0, 0, 0	; 104-111
+	.byt	0, 0, 0, 0, 0, 0, 0, 0	; 112-119
+	.byt	0, 0, 0, 0, 0, 0, 0, 0	; 120-127
+	.byt	N_FLAG, N_FLAG, N_FLAG, N_FLAG,	N_FLAG, N_FLAG, N_FLAG, N_FLAG	; negative, 128-135
+	.byt	N_FLAG, N_FLAG, N_FLAG, N_FLAG,	N_FLAG, N_FLAG, N_FLAG, N_FLAG	; negative, 136-143
+	.byt	N_FLAG, N_FLAG, N_FLAG, N_FLAG,	N_FLAG, N_FLAG, N_FLAG, N_FLAG	; negative, 144-151
+	.byt	N_FLAG, N_FLAG, N_FLAG, N_FLAG,	N_FLAG, N_FLAG, N_FLAG, N_FLAG	; negative, 152-159
+	.byt	N_FLAG, N_FLAG, N_FLAG, N_FLAG,	N_FLAG, N_FLAG, N_FLAG, N_FLAG	; negative, 160-167
+	.byt	N_FLAG, N_FLAG, N_FLAG, N_FLAG,	N_FLAG, N_FLAG, N_FLAG, N_FLAG	; negative, 168-175
+	.byt	N_FLAG, N_FLAG, N_FLAG, N_FLAG,	N_FLAG, N_FLAG, N_FLAG, N_FLAG	; negative, 176-183
+	.byt	N_FLAG, N_FLAG, N_FLAG, N_FLAG,	N_FLAG, N_FLAG, N_FLAG, N_FLAG	; negative, 184-191
+	.byt	N_FLAG, N_FLAG, N_FLAG, N_FLAG,	N_FLAG, N_FLAG, N_FLAG, N_FLAG	; negative, 192-199
+	.byt	N_FLAG, N_FLAG, N_FLAG, N_FLAG,	N_FLAG, N_FLAG, N_FLAG, N_FLAG	; negative, 200-207
+	.byt	N_FLAG, N_FLAG, N_FLAG, N_FLAG,	N_FLAG, N_FLAG, N_FLAG, N_FLAG	; negative, 208-215
+	.byt	N_FLAG, N_FLAG, N_FLAG, N_FLAG,	N_FLAG, N_FLAG, N_FLAG, N_FLAG	; negative, 216-223
+	.byt	N_FLAG, N_FLAG, N_FLAG, N_FLAG,	N_FLAG, N_FLAG, N_FLAG, N_FLAG	; negative, 224-231
+	.byt	N_FLAG, N_FLAG, N_FLAG, N_FLAG,	N_FLAG, N_FLAG, N_FLAG, N_FLAG	; negative, 232-239
+	.byt	N_FLAG, N_FLAG, N_FLAG, N_FLAG,	N_FLAG, N_FLAG, N_FLAG, N_FLAG	; negative, 240-247
+	.byt	N_FLAG, N_FLAG, N_FLAG, N_FLAG,	N_FLAG, N_FLAG, N_FLAG, N_FLAG	; negative, 248-25t
 
 ; *** opcode execution addresses table ***
 ; should stay no matter the CPU!
