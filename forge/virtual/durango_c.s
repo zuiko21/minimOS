@@ -1,7 +1,7 @@
 ; VirtualDurango emulator for DurangoPLUS! *** COMPACT VERSION ***
 ; v0.1a1
 ; (c) 2016-2024 Carlos J. Santisteban
-; last modified 20241010-1526
+; last modified 20241010-1842
 ; needs at least 128K RAM
 
 ; ** some useful macros **
@@ -363,159 +363,115 @@ _98:
 	STX a65					; ...to accumulator, value in X (3)
 	JMP x2nz				; ...and update flags 3+16
 
-; *** stack operations ***  CONTINUE HERE * * * * * * * *
+; *** stack operations ***
 
 ; * push *
 _48:
-; PHA
-; +18
-	LDA a65		; get accumulator
-; standard push of value in A, does not affect flags
-; new code, same speed but 1 byte less
-	LDX s65		; and current SP
-	STA $0100, X	; push into stack
-	DEC s65		; post-decrement
+; PHA (3) +19
+	LDA a65					; get accumulator (3)
+	LDX sp65				; and current SP (3)
+	STA $0100, X			; push into stack (5)
+	DEC sp65				; post-decrement (5)
 ; all done
 	JMP next_op
 
 _DA:
-; PHX
-; +18
-	LDA x65		; get index
-; standard push of value in A, does not affect flags
-; new code, same speed but 1 byte less
-	LDX s65		; and current SP
-	STA $0100, X	; push into stack
-	DEC s65		; post-decrement
+; PHX (3) +19
+	LDA x65					; get index
+	LDX sp65				; and current SP
+	STA $0100, X			; push into stack
+	DEC sp65				; post-decrement
 ; all done
 	JMP next_op
 
 _5A:
-; PHY
-; +18
-	LDA y65		; get index
-; standard push of value in A, does not affect flags
-; new code, same speed but 1 byte less
-	LDX s65		; and current SP
-	STA $0100, X	; push into stack
-	DEC s65		; post-decrement
+; PHY (3) +19
+	LDA y65					; get index
+	LDX sp65				; and current SP
+	STA $0100, X			; push into stack
+	DEC sp65				; post-decrement
 ; all done
 	JMP next_op
 
 _08:
-; PHP
-; +18
-	LDA ccr65		; get status
-; standard push of value in A, does not affect flags
-; new code, same speed but 1 byte less
-	LDX s65		; and current SP
-	STA $0100, X	; push into stack
-	DEC s65		; post-decrement
+; PHP (3) +19
+	LDA ccr65				; get status
+	LDX sp65				; and current SP
+	STA $0100, X			; push into stack
+	DEC sp65				; post-decrement
 ; all done
 	JMP next_op
 
 ; * pull *
-
 _68:
-; PLA
-; +32
-	INC s65		; pre-increment SP
-	LDX s65		; use as index
-	LDA $0100, X	; pull from stack
-	STA a65		; pulled value goes to A
-	TAX		; operation result in X
-; standard NZ flag setting
-	LDA ccr65		; previous status...
-	AND #$82	; ...minus NZ...
-	ORA nz_lut, X	; ...adds flag mask
-	STA ccr65
-; all done
-	JMP next_op
+; PLA (4) +36
+	INC sp65				; pre-increment SP
+	LDX sp65				; use as index
+	LDA $0100, X			; pull from stack
+; set A and NZ flag setting (3+21)
+	JMP a_nz
 
 _FA:
-; PLX
-; +32
-	INC s65		; pre-increment SP
-	LDX s65		; use as index
-	LDA $0100, X	; pull from stack
-	STA x65		; pulled value goes to X
-	TAX		; operation result in X
-; standard NZ flag setting
-	LDA ccr65		; previous status...
-	AND #$82	; ...minus NZ...
-	ORA nz_lut, X	; ...adds flag mask
-	STA ccr65
-; all done
-	JMP next_op
+; PLX (4) +36
+	INC sp65				; pre-increment SP
+	LDX sp65				; use as index
+	LDA $0100, X			; pull from stack
+	STA x65					; set pulled register
+; standard NZ flag setting (3+18)
+	JMP check_nz
+
 
 _7A:
-; PLY
-; +32
-	INC s65		; pre-increment SP
-	LDX s65		; use as index
-	LDA $0100, X	; pull from stack
-	STA y65		; pulled value goes to Y
-	TAX		; operation result in X
-; standard NZ flag setting
-	LDA ccr65		; previous status...
-	AND #$82	; ...minus NZ...
-	ORA nz_lut, X	; ...adds flag mask
-	STA ccr65
-; all done
-	JMP next_op
+; PLY (4) +36
+	INC sp65				; pre-increment SP
+	LDX sp65				; use as index
+	LDA $0100, X			; pull from stack
+	STA y65					; set pulled register
+; standard NZ flag setting (3+18)
+	JMP check_nz
 
 _28:
-; PLP
-; +32
-	INC s65		; pre-increment SP
-	LDX s65		; use as index
-	LDA $0100, X	; pull from stack
-	STA ccr65		; pulled value goes to PSR
-	TAX		; operation result in X
-; standard NZ flag setting
-	LDA ccr65		; previous status...
-	AND #$82	; ...minus NZ...
-	ORA nz_lut, X	; ...adds flag mask
-	STA ccr65
-; all done
+; PLP (4) +18
+	INC sp65				; pre-increment SP (5)
+	LDX sp65				; use as index (3)
+	LDA $0100, X			; pull from stack (4)
+	STA ccr65				; set pulled register (3)
+; no more to do here...
 	JMP next_op
 
 ; * return instructions *
-
 _40:
-; RTI
-; +34
-	LDX s65		; get current SP
-	INX		; pre-increment
-	LDA $0100, X	; pull from stack
-	STA ccr65		; pulled value goes to PSR
-	INX		; pre-increment
-	LDY $0100, X	; pull from stack PC-LSB eeeeeeek
-	INX		; pre-increment
-	LDA $0100, X	; pull from stack
-	STA pc65+1	; pulled value goes to PC-MSB
-	STX s65		; update SP
+; RTI (6) +33
+	LDX sp65				; get current SP (3)
+	INX						; pre-increment (2)
+	LDA $0100, X			; pull from stack (4)
+	STA ccr65				; pulled value goes to PSR (3)
+	INX						; pre-increment (2)
+	LDY $0100, X			; pull from stack PC-LSB eeeeeeek (4)
+	INX						; pre-increment (2)
+	LDA $0100, X			; pull from stack (4)
+	STA pc65+1				; pulled value goes to PC-MSB (3)
+	STX sp65				; update SP (3)
 ; all done
-	JMP execute	; PC already set!
+	JMP execute				; PC already set!
 
 _60:
-; RTS
-; +29
-	LDX s65		; get current SP
-	INX		; pre-increment
-	.al: REP #$20	; worth going 16-bit
-	LDA $0100, X	; pull full return address from stack
-	INC		; correct it!
-	.as: SEP #$20	; back to 8-bit
-	TAY		; eeeeeeeeeeek
-	XBA		; LSB done, now for MSB
-	STA pc65+1	; pulled value goes to PC
-	INX		; skip both bytes
-	STX s65		; update SP
+; RTS (6) +34
+	LDX sp65				; get current SP (3)
+	INX						; pre-increment (2)
+	.al: REP #$20			; worth going 16-bit (3)
+	LDA $0100, X			; pull full return address from stack (5)
+	INC						; correct it! (2)
+	.as: SEP #$20			; back to 8-bit (3)
+	TAY						; eeeeeeeeeeek (2)
+	XBA						; LSB done, now for MSB (3)
+	STA pc65+1				; pulled value goes to PC (3)
+	INX						; skip both bytes (2)
+	STX sp65				; update SP (3)
 ; all done
-	JMP execute	; PC already set!
+	JMP execute				; PC already set!
 
-; *** WDC-exclusive instructions ***
+; *** WDC-exclusive instructions *** NOT YET
 
 ;_db:
 ; STP
@@ -660,7 +616,6 @@ g3cnv:
 ; *** jumps ***
 
 ; * conditional branches *
-
 _90:
 ; BCC rel
 ; +16/16/20 if not taken
@@ -782,7 +737,6 @@ _80:
 	JMP execute	; PC is ready!
 
 ; * absolute jumps *
-
 _4C:
 ; JMP abs
 ; +30/30/38*
@@ -830,7 +784,6 @@ _7C:
 	JMP execute
 
 ; * subroutine call *
-
 _20:
 ; JSR abs
 ; +63/63/71*
@@ -843,13 +796,13 @@ _20:
 ; now push the CURRENT address as we are at the last byte of the instruction
 	TYX			; eeeeeeeeek
 	LDA pc65+1		; get PC MSB...
-	LDY s65			; and current SP
+	LDY sp65			; and current SP
 	STA $0100, Y		; store in emulated stack
 	DEY			; post-decrement
 	TXA			; same for LSB eeeeeeeeek!
 	STA $0100, Y		; store in emulated stack
 	DEY			; post-decrement
-	STY s65			; update SP
+	STY sp65			; update SP
 ; jump to previously computed address
 	LDA tmptr+1	; retrieve MSB
 	STA pc65+1
@@ -859,7 +812,6 @@ _20:
 ; *** load / store ***
 
 ; * load *
-
 _A2:
 ; LDX imm
 ; +30/30/34
@@ -1234,7 +1186,6 @@ _A1:
 	JMP next_op
 
 ; * store *
-
 _86:
 ; STX zp
 ; +22/22/26
@@ -1471,7 +1422,6 @@ _81:
 ; *** bitwise ops ***
 
 ; * logic and *
-
 _29:
 ; AND imm
 ; +33/33/37
@@ -1667,7 +1617,6 @@ _21:
 	JMP next_op
 
 ; * logic or *
-
 _09:
 ; ORA imm
 ; +33/33/37
@@ -1863,7 +1812,6 @@ _01:
 	JMP next_op
 
 ; * exclusive or *
-
 _49:
 ; EOR imm
 ; +33/33/37
@@ -2061,7 +2009,6 @@ _41:
 ; *** arithmetic ***
 
 ; * add with carry *
-
 _69:
 ; ADC imm
 ; +46/46/50
@@ -2302,7 +2249,6 @@ _61:
 	JMP next_op
 
 ; * subtract with borrow *
-
 _E9:
 ; SBC imm
 ; +
@@ -2514,7 +2460,7 @@ _F1:
 	JMP next_op
 
 _E1:
-; ADC (zp, X)
+; SBC (zp, X)
 ; +72/72/76
 	_PC_ADV		; get zeropage pointer
 	LDA (pc65), Y
@@ -2624,6 +2570,7 @@ _FE:
 	STA ccr65
 ; all done
 	JMP next_op
+
 _C6:
 ; DEC zp
 ; +
