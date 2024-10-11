@@ -1,7 +1,7 @@
 ; VirtualDurango emulator for DurangoPLUS! *** COMPACT VERSION ***
-; v0.1a1
+; v0.1a2
 ; (c) 2016-2024 Carlos J. Santisteban
-; last modified 20241010-1842
+; last modified 20241011-0846
 ; needs at least 128K RAM
 
 ; ** some useful macros **
@@ -483,57 +483,48 @@ _60:
 ; *** bit testing ***
 
 _89:
-; BIT imm
-; +25/25/30
+; BIT imm (2)
 	_PC_ADV		; get immediate operand
 	LDA (pc65), Y
 	AND a65		; AND with memory
-	BEQ g89z	; will set Z
-		LDA #2		; or clear Z in previous status
-		TRB ccr65		; updated
-		JMP next_op
-g89z:
-	LDA #2		; set Z in previous status
-	TSB ccr65		; updated
-; all done
-	JMP next_op
-
+	JMP check_nz	; set N & Z, does V matter too?
+ 
 _24:
-; BIT zp
-; +50/50/56
+; BIT zp (3)
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
-; operand in A, common BIT routine (34/34/36)
-	AND a65		; AND with memory
+; operand in A, common BIT routine *** *** 28+3b, 36/33+3t might be optimised
+bit_ccr:
 	TAX		; keep this value
+	AND #%11000000	; N & V are already from memory
+	STA temp
+	TXA		; retrieve original memory content
+ 	AND a65		; AND with A
 	BNE g24z	; will clear Z
-		LDA #2		; or set Z in previous status
-		TSB ccr65		; updated
-		JMP g24nv	; check highest bits
+		LDA #Z_FLAG		; or set Z in previous status
+		BRA g24nv	; check highest bits
 g24z:
-	LDA #2		; clear Z in previous status
-	TRB ccr65		; updated
+	LDA #0		; clear Z in previous status
 g24nv:
-	LDA #$C0	; pre-clear NV
-	TRB ccr65
-	TXA		; retrieve old result
-	AND #$C0	; only two highest bits
-	TSB ccr65		; final status
-; all done
-	JMP next_op
+	ORA temp	; add remaining bits from N & V
+	STA temp	; updated bits ready
+	LDA ccr65	; get previous status
+	AND #N_MASK&V_MASK&Z_MASK	; filter updated bits
+ 	ORA temp	; update relevant bits
+	STA ccr65
+	JMP next_op	; all done
 
 _34:
-; BIT zp, X
-; +55/55/61
+; BIT zp, X (4)
 	_PC_ADV		; get zeropage address
 	LDA (pc65), Y
 	CLC
 	ADC x65		; add index, forget carry as will page-wrap
 	TAX		; temporary index...
 	LDA !0, X	; ...for emulated zeropage *** must use absolute for emulated bank ***
-; operand in A, common BIT routine
+; operand in A, common BIT routine *** *** *** older routine took 24+3b, 33/31+3t
 	AND a65		; AND with memory
 	TAX		; keep this value
 	BNE g34z	; will clear Z
@@ -553,8 +544,7 @@ g34nv:
 	JMP next_op
 
 _2C:
-; BIT abs
-; +65/65/75
+; BIT abs (4)
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	STA tmptr	; store in vector
@@ -582,8 +572,7 @@ g2cnv:
 	JMP next_op
 
 _3C:
-; BIT abs, X
-; +72/72/82
+; BIT abs, X (4)
 	_PC_ADV		; get LSB
 	LDA (pc65), Y
 	CLC		; do indexing
