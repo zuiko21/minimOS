@@ -1,7 +1,7 @@
 ; VirtualDurango emulator for DurangoPLUS! *** COMPACT VERSION ***
 ; v0.1a2
 ; (c) 2016-2024 Carlos J. Santisteban
-; last modified 20241011-1002
+; last modified 20241011-1418
 ; needs at least 128K RAM
 
 ; ** some useful macros **
@@ -164,16 +164,11 @@ _87:_8F:_97:_9F:_A7:_AF:_B7:_BF:_C7:_CF:_D7:_DF:_E7:_EF:_F7:_FF:
 #endif
 ; continue execution via JMP next_op, will not arrive here otherwise
 next_op:
-		INY					; advance one byte (2)
-		BNE execute			; fetch next instruction if no boundary is crossed (3/2)
-; boundary crossing, simplified version
-	INC pc65 + 1			; increase MSB otherwise, faster than using 'that macro' (5)
+		_PC_ADV				; advance one byte, maybe crossing page ()
 		BNE execute			; seems to stay in a feasible area (3/2)
 	BRK						; ** otherwise is a strange ROM overrun ** TBD
 
-; *** opcode execution routines, labels must match those on tables below ***
-; illegal opcodes will seem to trigger an interupt (?) CHECK
-	_PC_ADV					; skip illegal opcode (5)
+; *** interrupt handling *** T B D * * *
 nmi65:						; hardware interrupts, when available, to be checked AFTER incrementing PC
 	LDX #NMI_VEC			; offset for NMI vector (2)
 
@@ -236,6 +231,7 @@ check_flags:
 	STA ccr65				; update CCR (3)
 	BRA next_op
 
+; *** *** opcode execution routines, labels must match those on tables below *** ***
 ; *** implicit instructions ***
 
 ; * flag settings *
@@ -597,15 +593,27 @@ g3cnv:
 
 ; * conditional branches *
 _90:
-; BCC rel
-; +16/16/20 if not taken
-; +// * if taken
+; BCC rel (2/3 if taken)
 	_PC_ADV		; PREPARE relative address
-	LDA #1		; will check C flag
+	LDA #C_FLAG		; will check C flag
 	BIT ccr65
 	BNE g90		; will not branch
-		LDA (pc65), Y
-; *** to do *** to do *** to do *** to do ***
+		LDA (pc65), Y	; take offset *** *** *** attempt for relative jump
+		TAX				; store offset safely
+		_PC_ADV			; will be executed after having read two bytes
+  		CLC
+		ADC ident, X	; actually A=A+Y
+		TXY				; recheck offset sign		
+		BMI go_back90
+			BCC exit90
+				INC pc65 + 1
+			BRA exit90
+go_back90:
+		BCS exit90		; goes backwards
+			DEC pc65 + 1
+;		BRA exit90
+exit90:
+		TAY					; new index
 		JMP execute	; PC is ready!
 g90:
 	JMP next_op
