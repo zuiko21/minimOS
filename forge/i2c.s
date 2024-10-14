@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241008-0929
+; last modified 20241014-1856
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -27,8 +27,14 @@ start:
 ; **************************
 ; *** interface routines ***
 ; **************************
-i2send:				; send byte in A
+i2send:				; *** send byte in A to address in X ***
+	PHA				; store date for later
+	TXA				; retrieve address
 	ASL				; put 0 at d0 as is a write operation
+	JSR i2write		; send this byte in A
+	PLA				; get stored data
+;	BRA i2write		; and write data afterwards
+i2write:			; *** raw byte in A sent thru I2C ***
 	TAX				; save for later
 	LDA #SCL
 	TSB IO9rtc		; make sure clock is high
@@ -53,6 +59,23 @@ sda_set:
 		TSB IO9rtc	; SCL goes high, data bit is sampled
 		DEY			; one bit less
 		BNE is_loop
+; check ACK * * * T B D * * *
+	RTS				; this does NOT send stop bit
+
+i2stop:				; *** generic send STOP condition ***
+
+i2receive:			; *** receive byte in A from address in X ***
+	TXA				; retrieve address
+	SEC				; carry on...
+	ROL				; ...put 1 at d0 as is a write operation
+	JSR i2write		; send this byte in A
+;	BRA i2read		; and read byte afterwards
+i2read:				; *** raw read into A from I2C ***
+
+; also check ACK, but if NACK received, jump to STOP
+
+i2stop:				; *** generic send STOP condition ***
+
 	TRB IO9rtc		; SCL goes low again for SDA to go low
 	LDA #SDA
 	TRB IO9rtc		; SDA goes low, prepare for STOP condition
