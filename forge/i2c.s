@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241014-1856
+; last modified 20241015-0934
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -15,6 +15,9 @@
 ; *** hardware addresses ***
 IO9rtc	= $DF97			; I2C port on FastSPI card
 
+; *** memory allocation ***
+i2str	= $FE			; global started condition
+
 ; ******************
 ; *** code start ***
 ; ******************
@@ -28,6 +31,7 @@ start:
 ; *** interface routines ***
 ; **************************
 i2send:				; *** send byte in A to address in X ***
+	STZ i2str		; clear started condition
 	PHA				; store date for later
 	TXA				; retrieve address
 	ASL				; put 0 at d0 as is a write operation
@@ -36,11 +40,22 @@ i2send:				; *** send byte in A to address in X ***
 ;	BRA i2write		; and write data afterwards
 i2write:			; *** raw byte in A sent thru I2C ***
 	TAX				; save for later
-	LDA #SCL
-	TSB IO9rtc		; make sure clock is high
+; set start condition ***
+	BIT i2str		; already started?
+	BPL no_str		; if so, do restart
+		LDA #SDA
+		TSB IO9rtc	; set SDA
+		LDA #SCL
+		TSB IO9rtc	; set SCL
+		JSR clk_str	; clock stretching!
+no_str:
+	JSR arbitr		; check if arbitration was lost
 	LDA #SDA
-	TSB IO9rtc
 	TRB IO9rtc		; high-to-low SDA is START condition
+	DEC i2str		; dangerously set as started... and some delay as requested
+	LDA #SCL
+	TRB IO9rtc		; clear SCL as well
+; end of start condition ***
 	LDY #8			; number of bits per byte
 is_loop:
 		TXA			; get remaining bits
@@ -62,8 +77,6 @@ sda_set:
 ; check ACK * * * T B D * * *
 	RTS				; this does NOT send stop bit
 
-i2stop:				; *** generic send STOP condition ***
-
 i2receive:			; *** receive byte in A from address in X ***
 	TXA				; retrieve address
 	SEC				; carry on...
@@ -75,12 +88,24 @@ i2read:				; *** raw read into A from I2C ***
 ; also check ACK, but if NACK received, jump to STOP
 
 i2stop:				; *** generic send STOP condition ***
-
-	TRB IO9rtc		; SCL goes low again for SDA to go low
 	LDA #SDA
 	TRB IO9rtc		; SDA goes low, prepare for STOP condition
 	LDA #SCL
-	TSB IO9rtc		; SCL goes high, maybe check it?
+	TSB IO9rtc		; SCL goes high
+	JSR clk_str		; clock stretching
 	LDA #SDA
 	TSB IO9rtc		; low-to-high transition in SDA while SCL is high, is STOP condition
+	STZ i2str		; no longer started
+;	JMP arbitr		; after delay, check for arbitration and return
+;	RTS
+
+; *** check if arbitration is lost ***
+arbitr:
+	BIT IO9rtc		; check SDA
+	BMI st_ok
+		BRK			; if zero, arbitration lost
+st_ok:
 	RTS
+
+; *** check for clock stretching with timeout ***
+clk_str:
