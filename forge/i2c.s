@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241017-1653
+; last modified 20241017-1737
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -29,6 +29,7 @@ ptr		= i2str				; temporary pointer
 i2time	= i2str+1			; timeout counter
 i2nak	= i2time+1			; NACK at d7
 nak1st	= i2nak+1			; NACK to be sent after first byte reception
+temp	= nak1st			; temporary var
 ; ******************
 ; *** code start ***
 ; ******************
@@ -240,12 +241,22 @@ bcd_disp:
 	LDY #0
 n_rast:
 		LDA numbers, X
-;		AND #COLOUR
+		EOR #$FF
+		AND #BACKGROUND
+		STA temp
+		LDA numbers, X
+		AND #COLOUR
+		ORA temp
 		STA (ptr), Y		; copy glyph raster into screen
 		INX
 		INY
 		LDA numbers, X
-;		AND #COLOUR
+		EOR #$FF
+		AND #BACKGROUND
+		STA temp
+		LDA numbers, X
+		AND #COLOUR
+		ORA temp
 		STA (ptr), Y		; copy glyph raster into screen
 		TYA
 		CLC
