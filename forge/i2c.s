@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241017-1538
+; last modified 20241017-1601
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -63,19 +63,23 @@ cls_l:
 		INX
 		BPL cls_pg			; usual fill screen
 ; TEST CODE
-	LDA #$3A				; somewhat centered
+	LDA #$18				; somewhat centered
 	STY ptr
 test_l:
 		LDX #$6C
 		STA ptr
 		STX ptr+1
 		PHA
-		LDA #5
+		AND #$0F
+		CMP #$0A
+		BCC dec_ok
+			SBC #$0A
+dec_ok:
 		JSR bcd_disp
 		PLA
 		INC
 		INC
-		CMP #$46
+		CMP #$28
 		BCC test_l
 	BRK
 ; *** I2C-RTC test suite ***
@@ -194,13 +198,14 @@ isr:
 	LDA $0103, X			; stored P
 	AND $10					; B flag
 	BEQ exit				; not BRK, restore
+lock:
 				INX
-				BNE isr
+				BNE lock
 			INY
-			BNE isr			; usual delay
+			BNE lock		; usual delay
 		INC
 		STA IOAie			; will toggle error LED
-		BRA isr				; forever
+		BRA lock			; forever
 exit:
 	PLX						; restore status and return
 	PLA
@@ -218,12 +223,12 @@ bcd_disp:
 	LDY #0
 n_rast:
 		LDA numbers, X
-		AND #COLOUR
+;		AND #COLOUR
 		STA (ptr), Y		; copy glyph raster into screen
 		INX
 		INY
 		LDA numbers, X
-		AND #COLOUR
+;		AND #COLOUR
 		STA (ptr), Y		; copy glyph raster into screen
 		TYA
 		CLC
@@ -238,8 +243,6 @@ ras_nw:
 		TAX
 		CPX #140			; within valid raster? (10 numbers * 2 bytes * 7 rasters) (224 for hex)
 		BCC n_rast
-	INC ptr					; advance digit position
-	INC ptr
 	RTS
 
 numbers:
