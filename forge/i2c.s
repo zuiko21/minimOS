@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241015-1814
+; last modified 20241017-1538
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -11,7 +11,8 @@
 #define	I2C_D	%10000000
 #define	A_SPI	%00001111
 #define	RTC		$68
-
+#define	COLOUR	$FF
+#define	BACKGROUND	$EE
 ; *** hardware addresses ***
 IO8attr	= $DF80
 IO9rtc	= $DF97				; I2C port on FastSPI card
@@ -22,8 +23,9 @@ IOAie	= $DFA0
 i2str	= I2C_LOCAL
 #else
 i2str	= $FE				; global started condition
-ptr		= i2str				; temporary pointer
 #endif
+
+ptr		= i2str				; temporary pointer
 i2time	= i2str+1			; timeout counter
 
 ; ******************
@@ -51,7 +53,7 @@ reset:
 	LDX #$60				; screen start
 	LDY #0
 	STY ptr
-	LDA #$EE				; fill with fuchsia
+	LDA #BACKGROUND			; fill with fuchsia
 cls_pg:
 		STX ptr+1			; update page
 cls_l:
@@ -60,6 +62,23 @@ cls_l:
 			BNE cls_l
 		INX
 		BPL cls_pg			; usual fill screen
+; TEST CODE
+	LDA #$3A				; somewhat centered
+	STY ptr
+test_l:
+		LDX #$6C
+		STA ptr
+		STX ptr+1
+		PHA
+		LDA #5
+		JSR bcd_disp
+		PLA
+		INC
+		INC
+		CMP #$46
+		BCC test_l
+	BRK
+; *** I2C-RTC test suite ***
 start:
  	LDA #A_SPI
 	STA IO9rtc				; disable all SPI ports, just in case
@@ -74,7 +93,7 @@ i2send:						; *** send byte in A to address in X ***
 	ASL						; put 0 at d0 as is a write operation
 	JSR i2write				; send this byte in A
 	PLA						; get stored data
-;	JMP i2write				; and write data afterwards
+;	BRA i2write				; and write data afterwards
 
 i2write:					; *** raw byte in A sent thru I2C ***
 	TAX						; save for later
@@ -186,3 +205,42 @@ exit:
 	PLX						; restore status and return
 	PLA
 	RTI
+
+; **************************
+; * single number printing *
+; **************************
+; input
+;	A		BCD nibble
+;	ptr		base address
+bcd_disp:
+	ASL						; two bytes per raster
+	TAX						; first raster address
+	LDY #0
+n_rast:
+		LDA numbers, X
+		AND #COLOUR
+		STA (ptr), Y		; copy glyph raster into screen
+		INX
+		INY
+		LDA numbers, X
+		AND #COLOUR
+		STA (ptr), Y		; copy glyph raster into screen
+		TYA
+		CLC
+		ADC #63				; one raster minus 2? bytes of a number
+		TAY
+		BCC ras_nw
+			INC ptr+1
+ras_nw:
+		TXA
+		CLC
+		ADC #19				; advance to next raster in font (31 for hex)
+		TAX
+		CPX #140			; within valid raster? (10 numbers * 2 bytes * 7 rasters) (224 for hex)
+		BCC n_rast
+	INC ptr					; advance digit position
+	INC ptr
+	RTS
+
+numbers:
+	.bin	0, 0, "../../columns/art/numbers.sv20"	; generic number images, 20-byte wide
