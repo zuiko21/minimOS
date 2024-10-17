@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241017-1601
+; last modified 20241017-1653
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -18,16 +18,17 @@ IO8attr	= $DF80
 IO9rtc	= $DF97				; I2C port on FastSPI card
 IOAie	= $DFA0
 
-; *** memory allocation *** needs two bytes, not necessarily on ZP
+; *** memory allocation *** needs four bytes, not necessarily on ZP
 #ifdef	I2C_LOCAL
 i2str	= I2C_LOCAL
 #else
-i2str	= $FE				; global started condition
+i2str	= $FC				; global started condition
 #endif
 
 ptr		= i2str				; temporary pointer
 i2time	= i2str+1			; timeout counter
-
+i2nak	= i2time+1			; NACK at d7
+nak1st	= i2nak+1			; NACK to be sent after first byte reception
 ; ******************
 ; *** code start ***
 ; ******************
@@ -96,33 +97,76 @@ i2send:						; *** send byte in A to address in X ***
 	TXA						; retrieve address
 	ASL						; put 0 at d0 as is a write operation
 	JSR i2write				; send this byte in A
+; might check for NACK here...
 	PLA						; get stored data
 ;	BRA i2write				; and write data afterwards
 
 i2write:					; *** raw byte in A sent thru I2C ***
 	TAX						; save for later
-	JSR i2start				; set START condition
+	JSR i2start				; set START condition, here?
 	LDY #8					; number of bits per byte
 is_loop:
 		TXA					; get remaining bits
 		ASL					; shift MSB out
 		TAX					; keep current state
-		LDA #SCL
-		TRB IO9rtc			; clock goes low, may change data
+; write single bit from C...
 		LDA #SDA
 		BCS was_one			; if C is set, bit was 1
 			TRB IO9rtc		; otherwise will set SDA bit low
 		BRA sda_set
 was_one:
-		TSB IO9rtc			; in this case, SDA goes high
+			TSB IO9rtc		; in this case, SDA goes high
 sda_set:
+		JSR delay			; timing!
 		LDA #SCL
 		TSB IO9rtc			; SCL goes high, data bit is sampled
+		JSR clk_str			; stretching
+		BCC no_arb			; if bit is ZERO, do not check arbitration
+			JSR arbitr
+no_arb:
+		LDA #SCL
+		TRB IO9rtc			; clear SCL
+; ...bit sent
 		DEY					; one bit less
 		BNE is_loop
-; check ACK * * * T B D * * *
-	RTS						; this does NOT send stop bit
+; read NACK
+	LDA IO9rtc				; will set N if NACK
+	STA i2nak				; store flag (d7)
+;	BRA i2stop				; this will send stop bit and return
 
+i2stop:						; *** generic send STOP condition ***
+	LDA #SDA
+	TRB IO9rtc				; clear SDA, prepare for STOP condition
+	JSR delay				; timing!
+	LDA #SCL
+	TSB IO9rtc				; set SCL
+	JSR clk_str				; clock stretching and timing!
+	LDA #SDA
+	TSB IO9rtc				; low-to-high transition in SDA while SCL is high, is STOP condition
+	STZ i2str				; no longer started
+;	JMP arbitr				; after delay, check for arbitration and return
+
+arbitr:						; *** check if arbitration is lost ***
+	BIT IO9rtc				; check I2C_D
+	BMI st_ok
+		BRK					; if zero, arbitration lost
+st_ok:
+	RTS
+
+i2receive:					; *** receive byte in A from address in X ***
+	TXA						; retrieve address
+	SEC						; carry on...
+	ROL						; ...put 1 at d0 as is a write operation
+	JSR i2write				; send this byte in A
+; might check for NACK here...
+	LDA nak1st				; ...but determine whether it's a single byte transfer
+	STA i2nak
+;	BRA i2read				; and read byte afterwards
+i2read:						; *** raw read into A from I2C, sendind ACK/NACK afterwards ***
+
+; also check ACK, but if NACK received, jump to STOP
+
+; *** more useful routines ***
 i2start:					; *** generic set START condition ***
 	BIT i2str				; already started?
 	BPL no_str				; if so, do restart
@@ -143,54 +187,27 @@ no_str:
 delay:
 	RTS
 
-i2receive:					; *** receive byte in A from address in X ***
-	TXA						; retrieve address
-	SEC						; carry on...
-	ROL						; ...put 1 at d0 as is a write operation
-	JSR i2write				; send this byte in A
-;	BRA i2read				; and read byte afterwards
-i2read:						; *** raw read into A from I2C ***
-
-; also check ACK, but if NACK received, jump to STOP
-
-i2stop:						; *** generic send STOP condition ***
-	LDA #SDA
-	TRB IO9rtc				; SDA goes low, prepare for STOP condition
-	JSR delay				; timing!
-	LDA #SCL
-	TSB IO9rtc				; SCL goes high
-	JSR clk_str				; clock stretching and timing!
-	LDA #SDA
-	TSB IO9rtc				; low-to-high transition in SDA while SCL is high, is STOP condition
-	STZ i2str				; no longer started
-;	JMP arbitr				; after delay, check for arbitration and return
-
-arbitr:						; *** check if arbitration is lost ***
-	BIT IO9rtc				; check I2C_D
-	BMI st_ok
-		BRK					; if zero, arbitration lost
-st_ok:
-	RTS
-
 ; *** check for clock stretching with timeout (~25 ms, standard overhead is 22t) ***
 clk_str:
-	STZ i2time		; reset timeout counter (base loop is 342*256=87552t, 25.04 mS at least, up to 57)
+	STZ i2time				; reset timeout counter (base loop is 342*256=87552t, 25.04 mS at least, up to 57)
 str_l:
-		BIT IO9rtc	; check I2C_C (4)
-	BVS clk_ok		; already high, all OK (2)
-		PHY			; best here (3)
-		LDY #64		; inner iterations (2)
+		BIT IO9rtc			; check I2C_C (4)
+	BVS clk_ok				; already high, all OK (2)
+		PHY					; best here (3)
+		LDY #64				; inner iterations (2)
 str_il:
-			DEY		; inner loop (5*64-1=319)
+			DEY				; inner loop (5*64-1=319)
 			BNE str_il
-		PLY			; (4)
-		INC i2time	; otherwise increment counter (5 or 6)
-		BNE str_l	; (3)
-	BRK				; until timeout!
+		PLY					; (4)
+		INC i2time			; otherwise increment counter (5 or 6)
+		BNE str_l			; (3)
+	BRK						; until timeout!
 clk_ok:
 	RTS
 
+; ***********************************
 ; *** interrupt handler (for BRK) ***
+; ***********************************
 isr:
 	PHA						; let's do things right...
 	PHX
@@ -200,7 +217,7 @@ isr:
 	BEQ exit				; not BRK, restore
 lock:
 				INX
-				BNE lock
+				BNE lock	; eeeeek
 			INY
 			BNE lock		; usual delay
 		INC
