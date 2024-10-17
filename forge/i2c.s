@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241017-1737
+; last modified 20241017-1810
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -240,34 +240,29 @@ bcd_disp:
 	TAX						; first raster address
 	LDY #0
 n_rast:
-		LDA numbers, X
-		EOR #$FF
-		AND #BACKGROUND
-		STA temp
-		LDA numbers, X
-		AND #COLOUR
-		ORA temp
-		STA (ptr), Y		; copy glyph raster into screen
-		INX
-		INY
-		LDA numbers, X
-		EOR #$FF
-		AND #BACKGROUND
-		STA temp
-		LDA numbers, X
-		AND #COLOUR
-		ORA temp
-		STA (ptr), Y		; copy glyph raster into screen
+			LDA numbers, X
+			EOR #$FF
+			AND #BACKGROUND
+			STA temp		; keep background nibble
+			LDA numbers, X
+			AND #COLOUR		; foreground pixels
+			ORA temp		; mix
+			STA (ptr), Y	; copy glyph raster into screen
+			INX
+			INY
+			TYA				; check parity
+			LSR
+			BCS n_rast		; untl next even index
 		TYA
 		CLC
-		ADC #63				; one raster minus 2? bytes of a number
+		ADC #62				; one raster minus 2 bytes of a number
 		TAY
 		BCC ras_nw
 			INC ptr+1
 ras_nw:
 		TXA
 		CLC
-		ADC #19				; advance to next raster in font (31 for hex)
+		ADC #18				; advance to next raster in font (30 for hex)
 		TAX
 		CPX #140			; within valid raster? (10 numbers * 2 bytes * 7 rasters) (224 for hex)
 		BCC n_rast
