@@ -1,28 +1,41 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241017-1846
+; last modified 20241018-1211
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
 ; *** constants ***
+; bit-banging interface
 #define	SCL		%00010000
 #define	SDA		%00100000
 #define	I2C_C	%01000000
 #define	I2C_D	%10000000
 #define	A_SPI	%00001111
+; RTC I2C address
 #define	RTC_I	$68
+; RTC registers
+#define	DS_S	0
+#define	DS_M	1
+#define	DS_H	2
+#define	DS_DAY	3
+#define	DS_DATE	4
+#define	DS_MON	5
+#define	DS_YEAR	6
+#define	DS_CTL	7
+; user interface
 #define	COLOUR	$FF
 #define	BACKGROUND	$EE
+
 ; *** hardware addresses ***
 IO8attr	= $DF80
 IO9rtc	= $DF97				; I2C port on FastSPI card
 IOAie	= $DFA0
 
-; *** memory allocation *** needs four bytes, not necessarily on ZP
+; *** memory allocation *** needs seven bytes, not necessarily on ZP
 #ifdef	I2C_LOCAL
 i2str	= I2C_LOCAL
 #else
-i2str	= $FC				; global started condition
+i2str	= $F9				; global started condition
 #endif
 
 ptr		= i2str				; temporary pointer
@@ -30,6 +43,8 @@ i2time	= i2str+1			; timeout counter
 i2nak	= i2time+1			; NAK at d7
 nak1st	= i2nak+1			; NAK to be sent after first byte reception
 temp	= nak1st			; temporary var
+result	= temp+1			; stored time
+
 ; ******************
 ; *** code start ***
 ; ******************
@@ -68,23 +83,41 @@ cls_l:
 start:
 	LDA #A_SPI
 	STA IO9rtc				; disable all SPI ports, just in case
+; set address register to seconds, for the CH bit
+	LDX #RTC_I				; select address
+	LDA #DS_S				; seconds to access CH bit
+	JSR i2send				; this will set address register, no further writes
+	JSR i2stop				; end of this transfer
+; read seconds register
 	LDA #$FF				; next will be NAK
 	STA nak1st				; single-byte reception
 	LDX #RTC_I				; select address
 	JSR i2receive			; get first byte [0]
+; clear CH bit and resend register
 	AND #$7F				; make sure bit 7 (CH) is clear
 	LDX #RTC_I				; another transfer
 	JSR i2send				; this time writing
 	JSR i2stop				; send STOP as 1-byte only
 clock:
-		LDY #2				; will read bytes 0-2
-c_loop:
-			PHY
-			LDX #RTC_I
-			
-			JSR i2receive
-			
-
+; first of all, select address of seconds (first) register
+		LDX #RTC_I			; select address
+		LDA #DS_S			; seconds to access CH bit
+		JSR i2send			; this will set address register, no further writes
+		JSR i2stop			; end of this transfer
+; now copy the current values
+; first of all, selected byte
+		STZ nak1st			; multi-byte reception
+		LDX #RTC_I			; select address
+		JSR i2receive		; get first byte [0]
+		STA result			; will be stored properly!
+; now go for the remaining bytes (not worth a loop)
+		JSR i2read
+		STA result+1
+		DEC nak1st
+		JSR i2read
+		STA result+2
+; if something changed, display time
+		
 ; TEST CODE
 	LDA #$18				; somewhat centered
 	STY ptr
