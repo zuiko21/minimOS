@@ -131,7 +131,7 @@ clock:
 disp_l:
 			PHX
 			LDA result, X	; get group data
-			JSR bcd_disp	; display full number
+			JSR bcd_prn		; display full number eeeek
 			PLX
 			DEX
 			BPL disp_l		; all groups
@@ -259,7 +259,7 @@ delay:
 	RTS
 
 ; *** check for clock stretching with timeout (~25 ms, standard overhead is 22t) ***
-clk_str:
+clk_str
 	STZ i2time				; reset timeout counter (base loop is 342*256=87552t, 25.04 mS at least, up to 57)
 str_l:
 		BIT IO9rtc			; check I2C_C (4)
