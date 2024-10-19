@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241019-1832
+; last modified 20241019-1911
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -119,7 +119,7 @@ clock:
 ; now go for the remaining bytes (not worth a loop)
 		JSR i2read
 		STA result+1
-		DEC nak1st			; third and last byte
+		DEC i2nak			; third and last byte
 		JSR i2read			; this will send STOP as well
 		STA result
 ; if something changed, display time
@@ -136,33 +136,13 @@ disp_l:
 			DEX
 			BPL disp_l		; all groups
 		BRA clock
-/*
-; TEST CODE
-	LDA #$18				; somewhat centered
-	STY ptr
-test_l:
-		LDX #$6C
-		STA ptr
-		STX ptr+1
-		PHA
-		AND #$0F
-		CMP #$0A
-		BCC dec_ok
-			SBC #$0A
-dec_ok:
-		JSR bcd_disp
-		PLA
-		INC
-		INC
-		CMP #$28
-		BCC test_l
-	BRK
-*/
+
 ; **************************
 ; *** interface routines ***
 ; **************************
 i2send:						; *** send byte in A to address in X ***
 	STZ i2str				; clear started condition
+	JSR i2start				; set START condition, here?
 	PHA						; store date for later
 	TXA						; retrieve address
 	ASL						; put 0 at d0 as is a write operation
@@ -173,35 +153,17 @@ i2send:						; *** send byte in A to address in X ***
 
 i2write:					; *** raw byte in A sent thru I2C ***
 	TAX						; save for later
-	JSR i2start				; set START condition, here?
 	LDY #8					; number of bits per byte
 is_loop:
 		TXA					; get remaining bits
 		ASL					; shift MSB out
 		TAX					; keep current state
-; write single bit from C...
-		LDA #SDA
-		BCS was_one			; if C is set, bit was 1
-			TRB IO9rtc		; otherwise will set SDA bit low
-		BRA sda_set
-was_one:
-			TSB IO9rtc		; in this case, SDA goes high
-sda_set:
-		JSR delay			; timing!
-		LDA #SCL
-		TSB IO9rtc			; SCL goes high, data bit is sampled
-		JSR clk_str			; stretching
-		BCC no_arb			; if bit is ZERO, do not check arbitration
-			JSR arbitr
-no_arb:
-		LDA #SCL
-		TRB IO9rtc			; clear SCL
-; ...bit sent
+		JSR w_bit			; write single bit from C
 		DEY					; one bit less
 		BNE is_loop
 ; read NAK
-	LDA IO9rtc				; will set N if NAK
-	STA i2nak				; store flag (d7)
+	JSR r_bit				; read bit (NAK) into C
+	ROR i2nak				; store flag (d7)
 	RTS						; just end, check NAK afterwards and send STOP if needed
 
 i2receive:					; *** receive byte in A from address in X ***
@@ -214,8 +176,19 @@ i2receive:					; *** receive byte in A from address in X ***
 	STA i2nak
 ;	BRA i2read				; and read byte afterwards
 i2read:						; *** raw read into A from I2C, sendind ACK/NAK afterwards ***
-
-; also check ACK, but if NAK received, jump to STOP
+	LDA #1					; note trick to activate C upon full byte reception
+	STA temp				; reset received byte
+ir_loop:
+		JSR r_bit			; read single bit into C...
+		ROL temp			; inject received bit
+		BCC ir_loop			; until that C appears!
+; send ACK or NAK, accordingly
+	LDA i2nak				; get flag (d7)
+	ASL						; now into C
+	JSR w_bit				; send ACK/NAK
+	BIT i2nak				; recheck NAK
+		BMI i2stop			; if NAK, send STOP too
+	RTS
 
 ; *** more useful routines ***
 i2stop:						; *** generic send STOP condition ***
@@ -234,8 +207,7 @@ arbitr:						; *** check if arbitration is lost ***
 	BIT IO9rtc				; check I2C_D
 	BMI st_ok				; if zero, arbitration lost
 		LDA #$22			; red
-#echo no arbitr
-;		BRA error			; display and halt
+		BRA error			; display and halt
 st_ok:
 	RTS
 
@@ -259,8 +231,42 @@ no_str:
 delay:
 	RTS
 
+; *** write single bit from C ***
+w_bit:
+		LDA #SDA
+		BCS was_one			; if C is set, bit was 1
+			TRB IO9rtc		; otherwise will set SDA bit low
+		BRA sda_set
+was_one:
+			TSB IO9rtc		; in this case, SDA goes high
+sda_set:
+		JSR delay			; timing!
+		LDA #SCL
+		TSB IO9rtc			; SCL goes high, data bit is sampled
+		JSR clk_str			; stretching
+		BCC no_arb			; if bit is ZERO, do not check arbitration
+			JSR arbitr
+no_arb:
+		LDA #SCL
+		TRB IO9rtc			; clear SCL
+	RTS
+
+; *** read single bit into C ***
+r_bit:
+		LDA #SDA
+		TSB IO9rtc			; set SDA
+		JSR delay			; timing!
+		LDA #SCL
+		TSB IO9rtc			; set SCL
+		JSR clk_str			; stretching
+		LDA IO9rtc			; read SDA...
+		ASL					; ...and store it in C!
+		LDA #SCL
+		TRB IO9rtc			; clear SCL (should not affect C)
+	RTS
+
 ; *** check for clock stretching with timeout (~25 ms, standard overhead is 22t) ***
-clk_str
+clk_str:
 	STZ i2time				; reset timeout counter (base loop is 342*256=87552t, 25.04 mS at least, up to 57)
 str_l:
 		BIT IO9rtc			; check I2C_C (4)
