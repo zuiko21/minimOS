@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241018-1211
+; last modified 20241019-1809
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -23,19 +23,20 @@
 #define	DS_YEAR	6
 #define	DS_CTL	7
 ; user interface
-#define	COLOUR	$FF
+#define	COLOUR		$FF
 #define	BACKGROUND	$EE
+#define	POS_H		$6F
 
 ; *** hardware addresses ***
 IO8attr	= $DF80
 IO9rtc	= $DF97				; I2C port on FastSPI card
 IOAie	= $DFA0
 
-; *** memory allocation *** needs seven bytes, not necessarily on ZP
+; *** memory allocation *** needs eight bytes, not necessarily on ZP
 #ifdef	I2C_LOCAL
 i2str	= I2C_LOCAL
 #else
-i2str	= $F9				; global started condition
+i2str	= $F8				; global started condition
 #endif
 
 ptr		= i2str				; temporary pointer
@@ -44,6 +45,7 @@ i2nak	= i2time+1			; NAK at d7
 nak1st	= i2nak+1			; NAK to be sent after first byte reception
 temp	= nak1st			; temporary var
 result	= temp+1			; stored time
+olds	= result+3			; previous seconds
 
 ; ******************
 ; *** code start ***
@@ -84,20 +86,24 @@ start:
 	LDA #A_SPI
 	STA IO9rtc				; disable all SPI ports, just in case
 ; set address register to seconds, for the CH bit
-	LDX #RTC_I				; select address
-	LDA #DS_S				; seconds to access CH bit
+	LDX #RTC_I				; select device address
+	LDA #DS_S				; select seconds to access CH bit
 	JSR i2send				; this will set address register, no further writes
 	JSR i2stop				; end of this transfer
 ; read seconds register
 	LDA #$FF				; next will be NAK
 	STA nak1st				; single-byte reception
-	LDX #RTC_I				; select address
-	JSR i2receive			; get first byte [0]
+	LDX #RTC_I				; select device address
+	JSR i2receive			; get first byte [0] and send STOP afterwards
 ; clear CH bit and resend register
 	AND #$7F				; make sure bit 7 (CH) is clear
+	PHA						; keep register value eeeeek
 	LDX #RTC_I				; another transfer
-	JSR i2send				; this time writing
-	JSR i2stop				; send STOP as 1-byte only
+	LDA #DS_S				; seconds to access CH bit
+	JSR i2send				; write both device and register addresses
+	PLA						; retrieve actual register value
+	JSR i2write				; write it
+	JSR i2stop				; both addresses and data have been transferred
 clock:
 ; first of all, select address of seconds (first) register
 		LDX #RTC_I			; select address
@@ -108,16 +114,29 @@ clock:
 ; first of all, selected byte
 		STZ nak1st			; multi-byte reception
 		LDX #RTC_I			; select address
-		JSR i2receive		; get first byte [0]
-		STA result			; will be stored properly!
+		JSR i2receive		; set device and get first byte [0]
+		STA result+2		; will be stored reversed!
 ; now go for the remaining bytes (not worth a loop)
 		JSR i2read
 		STA result+1
-		DEC nak1st
-		JSR i2read
-		STA result+2
+		DEC nak1st			; third and last byte
+		JSR i2read			; this will send STOP as well
+		STA result
 ; if something changed, display time
-		
+		LDA result+2		; check seconds
+		CMP olds			; same as before?
+	BEQ clock				; check again!
+		STA olds			; update displayed time
+		LDX #2				; offset group
+disp_l:
+			PHX
+			LDA result, X	; get group data
+			JSR bcd_disp	; display full number
+			PLX
+			DEX
+			BPL disp_l		; all groups
+		BRA clock
+/*
 ; TEST CODE
 	LDA #$18				; somewhat centered
 	STY ptr
@@ -138,7 +157,7 @@ dec_ok:
 		CMP #$28
 		BCC test_l
 	BRK
-
+*/
 ; **************************
 ; *** interface routines ***
 ; **************************
@@ -199,6 +218,26 @@ i2read:						; *** raw read into A from I2C, sendind ACK/NAK afterwards ***
 ; also check ACK, but if NAK received, jump to STOP
 
 ; *** more useful routines ***
+i2stop:						; *** generic send STOP condition ***
+	LDA #SDA
+	TRB IO9rtc				; clear SDA, prepare for STOP condition
+	JSR delay				; timing!
+	LDA #SCL
+	TSB IO9rtc				; set SCL
+	JSR clk_str				; clock stretching and timing!
+	LDA #SDA
+	TSB IO9rtc				; low-to-high transition in SDA while SCL is high, is STOP condition
+	STZ i2str				; no longer started
+;	JMP arbitr				; after delay, check for arbitration and return
+
+arbitr:						; *** check if arbitration is lost ***
+	BIT IO9rtc				; check I2C_D
+	BMI st_ok				; if zero, arbitration lost
+		LDA #$22			; red
+		BRA error			; display and halt
+st_ok:
+	RTS
+
 i2start:					; *** generic set START condition ***
 	BIT i2str				; already started?
 	BPL no_str				; if so, do restart
@@ -219,25 +258,6 @@ no_str:
 delay:
 	RTS
 
-i2stop:						; *** generic send STOP condition ***
-	LDA #SDA
-	TRB IO9rtc				; clear SDA, prepare for STOP condition
-	JSR delay				; timing!
-	LDA #SCL
-	TSB IO9rtc				; set SCL
-	JSR clk_str				; clock stretching and timing!
-	LDA #SDA
-	TSB IO9rtc				; low-to-high transition in SDA while SCL is high, is STOP condition
-	STZ i2str				; no longer started
-;	JMP arbitr				; after delay, check for arbitration and return
-
-arbitr:						; *** check if arbitration is lost ***
-	BIT IO9rtc				; check I2C_D
-	BMI st_ok
-		BRK					; if zero, arbitration lost
-st_ok:
-	RTS
-
 ; *** check for clock stretching with timeout (~25 ms, standard overhead is 22t) ***
 clk_str:
 	STZ i2time				; reset timeout counter (base loop is 342*256=87552t, 25.04 mS at least, up to 57)
@@ -252,9 +272,18 @@ str_il:
 		PLY					; (4)
 		INC i2time			; otherwise increment counter (5 or 6)
 		BNE str_l			; (3)
-	BRK						; until timeout!
+	LDA #$11				; timeout is mid green
+		BRA error			; display and halt
 clk_ok:
 	RTS
+
+error:						; *** display colour band and halt ***
+	LDX #0
+err_l:
+		STA $7200, X		; fill part of screen
+		INX
+		BNE err_l
+	BRK						; halt!
 
 ; ***********************************
 ; *** interrupt handler (for BRK) ***
@@ -279,13 +308,41 @@ exit:
 	PLA
 	RTI
 
+; ***************************
+; * print BCD value in byte *
 ; **************************
+; input
+;	A		BCD byte
+;	X		group offset (0=hours, 1=minutes, 2=seconds)
+bcd_prn:
+	TAY						; keep value while address is computed
+	LDA #POS_H				; check base address for this group
+	STA ptr+1				; store base pointer
+	LDA pos_l, X
+	STA ptr
+	TYA
+	PHA						; whole byte must be kept
+	LSR
+	LSR
+	LSR
+	LSR						; keep high nibble for now
+	JSR bcd_disp			; display it
+	LDA #POS_H				; recheck base address for this group
+	STA ptr+1				; store base pointer
+	LDA pos_l, X
+	CLC
+	ADC #2					; next figure is two bytes to the right
+	STA ptr
+	PLA						; retrieve full byte...
+	AND #$F					; ...but keep LSN only, display and return
+;	BRA bcd_disp
+
 ; * single number printing *
-; **************************
 ; input
 ;	A		BCD nibble
 ;	ptr		base address
 bcd_disp:
+	PHX						; for safe operation of caller
 	ASL						; two bytes per raster
 	TAX						; first raster address
 	LDY #0
@@ -316,7 +373,15 @@ ras_nw:
 		TAX
 		CPX #140			; within valid raster? (10 numbers * 2 bytes * 7 rasters) (224 for hex)
 		BCC n_rast
+	PLX						; restore status!
 	RTS
+code_end:
 
+; ********************
+; *** diverse data ***
+; ********************
+pos_l:
+	.byt	$18, $1E, $24	; horizontal positions of groups, somewhat centered
 numbers:
 	.bin	0, 0, "../../columns/art/numbers.sv20"	; generic number images, 20-byte wide
+file_end:
