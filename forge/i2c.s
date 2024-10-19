@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241019-2015
+; last modified 20241019-2051
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -10,7 +10,7 @@
 #define	SDA		%00100000
 #define	I2C_C	%01000000
 #define	I2C_D	%10000000
-#define	A_SPI	%00001111
+#define	A_SPI	%00111111
 ; RTC I2C address
 #define	RTC_I	$68
 ; RTC registers
@@ -32,18 +32,18 @@ IO8attr	= $DF80
 IO9rtc	= $DF97				; I2C port on FastSPI card
 IOAie	= $DFA0
 
-; *** memory allocation *** needs eight bytes, not necessarily on ZP
+; *** memory allocation *** needs nine bytes, not necessarily on ZP
 #ifdef	I2C_LOCAL
 i2str	= I2C_LOCAL
 #else
-i2str	= $F8				; global started condition
+i2str	= $F7				; global started condition
 #endif
 
 ptr		= i2str				; temporary pointer
 i2time	= i2str+1			; timeout counter
 i2nak	= i2time+1			; NAK at d7
 nak1st	= i2nak+1			; NAK to be sent after first byte reception
-temp	= nak1st			; temporary var
+temp	= nak1st+1			; temporary var EEEK
 result	= temp+1			; stored time
 olds	= result+3			; previous seconds
 
@@ -125,6 +125,7 @@ clock:
 ; if something changed, display time
 		LDA result+2		; check seconds
 		CMP olds			; same as before?
+;#echo cont display
 	BEQ clock				; check again!
 		STA olds			; update displayed time
 		LDX #2				; offset group
