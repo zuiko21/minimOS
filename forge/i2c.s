@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241019-1809
+; last modified 20241019-1832
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -234,7 +234,8 @@ arbitr:						; *** check if arbitration is lost ***
 	BIT IO9rtc				; check I2C_D
 	BMI st_ok				; if zero, arbitration lost
 		LDA #$22			; red
-		BRA error			; display and halt
+#echo no arbitr
+;		BRA error			; display and halt
 st_ok:
 	RTS
 
@@ -293,7 +294,7 @@ isr:
 	PHX
 	TSX
 	LDA $0103, X			; stored P
-	AND $10					; B flag
+	AND #$10				; B flag EEEEEK
 	BEQ exit				; not BRK, restore
 lock:
 				INX
