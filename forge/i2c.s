@@ -207,7 +207,8 @@ arbitr:						; *** check if arbitration is lost ***
 	BIT IO9rtc				; check I2C_D
 	BMI st_ok				; if zero, arbitration lost
 		LDA #$22			; red
-		BRA error			; display and halt
+#echo no arb
+;		BRA error			; display and halt
 st_ok:
 	RTS
 
