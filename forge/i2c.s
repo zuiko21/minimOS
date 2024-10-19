@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241019-1911
+; last modified 20241019-2015
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -175,7 +175,7 @@ i2receive:					; *** receive byte in A from address in X ***
 	LDA nak1st				; ...but determine whether it's a single byte transfer
 	STA i2nak
 ;	BRA i2read				; and read byte afterwards
-i2read:						; *** raw read into A from I2C, sendind ACK/NAK afterwards ***
+i2read:						; *** raw read into A from I2C, sending ACK/NAK afterwards ***
 	LDA #1					; note trick to activate C upon full byte reception
 	STA temp				; reset received byte
 ir_loop:
@@ -188,6 +188,7 @@ ir_loop:
 	JSR w_bit				; send ACK/NAK
 	BIT i2nak				; recheck NAK
 		BMI i2stop			; if NAK, send STOP too
+	LDA temp				; return received byte EEEEEEEEEEEEEEK
 	RTS
 
 ; *** more useful routines ***
