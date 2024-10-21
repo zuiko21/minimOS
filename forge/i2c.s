@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241021-1805
+; last modified 20241021-1838
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -208,7 +208,9 @@ i2stop:						; *** generic send STOP condition ***
 	LDA #SDA
 	TSB IO9rtc				; low-to-high transition in SDA while SCL is high, is STOP condition
 	STZ i2str				; no longer started
-;	JMP arbitr				; after delay, check for arbitration and return
+;	BRA arbitr				; after delay, check for arbitration and return
+#echo no stop arb
+rts
 
 arbitr:						; *** check if arbitration is lost ***
 	BIT IO9rtc				; check I2C_D
@@ -220,8 +222,9 @@ st_ok:
 	RTS
 
 i2start:					; *** generic set START condition ***
-	BIT i2str				; already started?
-	BPL no_str				; if so, do restart
+#echo no restart
+;	BIT i2str				; already started?
+;	BPL no_str				; if so, do restart
 		LDA #SDA
 		TSB IO9rtc			; set SDA
 		JSR delay			; ensure timing!
@@ -229,7 +232,7 @@ i2start:					; *** generic set START condition ***
 		TSB IO9rtc			; set SCL
 		JSR clk_str			; clock stretching! and right timing!
 no_str:
-	JSR arbitr				; check if arbitration was lost
+;	JSR arbitr				; check if arbitration was lost
 	LDA #SDA
 	TRB IO9rtc				; high-to-low SDA is START condition
 	DEC i2str				; dangerously set as started... and some delay as requested
@@ -252,8 +255,9 @@ sda_set:
 		LDA #SCL
 		TSB IO9rtc			; SCL goes high, data bit is sampled
 		JSR clk_str			; stretching
-		BCC no_arb			; if bit is ZERO, do not check arbitration
-			JSR arbitr
+#echo no write arb
+;		BCC no_arb			; if bit is ZERO, do not check arbitration
+;			JSR arbitr
 no_arb:
 		LDA #SCL
 		TRB IO9rtc			; clear SCL
