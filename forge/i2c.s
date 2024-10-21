@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241019-2051
+; last modified 20241021-0715
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -188,7 +188,9 @@ ir_loop:
 	ASL						; now into C
 	JSR w_bit				; send ACK/NAK
 	BIT i2nak				; recheck NAK
-		BMI i2stop			; if NAK, send STOP too
+	BPL no_stop
+		JSR i2stop			; if NAK, send STOP too... but finish reading afterwards!
+no_stop:
 	LDA temp				; return received byte EEEEEEEEEEEEEEK
 	RTS
 
