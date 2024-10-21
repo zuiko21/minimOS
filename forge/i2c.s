@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241021-0715
+; last modified 20241021-1805
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -95,6 +95,8 @@ start:
 	STA nak1st				; single-byte reception
 	LDX #RTC_I				; select device address
 	JSR i2receive			; get first byte [0] and send STOP afterwards
+#echo addr+rcv1
+brk
 ; clear CH bit and resend register
 	AND #$7F				; make sure bit 7 (CH) is clear
 	PHA						; keep register value eeeeek
@@ -143,8 +145,8 @@ disp_l:
 ; **************************
 i2send:						; *** send byte in A to address in X ***
 	STZ i2str				; clear started condition
+	PHA						; store date for later EEEEEK
 	JSR i2start				; set START condition, here?
-	PHA						; store date for later
 	TXA						; retrieve address
 	ASL						; put 0 at d0 as is a write operation
 	JSR i2write				; send this byte in A
@@ -176,6 +178,7 @@ i2receive:					; *** receive byte in A from address in X ***
 	LDA nak1st				; ...but determine whether it's a single byte transfer
 	STA i2nak
 ;	BRA i2read				; and read byte afterwards
+
 i2read:						; *** raw read into A from I2C, sending ACK/NAK afterwards ***
 	LDA #1					; note trick to activate C upon full byte reception
 	STA temp				; reset received byte
@@ -211,8 +214,8 @@ arbitr:						; *** check if arbitration is lost ***
 	BIT IO9rtc				; check I2C_D
 	BMI st_ok				; if zero, arbitration lost
 		LDA #$22			; red
-#echo no arb
-;		BRA error			; display and halt
+;#echo no arb
+		BRA error			; display and halt
 st_ok:
 	RTS
 
