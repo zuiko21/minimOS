@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241021-1838
+; last modified 20241024-1830
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -8,11 +8,12 @@
 ; bit-banging interface
 #define	SCL		%00010000
 #define	SDA		%00100000
-#define	I2C_C	%01000000
-#define	I2C_D	%10000000
+;define	I2C_C	%01000000
+;define	I2C_D	%10000000
 #define	A_SPI	%00111111
-; RTC I2C address
-#define	RTC_I	$68
+; RTC I2C address (with R/W bit)
+#define	RTC_W	%11010000
+#define	RTC_R	%11010001
 ; RTC registers
 #define	DS_S	0
 #define	DS_M	1
@@ -27,24 +28,25 @@
 #define	BACKGROUND	$EE
 #define	POS_H		$6F
 
-; *** hardware addresses ***
+; *** hardware & firmware addresses ***
+fw_irq	= $0200				; standard IRQ vector
+fw_nmi	= $0202				; standard NMI vector
+screen	= $6000				; standard screen
 IO8attr	= $DF80
 IO9rtc	= $DF97				; I2C port on FastSPI card
 IOAie	= $DFA0
 
 ; *** memory allocation *** needs nine bytes, not necessarily on ZP
 #ifdef	I2C_LOCAL
-i2str	= I2C_LOCAL
+rcvd	= I2C_LOCAL
 #else
-i2str	= $F7				; global started condition
+rcvd	= $F7				; received byte
 #endif
 
-ptr		= i2str				; temporary pointer
-i2time	= i2str+1			; timeout counter
+ptr		= rcvd+1			; temporary pointer
+i2time	= ptr+2				; timeout counter
 i2nak	= i2time+1			; NAK at d7
-nak1st	= i2nak+1			; NAK to be sent after first byte reception
-temp	= nak1st+1			; temporary var EEEK
-result	= temp+1			; stored time
+result	= i2nak+1			; stored time
 olds	= result+3			; previous seconds
 
 ; ******************
@@ -58,19 +60,19 @@ reset:
 	LDX #$FF
 	TXS
 	STX IOAie				; Durango specifics
-	LDA #$38				; colour mode
+	LDA #$38				; colour mode, screen 3 as usual
 	STA IO8attr
 	LDX #>isr				; BRK handler
 	LDY #<isr
-	STY $0200
-	STX $0201				; set IRQ vector
+	STY fw_irq
+	STX fw_irq+1			; set IRQ vector
 	LDX #>reset				; warm reset
 	LDY #<reset
-	STY $0202
-	STX $0203				; set NMI vector
+	STY fw_nmi
+	STX fw_nmi+1			; set NMI vector
 ; fill the screen
-	LDX #$60				; screen start
-	LDY #0
+	LDX #>screen			; screen start
+	LDY #0					; MUST be zero!
 	STY ptr
 	LDA #BACKGROUND			; fill with fuchsia
 cls_pg:
@@ -86,48 +88,55 @@ start:
 	LDA #A_SPI
 	STA IO9rtc				; disable all SPI ports, just in case
 ; set address register to seconds, for the CH bit
-	LDX #RTC_I				; select device address
-	LDA #DS_S				; select seconds to access CH bit
+	JSR i2start				; set START condition
+	LDA #RTC_W				; select device address for write
+	JSR i2send
+	LDA #DS_S				; select seconds register to access CH bit
 	JSR i2send				; this will set address register, no further writes
 	JSR i2stop				; end of this transfer
 ; read seconds register
+	JSR i2start				; set START condition
+	LDA #RTC_R				; select device address for future read
+	JSR i2send
 	LDA #$FF				; next will be NAK
-	STA nak1st				; single-byte reception
-	LDX #RTC_I				; select device address
+	STA i2nak				; single-byte reception
 	JSR i2receive			; get first byte [0] and send STOP afterwards
-#echo addr+rcv1
-brk
 ; clear CH bit and resend register
 	AND #$7F				; make sure bit 7 (CH) is clear
 	PHA						; keep register value eeeeek
-	LDX #RTC_I				; another transfer
-	LDA #DS_S				; seconds to access CH bit
-	JSR i2send				; write both device and register addresses
-	PLA						; retrieve actual register value
-	JSR i2write				; write it
-	JSR i2stop				; both addresses and data have been transferred
+	JSR i2start				; set START condition
+	LDA #RTC_W				; select device address for write
+	JSR i2send
+	LDA #DS_S				; select seconds register to access CH bit
+	JSR i2send				; this will set address register...
+	PLA						; ...retrieve actual register value...
+	JSR i2send				; ...and write it
+	JSR i2stop				; end of this transfer
 clock:
 ; first of all, select address of seconds (first) register
-		LDX #RTC_I			; select address
-		LDA #DS_S			; seconds to access CH bit
-		JSR i2send			; this will set address register, no further writes
+		JSR i2start			; set START condition
+		LDA #RTC_W			; select device address for write
+		JSR i2send
+		LDA #DS_S			; select seconds register
+		JSR i2send			; this will set address register
 		JSR i2stop			; end of this transfer
 ; now copy the current values
+		JSR i2start			; set START condition
 ; first of all, selected byte
-		STZ nak1st			; multi-byte reception
-		LDX #RTC_I			; select address
-		JSR i2receive		; set device and get first byte [0]
+		LDA #RTC_R			; select device address for read
+		JSR i2send
+		STZ i2nak			; multi-byte reception
+		JSR i2receive		; get first byte
 		STA result+2		; will be stored reversed!
 ; now go for the remaining bytes (not worth a loop)
-		JSR i2read
+		JSR i2receive
 		STA result+1
 		DEC i2nak			; third and last byte
-		JSR i2read			; this will send STOP as well
+		JSR i2receive		; this will send STOP as well
 		STA result
 ; if something changed, display time
 		LDA result+2		; check seconds
 		CMP olds			; same as before?
-;#echo cont display
 	BEQ clock				; check again!
 		STA olds			; update displayed time
 		LDX #2				; offset group
@@ -143,18 +152,7 @@ disp_l:
 ; **************************
 ; *** interface routines ***
 ; **************************
-i2send:						; *** send byte in A to address in X ***
-	STZ i2str				; clear started condition
-	PHA						; store date for later EEEEEK
-	JSR i2start				; set START condition, here?
-	TXA						; retrieve address
-	ASL						; put 0 at d0 as is a write operation
-	JSR i2write				; send this byte in A
-; might check for NAK here...
-	PLA						; get stored data
-;	BRA i2write				; and write data afterwards
-
-i2write:					; *** raw byte in A sent thru I2C ***
+i2send:						; *** send byte in A ***
 	TAX						; save for later
 	LDY #8					; number of bits per byte
 is_loop:
@@ -165,36 +163,68 @@ is_loop:
 		DEY					; one bit less
 		BNE is_loop
 ; read NAK
+	LDA #SDA
+	TSB IO9rtc				; set SDA
+	LDA #SCL
+	TSB IO9rtc				; set SCL, could be done simultaneously?
+	JSR delay
 	JSR r_bit				; read bit (NAK) into C
 	ROR i2nak				; store flag (d7)
+	LDA #SCL
+	TRB IO9rtc				; SCL off!
 	RTS						; just end, check NAK afterwards and send STOP if needed
 
-i2receive:					; *** receive byte in A from address in X ***
-	TXA						; retrieve address
-	SEC						; carry on...
-	ROL						; ...put 1 at d0 as is a write operation
-	JSR i2write				; send this byte in A
-; might check for NAK here...
-	LDA nak1st				; ...but determine whether it's a single byte transfer
-	STA i2nak
-;	BRA i2read				; and read byte afterwards
+w_bit:						; *** write single bit from C ***
+	LDA #SDA
+	BCS was_one				; if C is set, bit was 1
+		TRB IO9rtc			; otherwise will set SDA bit low
+	BRA sda_set
+was_one:
+		TSB IO9rtc			; in this case, SDA goes high
+sda_set:
+	JSR delay				; timing!
+	LDA #SCL
+	TSB IO9rtc				; SCL goes high, data bit is sampled
+	JSR clk_str				; stretching, also delays
+#echo no write arb
+;		BCC no_arb			; if bit is ZERO, do not check arbitration
+;			JSR arbitr
+no_arb:
+	LDA #SCL
+	TRB IO9rtc				; clear SCL
+	JMP delay				; just in case... and return
 
-i2read:						; *** raw read into A from I2C, sending ACK/NAK afterwards ***
+i2receive:					; *** receive byte into A ***
 	LDA #1					; note trick to activate C upon full byte reception
-	STA temp				; reset received byte
+	STA rcvd				; reset received byte
+	LDA #SDA
+	TSB IO9rtc				; SDA on!
 ir_loop:
-		JSR r_bit			; read single bit into C...
-		ROL temp			; inject received bit
+		JSR r_bit			; read single bit into C
+		ROL rcvd			; inject received bit
 		BCC ir_loop			; until that C appears!
 ; send ACK or NAK, accordingly
 	LDA i2nak				; get flag (d7)
 	ASL						; now into C
 	JSR w_bit				; send ACK/NAK
+	LDA #SDA
+	TSB IO9rtc				; SDA on!
 	BIT i2nak				; recheck NAK
 	BPL no_stop
 		JSR i2stop			; if NAK, send STOP too... but finish reading afterwards!
 no_stop:
-	LDA temp				; return received byte EEEEEEEEEEEEEEK
+	LDA rcvd				; return received byte EEEEEEEEEEEEEEK
+	RTS
+
+r_bit:						; *** read single bit into C ***
+	LDA #SCL
+	TSB IO9rtc				; set SCL
+	JSR clk_str				; stretching
+	LDA IO9rtc				; read SDA...
+	ASL						; ...and store it in C
+	JSR delay				; timing!
+	LDA #SCL
+	TRB IO9rtc				; clear SCL (should not affect C)
 	RTS
 
 ; *** more useful routines ***
@@ -207,10 +237,9 @@ i2stop:						; *** generic send STOP condition ***
 	JSR clk_str				; clock stretching and timing!
 	LDA #SDA
 	TSB IO9rtc				; low-to-high transition in SDA while SCL is high, is STOP condition
-	STZ i2str				; no longer started
 ;	BRA arbitr				; after delay, check for arbitration and return
 #echo no stop arb
-rts
+	JMP delay				; in case of no arbitration check
 
 arbitr:						; *** check if arbitration is lost ***
 	BIT IO9rtc				; check I2C_D
@@ -222,59 +251,20 @@ st_ok:
 	RTS
 
 i2start:					; *** generic set START condition ***
-#echo no restart
-;	BIT i2str				; already started?
-;	BPL no_str				; if so, do restart
-		LDA #SDA
-		TSB IO9rtc			; set SDA
-		JSR delay			; ensure timing!
-		LDA #SCL
-		TSB IO9rtc			; set SCL
-		JSR clk_str			; clock stretching! and right timing!
-no_str:
+	LDA #SDA
+	TSB IO9rtc				; set SDA
+	JSR delay				; ensure timing!
+	LDA #SCL
+	TSB IO9rtc				; set SCL
+	JSR clk_str				; clock stretching! and right timing!
+#echo no start arb
 ;	JSR arbitr				; check if arbitration was lost
 	LDA #SDA
 	TRB IO9rtc				; high-to-low SDA is START condition
-	DEC i2str				; dangerously set as started... and some delay as requested
-	NOP: LDA i2str			; timing!
+	JSR delay				; timing!
 	LDA #SCL
 	TRB IO9rtc				; clear SCL as well
 delay:
-	RTS
-
-; *** write single bit from C ***
-w_bit:
-		LDA #SDA
-		BCS was_one			; if C is set, bit was 1
-			TRB IO9rtc		; otherwise will set SDA bit low
-		BRA sda_set
-was_one:
-			TSB IO9rtc		; in this case, SDA goes high
-sda_set:
-		JSR delay			; timing!
-		LDA #SCL
-		TSB IO9rtc			; SCL goes high, data bit is sampled
-		JSR clk_str			; stretching
-#echo no write arb
-;		BCC no_arb			; if bit is ZERO, do not check arbitration
-;			JSR arbitr
-no_arb:
-		LDA #SCL
-		TRB IO9rtc			; clear SCL
-	RTS
-
-; *** read single bit into C ***
-r_bit:
-		LDA #SDA
-		TSB IO9rtc			; set SDA
-		JSR delay			; timing!
-		LDA #SCL
-		TSB IO9rtc			; set SCL
-		JSR clk_str			; stretching
-		LDA IO9rtc			; read SDA...
-		ASL					; ...and store it in C!
-		LDA #SCL
-		TRB IO9rtc			; clear SCL (should not affect C)
 	RTS
 
 ; *** check for clock stretching with timeout (~25 ms, standard overhead is 22t) ***
@@ -369,10 +359,10 @@ n_rast:
 			LDA numbers, X
 			EOR #$FF
 			AND #BACKGROUND
-			STA temp		; keep background nibble
+			STA rcvd		; keep background nibble
 			LDA numbers, X
 			AND #COLOUR		; foreground pixels
-			ORA temp		; mix
+			ORA rcvd		; mix
 			STA (ptr), Y	; copy glyph raster into screen
 			INX
 			INY
