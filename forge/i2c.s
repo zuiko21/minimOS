@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241024-1830
+; last modified 20241024-1836
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -134,6 +134,9 @@ clock:
 		DEC i2nak			; third and last byte
 		JSR i2receive		; this will send STOP as well
 		STA result
+		LDA #%01000000		; but check 12/24h
+		TRB result			; clear flag for dislplay...
+		; ...and if Z, was in 12hr mode
 ; if something changed, display time
 		LDA result+2		; check seconds
 		CMP olds			; same as before?
