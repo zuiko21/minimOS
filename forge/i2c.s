@@ -1,6 +1,6 @@
 ; RTC test via the I2C inteface on FastSPI card
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241024-1836
+; last modified 20241025-1439
 
 ; send as binary blob via nanoBoot (-x 0x1000 option)
 
@@ -27,6 +27,7 @@
 #define	COLOUR		$FF
 #define	BACKGROUND	$EE
 #define	POS_H		$6F
+#define	POS_PM		$17
 
 ; *** hardware & firmware addresses ***
 fw_irq	= $0200				; standard IRQ vector
@@ -87,6 +88,7 @@ cls_l:
 start:
 	LDA #A_SPI
 	STA IO9rtc				; disable all SPI ports, just in case
+	JSR i2stop				; this might help
 ; set address register to seconds, for the CH bit
 	JSR i2start				; set START condition
 	LDA #RTC_W				; select device address for write
@@ -101,17 +103,18 @@ start:
 	LDA #$FF				; next will be NAK
 	STA i2nak				; single-byte reception
 	JSR i2receive			; get first byte [0] and send STOP afterwards
+	BPL clock				; already clear, do not change
 ; clear CH bit and resend register
-	AND #$7F				; make sure bit 7 (CH) is clear
-	PHA						; keep register value eeeeek
-	JSR i2start				; set START condition
-	LDA #RTC_W				; select device address for write
-	JSR i2send
-	LDA #DS_S				; select seconds register to access CH bit
-	JSR i2send				; this will set address register...
-	PLA						; ...retrieve actual register value...
-	JSR i2send				; ...and write it
-	JSR i2stop				; end of this transfer
+		AND #$7F			; make sure bit 7 (CH) is clear
+		PHA					; keep register value eeeeek
+		JSR i2start			; set START condition
+		LDA #RTC_W			; select device address for write
+		JSR i2send
+		LDA #DS_S			; select seconds register to access CH bit
+		JSR i2send			; this will set address register...
+		PLA					; ...retrieve actual register value...
+		JSR i2send			; ...and write it
+		JSR i2stop			; end of this transfer
 clock:
 ; first of all, select address of seconds (first) register
 		JSR i2start			; set START condition
@@ -136,7 +139,17 @@ clock:
 		STA result
 		LDA #%01000000		; but check 12/24h
 		TRB result			; clear flag for dislplay...
-		; ...and if Z, was in 12hr mode
+		BNE is_24h			; ...and if Z, was in 12hr mode
+			LSR				; now select bit D5 (AM/PM)
+			TRB result		; does not print, but check status for display
+			BNE is_pm		; EQ=am, NE=PM
+				LDA #BACKGROUND			; AM is clear
+			BRA ampm_dot
+is_pm:
+				LDA #(BACKGROUND | $FF)	; PM shows left dot in white
+ampm_dot:
+			STA (POS_H<<8)+POS_PM		; store dot
+is_24h:
 ; if something changed, display time
 		LDA result+2		; check seconds
 		CMP olds			; same as before?
@@ -393,7 +406,7 @@ code_end:
 ; *** diverse data ***
 ; ********************
 pos_l:
-	.byt	$18, $1E, $24	; horizontal positions of groups, somewhat centered
+	.byt	POS_PM+1, POS_PM+7, POS_PM+13	; horizontal positions of groups, somewhat centered
 numbers:
 	.bin	0, 0, "../../columns/art/numbers.sv20"	; generic number images, 20-byte wide
 file_end:
