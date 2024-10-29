@@ -338,7 +338,7 @@
 	(footprint "Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_AnodeUp"
 		(layer "F.Cu")
 		(uuid "0a3d11db-a722-4d34-9d13-2c3f7f427f07")
-		(at 54.61 59.69 90)
+		(at 54.61 59.055 90)
 		(descr "Diode, DO-35_SOD27 series, Axial, Vertical, pin pitch=2.54mm, , length*diameter=4*2mm^2, , http://www.diodes.com/_files/packages/DO-35.pdf")
 		(tags "Diode DO-35_SOD27 series Axial Vertical pin pitch 2.54mm  length 4mm diameter 2mm")
 		(property "Reference" "D4"
@@ -7532,7 +7532,7 @@
 	(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical"
 		(layer "F.Cu")
 		(uuid "87f8340b-1185-4683-98ee-f087aada858c")
-		(at 58.42 59.69 90)
+		(at 58.42 59.055 90)
 		(descr "Resistor, Axial_DIN0207 series, Axial, Vertical, pin pitch=2.54mm, 0.25W = 1/4W, length*diameter=6.3*2.5mm^2, http://cdn-reichelt.de/documents/datenblatt/B400/1_4W%23YAG.pdf")
 		(tags "Resistor Axial_DIN0207 series Axial Vertical pin pitch 2.54mm 0.25W = 1/4W length 6.3mm diameter 2.5mm")
 		(property "Reference" "R6"
@@ -8156,7 +8156,7 @@
 	(footprint "Package_DIP:DIP-20_W7.62mm_Socket"
 		(layer "F.Cu")
 		(uuid "a4464162-c582-4cab-b517-eac21299ff3b")
-		(at 68.58 38.1)
+		(at 68.58 36.83)
 		(descr "20-lead though-hole mounted DIP package, row spacing 7.62 mm (300 mils), Socket")
 		(tags "THT DIP DIL PDIP 2.54mm 7.62mm 300mil Socket")
 		(property "Reference" "U6"
@@ -8694,7 +8694,7 @@
 	(footprint "Diode_THT:D_DO-35_SOD27_P2.54mm_Vertical_AnodeUp"
 		(layer "F.Cu")
 		(uuid "af2bf5ca-ce32-48ae-839c-a2ac434e1293")
-		(at 52.07 59.69 90)
+		(at 52.07 59.055 90)
 		(descr "Diode, DO-35_SOD27 series, Axial, Vertical, pin pitch=2.54mm, , length*diameter=4*2mm^2, , http://www.diodes.com/_files/packages/DO-35.pdf")
 		(tags "Diode DO-35_SOD27 series Axial Vertical pin pitch 2.54mm  length 4mm diameter 2mm")
 		(property "Reference" "D5"
@@ -9143,7 +9143,7 @@
 	(footprint "Package_DIP:DIP-16_W7.62mm_Socket"
 		(layer "F.Cu")
 		(uuid "b710006e-6c6e-4f31-ae6c-9f54bfe73a2a")
-		(at 57.15 66.04)
+		(at 57.15 64.77)
 		(descr "16-lead though-hole mounted DIP package, row spacing 7.62 mm (300 mils), Socket")
 		(tags "THT DIP DIL PDIP 2.54mm 7.62mm 300mil Socket")
 		(property "Reference" "U4"
@@ -10189,7 +10189,7 @@
 	(footprint "Package_DIP:DIP-16_W7.62mm_Socket"
 		(layer "F.Cu")
 		(uuid "b8cb6efb-2908-4042-844e-b1b72a44ab5c")
-		(at 45.72 66.04)
+		(at 45.72 64.77)
 		(descr "16-lead though-hole mounted DIP package, row spacing 7.62 mm (300 mils), Socket")
 		(tags "THT DIP DIL PDIP 2.54mm 7.62mm 300mil Socket")
 		(property "Reference" "U3"
@@ -10683,7 +10683,7 @@
 	(footprint "Package_DIP:DIP-16_W7.62mm_Socket"
 		(layer "F.Cu")
 		(uuid "d1be486e-cedd-4b27-b179-8d533ac01797")
-		(at 68.58 91.44)
+		(at 68.58 88.9)
 		(descr "16-lead though-hole mounted DIP package, row spacing 7.62 mm (300 mils), Socket")
 		(tags "THT DIP DIL PDIP 2.54mm 7.62mm 300mil Socket")
 		(property "Reference" "U1"
@@ -12057,7 +12057,7 @@
 	(footprint "Package_DIP:DIP-16_W7.62mm_Socket"
 		(layer "F.Cu")
 		(uuid "eb755a3c-d590-455c-9599-0e477bcb76e6")
-		(at 68.58 66.04)
+		(at 68.58 64.77)
 		(descr "16-lead though-hole mounted DIP package, row spacing 7.62 mm (300 mils), Socket")
 		(tags "THT DIP DIL PDIP 2.54mm 7.62mm 300mil Socket")
 		(property "Reference" "U2"
@@ -12551,7 +12551,7 @@
 	(footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P2.54mm_Vertical"
 		(layer "F.Cu")
 		(uuid "f2ed851e-a824-4d6a-bea8-db4716e62da7")
-		(at 48.26 59.69 90)
+		(at 48.26 59.055 90)
 		(descr "Resistor, Axial_DIN0207 series, Axial, Vertical, pin pitch=2.54mm, 0.25W = 1/4W, length*diameter=6.3*2.5mm^2, http://cdn-reichelt.de/documents/datenblatt/B400/1_4W%23YAG.pdf")
 		(tags "Resistor Axial_DIN0207 series Axial Vertical pin pitch 2.54mm 0.25W = 1/4W length 6.3mm diameter 2.5mm")
 		(property "Reference" "R7"
