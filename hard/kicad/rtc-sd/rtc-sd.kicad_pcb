@@ -1357,7 +1357,7 @@
 			)
 		)
 		(property "Value" "SIDECAR"
-			(at 5.655 20.05 0)
+			(at 2.54 21.59 0)
 			(layer "F.SilkS")
 			(uuid "d8f2ac25-a093-40ee-99d8-1dcc5d1a0ee9")
 			(effects
@@ -5215,7 +5215,7 @@
 			)
 		)
 		(property "Value" "EXPANSION"
-			(at -5.65 20.55 0)
+			(at -3.81 21.59 0)
 			(layer "F.SilkS")
 			(uuid "11109129-6382-463c-8eac-81d6fca278b5")
 			(effects
@@ -12738,9 +12738,9 @@
 		)
 	)
 	(gr_arc
-		(start 27.94 46.355)
-		(mid 31.75 42.545)
-		(end 35.56 46.355)
+		(start 26.67 115.57)
+		(mid 30.48 111.76)
+		(end 34.29 115.57)
 		(stroke
 			(width 0.5)
 			(type default)
@@ -12749,8 +12749,8 @@
 		(uuid "1fcd14ab-87fb-4a27-9405-87b89f754a98")
 	)
 	(gr_line
-		(start 31.75 48.895)
-		(end 34.925 52.07)
+		(start 30.48 118.11)
+		(end 33.655 121.285)
 		(stroke
 			(width 0.5)
 			(type default)
@@ -12759,8 +12759,8 @@
 		(uuid "c6680c74-69f9-453b-8fa3-5e893294498f")
 	)
 	(gr_line
-		(start 31.75 48.895)
-		(end 28.575 52.07)
+		(start 30.48 118.11)
+		(end 27.305 121.285)
 		(stroke
 			(width 0.5)
 			(type default)
@@ -12769,8 +12769,8 @@
 		(uuid "cca6b2f9-4af6-4c67-b59c-72732ce41de9")
 	)
 	(gr_line
-		(start 31.75 45.72)
-		(end 31.75 48.895)
+		(start 30.48 114.935)
+		(end 30.48 118.11)
 		(stroke
 			(width 0.5)
 			(type default)
@@ -12779,8 +12779,8 @@
 		(uuid "e552ddbb-9389-47b1-af4f-e72b97477836")
 	)
 	(gr_line
-		(start 27.94 46.355)
-		(end 35.56 46.355)
+		(start 26.67 115.57)
+		(end 34.29 115.57)
 		(stroke
 			(width 0.5)
 			(type default)
@@ -12789,8 +12789,8 @@
 		(uuid "f1d7e27f-ba80-4f88-b90c-ad170d6a54a8")
 	)
 	(gr_circle
-		(center 31.75 44.45)
-		(end 33.02 44.45)
+		(center 30.48 113.665)
+		(end 31.75 113.665)
 		(stroke
 			(width 0.5)
 			(type default)
@@ -12883,6 +12883,32 @@
 		(layer "Edge.Cuts")
 		(uuid "ec2868b2-0ada-4151-8379-fdd6d8f12b66")
 	)
+	(gr_text "FastSPI\n+\nRTC"
+		(at 32.385 47.625 0)
+		(layer "F.SilkS")
+		(uuid "00aa64bd-fc83-4549-9eca-c231f4ae7770")
+		(effects
+			(font
+				(size 2.5 2.5)
+				(thickness 0.5)
+				(bold yes)
+			)
+			(justify bottom)
+		)
+	)
+	(gr_text "SD Card module"
+		(at 43.815 113.665 0)
+		(layer "F.SilkS")
+		(uuid "07ad3c21-c370-4a94-9294-e4c17cd0a9d1")
+		(effects
+			(font
+				(size 1.5 1.5)
+				(thickness 0.3)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+	)
 	(gr_text "A"
 		(at 26.035 80.645 0)
 		(layer "F.SilkS")
@@ -12930,6 +12956,19 @@
 			(justify left bottom)
 		)
 	)
+	(gr_text "DS1307"
+		(at 47.625 45.085 0)
+		(layer "F.SilkS")
+		(uuid "9a039ee7-3a59-442e-b898-a0652ebd7b4f")
+		(effects
+			(font
+				(size 1.5 1.5)
+				(thickness 0.3)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+	)
 	(gr_text "GND     +5  /CS MOSI SCL MISO GND  "
 		(at 43.18 90.805 0)
 		(layer "F.SilkS")
@@ -12940,6 +12979,45 @@
 				(thickness 0.15)
 			)
 			(justify left bottom)
+		)
+	)
+	(gr_text "@zuiko21"
+		(at 33.655 55.88 0)
+		(layer "F.SilkS")
+		(uuid "e170bc07-5bd7-4111-a0fb-f1527adabc40")
+		(effects
+			(font
+				(size 2 2)
+				(thickness 0.4)
+				(bold yes)
+			)
+			(justify bottom)
+		)
+	)
+	(gr_text "2024.11"
+		(at 67.25 34.925 0)
+		(layer "F.SilkS")
+		(uuid "e2202602-831b-4fde-a3ce-d716bfe28c48")
+		(effects
+			(font
+				(size 1.5 1.5)
+				(thickness 0.3)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "v1"
+		(at 38.735 30.48 0)
+		(layer "F.SilkS")
+		(uuid "f0cc7bf1-0e9c-4630-986d-8a667264ad67")
+		(effects
+			(font
+				(size 2 2)
+				(thickness 0.4)
+				(bold yes)
+			)
+			(justify right bottom)
 		)
 	)
 	(segment
