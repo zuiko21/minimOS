@@ -1,5 +1,4 @@
 (sym_lib_table
   (version 7)
-  (lib (name "spi-rescue")(type "KiCad")(uri "${KIPRJMOD}/spi-rescue.kicad_sym")(options "")(descr ""))
   (lib (name "rtc-sd-rescue")(type "KiCad")(uri "${KIPRJMOD}/rtc-sd-rescue.kicad_sym")(options "")(descr ""))
 )
