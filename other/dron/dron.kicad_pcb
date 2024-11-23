@@ -3572,7 +3572,7 @@
 		)
 	)
 	(gr_text "S + -"
-		(at 105.156 76.327 90)
+		(at 105.156 75.946 90)
 		(layer "F.SilkS")
 		(uuid "94e6fa81-9539-4123-b844-fcdfb74bd5b6")
 		(effects
