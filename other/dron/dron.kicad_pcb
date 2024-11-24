@@ -3593,6 +3593,18 @@
 		(layer "Edge.Cuts")
 		(uuid "fcc71376-3be1-4c03-8925-edd2cc562dac")
 	)
+	(gr_text "@pinchito"
+		(at 105.41 69.85 0)
+		(layer "B.SilkS")
+		(uuid "12e4ed89-84fb-454c-81e6-498ea80da373")
+		(effects
+			(font
+				(size 2 2)
+				(thickness 0.32)
+			)
+			(justify left bottom mirror)
+		)
+	)
 	(gr_text "Avis Quaterna"
 		(at 123.571 67.056 0)
 		(layer "B.SilkS")

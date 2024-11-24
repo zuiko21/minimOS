@@ -13632,6 +13632,7 @@
 	(symbol
 		(lib_id "Graphic:Logo_Open_Hardware_Small")
 		(at 85.09 181.61 0)
+		(mirror y)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
