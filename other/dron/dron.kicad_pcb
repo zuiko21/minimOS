@@ -2801,6 +2801,17 @@
 		(uuid "0e282aa3-1b68-404d-9f72-5d455a36d583")
 	)
 	(gr_circle
+		(center 130.429 130.4798)
+		(end 131.445 130.4798)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill none)
+		(layer "Edge.Cuts")
+		(uuid "0f474496-269a-44c8-90b0-cca8231357a8")
+	)
+	(gr_circle
 		(center 131.1402 127.8128)
 		(end 132.0038 127.8128)
 		(stroke
@@ -3053,6 +3064,28 @@
 		(layer "Edge.Cuts")
 		(uuid "52c4ebdf-0d5a-4789-aa62-d2754dbbf094")
 	)
+	(gr_circle
+		(center 130.429 56.515)
+		(end 131.445 56.515)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill none)
+		(layer "Edge.Cuts")
+		(uuid "54f176c5-7e41-456e-a347-fad036f8e7b5")
+	)
+	(gr_circle
+		(center 56.515 130.4798)
+		(end 57.531 130.4798)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill none)
+		(layer "Edge.Cuts")
+		(uuid "57567ebe-a355-46b0-8273-421e4cf62db1")
+	)
 	(gr_line
 		(start 105.044408 76.692592)
 		(end 105.044408 81.899592)
@@ -3233,6 +3266,17 @@
 		)
 		(layer "Edge.Cuts")
 		(uuid "83092aaf-fec1-45cf-af49-15874adbef27")
+	)
+	(gr_circle
+		(center 56.515 56.515)
+		(end 57.531 56.515)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill none)
+		(layer "Edge.Cuts")
+		(uuid "841aaa29-b512-4b7c-85c7-1807a39dfa9d")
 	)
 	(gr_line
 		(start 67.818 123.444)
@@ -3592,18 +3636,6 @@
 		(fill none)
 		(layer "Edge.Cuts")
 		(uuid "fcc71376-3be1-4c03-8925-edd2cc562dac")
-	)
-	(gr_text "@pinchito"
-		(at 105.41 69.85 0)
-		(layer "B.SilkS")
-		(uuid "12e4ed89-84fb-454c-81e6-498ea80da373")
-		(effects
-			(font
-				(size 2 2)
-				(thickness 0.32)
-			)
-			(justify left bottom mirror)
-		)
 	)
 	(gr_text "Avis Quaterna"
 		(at 123.571 67.056 0)
