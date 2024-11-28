@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "tri-psg-rescue")(type "KiCad")(uri "${KIPRJMOD}/tri-psg-rescue.kicad_sym")(options "")(descr ""))
+)
