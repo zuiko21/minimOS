@@ -13607,7 +13607,7 @@
 	)
 	(symbol
 		(lib_id "74xx:74LS08")
-		(at 34.29 105.41 0)
+		(at 190.5 63.5 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -13615,7 +13615,7 @@
 		(dnp no)
 		(uuid "00000000-0000-0000-0000-0000649af3b0")
 		(property "Reference" "U2"
-			(at 33.782 105.41 0)
+			(at 189.992 63.5 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13623,7 +13623,7 @@
 			)
 		)
 		(property "Value" "74HC08"
-			(at 34.29 110.998 0)
+			(at 190.5 69.088 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13631,7 +13631,7 @@
 			)
 		)
 		(property "Footprint" "Package_DIP:DIP-14_W7.62mm_Socket"
-			(at 34.29 105.41 0)
+			(at 190.5 63.5 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13640,7 +13640,7 @@
 			)
 		)
 		(property "Datasheet" "http://www.ti.com/lit/gpn/sn74LS08"
-			(at 34.29 105.41 0)
+			(at 190.5 63.5 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13649,7 +13649,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 34.29 105.41 0)
+			(at 190.5 63.5 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13918,7 +13918,7 @@
 	)
 	(symbol
 		(lib_id "74xx:74LS08")
-		(at 190.5 63.5 0)
+		(at 34.29 105.41 0)
 		(unit 4)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -13926,7 +13926,7 @@
 		(dnp no)
 		(uuid "00000000-0000-0000-0000-0000649b3031")
 		(property "Reference" "U2"
-			(at 190.5 63.5 0)
+			(at 34.29 105.41 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13934,7 +13934,7 @@
 			)
 		)
 		(property "Value" "74HC08"
-			(at 190.5 68.834 0)
+			(at 34.29 110.744 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13942,7 +13942,7 @@
 			)
 		)
 		(property "Footprint" "Package_DIP:DIP-14_W7.62mm_Socket"
-			(at 190.5 63.5 0)
+			(at 34.29 105.41 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13951,7 +13951,7 @@
 			)
 		)
 		(property "Datasheet" "http://www.ti.com/lit/gpn/sn74LS08"
-			(at 190.5 63.5 0)
+			(at 34.29 105.41 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13960,7 +13960,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 190.5 63.5 0)
+			(at 34.29 105.41 0)
 			(effects
 				(font
 					(size 1.27 1.27)

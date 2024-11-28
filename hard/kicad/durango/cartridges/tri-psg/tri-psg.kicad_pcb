@@ -1423,7 +1423,7 @@
 			)
 		)
 		(property ki_fp_filters "DIP*W7.62mm*")
-		(path "/00000000-0000-0000-0000-0000649b1041")
+		(path "/00000000-0000-0000-0000-0000649b4b15")
 		(sheetname "Root")
 		(sheetfile "tri-psg.kicad_sch")
 		(attr through_hole)
@@ -1664,7 +1664,7 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 65 "/LRDY")
+			(net 11 "/A4")
 			(pintype "input")
 			(uuid "b953be0f-6347-4cf1-9c93-9c13f899c885")
 		)
@@ -1674,7 +1674,7 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 86 "/~{L_PSG}")
+			(net 8 "/A1")
 			(pintype "input")
 			(uuid "23f66200-1993-409e-94ad-1d76645c6ad5")
 		)
@@ -1684,7 +1684,7 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 94 "/~{LOE}")
+			(net 87 "/A1·4")
 			(pintype "output")
 			(uuid "a48ed10b-1136-4b75-9928-c648b4de2215")
 		)
@@ -1765,7 +1765,7 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 87 "/A1·4")
+			(net 94 "/~{LOE}")
 			(pintype "output")
 			(uuid "41996e97-e94b-43aa-8c17-c6e5b65f9caa")
 		)
@@ -1775,7 +1775,7 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 11 "/A4")
+			(net 65 "/LRDY")
 			(pintype "input")
 			(uuid "605febdc-1fe3-4d2d-bf76-737b05e5221f")
 		)
@@ -1785,7 +1785,7 @@
 			(drill 0.8)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net 8 "/A1")
+			(net 86 "/~{L_PSG}")
 			(pintype "input")
 			(uuid "a755d6a6-8256-4288-b60d-73d6e4de9eb0")
 		)
@@ -2354,7 +2354,7 @@
 		(descr "Resistor, Axial_DIN0207 series, Axial, Vertical, pin pitch=2.54mm, 0.25W = 1/4W, length*diameter=6.3*2.5mm^2, http://cdn-reichelt.de/documents/datenblatt/B400/1_4W%23YAG.pdf")
 		(tags "Resistor Axial_DIN0207 series Axial Vertical pin pitch 2.54mm 0.25W = 1/4W length 6.3mm diameter 2.5mm")
 		(property "Reference" "R1"
-			(at 1.27 -2.37 360)
+			(at 1.27 -2.37 0)
 			(layer "F.SilkS")
 			(uuid "e6f1c85d-2a5d-400e-ae49-f3304f19dce2")
 			(effects
@@ -2365,7 +2365,7 @@
 			)
 		)
 		(property "Value" "6K8"
-			(at 1.27 2.37 360)
+			(at 1.27 2.37 0)
 			(layer "F.Fab")
 			(uuid "3cc800b3-ef6f-4612-a648-057b7f077984")
 			(effects
@@ -2502,7 +2502,7 @@
 			(uuid "61f9d1e3-7671-4fec-b91c-58dca20ea472")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 1.27 -2.37 360)
+			(at 1.27 -2.37 0)
 			(layer "F.Fab")
 			(uuid "bd2bbe8b-9ec5-4b22-ae34-ceae9bc2a639")
 			(effects
@@ -3355,7 +3355,7 @@
 			)
 		)
 		(property ki_fp_filters "R?Array?SIP*")
-		(path "/d0aa4b60-e407-418a-b1cd-17535bf1a801")
+		(path "/ae83a2c3-d47a-4f79-8d6a-6f9b186cc0bf")
 		(sheetname "Root")
 		(sheetfile "tri-psg.kicad_sch")
 		(attr through_hole)
@@ -8244,7 +8244,7 @@
 			)
 		)
 		(property ki_fp_filters "R?Array?SIP*")
-		(path "/df1a184a-c88f-4e81-a3a2-2075cbfbb8f5")
+		(path "/a9ed85ca-c970-4799-8ad1-cbdf1d90fd6c")
 		(sheetname "Root")
 		(sheetfile "tri-psg.kicad_sch")
 		(attr through_hole)
@@ -9263,7 +9263,7 @@
 		(descr "Resistor, Axial_DIN0207 series, Axial, Vertical, pin pitch=2.54mm, 0.25W = 1/4W, length*diameter=6.3*2.5mm^2, http://cdn-reichelt.de/documents/datenblatt/B400/1_4W%23YAG.pdf")
 		(tags "Resistor Axial_DIN0207 series Axial Vertical pin pitch 2.54mm 0.25W = 1/4W length 6.3mm diameter 2.5mm")
 		(property "Reference" "R2"
-			(at 1.27 -2.37 360)
+			(at 1.27 -2.37 0)
 			(layer "F.SilkS")
 			(uuid "36c52631-2bef-4e5d-bc2e-78262a4d8a0e")
 			(effects
@@ -9274,7 +9274,7 @@
 			)
 		)
 		(property "Value" "3K3"
-			(at 1.27 2.37 360)
+			(at 1.27 2.37 0)
 			(layer "F.Fab")
 			(uuid "b1103052-289f-47f2-ab11-3391bdc27027")
 			(effects
@@ -9411,7 +9411,7 @@
 			(uuid "dc2486ad-1048-4f3d-b28a-dbca3bfbe0e0")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 1.27 -2.37 360)
+			(at 1.27 -2.37 0)
 			(layer "F.Fab")
 			(uuid "702d10db-4027-43b2-bbac-4f3bb9ecdcc4")
 			(effects
@@ -12164,7 +12164,7 @@
 			)
 		)
 		(property ki_fp_filters "R?Array?SIP*")
-		(path "/a29f57b9-2c33-417c-8fda-9b1a5649b2a8")
+		(path "/da139f0d-6974-423e-814a-a7135bf57a12")
 		(sheetname "Root")
 		(sheetfile "tri-psg.kicad_sch")
 		(attr through_hole)
@@ -14730,7 +14730,7 @@
 			)
 		)
 		(property ki_fp_filters "R?Array?SIP*")
-		(path "/da45c068-9960-4f0c-adfb-88861c162829")
+		(path "/f0e89e95-be65-49d2-95f2-eabb8097ef43")
 		(sheetname "Root")
 		(sheetfile "tri-psg.kicad_sch")
 		(attr through_hole)
@@ -15514,7 +15514,7 @@
 		(descr "C, Disc series, Radial, pin pitch=5.00mm, , diameter*width=6*2.5mm^2, Capacitor, http://cdn-reichelt.de/documents/datenblatt/B300/DS_KERKO_TC.pdf")
 		(tags "C Disc series Radial pin pitch 5.00mm  diameter 6mm width 2.5mm Capacitor")
 		(property "Reference" "C2"
-			(at 2.5 -2.5 360)
+			(at 2.5 -2.5 0)
 			(layer "F.SilkS")
 			(uuid "2c06f6be-e35e-4878-81ef-cdfc155dba7a")
 			(effects
@@ -15525,7 +15525,7 @@
 			)
 		)
 		(property "Value" "22n"
-			(at 2.5 2.5 360)
+			(at 2.5 2.5 0)
 			(layer "F.Fab")
 			(uuid "2356bb26-1893-4c29-82cd-731586b16a8e")
 			(effects
@@ -15720,7 +15720,7 @@
 			(uuid "9a07e81a-9ac4-4177-b203-2f57b08f6275")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 2.5 0 360)
+			(at 2.5 0 0)
 			(layer "F.Fab")
 			(uuid "6add7be4-c87b-44cd-941d-4fa3ed46ccda")
 			(effects
@@ -15769,7 +15769,7 @@
 		(descr "CP, Radial series, Radial, pin pitch=2.50mm, , diameter=6.3mm, Electrolytic Capacitor")
 		(tags "CP Radial series Radial pin pitch 2.50mm  diameter 6.3mm Electrolytic Capacitor")
 		(property "Reference" "C3"
-			(at 1.25 -4.4 360)
+			(at 1.25 -4.4 0)
 			(layer "F.SilkS")
 			(uuid "a5aeddf2-eb52-45e7-8dc5-ba42245493df")
 			(effects
@@ -15780,7 +15780,7 @@
 			)
 		)
 		(property "Value" "470µ"
-			(at 1.25 4.4 360)
+			(at 1.25 4.4 0)
 			(layer "F.Fab")
 			(uuid "9a657e7c-4056-4cba-a4ef-6a1c7be131f7")
 			(effects
@@ -17248,7 +17248,7 @@
 			(uuid "5cea946d-4ac5-4ae6-adae-b2c9fc208c41")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 1.25 0 360)
+			(at 1.25 0 0)
 			(layer "F.Fab")
 			(uuid "a655e515-8c1a-431e-ac12-ef1a520410c2")
 			(effects
