@@ -68,7 +68,7 @@
 			(mirror no)
 			(drillshape 0)
 			(scaleselection 1)
-			(outputdirectory "")
+			(outputdirectory "gerber/")
 		)
 	)
 	(net 0 "")
@@ -9313,7 +9313,7 @@
 			)
 		)
 		(property "Value" "100n"
-			(at 2.5 0 270)
+			(at 2.5 0 -90)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(uuid "dd105ef5-3f57-45c2-9081-413cff877428")
@@ -14188,7 +14188,7 @@
 			)
 		)
 		(property "Value" "100K"
-			(at 2.667 1.143 270)
+			(at 2.667 1.143 -90)
 			(unlocked yes)
 			(layer "F.SilkS")
 			(uuid "0aa6b786-630d-49a9-9536-2e66dbd961d2")
@@ -19890,7 +19890,7 @@
 	(footprint "durango:j300"
 		(layer "B.Cu")
 		(uuid "00000000-0000-0000-0000-000064a09d17")
-		(at 68.58 123.19 90)
+		(at 106.426 99.568 90)
 		(property "Reference" "LOGO1"
 			(at 0 0 90)
 			(layer "B.SilkS")
@@ -20348,7 +20348,19 @@
 		(layer "Edge.Cuts")
 		(uuid "fdbdc136-a00e-4759-91b3-95b830989ca2")
 	)
-	(gr_text "~{IRQ} ~{IOC}  ·  +5 A14 A13 A8  A9 A11 OE  A10 CS D7  D6  D5  D4  D3 ~{RST}"
+	(gr_text "JLCJLCJLCJLC"
+		(at 50.927 146.304 -90)
+		(layer "B.SilkS")
+		(uuid "1ddff6ce-59cd-44c5-880d-a24c83bcb725")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+			(justify left bottom mirror)
+		)
+	)
+	(gr_text "~{IRQ} ~{IOC}  ·  +5 A14 A13 A8  A9 A11 ~{OE}  A10 ~{CS} D7  D6  D5  D4  D3 ~{RST}"
 		(at 35.941 105.791 270)
 		(layer "F.SilkS")
 		(uuid "1efc33d0-ec92-42e5-834e-18ffb1d54d8d")
@@ -20387,7 +20399,7 @@
 		)
 	)
 	(gr_text "v1  2024·11"
-		(at 116.84 112.395 270)
+		(at 122.047 117.983 270)
 		(layer "F.SilkS")
 		(uuid "d8ddea66-4bac-4390-be79-83820314f786")
 		(effects
