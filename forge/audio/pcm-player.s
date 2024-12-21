@@ -1,6 +1,6 @@
 ; TriPSG PCM bankswitching player (16K banks)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241220-0005
+; last modified 20241221-1021
 
 ; will use all but last page (accessed at $8000-$BFFF thus NOT affected by I/O)
 ; player code repeated at every bank
@@ -31,7 +31,7 @@ reset:
 	LDX #$FF
 	TXS						; standard 6502 init
 ; Durango init
-	STX IOAint				; turn off LED
+;	STX IOAint				; turn off LED
 	LDA #$38				; colour mode
 	STA IO8mode
 	LDA #$80				; centered zero value
@@ -73,6 +73,7 @@ clear:
 pause:
 	LDA #1					; first column
 	STA IO9kbd
+	STA IOAint				; make sure LED is off (not playing)
 wait:
 		LDA IO9kbd			; get row
 		BPL wait			; until row 8 is set (d7)
