@@ -1,10 +1,11 @@
 ; TriPSG PCM bankswitching player (16K banks)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241221-1021
+; last modified 20241222-0004
 
 ; will use all but last page (accessed at $8000-$BFFF thus NOT affected by I/O)
 ; player code repeated at every bank
 
+.(
 ; *** hardware definitions ***
 ; standard Durango hardware
 screen	= $6000
@@ -12,6 +13,9 @@ IO8mode	= $DF80
 IO9kbd	= $DF9B
 IOAint	= $DFA0
 ; Tri-PSG+PCM (or Durango PLUS) ports
+IOPSG_L	= $DFD3
+IOPSG_R	= $DFD7
+IO_PSG	= $DFDB				; PSG addresses (just to be inited)
 IOPCM	= $DFDF				; DAC output
 IObank	= $DFFF				; bankswitching cartridge
 
@@ -36,9 +40,20 @@ reset:
 	STA IO8mode
 	LDA #$80				; centered zero value
 	STA IOPCM
+; PSG init ASAP!
+	LDA #255				; mute channel 4
+psg_init:
+		STA IO_PSG
+		STA IOPSG_L
+		STA IOPSG_R			; send value to all PSGs
+		ROL screen			; extra delay
+		SEC
+		SBC #32				; next channel
+		JSR delay
+		BMI psg_init		; until all 4 channels done (every 37t)
 ; clear screen
 	LDX #>screen			; screen page
-	LDY #<screen			; must be zero!
+	LDY #0					; must be zero!
 	LDA #0					; or whatever background colour
 	STY ptr					; no need for STZ
 cl_page:
@@ -100,15 +115,20 @@ loop2:
 loop1:
 ; additional delay set here for a certain sample rate (ex. 178, 16kHz @ v2T)
 ;				JSR delay	; for 12kHz @ v2T
-				LDA screen	; +4 = 175 (remove for 12kHz)
-				LDA ptr		; +3 = 178 (remove for 12kHz)
-				LDA #10		; 10x17+1=171 (#14 for 12kHz @ v2T)
+;				LDA screen	; +4 = 175 (remove for 12kHz)
+;				LDA ptr		; +3 = 178 (remove for 12kHz)
+;				LDA #10		; 10x17+1=171 (#14 for 12kHz @ v2T)
+; another example, 87t for 12 kHz @ v1
+				JSR delay	; for 12kHz @ v1
+				LDA ptr
+				LDA ptr		; additional 18t + 4*17 +1 = 87t
+				LDA #4		; one less because of rounding!
 d_loop:
 					JSR delay		; 12n
 					DEC				; 2n
 					BNE d_loop		; 3n, total = 17n+1
 ; get samples and play them
-				LDA (ptr), Y			; 5
+				LDA (ptr), Y		; 5
 				STA IOPCM	; 4
 				INY			; 2
 				BNE loop3	; 3/2 (14)
@@ -122,11 +142,11 @@ d_loop:
 		LDX #>data			; 2
 		STX ptr+1			; 2
 		BRA loop1			; 3 (max.41)
-; *** delay routines ***
+; *** delay routine ***
 delay:
 	RTS						; 6 plus 6 of calling overhead
 
-; *** interrupt handler (emergency) ***
+; *** interrupt handler (spurious) ***
 irq:
 	RTI
 
@@ -141,5 +161,6 @@ irq:
 
 	.dsb	$FFFA-*, $FF	; fill until 6502 hard vectors
 	.word	pause			; NMI will pause, SPACE will resume/start play
-	.word	reset			; will rewind as well
+	.word	reset			; RESET will rewind and stop as well
 	.word	irq
+.)
