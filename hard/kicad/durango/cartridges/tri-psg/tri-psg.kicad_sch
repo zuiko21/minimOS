@@ -6,8 +6,8 @@
 	(paper "A4")
 	(title_block
 		(title "Tri-PSG + PCM riser card")
-		(date "2024-11-26")
-		(rev "v1")
+		(date "2024-12-22")
+		(rev "v1.1")
 		(company "@zuiko21")
 	)
 	(lib_symbols
@@ -16273,7 +16273,7 @@
 				)
 			)
 		)
-		(property "Value" "22n"
+		(property "Value" "100n"
 			(at 39.37 146.05 90)
 			(effects
 				(font
@@ -16281,7 +16281,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Capacitor_THT:C_Disc_D6.0mm_W2.5mm_P5.00mm"
+		(property "Footprint" "Capacitor_THT:C_Rect_L7.2mm_W2.5mm_P5.00mm_FKS2_FKP2_MKS2_MKP2"
 			(at 43.18 141.2748 0)
 			(effects
 				(font
@@ -16598,7 +16598,7 @@
 				)
 			)
 		)
-		(property "Value" "220K"
+		(property "Value" "47K"
 			(at 237.49 119.38 90)
 			(effects
 				(font
@@ -16887,7 +16887,7 @@
 				)
 			)
 		)
-		(property "Value" "100K"
+		(property "Value" "22K"
 			(at 137.16 113.03 90)
 			(effects
 				(font
@@ -17107,7 +17107,7 @@
 				)
 			)
 		)
-		(property "Value" "100K"
+		(property "Value" "22K"
 			(at 137.16 129.54 90)
 			(effects
 				(font
@@ -17715,7 +17715,7 @@
 				)
 			)
 		)
-		(property "Value" "33K"
+		(property "Value" "6K8"
 			(at 137.16 124.46 90)
 			(effects
 				(font
@@ -17783,11 +17783,12 @@
 				)
 			)
 		)
-		(property "Value" "100n"
+		(property "Value" "220n"
 			(at 39.37 44.45 90)
 			(effects
 				(font
 					(size 1.27 1.27)
+					(italic yes)
 				)
 			)
 		)
@@ -17851,7 +17852,7 @@
 				)
 			)
 		)
-		(property "Value" "100K"
+		(property "Value" "22K"
 			(at 137.16 118.11 90)
 			(effects
 				(font
@@ -18089,7 +18090,7 @@
 				)
 			)
 		)
-		(property "Value" "100K"
+		(property "Value" "22K"
 			(at 115.57 118.11 90)
 			(effects
 				(font
@@ -18555,7 +18556,7 @@
 				)
 			)
 		)
-		(property "Value" "100K"
+		(property "Value" "22K"
 			(at 215.9 114.3 90)
 			(effects
 				(font
@@ -18778,7 +18779,7 @@
 				)
 			)
 		)
-		(property "Value" "100K"
+		(property "Value" "22K"
 			(at 215.9 124.46 90)
 			(effects
 				(font
@@ -19606,7 +19607,7 @@
 				)
 			)
 		)
-		(property "Value" "100K"
+		(property "Value" "22K"
 			(at 215.9 140.97 90)
 			(effects
 				(font
@@ -20205,7 +20206,7 @@
 				)
 			)
 		)
-		(property "Value" "220K"
+		(property "Value" "47K"
 			(at 215.9 135.89 90)
 			(effects
 				(font
@@ -20338,7 +20339,7 @@
 				)
 			)
 		)
-		(property "Value" "220K"
+		(property "Value" "47K"
 			(at 215.9 119.38 90)
 			(effects
 				(font
@@ -20406,7 +20407,7 @@
 				)
 			)
 		)
-		(property "Value" "220K"
+		(property "Value" "47K"
 			(at 237.49 140.97 90)
 			(effects
 				(font
@@ -20694,7 +20695,7 @@
 				)
 			)
 		)
-		(property "Value" "100K"
+		(property "Value" "22K"
 			(at 215.9 130.81 90)
 			(effects
 				(font
@@ -20847,7 +20848,7 @@
 				)
 			)
 		)
-		(property "Value" "22n"
+		(property "Value" "100n"
 			(at 39.37 95.25 90)
 			(effects
 				(font
@@ -20855,7 +20856,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Capacitor_THT:C_Disc_D6.0mm_W2.5mm_P5.00mm"
+		(property "Footprint" "Capacitor_THT:C_Rect_L7.2mm_W2.5mm_P5.00mm_FKS2_FKP2_MKS2_MKP2"
 			(at 43.18 90.4748 0)
 			(effects
 				(font
