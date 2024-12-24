@@ -1,11 +1,17 @@
 ; TriPSG PCM bankswitching player (16K banks)
 ; (c) 2024 Carlos J. Santisteban
-; last modified 20241222-0004
+; last modified 20241224-1037
 
 ; will use all but last page (accessed at $8000-$BFFF thus NOT affected by I/O)
 ; player code repeated at every bank
 
 .(
+; *** speed definitions ***
+; set delay constants for TURBO and non-TURBO machines, see table below
+; now set for 12 kHz, EXACT at 3.5 MHz and very close for v1
+#define	FAST_D	49
+#define	SLOW_D	16
+
 ; *** hardware definitions ***
 ; standard Durango hardware
 screen	= $6000
@@ -20,8 +26,10 @@ IOPCM	= $DFDF				; DAC output
 IObank	= $DFFF				; bankswitching cartridge
 
 ; *** memory usage ***
+speed	= $FB				; new, delay constant for TURBO
 ptr		= $FC				; standard sysptr (memory cursor)
 bank	= $FE				; standard systmp (current bank)
+ticks	= bank				; temporary use at startup
 data	= $8000				; mirrored ROM start
 end		= $BF00				; first byte of code, not data
 
@@ -35,7 +43,6 @@ reset:
 	LDX #$FF
 	TXS						; standard 6502 init
 ; Durango init
-;	STX IOAint				; turn off LED
 	LDA #$38				; colour mode
 	STA IO8mode
 	LDA #$80				; centered zero value
@@ -51,6 +58,28 @@ psg_init:
 		SBC #32				; next channel
 		JSR delay
 		BMI psg_init		; until all 4 channels done (every 37t)
+; new, check speed
+	STX IOAint				; turn off LED and enable interrupts (still $FF)
+	LDX #0
+	LDY #0
+	STZ ticks				; reset counters
+	CLI						; interrupts are on!
+first:
+		LDA ticks			; check interrupt counter
+		BEQ first			; until first interrupt happens
+time:
+			INX
+			BNE time		; suitable 1279t delay
+		INY					; count cycle eeek
+		CMP ticks			; another change?
+		BEQ time			; if so, we know the interrupt period (1287y)
+	SEI						; no more interrupts!
+	LDA #SLOW_D				; by default, non-TURBO delay value
+	CPY #10					; TURBO threshold
+	BCC slow
+		LDA #FAST_D			; value for faster machines
+slow:
+	STA speed				; update delay constant
 ; clear screen
 	LDX #>screen			; screen page
 	LDY #0					; must be zero!
@@ -113,20 +142,25 @@ loop2:
 			LDA ptr			; 3
 			LDA ptr			; 3 (18)
 loop1:
-; additional delay set here for a certain sample rate (ex. 178, 16kHz @ v2T)
-;				JSR delay	; for 12kHz @ v2T
-;				LDA screen	; +4 = 175 (remove for 12kHz)
-;				LDA ptr		; +3 = 178 (remove for 12kHz)
-;				LDA #10		; 10x17+1=171 (#14 for 12kHz @ v2T)
-; another example, 87t for 12 kHz @ v1
-				JSR delay	; for 12kHz @ v1
-				LDA ptr
-				LDA ptr		; additional 18t + 4*17 +1 = 87t
-				LDA #4		; one less because of rounding!
+; ** ** additional delay set here for a certain sample rate ** **
+				LDA speed	; get computed constant (3)
 d_loop:
-					JSR delay		; 12n
 					DEC				; 2n
-					BNE d_loop		; 3n, total = 17n+1
+					BNE d_loop		; 3n, total = 5n+2 including LDA zp above
+; fine tune adjustments (optional)
+; ex. 12 kHz @ v2 needs 251t
+;		setting FAST_D as 50 gives 252t or 11945 Hz (-0.4%)
+;		set to 49 (247t) plus two NOPs is EXACT
+; 12 kHz @ v2 non-TURBO needs 105t
+;		setting SLOW_D as 21 gives 107t or 11824 Hz (-1.46%)
+;		set to 20 (102t) plus LDA zp is EXACT
+; alternative optimisation for 12 kHz @ v1 needs 87t
+;		setting SLOW_D as 17 is EXACT
+;			with two NOPs as desired for FAST, use 16 and will be 12094 Hz (+0.8%)
+;		but non-TURBO v2 will do 13780 Hz (+14.8%)
+;		and the rare o.c. v1, 15748 Hz (+31.2%)
+				NOP: NOP	; v2-optimised
+; ** ** end of delay block ** **
 ; get samples and play them
 				LDA (ptr), Y		; 5
 				STA IOPCM	; 4
@@ -148,6 +182,7 @@ delay:
 
 ; *** interrupt handler (spurious) ***
 irq:
+	INC ticks				; for speed check
 	RTI
 
 ; ************************
