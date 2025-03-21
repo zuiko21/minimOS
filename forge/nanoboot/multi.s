@@ -1,9 +1,9 @@
 ; Durango-X devcart SD multi-boot loader, now with sidecar/fast SPI support
-; v2.1.10 with volume-into-FAT32, Pocket and nanoBoot support!
+; v2.1.11 with volume-into-FAT32, Pocket and nanoBoot support!
 ; compatible with Chihuhua·D (nanoBoot only) and DurangoPLUS
-; (c) 2023-2024 Carlos J. Santisteban
+; (c) 2023-2025 Carlos J. Santisteban
 ; based on code from http://www.rjhcoding.com/avrc-sd-interface-1.php and https://en.wikipedia.org/wiki/Serial_Peripheral_Interface
-; last modified 20241005-1329
+; last modified 20250321-1632
 
 ; assemble from here with		xa multi.s -I ../../OS/firmware
 ; add -DSCREEN for screenshots display capability
@@ -73,6 +73,9 @@ IOAie	= $DFA0
 IOBeep	= $DFB0
 IOCart	= $DFC0
 IO_PSG	= $DFDB				; PSG riser port
+IOLPSG	= $DFD3				; left Tri-PSG address
+IORPSG	= $DFD7				; right Tri-PSG address
+IO_PCM	= $DFDF				; Tri-PSG PCM output
 ; *** Chihuahua·D VIA definitions ***
 D_IORB	= $BFF0
 D_DDRB	= $BFF2
@@ -169,7 +172,7 @@ rom_start:
 	.asc	"****"			; reserved
 	.byt	13				; [7]=NEWLINE, second magic number
 ; filename
-	.asc	"devCart/FastSPI/nanoBoot multiboot"		; C-string with filename @ [8], max 220 chars
+	.asc	"devCart/FastSPI/nanoBoot loader"		; C-string with filename @ [8], max 220 chars
 #ifdef	SCREEN
 	.asc	" & image browser"
 #endif
@@ -188,10 +191,10 @@ rom_start:
 ; NEW main commit (user field 1)
 	.asc	"$$$$$$$$"
 ; NEW coded version number
-	.word	$21CA			; 2.1f10	%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
+	.word	$21CB			; 2.1f11	%vvvvrrrrsshhbbbb, where revision = %hhrrrr, ss = %00 (alpha), %01 (beta), %10 (RC), %11 (final)
 ; date & time in MS-DOS format at byte 248 ($F8)
-	.word	$6B80			; time, 13.28		%0110 1-011 100-0 0000
-	.word	$5945			; date, 2024/10/5	%0101 100-1 010-0 0101
+	.word	$8540			; time, 16.42		%1000 0-101 010-0 0000
+	.word	$5A75			; date, 2025/3/21	%0101 101-0 011-1 0101
 ; filesize in top 32 bits (@ $FC) now including header ** must be EVEN number of pages because of 512-byte sectors
 	.word	$10000-rom_start			; filesize (rom_end is actually $10000)
 	.word	0							; 64K space does not use upper 16 bits, [255]=NUL may be third magic number
@@ -1509,7 +1512,7 @@ sd_page:
 sd_spcr:
 	.asc	13, "-----------", 13, 0
 sd_splash:
-	.asc	14,"Durango·X", 15, " bootloader 2.1.10", 13, 13, 0
+	.asc	14,"Durango·X", 15, " bootloader 2.1.11", 13, 13, 0
 sd_next:
 	.asc	13, "SELECT next ", 14, "D", 15, "evice...", 0
 sd_abort:
@@ -1676,10 +1679,14 @@ reset:
 	LDX #$FF
 	TXS						; usual 6502 stuff
 ; Durango-X specifics, including PSG mute!
+	LDA #$80				; recommended PCM value
+	STA IO_PCM
 	LDA #%10011111			; max. attenuation channel 0
 psg_mute:
-		STA IO_PSG
-		JSR psg_del			; suitable 36-cycle delay
+		STA IO_PSG			; shut down ALL PSGs for this channel
+		STA IOLPSG
+		STA IORPSG
+		JSR psg_del			; suitable 28-cycle delay
 		CLC
 		ADC #32				; next channel
 		BMI psg_mute
@@ -1758,8 +1765,8 @@ not_5x8:
 ; delay routine for PSG access
 psg_del:
 	JSR psg_rts
-	JSR psg_rts
 psg_rts:
+	NOP
 	RTS
 
 ; **************************
