@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250325-1353
+ * last modified 20250325-1359
  * */
 
 /* Libraries */
@@ -108,45 +108,19 @@ int		empty(void);		// Returns 0 unless it's empty
 
 /* ** main code ** */
 int main (void) {
-	int		opt =	OPT_NONE;
-
+// if -v					// verbose=TRUE;	printf("\nDurango-X volume creator, v1.1a1 by @zuiko21\n");	return 0;
 	init();					// Init things
-	printf("\nDurango-X volume creator, v1.0b2 by @zuiko21\n");
 // Do actual stuff
-	while (opt != OPT_EXIT) {
-		opt =	menu();		// choose task
-		switch(opt) {
-			case OPT_OPEN:	// Open volume
-				open();
-				break;
-			case OPT_LIST:	// List volume contents
-				list();
-				break;
-			case OPT_ADD:	// Add file to volume
-				add();
-				break;
-			case OPT_EXTR:	// Extract file from volume
-				extract();
-				break;
-			case OPT_DEL:	// Delete file from volume
-				delete();
-				break;
-			case OPT_SETF:	// Set free space after volume contents
-				setfree();
-				break;
-			case OPT_GEN:	// Generate volume
-				generate();
-				break;
-			case OPT_EXIT:
-				if (!confirm("Volume will be lost"))	opt = OPT_NONE;	// in case we stay
-				break;
-			default:
-				printf("\n * * * ERROR! * * *\n");
-				opt = OPT_NONE;
-		}
-	}
+// if -i, fetch name, otherwise new volume	// open(name);
+// if -l					// list();
+// for each loose file, fetch name			// add(name);
+// if -x, fetch name		// extract(name);
+// if -d, fetch name		// delete(name);
+// if -f, fetch size		// setfree(size);
+// if -o, fetch name, else name='durango.av'
+	generate(name);
 	bye();					// Clean up
-	printf("Bye!\n");
+	if (verbose)			printf("Bye!\n");
 
 	return	0;
 }
@@ -169,24 +143,6 @@ void bye(void) {			// Release heap memory * * * VERY IMPORTANT * * *
 		ptr[i] =	NULL;	// EEEEEEK
 	}
 	used = 0;				// all clear
-}
-
-int		menu(void) {		// Show menu and choose action
-	int		opt;
-
-	printf("\n1.Open volume\n");
-	printf("2.List volume contents\n");
-	printf("3.Add file to volume\n");
-	printf("4.Extract file from volume\n");
-	printf("5.Remove file from volume\n");
-	printf("6.Set free space to append after volume contents\n");
-	printf("7.Generate volume (with %d K of free space)\n",space/4);
-	printf("==========================\n");
-	printf("9.EXIT\n\n");
-	printf("Choose option: ");
-	scanf("%d", &opt);
-
-	return	opt;
 }
 
 void	open(void) {					// Open volume
