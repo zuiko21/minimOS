@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250325-1414
+ * last modified 20250325-1418
  * */
 
 /* Libraries */
@@ -108,9 +108,9 @@ int		empty(void);		// Returns 0 unless it's empty
 
 /* ** main code ** */
 int main (void) {
-// if -v					// verbose=TRUE;	printf("\nDurango-X volume creator, v1.1a1 by @zuiko21\n");	return 0;
+// if -v					// printf("\nDurango-X volume creator, v1.1a1 by @zuiko21\n");	return 0;
+// if -e					// verbose=TRUE;		// enable extended info
 	init();					// Init things
-// Do actual stuff
 // if -i, fetch name, otherwise new volume	// open(name);
 // if -l					// list();
 // for each loose file, fetch name			// add(name);
@@ -220,8 +220,7 @@ int		list(void) {		// List volume contents
 	return	0;
 }
 
-void	add(void) {			// Add file to volume
-	char			name[VOL_NLEN];		// filename
+int		add(char* name) {			// Add file to volume
 	FILE*			file;
 	byte			buffer[HD_BYTES];	// temporary header fits into a full page
 	struct header	h;					// metadata storage
@@ -230,26 +229,24 @@ void	add(void) {			// Add file to volume
 	struct stat		attrib;
 /* ***************************************** */
 	if (used >= MAXFILES) {
-		printf("\tVolume is full!\n");
-		return;
+		if (verbose)			printf("\tVolume is full!\n");
+		return -4;						// ERROR -4: no more files allowed
 	}
-	printf("File to add into volume: ");
-	scanf("%s", name);
-	printf("Opening %s... ", name);
+	if (verbose)				printf("Opening %s... ", name);
 	if ((file = fopen(name, "rb")) == NULL) {
-		printf(" NOT found\n");
-		return;
+		if (verbose)			printf(" NOT found\n");
+		return -5;						// ERROR -5: no file to add
 	}
 	printf("OK\nReading header... ");
 	if (fread(buffer, HD_BYTES, 1, file) != 1) {		// get header into buffer
 		if (!ftell(file)) {								// if it was a generic file, could be shorter than HD_BYTES
-			printf("is EMPTY!\n");						// otherwise it's an empty file!
+			if (verbose)		printf("is EMPTY!\n");	// otherwise it's an empty file!
 			fclose(file);
-			return;
+			return -6;					// ERROR -6: empty file
 		}
 	}
 	if (!getheader(buffer, &h)) {						// check header and get metadata
-		printf("GENERIC file");
+		if (verbose)			printf("GENERIC file");
 		strcpy(h.name, name);							// place supplied filename
 		h.comment[0]	= '\0';							// terminate comment EEEEK
 		fseek(file, 0, SEEK_END);
@@ -278,32 +275,35 @@ void	add(void) {			// Add file to volume
 		makeheader(buffer, &h);			// transfer header struct back into buffer
 //		h.size -= HD_BYTES;				// eeeek
 	}
-	printf("\nAdding %s (%-5.2f KiB): Allocating[%d]", h.name, h.size/1024.0, used);
+	if (verbose)				printf("\nAdding %s (%-5.2f KiB): Allocating[%d]", h.name, h.size/1024.0, used);
 	if ((ptr[used] = malloc(h.size)) == NULL) {			// Allocate dynamic memory
-		printf("\n\t*** Out of memory! ***\n");
+		if (verbose)			printf("\n\t*** Out of memory! ***\n");
 		fclose(file);
-		return;
+		return -2;						// out of memory error
 	}
-	printf(", Header");
+	if (verbose)				printf(", Header");
 	memcpy(ptr[used], buffer, HD_BYTES);				// copy preloaded header
 	if ((signature(&h) == SIG_ROM) && (h.size & 511)) {	// check for misaligned ROM images
-		printf(" *** Misaligned ROM image *** Aborting...\n\n");		// simply not accepted!
+		if (verbose)			printf(" *** Misaligned ROM image *** Aborting...\n\n");		// simply not accepted!
 		free(ptr[used]);
 		ptr[used] = NULL;								// unlikely to be a problem, but...
 		fclose(file);
-		return;
+		return -7;						// ERROR -7: misaligned ROM image
 	}
-	if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf(", Code");
-	else																printf(", Data");
+	if (verbose)
+		if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf(", Code");
+		else																printf(", Data");
 	if (fread(ptr[used]+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {	// read remaining bytes after header (computed or preloaded)
-		printf("... ERROR!\n");
+		if (verbose)			printf("... ERROR!\n");
 		free(ptr[used]);
 		ptr[used] = NULL;				// eeeeek
 	} else {
-		printf(" OK\n");
+		if (verbose)			printf(" OK\n");
 		used++;							// another file into volume
 	}
 	fclose(file);
+
+	return	0;
 }
 
 void	extract(void) {		// Extract file from volume
