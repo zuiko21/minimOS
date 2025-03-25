@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250325-1316
+ * last modified 20250325-1353
  * */
 
 /* Libraries */
@@ -83,26 +83,27 @@ struct	header {
 
 /* Global variables */
 byte*	ptr[MAXFILES];		// pointer to dynamically stored header (and file)
+char	name[VOL_NLEN];		// volume and file name storage CHECK SIZE!
 int		used;				// actual number of files
 dword	space;				// free space after contents (in 256-byte pages)
+bool	verbose;			// flag needed for message display
 
 /* Function prototypes */
 void	init(void);			// Init stuff
 void	bye(void);			// Clean up
-int		menu(void);			// Show menu and choose action
-void	open(void);			// Open volume
-void	list(void);			// List volume contents
-void	add(void);			// Add file to volume
-void	extract(void);		// Extract file from volume
-void	delete(void);		// Delete file from volume
-void	setfree(void);		// Select free space to be appended
-void	generate(void);		// Generate volume
+int		open(char* volume);	// Open volume
+int		list(void);			// List volume contents
+int		add(char* name);	// Add file to volume
+int		extract(char* name);	// Extract file from volume
+int		delete(char* name);		// Delete file from volume
+int		setfree(int kb);	// Select free space to be appended
+int		generate(char* volume);	// Generate volume
 int		getheader(byte* p, struct header* h);		// Extract header specs, returns 0 if not valid
 void	makeheader(byte* p, struct header* h);		// Generate header from struct
 int		signature(struct header* h);				// Return file type from coded signature
 void	info(struct header* h);						// Display info about header
-int		choose(char *msg);	// Choose file from list
-int		confirm(char* msg);	// Request confirmation for dangerous actions, returns 0 if rejected
+int		choose(char* name);	// Choose file from list
+int		confirm(char* name);	// Request confirmation for dangerous actions, returns 0 if rejected
 int		empty(void);		// Returns 0 unless it's empty
 
 /* ** main code ** */
