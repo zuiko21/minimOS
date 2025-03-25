@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250325-1359
+ * last modified 20250325-1407
  * */
 
 /* Libraries */
@@ -145,61 +145,60 @@ void bye(void) {			// Release heap memory * * * VERY IMPORTANT * * *
 	used = 0;				// all clear
 }
 
-void	open(void) {					// Open volume
-	char			volume[VOL_NLEN];	// volume filename
+int		open(char* volume) {						// Open volume
 	FILE*			file;
-	byte			buffer[HD_BYTES];	// temporary header fits into a full page
-	struct header	h;					// metadata storage
+	byte			buffer[HD_BYTES];				// temporary header fits into a full page
+	struct header	h;								// metadata storage
 
-	if (used) {	// there's another volume in use...
-		if (!confirm("Current volume will be lost"))	return;
-	}
-	printf("Volume name (usually 'durango.av'): ");
-	scanf("%s", volume);
-	printf("Opening %s...", volume);
+	if (verbose)			printf("Opening %s...", volume);
 	if ((file = fopen(volume, "rb")) == NULL) {
-		printf(" *** NOT found ***\n");
-		return;
+		if (verbose)		printf(" *** NOT found ***\n");
+		return -1;									// ERROR -1: source volume not found
 	}
-	printf(" OK\nReading headers...");
-	bye();					// free up dynamic memory
+	if (verbose)			printf(" OK\nReading headers...");
+	bye();											// free up dynamic memory
 	while (!feof(file)) {
 		if (fread(buffer, HD_BYTES, 1, file) != 1)	break;		// get header into buffer
 		if (!getheader(buffer, &h)) {							// check header and get metadata
-			printf("\n\t* Bad header *\n");
+			if (verbose)	printf("\n\t* Bad header *\n");
 			break;
 		}
 		if (signature(&h) == SIG_FREE) {
-			printf("\n(Skipping free space)");
+			if (verbose)	printf("\n(Skipping free space)");
 			fseek(file, h.size-HD_BYTES, SEEK_CUR);				// just skip free space!
 			continue;											// EEEEEEEK
 		}
-		printf("\nFound %s (%-5.2f KiB): Allocating", h.name, h.size/1024.0);
-		printf("[%x]",used);									// entry to be allocated
+		if (verbose) {
+			printf("\nFound %s (%-5.2f KiB): Allocating", h.name, h.size/1024.0);
+			printf("[%x]",used);								// entry to be allocated
+		}
 		if (h.size & 511) {	// uneven size in header, must be rounded up as was padded in volume BEFORE ALLOCATING EEEEEEEEEEEEEEEEKKKKKKKK
 			h.size = (h.size + 512) & 0xFFFFFE00;				// sector-aligned size
 		}
 		if ((ptr[used] = malloc(h.size)) == NULL) {				// Allocate dynamic memory
-			printf("\n\t*** Out of memory! ***\n");
-			fclose(file);				// eeek
-			return;
+			if (verbose)	printf("\n\t*** Out of memory! ***\n");
+			fclose(file);										// eeek
+			return -2;											// ERROR -2: out of memory
 		}
-		printf(", Header");
+		if (verbose)		printf(", Header");
 		memcpy(ptr[used], buffer, HD_BYTES);					// copy preloaded header
 //		for (i=0; i<HD_BYTES; i++)		ptr[used][i] = buffer[i];	// * * * B A D * * * EEEEK
-		if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf(", Code");
-		else																printf(", Data");
+		if (verbose)
+			if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf(", Code");
+			else																printf(", Data");
 		if (fread(ptr[used]+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {		// read remaining bytes 
-			printf("... *** ERROR! ***");
+			if (verbose)	printf("... *** ERROR! ***");
 			free(ptr[used]);
 			ptr[used] = NULL;			// eeeeek
 		} else {
-			printf(" OK");
+			if (verbose)	printf(" OK");
 			used++;			// another file into volume
 		}
 	}
 	fclose(file);
-	printf("\n\nDone!\n");
+	if (verbose)			printf("\n\nDone!\n");
+
+	return	0;
 }
 
 void	list(void) {		// List volume contents
