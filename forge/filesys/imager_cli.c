@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250325-1407
+ * last modified 20250325-1414
  * */
 
 /* Libraries */
@@ -201,17 +201,23 @@ int		open(char* volume) {						// Open volume
 	return	0;
 }
 
-void	list(void) {		// List volume contents
+int		list(void) {		// List volume contents
 	int				i;
 	struct header	h;
 
-	if (empty())	return;
+	if (empty())	return -3;			// ERROR -3: empty volume
 	for (i=0; i<used; i++) {			// scan thru all stored headers
-		getheader(ptr[i], &h);			// get surely loaded header into local storage 
-		printf("%d: ", i+1);			// entry number (1-based)
-		info(&h);						// display all info about the file
-		printf("\n--------\n");
+		if (verbose) {					// maybe use an specific flag?
+			getheader(ptr[i], &h);		// get surely loaded header into local storage 
+			printf("%d: ", i+1);		// entry number (1-based)
+			info(&h);					// display all info about the file
+			printf("\n--------\n");
+		} else {
+			printf("%d) %s\n", i+1, ptr[i]+H_NAME);		// display SIMPLIFIED list of contents
+		}
 	}
+
+	return	0;
 }
 
 void	add(void) {			// Add file to volume
