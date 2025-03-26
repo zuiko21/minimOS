@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250326-1313
+ * last modified 20250326-1330
  * */
 
 /* Libraries */
@@ -54,6 +54,18 @@
 #define		SIG_COLOUR	6
 #define		SIG_H_RLE	7
 #define		SIG_C_RLE	8
+// Error codes
+#define		NO_VOLUME	-1
+#define		OUT_MEMORY	-2
+#define		EMPTY_VOL	-3
+#define		FILE_LIM	-4
+#define		NO_FILE		-5
+#define		EMPTY_FILE	-6
+#define		MISALGINED	-7
+#define		BAD_SELECT	-8
+#define		NO_CREATE	-9
+#define		ABORTED		-10
+#define		FREE_ERR	-11
 
 /* Custom types */
 typedef	u_int8_t		byte;
@@ -153,7 +165,7 @@ int		open(char* volume) {						// Open volume
 	if (verbose)			printf("Opening %s...", volume);
 	if ((file = fopen(volume, "rb")) == NULL) {
 		if (verbose)		printf(" *** NOT found ***\n");
-		return -1;									// ERROR -1: source volume not found
+		return NO_VOLUME;							// ERROR -1: source volume not found
 	}
 	if (verbose)			printf(" OK\nReading headers...");
 	bye();											// free up dynamic memory
@@ -178,7 +190,7 @@ int		open(char* volume) {						// Open volume
 		if ((ptr[used] = malloc(h.size)) == NULL) {				// Allocate dynamic memory
 			if (verbose)	printf("\n\t*** Out of memory! ***\n");
 			fclose(file);										// eeek
-			return -2;											// ERROR -2: out of memory
+			return OUT_MEMORY;									// ERROR -2: out of memory
 		}
 		if (verbose)		printf(", Header");
 		memcpy(ptr[used], buffer, HD_BYTES);					// copy preloaded header
@@ -205,7 +217,7 @@ int		list(void) {		// List volume contents
 	int				i;
 	struct header	h;
 
-	if (empty())	return -3;			// ERROR -3: empty volume
+	if (empty())	return EMPTY_VOL;			// ERROR -3: empty volume
 	for (i=0; i<used; i++) {			// scan thru all stored headers
 		if (verbose) {					// maybe use an specific flag?
 			getheader(ptr[i], &h);		// get surely loaded header into local storage 
@@ -230,19 +242,19 @@ int		add(char* name) {			// Add file to volume
 /* ***************************************** */
 	if (used >= MAXFILES) {
 		if (verbose)			printf("\tVolume is full!\n");
-		return -4;						// ERROR -4: no more files allowed
+		return FILE_LIM;				// ERROR -4: no more files allowed
 	}
 	if (verbose)				printf("Opening %s... ", name);
 	if ((file = fopen(name, "rb")) == NULL) {
 		if (verbose)			printf(" NOT found\n");
-		return -5;						// ERROR -5: no file to add
+		return NO_FILE;					// ERROR -5: no file to add
 	}
 	printf("OK\nReading header... ");
 	if (fread(buffer, HD_BYTES, 1, file) != 1) {		// get header into buffer
 		if (!ftell(file)) {								// if it was a generic file, could be shorter than HD_BYTES
 			if (verbose)		printf("is EMPTY!\n");	// otherwise it's an empty file!
 			fclose(file);
-			return -6;					// ERROR -6: empty file
+			return EMPTY_FILE;			// ERROR -6: empty file
 		}
 	}
 	if (!getheader(buffer, &h)) {						// check header and get metadata
@@ -279,7 +291,7 @@ int		add(char* name) {			// Add file to volume
 	if ((ptr[used] = malloc(h.size)) == NULL) {			// Allocate dynamic memory
 		if (verbose)			printf("\n\t*** Out of memory! ***\n");
 		fclose(file);
-		return -2;						// out of memory error
+		return OUT_MEMORY;				// out of memory error
 	}
 	if (verbose)				printf(", Header");
 	memcpy(ptr[used], buffer, HD_BYTES);				// copy preloaded header
@@ -288,7 +300,7 @@ int		add(char* name) {			// Add file to volume
 		free(ptr[used]);
 		ptr[used] = NULL;								// unlikely to be a problem, but...
 		fclose(file);
-		return -7;						// ERROR -7: misaligned ROM image
+		return MISALGINED;				// ERROR -7: misaligned ROM image
 	}
 	if (verbose)
 		if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf(", Code");
@@ -311,9 +323,9 @@ int		extract(char* name) {			// Extract file from volume
 	struct header	h;
 	FILE*			file;
 
-	if (empty())		return -3;		// empty volume error
+	if (empty())		return EMPTY_VOL;		// empty volume error
 	ext = choose(name);
-	if (ext < 0)		return -8;		// ERROR -8: invalid selection
+	if (ext < 0)		return BAD_SELECT;		// ERROR -8: invalid selection
 	getheader(ptr[ext], &h);			// get info for candidate
 	info(&h);
 	if (signature(&h) == SIG_FILE)		skip = HD_BYTES;		// generic files trim headers
@@ -321,7 +333,7 @@ int		extract(char* name) {			// Extract file from volume
 	if (verbose)		printf("\nWriting to file %s... ", h.name);
 	if ((file = fopen(h.name, "wb")) == NULL) {
 		if (verbose)	printf("*** Can't create ***\n");
-		return -9;						// ERROR -9: can't create file
+		return NO_CREATE;				// ERROR -9: can't create file
 	}
 	if (fwrite(ptr[ext]+skip, h.size-skip, 1, file) != 1) {		// note header removal option
 		if (verbose)	printf("*** I/O error ***\n");
@@ -337,15 +349,15 @@ int		delete(char* name) {			// Delete file from volume
 	int				i, del;
 	struct header	h;
 
-	if (empty())	return -3;			// empty volume error
+	if (empty())	return EMPTY_VOL;			// empty volume error
 	del = choose(name);
-	if (del < 0)	return -8;			// invalid selection error
+	if (del < 0)	return BAD_SELECT;			// invalid selection error
 	if (verbose) {
 		getheader(ptr[del], &h);		// get info for candidate
 		info(&h);						// display properties
 		printf("\n");
 	}
-	if (!confirm("Will REMOVE this file from volume"))	return -10;	// make sure or ERROR -10: aborted operation
+	if (!confirm("Will REMOVE this file from volume"))	return ABORTED;	// make sure or ERROR -10: aborted operation
 	// If arrived here, proceed to removal
 	free(ptr[del]);			// actual removal
 	used--;					// one less file!
@@ -356,7 +368,7 @@ int		delete(char* name) {			// Delete file from volume
 int		setfree(int kb) {				// Select free space to be appended
 	int		req;
 
-	if (kb > 16384)		return -11;		// ERROR -11: invalid free size
+	if (kb > 16384)		return FREE_ERR;		// ERROR -11: invalid free size
 	req = kb << 2						// times four
 	req--;								// minus header page
 	space = req;
@@ -364,9 +376,8 @@ int		setfree(int kb) {				// Select free space to be appended
 	return	0;
 }
 
-void	generate(void) {	// Generate volume
+int		generate(char* volume) {			// Generate volume
 	const byte		pad = 0xFF;				// padding byte
-	char			volume[VOL_NLEN];		// filename
 	FILE*			file;
 	byte			buffer[HD_BYTES];		// temporary header storage
 	struct header	h;
