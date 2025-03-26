@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250325-1418
+ * last modified 20250326-1313
  * */
 
 /* Libraries */
@@ -306,42 +306,46 @@ int		add(char* name) {			// Add file to volume
 	return	0;
 }
 
-void	extract(void) {		// Extract file from volume
+int		extract(char* name) {			// Extract file from volume
 	int				i, ext, skip;
 	struct header	h;
 	FILE*			file;
 
-	if (empty())	return;
-	ext = choose("to extract");
-	if (ext < 0)	return;				// invalid selection
+	if (empty())		return -3;		// empty volume error
+	ext = choose(name);
+	if (ext < 0)		return -8;		// ERROR -8: invalid selection
 	getheader(ptr[ext], &h);			// get info for candidate
 	info(&h);
 	if (signature(&h) == SIG_FILE)		skip = HD_BYTES;		// generic files trim headers
 	else								skip = 0;
-	printf("\nWriting to file %s... ", h.name);
+	if (verbose)		printf("\nWriting to file %s... ", h.name);
 	if ((file = fopen(h.name, "wb")) == NULL) {
-		printf("*** Can't create ***\n");
-		return;
+		if (verbose)	printf("*** Can't create ***\n");
+		return -9;						// ERROR -9: can't create file
 	}
 	if (fwrite(ptr[ext]+skip, h.size-skip, 1, file) != 1) {		// note header removal option
-		printf("*** I/O error ***\n");
+		if (verbose)	printf("*** I/O error ***\n");
 	} else {
-		printf(" Done!\n");	// finish without padding
+		if (verbose)	printf(" Done!\n");	// finish without padding
 	}
 	fclose(file);
+
+	return	0;
 }
 
-void	delete(void) {		// Delete file from volume
+int		delete(char* name) {			// Delete file from volume
 	int				i, del;
 	struct header	h;
 
-	if (empty())	return;
-	del = choose("to be REMOVED from volume");
-	if (del < 0)	return;				// invalid selection
-	getheader(ptr[del], &h);			// get info for candidate
-	info(&h);							// display properties
-	printf("\n");
-	if (!confirm("Will REMOVE this file from volume"))	return;	// make sure
+	if (empty())	return -3;			// empty volume error
+	del = choose(name);
+	if (del < 0)	return -8;			// invalid selection error
+	if (verbose) {
+		getheader(ptr[del], &h);		// get info for candidate
+		info(&h);						// display properties
+		printf("\n");
+	}
+	if (!confirm("Will REMOVE this file from volume"))	return -10;	// make sure or ERROR -10: aborted operation
 	// If arrived here, proceed to removal
 	free(ptr[del]);			// actual removal
 	used--;					// one less file!
@@ -349,37 +353,15 @@ void	delete(void) {		// Delete file from volume
 	ptr[i] = NULL;			// extra safety!
 }
 
-void	setfree(void) {		// Select free space to be appended
+int		setfree(int kb) {				// Select free space to be appended
 	int		req;
 
-	printf("\n\tSET FREE SPACE\n");
-	printf("1=> 64 KiB\n");
-	printf("2=> 256 KiB\n");
-	printf("3=> 1 MiB\n");
-	printf("4=> 4 MiB\n");
-	printf("5=> 16 MiB\n");
-	printf("\n0=> Don't append any free space\n\n");
-	printf("Choose value: ");
-	scanf("%d", &req);
-	switch(req) {
-		case 1:
-			space = 256;	// 64K
-			break;
-		case 2:
-			space = 1024;	// 256K
-			break;
-		case 3:
-			space = 4096;	// 1M
-			break;
-		case 4:
-			space = 16384;	// 4M
-			break;
-		case 5:
-			space = 65534;	// 16M minus one sector!
-			break;
-		default:
-			space = 0;		// do not append anything
-	}
+	if (kb > 16384)		return -11;		// ERROR -11: invalid free size
+	req = kb << 2						// times four
+	req--;								// minus header page
+	space = req;
+
+	return	0;
 }
 
 void	generate(void) {	// Generate volume
