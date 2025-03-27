@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250327-0839
+ * last modified 20250327-0915
  * */
 
 /* Libraries */
@@ -85,10 +85,9 @@ struct	header {
 
 /* Global variables */
 byte*	ptr[MAXFILES];		// pointer to dynamically stored header (and file)
-char	name[VOL_NLEN];		// volume and file name storage CHECK SIZE!
 int		used;				// actual number of files
 dword	space;				// free space after contents (in 256-byte pages)
-bool	verbose;			// flag needed for message display
+bool	verbose = FALSE;	// flag needed for message display
 
 /* Function prototypes */
 void	init(void);								// Init stuff
@@ -112,21 +111,35 @@ void	display(int err);						// Display error text
 /* ** main code ** */
 int main (void) {
 	int		err;
+	char	name[VOL_NLEN];	// volume and file name storage CHECK SIZE!
 
-// if -v					// printf("\nDurango-X volume creator, v1.1a1 by @zuiko21\n");	return 0;
-// if -e					// verbose=TRUE;	// enable extended info -- maybe integrated with -v
+// if -v
+	{
+		printf("\nDurango-X volume creator, v1.1a1 by @zuiko21\n");	// return 0;
+	}
+// if -e
+	{
+		verbose=TRUE;		// enable extended info -- maybe integrated with -v
+	}
 	init();					// Init things
 // if -i, fetch name, otherwise new volume
 	{
+strcpy(name, "durango.av\0");
 		err = open(name);
 		display(err);
-		
-// if -l					// list();
+	}
+// if -l
+	{
+		list();
+	}
 // for each loose file, fetch name				// add(name);
 // if -x, fetch name		// extract(name);
 // if -d, fetch name		// delete(name);
 // if -f, fetch size		// setfree(size);
 // if -o, fetch name, else name='durango.av'
+	{
+		strcpy(name, "durango.av\0");
+	}
 	generate(name);
 	bye();						// Clean up
 	if (verbose)				printf("Bye!\n");
@@ -139,7 +152,7 @@ void	init(void) {			// Init stuff
 	int		i;
 
 	used =	0;					// empty array, nothing stored in heap
-	for (i=0;i<MAXFILES;i++) {
+	for (i=0; i<MAXFILES; i++) {
 		ptr[i] =	NULL;		// reset all empty pointers
 	} 
 }
