@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250327-0829
+ * last modified 20250327-0839
  * */
 
 /* Libraries */
@@ -105,15 +105,22 @@ void	makeheader(byte* p, struct header* h);	// Generate header from struct
 int		signature(struct header* h);			// Return file type from coded signature
 void	info(struct header* h);					// Display info about header
 int		choose(char* name);						// Choose file from list
-int		confirm(char* name);					// Request confirmation for dangerous actions, returns 0 if rejected
+int		confirm(char* name);					// Request confirmation for dangerous actions, returns ABORTED if rejected
 int		empty(void);							// Returns 0 unless it's empty
+void	display(int err);						// Display error text
 
 /* ** main code ** */
 int main (void) {
+	int		err;
+
 // if -v					// printf("\nDurango-X volume creator, v1.1a1 by @zuiko21\n");	return 0;
-// if -e					// verbose=TRUE;	// enable extended info
+// if -e					// verbose=TRUE;	// enable extended info -- maybe integrated with -v
 	init();					// Init things
-// if -i, fetch name, otherwise new volume		// open(name);
+// if -i, fetch name, otherwise new volume
+	{
+		err = open(name);
+		display(err);
+		
 // if -l					// list();
 // for each loose file, fetch name				// add(name);
 // if -x, fetch name		// extract(name);
@@ -121,30 +128,30 @@ int main (void) {
 // if -f, fetch size		// setfree(size);
 // if -o, fetch name, else name='durango.av'
 	generate(name);
-	bye();					// Clean up
-	if (verbose)			printf("Bye!\n");
+	bye();						// Clean up
+	if (verbose)				printf("Bye!\n");
 
 	return	0;
 }
 
 /* ** Function definitions ** */
-void init(void) {			// Init stuff
+void	init(void) {			// Init stuff
 	int		i;
 
-	used =	0;				// empty array, nothing stored in heap
+	used =	0;					// empty array, nothing stored in heap
 	for (i=0;i<MAXFILES;i++) {
-		ptr[i] =	NULL;	// reset all empty pointers
+		ptr[i] =	NULL;		// reset all empty pointers
 	} 
 }
 
-void bye(void) {			// Release heap memory * * * VERY IMPORTANT * * *
+void	bye(void) {				// Release heap memory * * * VERY IMPORTANT * * *
 	int		i;
 
 	for (i=0; i<MAXFILES; i++) {
-		if (ptr[i] != NULL)		free(ptr[i]);	// release this block
-		ptr[i] =	NULL;	// EEEEEEK
+		if (ptr[i] != NULL)		free(ptr[i]);	// release this block-
+		ptr[i] =	NULL;		// EEEEEEK
 	}
-	used = 0;				// all clear
+	used = 0;					// all clear
 }
 
 int		open(char* volume) {					// Open volume
@@ -337,7 +344,7 @@ int		delete(char* name) {			// Delete file from volume
 		info(&h);						// display properties
 		printf("\n");
 	}
-	if (!confirm("Will REMOVE this file from volume"))	return ABORTED;	// make sure or ERROR -10: aborted operation
+	if (confirm("Will REMOVE this file from volume"))	return ABORTED;	// make sure or ERROR -10: aborted operation
 	// If arrived here, proceed to removal
 	free(ptr[del]);						// actual removal
 	used--;								// one less file!
@@ -599,39 +606,78 @@ void	info(struct header* h) {								// Display info about header
 	}
 }
 
-int		choose(char* msg) {		// Choose file from list
-	int		i, sel;
+int		choose(char* name) {	// Locate file by name
+	int		i;
 
-	for (i=0; i<used; i++) {
-		printf("%d) %s\n", i+1, ptr[i]+H_NAME);		// display list of contents
+	i = 0;						// try from first loaded file
+	while (i<used) {			// do not look any further
+		if (!strcmp(ptr[i]+H_NAME, name))	break;		// found file...
+		i++;					// ... or try next
 	}
-	printf("\nNumber of file %s? (0=none) ", msg);
-	scanf("%d", &sel);
-	if (sel<1 || sel>used) {
-		printf("\tBad index *** Aborted ***\n");
-		return -1;				// invalid index
-	}
-	return	sel-1;				// make this 0-based...
+	if (i >= used)				return	NO_FILE;
+
+	return	i;					// make this 0-based...
 }
 
-int		confirm(char* msg) {	// Request confirmation for dangerous actions, returns 0 if rejected
+int		confirm(char* msg) {	// Request confirmation for dangerous actions, returns ABORTED if rejected
 	char	pass[80];
 
+// if -y	return 0;
 	printf("\t%s. Proceed? (Y/N) ", msg);
 	scanf("%s", pass);			// just getting confirmation
 	if ((pass[0]|32) != 'y') {	// either case
-		printf("*** ABORTED ***\n");
-		return 0;
+		return ABORTED;
 	}
 
-	return 1;					// if not aborted, proceed
+	return	0;					// if not aborted, proceed
 }
 
 int		empty(void) {			// returns 0 unless it's empty
 	if (!used) {
-		printf("\tVolume is empty!\n");
-		return	-1;
+		return	EMPTY_VOL;
 	}
 
 	return	0;					// found some stored headers, thus not empty
 }
+
+void	display(int err) {
+	if (!err)	return;
+	printf("\n*** ");
+	switch(err) {
+		case NO_VOLUME:
+			printf("VOLUME FILE NOT FOUND");
+			break;
+		case OUT_MEMORY:
+			printf("OUT OF MEMORY");
+			break;
+		case EMPTY_VOL:
+			printf("VOLUME FILE IS EMPTY");
+			break;
+		case FILE_LIM:
+			printf("NO MORE FILES ALLOWED");
+			break;
+		case NO_FILE:
+			printf("FILE NOT FOUND");
+			break;
+		case EMPTY_FILE:
+			printf("FILE IS EMPTY");
+			break;
+		case MISALIGNED:
+			printf("MISALIGNED ROM IMAGE");
+			break;
+		case BAD_SELECT:
+			printf("WRONG INDEX?");
+			break;
+		case NO_CREATE:
+			printf("COULD NOT CREATE FILE");
+			break;
+		case ABORTED:
+			printf("ABORTED OPERATION");
+			break;
+		case FREE_ERR:
+			printf("ERROR ON FREE SPACE BLOCK");
+			break;
+		default:
+			printf("- - -UNKNOWN ERROR- - -");
+	}
+	printf(" ***\n\n");
