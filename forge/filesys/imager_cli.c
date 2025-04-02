@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250328-0953
+ * last modified 20250402-1421
  * */
 
 /* Libraries */
@@ -96,7 +96,7 @@ int		open(char* volume);						// Open volume
 int		list(char* result);						// List volume contents
 int		add(char* name);						// Add file to volume
 int		extract(char* name);					// Extract file from volume
-int		delete(char* name);						// Delete file from volume
+int		remove(char* name);						// Delete file from volume
 int		setfree(int kb);						// Select free space to be appended
 int		generate(char* volume);					// Generate volume
 int		getheader(byte* p, struct header* h);	// Extract header specs, returns 0 if not valid
@@ -111,38 +111,51 @@ void	display(int err);						// Display error text
 /* ** main code ** */
 int main (void) {
 	int		err;
-	char	name[VOL_NLEN];	// volume and file name storage CHECK SIZE!
+	char	name[VOL_NLEN];		// file name storage CHECK SIZE!
+	char	volume[VOL_NLEN];	// volume name storage, must be kept CHECK SIZE!
 	char	cadena[2000];
 
-// if -v
-	{
-		printf("\nDurango-X volume creator, v1.1a1 by @zuiko21\n");	// return 0;
+	if (-v) {				// ** both verbose mode and version display **
+		printf("\nDurango-X volume creator, v1.1a1 by @zuiko21\n");
+		verbose=TRUE;		// enable extended info -- now integrated with -v
 	}
-// if -e
-	{
-		verbose=TRUE;		// enable extended info -- maybe integrated with -v
-	}
-	init();					// Init things
-// if -i, fetch name, otherwise new volume
-	{
-strcpy(name, "durango.av\0");
-		err = open(name);
+	init();					// ** Init things **
+	if (-i) {				// ** fetch name, otherwise was new volume **
+		fetch(volume);		// copy value after -i into 'volume' array
+//strcpy(volume, "durango.av\0");//placeholder
+		err = open(volume);
 		display(err);
+		if (err)	return err;		// if specified, input volume MUST exist
 	}
-// if -l
-	{
-		list(cadena);
-		printf("\n%s\n", cadena);
+	if (-l) {				// ** list existing files into volume (and finish) **
+		err = list(cadena);
+		if (!err)			printf("\n%s\n", cadena);
+		return	err;		// list and exit
 	}
-// for each loose file, fetch name				// add(name);
-// if -x, fetch name		// extract(name);
-// if -d, fetch name		// delete(name);
+	if (-x) {				// ** fetch name and extract that file if exists
+		err = fetch(name);	// copy value after -x into 'name' array
+		display(err);
+		if (!err)			err = extract(name);
+// * * * might use a loop in order to extract more than a file in a single pass? * * *
+		return	err;		// exit after (all of) the file(s) is/are extracted
+	}
+// **** These options just configure volume creation ****
 // if -f, fetch size		// setfree(size);
-// if -o, fetch name, else name='durango.av'
+// if -o, fetch name, else volume='durango.av'
 	{
-		strcpy(name, "durango.av\0");
+		strcpy(volume, "durango.av\0");
 	}
-	generate(name);
+// **** The following options do modify a volume ****
+	if (-d) {				// fetch name and remove it from volume (could add something afterwards)
+		err = fetch(name);
+		display(err);
+		if (!err)			err = remove(name);
+// * * * might use a loop in order to remove more than a file in a single pass? * * *
+// no need to return, as the volume file will be saved anyways
+	}
+// for each loose file, fetch name and add that file				// add(name);
+// **** generate the volume file with new/modified contents ****
+	generate(name);				// maybe if NOT empty?
 	bye();						// Clean up
 	if (verbose)				printf("Bye!\n");
 
@@ -348,7 +361,7 @@ int		extract(char* name) {			// Extract file from volume
 	return	0;
 }
 
-int		delete(char* name) {			// Delete file from volume
+int		remove(char* name) {			// Delete file from volume
 	int				i, del;
 	struct header	h;
 
