@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250402-1421
+ * last modified 20250403-1822
  * */
 
 /* Libraries */
@@ -56,6 +56,10 @@
 #define		NO_CREATE	-9
 #define		ABORTED		-10
 #define		FREE_ERR	-11
+#define		BAD_HEAD	-12
+// Listing mode
+#define		SIMPLE_LIST	0
+#define		DETAIL_LIST	1
 
 /* Custom types */
 typedef	u_int8_t		byte;
@@ -88,18 +92,19 @@ byte*	ptr[MAXFILES];		// pointer to dynamically stored header (and file)
 int		used;				// actual number of files
 dword	space;				// free space after contents (in 256-byte pages)
 bool	verbose = FALSE;	// flag needed for message display
+bool	force = FALSE;		// ask for confirmation
 
 /* Function prototypes */
 void	init(void);								// Init stuff
 void	bye(void);								// Clean up
 int		open(char* volume);						// Open volume
-int		list(char* result);						// List volume contents
+int		list(char* result, int mode);			// List volume contents
 int		add(char* name);						// Add file to volume
 int		extract(char* name);					// Extract file from volume
 int		remove(char* name);						// Delete file from volume
 int		setfree(int kb);						// Select free space to be appended
 int		generate(char* volume);					// Generate volume
-int		getheader(byte* p, struct header* h);	// Extract header specs, returns 0 if not valid
+int		getheader(byte* p, struct header* h);	// Extract header specs, returns BAD_HEAD if not valid
 void	makeheader(byte* p, struct header* h);	// Generate header from struct
 int		signature(struct header* h);			// Return file type from coded signature
 void	info(struct header* h, char* result);	// Display info about header
@@ -119,6 +124,9 @@ int main (void) {
 		printf("\nDurango-X volume creator, v1.1a1 by @zuiko21\n");
 		verbose=TRUE;		// enable extended info -- now integrated with -v
 	}
+	if (-y) {				// do not ask for confirmation
+		force = TRUE;
+	}
 	init();					// ** Init things **
 	if (-i) {				// ** fetch name, otherwise was new volume **
 		fetch(volume);		// copy value after -i into 'volume' array
@@ -128,7 +136,12 @@ int main (void) {
 		if (err)	return err;		// if specified, input volume MUST exist
 	}
 	if (-l) {				// ** list existing files into volume (and finish) **
-		err = list(cadena);
+		err = list(cadena, SIMPLE_LIST);
+		if (!err)			printf("\n%s\n", cadena);
+		return	err;		// list and exit
+	}
+	if (-m) {				// ** DETAIL existing files into volume (and finish) **
+		err = list(cadena, DETAIL_LIST);
 		if (!err)			printf("\n%s\n", cadena);
 		return	err;		// list and exit
 	}
@@ -155,10 +168,42 @@ int main (void) {
 	}
 // for each loose file, fetch name and add that file				// add(name);
 // **** generate the volume file with new/modified contents ****
-	generate(name);				// maybe if NOT empty?
+	generate(volume);			// maybe if NOT empty?
 	bye();						// Clean up
 	if (verbose)				printf("Bye!\n");
 
+// *********************************** PLACEHOLDER
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+
+int main(int argc, char *argv[ ])
+{
+    int c;
+    int bflg = 0, aflg = 0, errflg = 0;
+    char *ifile;
+    char *ofile;
+    
+    while ((c = getopt(argc, argv, "a:bc")) != -1) {
+        printf("c -> ");
+        printf("%c\n", c);
+        //switch(c) {
+        //case 'a':
+        //    printf("\n\na\n");
+        //}
+	}
+	/*
+	for ( ; optind < argc; optind++) {
+		printf("fichero: %s\n", argv[optind]);
+	}
+	* */
+	
+	while(optind<argc) {
+		printf("fichero: %s\n", argv[optind++]);
+	}
+	
+// **************** END OF DIRTY CODE ******************
 	return	0;
 }
 
@@ -193,7 +238,7 @@ int		open(char* volume) {					// Open volume
 //	bye();										// free up dynamic memory
 	while (!feof(file)) {
 		if (fread(buffer, HD_BYTES, 1, file) != 1)	break;				// get header into buffer
-		if (!getheader(buffer, &h)) {									// check header and get metadata
+		if (getheader(buffer, &h)) {									// check header and get metadata
 			printf("\n\t* Bad header *\n");
 			break;
 		}
@@ -234,14 +279,14 @@ int		open(char* volume) {					// Open volume
 	return	0;
 }
 
-int		list(char* result) {			// List volume contents
+int		list(char* result, int mode) {	// List volume contents
 	int				i;
 	struct header	h;
 
 	result[0] = '\0';
 	if (empty())	return EMPTY_VOL;	// ERROR -3: empty volume
 	for (i=0; i<used; i++) {			// scan thru all stored headers
-		if (verbose) {					// maybe use an specific flag?
+		if (mode == DETAIL_LIST) {		// maybe use an specific flag?
 			getheader(ptr[i], &h);		// get surely loaded header into local storage 
 			sprintf(result, "%d: ", i+1);		// entry number (1-based)
 			info(&h, result);			// display all info about the file
@@ -276,7 +321,7 @@ int		add(char* name) {				// Add file to volume
 			return EMPTY_FILE;							// ERROR -6: empty file
 		}
 	}
-	if (!getheader(buffer, &h)) {						// check header and get metadata
+	if (getheader(buffer, &h)) {						// check header and get metadata
 		if (verbose)			printf("GENERIC file");
 		strcpy(h.name, name);							// place supplied filename
 		h.comment[0]	= '\0';							// terminate comment EEEEK
@@ -473,11 +518,11 @@ int		generate(char* volume) {		// Generate volume
 	return 0;
 }
 
-int		getheader(byte* p, struct header* h) {			// Extract header specs, return 0 if not valid
+int		getheader(byte* p, struct header* h) {			// Extract header specs, return BAD_HEAD if not valid
 	static char	phasevec[4] = {'a', 'b', 'R', 'f'};
 	int			src, dest;
 
-	if ((p[H_MAGIC1] != 0) || (p[H_MAGIC2] != 13) || (p[H_MAGIC3] != 0))	return	0;	// invalid header
+	if ((p[H_MAGIC1] != 0) || (p[H_MAGIC2] != 13) || (p[H_MAGIC3] != 0))	return BAD_HEAD;	// invalid header
 // otherwise extract header data
 	h->signature[0] =	p[H_SIGNATURE];
 	h->signature[1] =	p[H_SIGNATURE+1];
@@ -507,7 +552,7 @@ int		getheader(byte* p, struct header* h) {			// Extract header specs, return 0 
 	h->day		=		p[H_DATE] & 0x1F;
 	h->size		=		p[H_SIZE] | p[H_SIZE+1]<<8 | p[H_SIZE+2]<<16;
 
-	return	-1;				// header is valid
+	return	0;				// header is valid
 }
 
 void	makeheader(byte* p, struct header* h) {			// Generate header from struct
@@ -651,7 +696,8 @@ int		choose(char* name) {	// Locate file by name
 int		confirm(char* msg) {	// Request confirmation for dangerous actions, returns ABORTED if rejected
 	char	pass[80];
 
-// if -y	return 0;
+	if (force)	return 0;		// assume yes if -y
+
 	printf("\t%s. Proceed? (Y/N) ", msg);
 	scanf("%s", pass);			// just getting confirmation
 	if ((pass[0]|32) != 'y') {	// either case
@@ -705,6 +751,9 @@ void	display(int err) {
 			break;
 		case FREE_ERR:
 			printf("ERROR ON FREE SPACE BLOCK");
+			break;
+		case BAD_HEAD:
+			printf("BAD HEADER");
 			break;
 		default:
 			printf("- - -UNKNOWN ERROR- - -");
