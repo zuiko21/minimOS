@@ -1,12 +1,13 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250403-1822
+ * last modified 20250408-1439
  * */
 
 /* Libraries */
 #include	<stdio.h>
 #include	<stdlib.h>
 #include	<string.h>
+#include	<stdbool.h>
 /* optional libraries for timestamp fetching */
 #include	<sys/stat.h>
 #include	<unistd.h>
@@ -14,11 +15,11 @@
 /* ***************************************** */
 
 /* Constants */
-// Max number of files into volume
+// Max number of files into volume -- arbitrary limitation
 #define		MAXFILES	100
 // bytes per header/page
 #define		HD_BYTES	256
-// Max volume name length
+// Max volume name length -- current filesystem space
 #define		VOL_NLEN	220
 // Header offsets
 #define		H_MAGIC1	0
@@ -65,6 +66,19 @@
 typedef	u_int8_t		byte;
 typedef	u_int16_t		word;
 typedef u_int32_t		dword;
+// Custom CLI parameter list for pre-fetching
+struct param {
+	char	invol[VOL_NLEN];	// -i input volume
+	char	outvol[VOL_NLEN];	// -o output volume (default: durango.av)
+	bool	verbose;			// -v verbose mode flag
+	bool	force;				// -y confirm deletions by default
+	bool	list;				// -l request volume directory
+	bool	detailed;			// -m request detailed volume directory (overrides -l)
+	bool	extract				// -x fetch list of files to be extracted
+	bool	remove;				// -d fetch list of files to be removed
+	dword	space;				// -f add free space at the end of the volume
+	char*	dir[MAXFILES];		// list of filenames to be extracted/removed/added (-x/d/a)
+};
 
 struct	header {
 	char	signature[2];	// [1-2]
@@ -90,9 +104,10 @@ struct	header {
 /* Global variables */
 byte*	ptr[MAXFILES];		// pointer to dynamically stored header (and file)
 int		used;				// actual number of files
-dword	space;				// free space after contents (in 256-byte pages)
-bool	verbose = FALSE;	// flag needed for message display
-bool	force = FALSE;		// ask for confirmation
+// free space after contents (in 256-byte pages) already into pre-fetched parameters
+// flag needed for message display already into pre-fetched parameters
+// ask for confirmation already into pre-fetched parameters
+struct param	cli;		// pre-fetched parameter block
 
 /* Function prototypes */
 void	init(void);								// Init stuff
@@ -114,96 +129,115 @@ int		empty(void);							// Returns 0 unless it's empty
 void	display(int err);						// Display error text
 
 /* ** main code ** */
-int main (void) {
-	int		err;
+int main (int argc, char* argv) {
+	int		err, c, i, line=0;
 	char	name[VOL_NLEN];		// file name storage CHECK SIZE!
 	char	volume[VOL_NLEN];	// volume name storage, must be kept CHECK SIZE!
-	char	cadena[2000];
+	char	string[2000];
 
-	if (-v) {				// ** both verbose mode and version display **
+	init();						// ** Init things **
+// First of all, pre-fetch parameters
+	while ((c = getopt(argc, argv, "i:o:vylmx:d:f:")) != -1) {
+		switch (c) {
+			case 'i':
+				strcpy(cli.invol, optarg);
+				break;
+			case 'o':
+				strcpy(cli.outvol, optarg);
+				break;
+			case 'v':
+				cli.verbose	= TRUE;
+				break;
+			case 'y':
+				cli.force	= TRUE;
+				break;
+			case 'l':
+				cli.list	= TRUE;
+				cli.detailed = FALSE;
+				break;
+			case 'm':
+				cli.list	= FALSE;
+				cli.detailed = TRUE;
+				break;
+			case 'x':
+				if (cli.remove) {
+					printf("\n*** Cannot extract while removing ***\n");
+					return ABORTED;
+				}
+				cli.extract	= TRUE;
+				strcpy(cli.dir[line++], optarg);
+				break;
+			case 'd':
+				if (cli.extract) {
+					printf("\n*** Cannot remove while extracting ***\n");
+					return ABORTED;
+				}
+				cli.remove	= TRUE;
+				strcpy(cli.dir[line++], optarg);
+				break;
+			case 'f':
+				cli.space	= (dword)strtol(optarg, NULL, 0);
+				break;
+			case '?':
+				printf("\n*** Bad param ***\n");
+				return ABORTED;
+		}
+	}
+// flags are set, now take all spare filenames into array to be added
+// as long as no -x or -d were enabled
+	if (optind<argc) {			// some filenames remain
+		if (!cli.extract && !cli.remove) {
+			while(optind<argc) {
+				strcpy(cli.dir[line++], argv[optind++]);
+			}
+		} else {
+			printf("\n*** Cannot add while extracting or removing ***\n");
+			return ABORTED;
+		}
+	}
+
+// now execute code according to enabled options
+	if (cli.verbose) {			// ** both verbose mode and version display **
 		printf("\nDurango-X volume creator, v1.1a1 by @zuiko21\n");
-		verbose=TRUE;		// enable extended info -- now integrated with -v
 	}
-	if (-y) {				// do not ask for confirmation
-		force = TRUE;
-	}
-	init();					// ** Init things **
-	if (-i) {				// ** fetch name, otherwise was new volume **
-		fetch(volume);		// copy value after -i into 'volume' array
-//strcpy(volume, "durango.av\0");//placeholder
-		err = open(volume);
+	if (cli.invol[0] != '\0') {	// ** open volume by name, otherwise was new volume **
+		err = open(cli.invol);
 		display(err);
-		if (err)	return err;		// if specified, input volume MUST exist
+		if (err)	return err;	// if specified, input volume MUST exist
 	}
-	if (-l) {				// ** list existing files into volume (and finish) **
-		err = list(cadena, SIMPLE_LIST);
-		if (!err)			printf("\n%s\n", cadena);
-		return	err;		// list and exit
+	if (cli.list) {				// ** list existing files into volume (and finish) **
+		err = list(string, SIMPLE_LIST);
+		if (!err)	printf("\n%s\n", string);
+		return	err;			// list and exit
 	}
-	if (-m) {				// ** DETAIL existing files into volume (and finish) **
-		err = list(cadena, DETAIL_LIST);
-		if (!err)			printf("\n%s\n", cadena);
-		return	err;		// list and exit
+	if (cli.detailed) {			// ** DETAIL existing files into volume (and finish) **
+		err = list(string, DETAIL_LIST);
+		if (!err)	printf("\n%s\n", string);
+		return	err;			// list and exit
 	}
-	if (-x) {				// ** fetch name and extract that file if exists
-		err = fetch(name);	// copy value after -x into 'name' array
-		display(err);
-		if (!err)			err = extract(name);
-// * * * might use a loop in order to extract more than a file in a single pass? * * *
-		return	err;		// exit after (all of) the file(s) is/are extracted
-	}
-// **** These options just configure volume creation ****
-// if -f, fetch size		// setfree(size);
-// if -o, fetch name, else volume='durango.av'
-	{
-		strcpy(volume, "durango.av\0");
+	if (cli.extract) {			// ** fetch name and extract that file if exists **
+		i = 0;					// reset file list cursor
+		while (cli.dir[i] != NULL) {
+			err = extract(cli.dir[i++]);
+			if (cli.verbose && err)		display(err);	// tell if file extraction fails
+		}
+		return	0;
 	}
 // **** The following options do modify a volume ****
-	if (-d) {				// fetch name and remove it from volume (could add something afterwards)
-		err = fetch(name);
-		display(err);
-		if (!err)			err = remove(name);
-// * * * might use a loop in order to remove more than a file in a single pass? * * *
+	if (cli.remove) {			// fetch name and remove it from volume (could add something afterwards)
+		i = 0;					// reset file list cursor
+		while (cli.dir[i] != NULL) {
+			err = remove(cli.dir[i++]);
+			if (cli.verbose && err)		display(err);	// tell if file deletion fails
+		}
 // no need to return, as the volume file will be saved anyways
 	}
 // for each loose file, fetch name and add that file				// add(name);
 // **** generate the volume file with new/modified contents ****
 	generate(volume);			// maybe if NOT empty?
 	bye();						// Clean up
-	if (verbose)				printf("Bye!\n");
+	if (cli.verbose)			printf("Bye!\n");
 
-// *********************************** PLACEHOLDER
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-
-int main(int argc, char *argv[ ])
-{
-    int c;
-    int bflg = 0, aflg = 0, errflg = 0;
-    char *ifile;
-    char *ofile;
-    
-    while ((c = getopt(argc, argv, "a:bc")) != -1) {
-        printf("c -> ");
-        printf("%c\n", c);
-        //switch(c) {
-        //case 'a':
-        //    printf("\n\na\n");
-        //}
-	}
-	/*
-	for ( ; optind < argc; optind++) {
-		printf("fichero: %s\n", argv[optind]);
-	}
-	* */
-	
-	while(optind<argc) {
-		printf("fichero: %s\n", argv[optind++]);
-	}
-	
-// **************** END OF DIRTY CODE ******************
 	return	0;
 }
 
@@ -211,20 +245,31 @@ int main(int argc, char *argv[ ])
 void	init(void) {			// Init stuff
 	int		i;
 
-	used =	0;					// empty array, nothing stored in heap
+	used			= 0;		// empty array, nothing stored in heap
 	for (i=0; i<MAXFILES; i++) {
-		ptr[i] =	NULL;		// reset all empty pointers
-	} 
+		ptr[i]		= NULL;		// reset all empty pointers
+		cli.dir[i]	= NULL;		// reset fetched file list
+	}
+	cli.invol[0]	= '\0';		// create new volume by default
+	strcpy(cli.outvol, "durango.av\0");	// default output file!
+	cli.verbose		= FALSE;	// quiet mode by default
+	cli.force		= FALSE;	// ask for deletion confirmation!
+	cli.list		= FALSE;	// do not list until asked
+	cli.detailed	= FALSE;	// ditto for details
+	cli.extract		= FALSE;	// default is add, not extract
+	cli.remove		= FALSE;	// much less file deletion!
+	cli.freesize	= 0;		// no extra space unless specified
 }
 
 void	bye(void) {				// Release heap memory * * * VERY IMPORTANT * * *
 	int		i;
 
 	for (i=0; i<MAXFILES; i++) {
-		if (ptr[i] != NULL)		free(ptr[i]);	// release this block-
-		ptr[i] =	NULL;		// EEEEEEK
+		if (ptr[i] != NULL)		free(ptr[i]);		// release this block
+//		ptr[i] =	NULL;		// no need as this function will shut down
+		if (cli.dir[i] != NULL)	free(cli.dir[i]);	// just in case!
 	}
-	used = 0;					// all clear
+//	used = 0;					// all clear
 }
 
 int		open(char* volume) {					// Open volume
@@ -232,22 +277,22 @@ int		open(char* volume) {					// Open volume
 	byte			buffer[HD_BYTES];			// temporary header fits into a full page
 	struct header	h;							// metadata storage
 
-	if (verbose)			printf("Opening %s...", volume);
+	if (cli.verbose)			printf("Opening %s...", volume);
 	if ((file = fopen(volume, "rb")) == NULL) 		return NO_VOLUME;	// ERROR -1: source volume not found
-	if (verbose)			printf(" OK\nReading headers...");
-//	bye();										// free up dynamic memory
+	if (cli.verbose)			printf(" OK\nReading headers...");
 	while (!feof(file)) {
 		if (fread(buffer, HD_BYTES, 1, file) != 1)	break;				// get header into buffer
 		if (getheader(buffer, &h)) {									// check header and get metadata
-			printf("\n\t* Bad header *\n");
-			break;
+			if (cli.verbose)	printf("\n\t* Bad header *\n");
+			fclose(file);												// bad header will abort volume read
+			return	BAD_HEAD;
 		}
 		if (signature(&h) == SIG_FREE) {
-			if (verbose)	printf("\n(Skipping free space)");
+			if (cli.verbose)	printf("\n(Skipping free space)");
 			fseek(file, h.size-HD_BYTES, SEEK_CUR);						// just skip free space!
 			continue;													// EEEEEEEK
 		}
-		if (verbose) {
+		if (cli.verbose) {
 			printf("\nFound %s (%-5.2f KiB): Allocating", h.name, h.size/1024.0);
 			printf("[%x]",used);										// entry to be allocated
 		}
@@ -258,10 +303,10 @@ int		open(char* volume) {					// Open volume
 			fclose(file);												// eeek
 			return OUT_MEMORY;											// ERROR -2: out of memory
 		}
-		if (verbose)		printf(", Header");
+		if (cli.verbose)		printf(", Header");
 		memcpy(ptr[used], buffer, HD_BYTES);							// copy preloaded header
 //		for (i=0; i<HD_BYTES; i++)		ptr[used][i] = buffer[i];		// * * * B A D * * * EEEEK
-		if (verbose)
+		if (cli.verbose)
 			if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf(", Code");
 			else																printf(", Data");
 		if (fread(ptr[used]+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {			// read remaining bytes 
@@ -269,12 +314,12 @@ int		open(char* volume) {					// Open volume
 			free(ptr[used]);
 			ptr[used] = NULL;			// eeeeek
 		} else {
-			if (verbose)	printf(" OK");
+			if (cli.verbose)	printf(" OK");
 			used++;						// another file into volume
 		}
 	}
 	fclose(file);
-	if (verbose)			printf("\n\nDone!\n");
+	if (cli.verbose)			printf("\n\nDone!\n");
 
 	return	0;
 }
@@ -310,11 +355,11 @@ int		add(char* name) {				// Add file to volume
 	if (used >= MAXFILES) {
 		return FILE_LIM;								// ERROR -4: no more files allowed
 	}
-	if (verbose)				printf("Opening %s... ", name);
+	if (cli.verbose)				printf("Opening %s... ", name);
 	if ((file = fopen(name, "rb")) == NULL) {
 		return NO_FILE;									// ERROR -5: no file to add
 	}
-	if (verbose)				printf("OK\nReading header... ");
+	if (cli.verbose)				printf("OK\nReading header... ");
 	if (fread(buffer, HD_BYTES, 1, file) != 1) {		// get header into buffer
 		if (!ftell(file)) {								// if it was a generic file, could be shorter than HD_BYTES
 			fclose(file);
@@ -322,7 +367,7 @@ int		add(char* name) {				// Add file to volume
 		}
 	}
 	if (getheader(buffer, &h)) {						// check header and get metadata
-		if (verbose)			printf("GENERIC file");
+		if (cli.verbose)			printf("GENERIC file");
 		strcpy(h.name, name);							// place supplied filename
 		h.comment[0]	= '\0';							// terminate comment EEEEK
 		fseek(file, 0, SEEK_END);
@@ -351,12 +396,12 @@ int		add(char* name) {				// Add file to volume
 		makeheader(buffer, &h);							// transfer header struct back into buffer
 //		h.size -= HD_BYTES;								// eeeek
 	}
-	if (verbose)				printf("\nAdding %s (%-5.2f KiB): Allocating[%d]", h.name, h.size/1024.0, used);
+	if (cli.verbose)				printf("\nAdding %s (%-5.2f KiB): Allocating[%d]", h.name, h.size/1024.0, used);
 	if ((ptr[used] = malloc(h.size)) == NULL) {			// Allocate dynamic memory
 		fclose(file);
 		return OUT_MEMORY;								// out of memory error
 	}
-	if (verbose)				printf(", Header");
+	if (cli.verbose)				printf(", Header");
 	memcpy(ptr[used], buffer, HD_BYTES);				// copy preloaded header
 	if ((signature(&h) == SIG_ROM) && (h.size & 511)) {	// check for misaligned ROM images
 		free(ptr[used]);
@@ -364,7 +409,7 @@ int		add(char* name) {				// Add file to volume
 		fclose(file);
 		return MISALGINED;								// ERROR -7: misaligned ROM image
 	}
-	if (verbose)
+	if (cli.verbose)
 		if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf(", Code");
 		else																printf(", Data");
 	if (fread(ptr[used]+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {	// read remaining bytes after header (computed or preloaded)
@@ -372,7 +417,7 @@ int		add(char* name) {				// Add file to volume
 		free(ptr[used]);
 		ptr[used] = NULL;				// eeeeek
 	} else {
-		if (verbose)		printf(" OK\n");
+		if (cli.verbose)		printf(" OK\n");
 		used++;							// another file into volume
 	}
 	fclose(file);
@@ -392,14 +437,14 @@ int		extract(char* name) {			// Extract file from volume
 	info(&h);
 	if (signature(&h) == SIG_FILE)		skip = HD_BYTES;		// generic files trim headers
 	else								skip = 0;
-	if (verbose)		printf("\nWriting to file %s... ", h.name);
+	if (cli.verbose)		printf("\nWriting to file %s... ", h.name);
 	if ((file = fopen(h.name, "wb")) == NULL) {
 		return NO_CREATE;										// ERROR -9: can't create file
 	}
 	if (fwrite(ptr[ext]+skip, h.size-skip, 1, file) != 1) {		// note header removal option
-		if (verbose)	printf("\n*** I/O error ***\n");
+		if (cli.verbose)	printf("\n*** I/O error ***\n");
 	} else {
-		if (verbose)	printf(" Done!\n");	// finish without padding
+		if (cli.verbose)	printf(" Done!\n");	// finish without padding
 	}
 	fclose(file);
 
@@ -413,7 +458,7 @@ int		remove(char* name) {			// Delete file from volume
 	if (empty())	return EMPTY_VOL;	// empty volume error
 	del = choose(name);
 	if (del < 0)	return BAD_SELECT;	// invalid selection error
-	if (verbose) {
+	if (cli.verbose) {
 		getheader(ptr[del], &h);		// get info for candidate
 		info(&h);						// display properties
 		printf("\n");
@@ -432,7 +477,7 @@ int		setfree(int kb) {				// Select free space to be appended
 	if (kb > 16384)		return FREE_ERR;		// ERROR -11: invalid free size
 	req = kb << 2						// times four
 	req--;								// minus header page
-	space = req;
+	cli.space = req;
 
 	return	0;
 }
@@ -449,11 +494,11 @@ int		generate(char* volume) {		// Generate volume
 	if ((file = fopen(volume, "wb")) == NULL) {
 		return NO_CREATE;						// error creating file
 	}
-	if (verbose)		printf(" OK\nLinking files...\n");
+	if (cli.verbose)		printf(" OK\nLinking files...\n");
 	for (i=0; i<used; i++) {
 		err = 0;
 		getheader(ptr[i], &h);					// info about file to be added
-		if (verbose) {
+		if (cli.verbose) {
 			printf("%s: ", h.name);
 			if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf("Code");
 			else																printf("Data");
@@ -463,7 +508,7 @@ int		generate(char* volume) {		// Generate volume
 			err++;
 		}
 		if (h.size & 511) {						// non-multiple of 512 needs padding
-			if (Verbose)				printf(", Padding");
+			if (cli.verbose)				printf(", Padding");
 			while (h.size++ & 511) {							// pad with $FF until end of sector
 				if (fwrite(&pad, 1, 1, file) != 1)	{
 					printf("\n*** PADDING FAIL ***\n");
@@ -472,15 +517,15 @@ int		generate(char* volume) {		// Generate volume
 				}
 			}
 		}
-		if (!err)			if (verbose)	printf(" OK");
+		if (!err)			if (cli.verbose)	printf(" OK");
 		else {
 			fclose(file);
 			return 0;	// CHECK CHECK CHECK
 		}
-		if (verbose)		printf("\n");
+		if (cli.verbose)		printf("\n");
 	}
-	if (space) {
-		if (verbose)		printf("Free space: ");
+	if (cli.space) {
+		if (cli.verbose)		printf("Free space: ");
 		h.name[0]		= '\0';
 		h.comment[0]	= '\0';					// empty name and comment
 		h.signature[0]	= 'd';
@@ -499,15 +544,15 @@ int		generate(char* volume) {		// Generate volume
 		h.hour			= 19;
 		h.minute		= 44;					// default timestamp is Durango-X unit #1 build date ;-)
 		h.second		= 0;
-		h.size			= space << 8;
+		h.size			= cli.space << 8;
 		makeheader(buffer, &h);					// create free space header
 		if (fwrite(buffer, HD_BYTES, 1, file) != 1)	
-			if (verbose)	printf("Error! ");	// hopefully with no errors!
-		if (verbose)		printf("Appending... ");
+			if (cli.verbose)	printf("Error! ");	// hopefully with no errors!
+		if (cli.verbose)		printf("Appending... ");
 		err = 0;
-		for (i=HD_BYTES; i<(space<<8); i++)
+		for (i=HD_BYTES; i<(cli.space<<8); i++)
 			if (fwrite(&pad, 1, 1, file) != 1)	err++;	// hopefully with no errors!
-		if (!err)	if (verbose)	printf("OK");
+		if (!err)	if (cli.verbose)	printf("OK");
 		else 		printf("*** FAIL *** Do NOT use free space!!");
 	}
 	for (i=0; i<HD_BYTES; i++)
@@ -696,7 +741,7 @@ int		choose(char* name) {	// Locate file by name
 int		confirm(char* msg) {	// Request confirmation for dangerous actions, returns ABORTED if rejected
 	char	pass[80];
 
-	if (force)	return 0;		// assume yes if -y
+	if (cli.force)	return 0;		// assume yes if -y
 
 	printf("\t%s. Proceed? (Y/N) ", msg);
 	scanf("%s", pass);			// just getting confirmation
@@ -759,3 +804,4 @@ void	display(int err) {
 			printf("- - -UNKNOWN ERROR- - -");
 	}
 	printf(" ***\n\n");
+}
