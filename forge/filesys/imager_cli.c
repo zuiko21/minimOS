@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250408-1439
+ * last modified 20250410-0930
  * */
 
 /* Libraries */
@@ -52,7 +52,7 @@
 #define		FILE_LIM	-4
 #define		NO_FILE		-5
 #define		EMPTY_FILE	-6
-#define		MISALGINED	-7
+#define		MISALIGNED	-7
 #define		BAD_SELECT	-8
 #define		NO_CREATE	-9
 #define		ABORTED		-10
@@ -61,6 +61,9 @@
 // Listing mode
 #define		SIMPLE_LIST	0
 #define		DETAIL_LIST	1
+// For the sake of it...
+#define		TRUE	true
+#define		FALSE	false
 
 /* Custom types */
 typedef	u_int8_t		byte;
@@ -74,7 +77,7 @@ struct param {
 	bool	force;				// -y confirm deletions by default
 	bool	list;				// -l request volume directory
 	bool	detailed;			// -m request detailed volume directory (overrides -l)
-	bool	extract				// -x fetch list of files to be extracted
+	bool	extract;			// -x fetch list of files to be extracted
 	bool	remove;				// -d fetch list of files to be removed
 	dword	space;				// -f add free space at the end of the volume
 	char*	dir[MAXFILES];		// list of filenames to be extracted/removed/added (-x/d/a)
@@ -116,7 +119,7 @@ int		open(char* volume);						// Open volume
 int		list(char* result, int mode);			// List volume contents
 int		add(char* name);						// Add file to volume
 int		extract(char* name);					// Extract file from volume
-int		remove(char* name);						// Delete file from volume
+int		rmfile(char* name);						// Delete file from volume
 int		setfree(int kb);						// Select free space to be appended
 int		generate(char* volume);					// Generate volume
 int		getheader(byte* p, struct header* h);	// Extract header specs, returns BAD_HEAD if not valid
@@ -129,7 +132,7 @@ int		empty(void);							// Returns 0 unless it's empty
 void	display(int err);						// Display error text
 
 /* ** main code ** */
-int main (int argc, char* argv) {
+int main (int argc, char** argv) {
 	int		err, c, i, line=0;
 	char	name[VOL_NLEN];		// file name storage CHECK SIZE!
 	char	volume[VOL_NLEN];	// volume name storage, must be kept CHECK SIZE!
@@ -198,7 +201,7 @@ int main (int argc, char* argv) {
 
 // now execute code according to enabled options
 	if (cli.verbose) {			// ** both verbose mode and version display **
-		printf("\nDurango-X volume creator, v1.1a1 by @zuiko21\n");
+		printf("\nDurango-X volume creator, v1.1b1 by @zuiko21\n");
 	}
 	if (cli.invol[0] != '\0') {	// ** open volume by name, otherwise was new volume **
 		err = open(cli.invol);
@@ -227,7 +230,7 @@ int main (int argc, char* argv) {
 	if (cli.remove) {			// fetch name and remove it from volume (could add something afterwards)
 		i = 0;					// reset file list cursor
 		while (cli.dir[i] != NULL) {
-			err = remove(cli.dir[i++]);
+			err = rmfile(cli.dir[i++]);
 			if (cli.verbose && err)		display(err);	// tell if file deletion fails
 		}
 // no need to return, as the volume file will be saved anyways
@@ -258,7 +261,7 @@ void	init(void) {			// Init stuff
 	cli.detailed	= FALSE;	// ditto for details
 	cli.extract		= FALSE;	// default is add, not extract
 	cli.remove		= FALSE;	// much less file deletion!
-	cli.freesize	= 0;		// no extra space unless specified
+	cli.space		= 0;		// no extra space unless specified
 }
 
 void	bye(void) {				// Release heap memory * * * VERY IMPORTANT * * *
@@ -283,7 +286,6 @@ int		open(char* volume) {					// Open volume
 	while (!feof(file)) {
 		if (fread(buffer, HD_BYTES, 1, file) != 1)	break;				// get header into buffer
 		if (getheader(buffer, &h)) {									// check header and get metadata
-			if (cli.verbose)	printf("\n\t* Bad header *\n");
 			fclose(file);												// bad header will abort volume read
 			return	BAD_HEAD;
 		}
@@ -310,7 +312,7 @@ int		open(char* volume) {					// Open volume
 			if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf(", Code");
 			else																printf(", Data");
 		if (fread(ptr[used]+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {			// read remaining bytes 
-			printf("\n*** READ ERROR! ***\n");
+			printf("\n [ READ ERROR! ]\n");
 			free(ptr[used]);
 			ptr[used] = NULL;			// eeeeek
 		} else {
@@ -338,6 +340,7 @@ int		list(char* result, int mode) {	// List volume contents
 			sprintf(result, "\n--------\n");
 		} else {
 			sprintf(result, "%d) %s\n", i+1, ptr[i]+H_NAME);		// display SIMPLIFIED list of contents
+sprintf(result, "\n");
 		}
 	}
 
@@ -407,13 +410,13 @@ int		add(char* name) {				// Add file to volume
 		free(ptr[used]);
 		ptr[used] = NULL;								// unlikely to be a problem, but...
 		fclose(file);
-		return MISALGINED;								// ERROR -7: misaligned ROM image
+		return MISALIGNED;								// ERROR -7: misaligned ROM image
 	}
 	if (cli.verbose)
 		if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf(", Code");
 		else																printf(", Data");
 	if (fread(ptr[used]+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {	// read remaining bytes after header (computed or preloaded)
-		printf("\n*** READ ERROR! ***\n");
+		printf("\n [ READ ERROR! ]\n");
 		free(ptr[used]);
 		ptr[used] = NULL;				// eeeeek
 	} else {
@@ -429,12 +432,17 @@ int		extract(char* name) {			// Extract file from volume
 	int				i, ext, skip;
 	struct header	h;
 	FILE*			file;
+	char			string[2000];		// local storage in case of verbose mode
 
+	string[0] = '\0';
 	if (empty())		return EMPTY_VOL;						// empty volume error
 	ext = choose(name);
 	if (ext < 0)		return BAD_SELECT;						// ERROR -8: invalid selection
 	getheader(ptr[ext], &h);									// get info for candidate
-	info(&h);
+	if (cli.verbose) {
+		info(&h, string);
+		printf("%s", string);
+	}
 	if (signature(&h) == SIG_FILE)		skip = HD_BYTES;		// generic files trim headers
 	else								skip = 0;
 	if (cli.verbose)		printf("\nWriting to file %s... ", h.name);
@@ -442,7 +450,7 @@ int		extract(char* name) {			// Extract file from volume
 		return NO_CREATE;										// ERROR -9: can't create file
 	}
 	if (fwrite(ptr[ext]+skip, h.size-skip, 1, file) != 1) {		// note header removal option
-		if (cli.verbose)	printf("\n*** I/O error ***\n");
+		if (cli.verbose)	printf("\n [ I/O error ]\n");
 	} else {
 		if (cli.verbose)	printf(" Done!\n");	// finish without padding
 	}
@@ -451,17 +459,19 @@ int		extract(char* name) {			// Extract file from volume
 	return	0;
 }
 
-int		remove(char* name) {			// Delete file from volume
+int		rmfile(char* name) {			// Delete file from volume
 	int				i, del;
 	struct header	h;
+	char			string[2000];		// local storage in case of verbose mode
 
+	string[0] = '\0';
 	if (empty())	return EMPTY_VOL;	// empty volume error
 	del = choose(name);
 	if (del < 0)	return BAD_SELECT;	// invalid selection error
 	if (cli.verbose) {
 		getheader(ptr[del], &h);		// get info for candidate
-		info(&h);						// display properties
-		printf("\n");
+		info(&h, string);				// display extended info
+		printf("%s\n", string);
 	}
 	if (confirm("Will REMOVE this file from volume"))	return ABORTED;	// make sure or ERROR -10: aborted operation
 	// If arrived here, proceed to removal
@@ -469,13 +479,15 @@ int		remove(char* name) {			// Delete file from volume
 	used--;								// one less file!
 	for (i=del; i<used; i++)			ptr[i] = ptr[i+1];				// shift down all remainin entries after deleted one
 	ptr[i] = NULL;						// extra safety!
+
+	return	0;
 }
 
 int		setfree(int kb) {				// Select free space to be appended
 	int		req;
 
 	if (kb > 16384)		return FREE_ERR;		// ERROR -11: invalid free size
-	req = kb << 2						// times four
+	req = kb << 2;						// times four
 	req--;								// minus header page
 	cli.space = req;
 
@@ -504,14 +516,14 @@ int		generate(char* volume) {		// Generate volume
 			else																printf("Data");
 		}
 		if (fwrite(ptr[i], h.size, 1, file) != 1) {				// attempt to write whole file
-			printf("\n*** WRITE FAIL ***\n");
+			printf("\n [ WRITE FAIL ]\n");
 			err++;
 		}
 		if (h.size & 511) {						// non-multiple of 512 needs padding
 			if (cli.verbose)				printf(", Padding");
 			while (h.size++ & 511) {							// pad with $FF until end of sector
 				if (fwrite(&pad, 1, 1, file) != 1)	{
-					printf("\n*** PADDING FAIL ***\n");
+					printf("\n [ PADDING FAIL ]\n");
 					err++;
 					break;
 				}
@@ -553,7 +565,7 @@ int		generate(char* volume) {		// Generate volume
 		for (i=HD_BYTES; i<(cli.space<<8); i++)
 			if (fwrite(&pad, 1, 1, file) != 1)	err++;	// hopefully with no errors!
 		if (!err)	if (cli.verbose)	printf("OK");
-		else 		printf("*** FAIL *** Do NOT use free space!!");
+		else 		printf(" [ FAIL *** Do NOT use free space!! ]");
 	}
 	for (i=0; i<HD_BYTES; i++)
 		fwrite(&pad, 1, 1, file);				// make best effort to add an invalid 'header' at the end
