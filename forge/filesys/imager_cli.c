@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250410-0930
+ * last modified 20250410-1002
  * */
 
 /* Libraries */
@@ -134,8 +134,8 @@ void	display(int err);						// Display error text
 /* ** main code ** */
 int main (int argc, char** argv) {
 	int		err, c, i, line=0;
-	char	name[VOL_NLEN];		// file name storage CHECK SIZE!
-	char	volume[VOL_NLEN];	// volume name storage, must be kept CHECK SIZE!
+//	char	name[VOL_NLEN];		// file name storage CHECK SIZE!
+//	char	volume[VOL_NLEN];	// volume name storage, must be kept CHECK SIZE!
 	char	string[2000];
 
 	init();						// ** Init things **
@@ -237,7 +237,7 @@ int main (int argc, char** argv) {
 	}
 // for each loose file, fetch name and add that file				// add(name);
 // **** generate the volume file with new/modified contents ****
-	generate(volume);			// maybe if NOT empty?
+	generate(cli.outvol);		// maybe if NOT empty? eeeek
 	bye();						// Clean up
 	if (cli.verbose)			printf("Bye!\n");
 
@@ -330,17 +330,15 @@ int		list(char* result, int mode) {	// List volume contents
 	int				i;
 	struct header	h;
 
-	result[0] = '\0';
 	if (empty())	return EMPTY_VOL;	// ERROR -3: empty volume
 	for (i=0; i<used; i++) {			// scan thru all stored headers
 		if (mode == DETAIL_LIST) {		// maybe use an specific flag?
 			getheader(ptr[i], &h);		// get surely loaded header into local storage 
 			sprintf(result, "%d: ", i+1);		// entry number (1-based)
 			info(&h, result);			// display all info about the file
-			sprintf(result, "\n--------\n");
+			sprintf(result+strlen(result), "\n--------\n");			// append extra
 		} else {
 			sprintf(result, "%d) %s\n", i+1, ptr[i]+H_NAME);		// display SIMPLIFIED list of contents
-sprintf(result, "\n");
 		}
 	}
 
@@ -502,7 +500,7 @@ int		generate(char* volume) {		// Generate volume
 	int				i, err;
 
 	if (empty())		return EMPTY_VOL;		// empty volume error
-	if (volume)			printf("Writing to %s...", volume);
+	if (volume)			printf("Writing to volume %s...", volume);
 	if ((file = fopen(volume, "wb")) == NULL) {
 		return NO_CREATE;						// error creating file
 	}
@@ -695,45 +693,47 @@ int		signature(struct header* h) {	// Returns file type from coded signature
 
 void	info(struct header* h, char* result) {					// Display info about header
 	int		i;
+	char*	pos;
 
-	sprintf(result, "%s (%-5.2f KiB)", h->name, h->size/1024.0);			// Name and size
-	sprintf(result, "\nType: ");
+	sprintf(result+strlen(result), "%s (%-5.2f KiB)", h->name, h->size/1024.0);			// Name and size
+	sprintf(result+strlen(result), "\nType: ");
+	pos	= result+strlen(result);
 	switch(signature(h)) {
 		case SIG_FREE:		// dL
-			sprintf(result, "* Free space *");							// should never be loaded!
+			sprintf(pos, "* Free space *");							// should never be loaded!
 			break;
 		case SIG_ROM:		// dX
-			sprintf(result, "ROM image");
+			sprintf(pos, "ROM image");
 			break;
 		case SIG_POCKET:	// pX
-			sprintf(result, "Pocket executable [LOAD:$%04X, EXEC:$%04X]", h->ld_addr, h->ex_addr);
+			sprintf(pos, "Pocket executable [LOAD:$%04X, EXEC:$%04X]", h->ld_addr, h->ex_addr);
 			break;
 		case SIG_FILE:		// dA
-			sprintf(result, "Generic file");
+			sprintf(pos, "Generic file");
 			break;
 		case SIG_HIRES:		// dR
-			sprintf(result, "HIRES screen dump");
+			sprintf(pos, "HIRES screen dump");
 			break;
 		case SIG_COLOUR:	// dS
-			sprintf(result, "Colour screen dump");
+			sprintf(pos, "Colour screen dump");
 			break;
 		case SIG_H_RLE:		// dr
-			sprintf(result, "RLE-compressed HIRES screen dump");
+			sprintf(pos, "RLE-compressed HIRES screen dump");
 			break;
 		case SIG_C_RLE:		// ds
-			sprintf(result, "RLE-compressed colour screen dump");
+			sprintf(pos, "RLE-compressed colour screen dump");
 			break;
 		default:
-			sprintf(result, "* UNKNOWN (%c%c) *", h->signature[0], h->signature[1]);
+			sprintf(pos, "* UNKNOWN (%c%c) *", h->signature[0], h->signature[1]);
 	}
-	sprintf(result, "\nLast modified: %d/%d/%d, %02d:%02d", 1980+h->year, h->month, h->day, h->hour, h->minute);	// Last modified
+	sprintf(result+strlen(result), "\nLast modified: %d/%d/%d, %02d:%02d", 1980+h->year, h->month, h->day, h->hour, h->minute);	// Last modified
 	if (signature(h) != SIG_FILE) {
-		sprintf(result, " (v%d.%d%c%d)", h->version, h->revision, h->phase, h->build);	// Version
-		sprintf(result, "\nUser field #1: ");
-		for (i=0; i<8; i++)		sprintf(result, "%c", h->commit[i]);					// Main commit string
-		sprintf(result, ", #2: ");
-		for (i=0; i<8; i++)		sprintf(result, "%c", h->lib[i]);						// Lib commit string
-		if (h->comment[0] != '\0')		sprintf(result, "\nComment: %s", h->comment);	// optional comment
+		sprintf(result+strlen(result), " (v%d.%d%c%d)", h->version, h->revision, h->phase, h->build);	// Version
+		sprintf(result+strlen(result), "\nUser field #1: ");
+		for (i=0; i<8; i++)		sprintf(result+strlen(result), "%c", h->commit[i]);					// Main commit string
+		sprintf(result+strlen(result), ", #2: ");
+		for (i=0; i<8; i++)		sprintf(result+strlen(result), "%c", h->lib[i]);						// Lib commit string
+		if (h->comment[0] != '\0')		sprintf(result+strlen(result), "\nComment: %s", h->comment);	// optional comment
 	}
 }
 
