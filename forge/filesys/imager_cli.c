@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250411-1002
+ * last modified 20250423-1212
  * */
 
 /* Libraries */
@@ -69,6 +69,16 @@
 typedef	u_int8_t		byte;
 typedef	u_int16_t		word;
 typedef u_int32_t		dword;
+
+// Custom status struct instead of global variables
+struct stat {
+	byte*	ptr[MAXFILES];		// pointer to dynamically stored header (and file)
+	int		used;				// actual number of files
+// free space after contents (in 256-byte pages) already into pre-fetched parameters
+// flag needed for message display already into pre-fetched parameters
+// ask for confirmation already into pre-fetched parameters
+};
+
 // Custom CLI parameter list for pre-fetching
 struct param {
 	char	invol[VOL_NLEN];	// -i input volume
@@ -104,31 +114,23 @@ struct	header {
 	dword	size;			// [252-254] bytes including this 256-byte header
 };
 
-/* Global variables */
-byte*	ptr[MAXFILES];		// pointer to dynamically stored header (and file)
-int		used;				// actual number of files
-// free space after contents (in 256-byte pages) already into pre-fetched parameters
-// flag needed for message display already into pre-fetched parameters
-// ask for confirmation already into pre-fetched parameters
-struct param	cli;		// pre-fetched parameter block
-
 /* Function prototypes */
-void	init(void);								// Init stuff
-void	bye(void);								// Clean up
-int		open(char* volume);						// Open volume
-int		list(char* result, int mode);			// List volume contents
-int		add(char* name);						// Add file to volume
-int		extract(char* name);					// Extract file from volume
-int		rmfile(char* name);						// Delete file from volume
-int		setfree(int kb);						// Select free space to be appended
-int		generate(char* volume);					// Generate volume
+void	init(struct stat* v, struct param* cli);				// Init stuff
+void	bye(struct stat* v);									// Clean up
+int		open(char* volume, struct stat* v, struct param* cli);	// Open volume
+int		list(char* result, int mode, struct stat* v, struct param* cli);			// List volume contents
+int		add(char* name, struct stat* v, struct param* cli);		// Add file to volume
+int		extract(char* name, struct stat* v, struct param* cli);	// Extract file from volume
+int		rmfile(char* name, struct stat* v, struct param* cli);	// Delete file from volume
+int		setfree(int kb, struct stat* v, struct param* cli);		// Select free space to be appended
+int		generate(char* volume, struct stat* v, struct param* cli);					// Generate volume
 int		getheader(byte* p, struct header* h);	// Extract header specs, returns BAD_HEAD if not valid
 void	makeheader(byte* p, struct header* h);	// Generate header from struct
 int		signature(struct header* h);			// Return file type from coded signature
 void	info(struct header* h, char* result);	// Display info about header
 int		choose(char* name);						// Choose file from list
 int		confirm(char* name);					// Request confirmation for dangerous actions, returns ABORTED if rejected
-int		empty(void);							// Returns 0 unless it's empty
+int		empty(struct stat* v);					// Returns 0 unless it's empty **** REMOVE
 void	display(int err);						// Display error text
 
 /* ** main code ** */
@@ -137,6 +139,8 @@ int main (int argc, char** argv) {
 //	char	name[VOL_NLEN];		// file name storage CHECK SIZE!
 //	char	volume[VOL_NLEN];	// volume name storage, must be kept CHECK SIZE!
 	char	string[2000];
+	struct param	cli;		// pre-fetched parameter block
+	struct stat		status;		// global status
 
 	init();						// ** Init things **
 // First of all, pre-fetch parameters
@@ -252,44 +256,43 @@ int main (int argc, char** argv) {
 }
 
 /* ** Function definitions ** */
-void	init(void) {			// Init stuff
+void	init(struct stat* v, struct param* p) {			// Init stuff
 	int		i;
 
-	used			= 0;		// empty array, nothing stored in heap
+	v->used			= 0;		// empty array, nothing stored in heap
 	for (i=0; i<MAXFILES; i++) {
-		ptr[i]		= NULL;		// reset all empty pointers
-		cli.dir[i][0]='\0';		// reset fetched file list
+		v->ptr[i]	= NULL;		// reset all empty pointers
+		p->dir[i][0]='\0';		// reset fetched file list
 	}
-	cli.invol[0]	= '\0';		// create new volume by default
-	strcpy(cli.outvol, "durango.av\0");	// default output file!
-	cli.verbose		= FALSE;	// quiet mode by default
-	cli.force		= FALSE;	// ask for deletion confirmation!
-	cli.list		= FALSE;	// do not list until asked
-	cli.detailed	= FALSE;	// ditto for details
-	cli.extract		= FALSE;	// default is add, not extract
-	cli.remove		= FALSE;	// much less file deletion!
-	cli.space		= 0;		// no extra space unless specified
+	p->invol[0]		= '\0';		// create new volume by default
+	strcpy(p->outvol, "durango.av\0");	// default output file!
+	p->verbose		= FALSE;	// quiet mode by default
+	p->force		= FALSE;	// ask for deletion confirmation!
+	p->list			= FALSE;	// do not list until asked
+	p->detailed		= FALSE;	// ditto for details
+	p->extract		= FALSE;	// default is add, not extract
+	p->remove		= FALSE;	// much less file deletion!
+	p->space		= 0;		// no extra space unless specified
 }
 
-void	bye(void) {				// Release heap memory * * * VERY IMPORTANT * * *
+void	bye(struct param* v) {		// Release heap memory * * * VERY IMPORTANT * * *
 	int		i;
 
 	for (i=0; i<MAXFILES; i++) {
-		if (ptr[i] != NULL)		free(ptr[i]);		// release this block
-//		ptr[i] =	NULL;		// no need as this function will shut down
-//		if (cli.dir[i][0] != '\0')	cli.dir[i][0]='\0';	// just in case!
+		if (v->ptr[i] != NULL)		free(v->ptr[i]);	// release this block
+//		v->ptr[i] =	NULL;			// no need as this function will shut down
 	}
-//	used = 0;					// all clear
+//	v->used = 0;					// all clear
 }
 
-int		open(char* volume) {					// Open volume
+int		open(char* volume, struct stat* v, struct param* p) {					// Open volume
 	FILE*			file;
 	byte			buffer[HD_BYTES];			// temporary header fits into a full page
 	struct header	h;							// metadata storage
 
-	if (cli.verbose)			printf("Opening %s...", volume);
+	if (p->verbose)			printf("Opening %s...", volume);
 	if ((file = fopen(volume, "rb")) == NULL) 		return NO_VOLUME;	// ERROR -1: source volume not found
-	if (cli.verbose)			printf(" OK\nReading headers...");
+	if (p->verbose)			printf(" OK\nReading headers...");
 	while (!feof(file)) {
 		if (fread(buffer, HD_BYTES, 1, file) != 1)	break;				// get header into buffer
 		if (getheader(buffer, &h)) {									// check header and get metadata
@@ -297,38 +300,38 @@ int		open(char* volume) {					// Open volume
 			return	BAD_HEAD;
 		}
 		if (signature(&h) == SIG_FREE) {
-			if (cli.verbose)	printf("\n(Skipping free space)");
+			if (p->verbose)	printf("\n(Skipping free space)");
 			fseek(file, h.size-HD_BYTES, SEEK_CUR);						// just skip free space!
 			continue;													// EEEEEEEK
 		}
-		if (cli.verbose) {
+		if (p->verbose) {
 			printf("\nFound %s (%-5.2f KiB): Allocating", h.name, h.size/1024.0);
 			printf("[%x]",used);										// entry to be allocated
 		}
 		if (h.size & 511) {	// uneven size in header, must be rounded up as was padded in volume BEFORE ALLOCATING EEEEEEEEEEEEEEEEKKKKKKKK
 			h.size = (h.size + 512) & 0xFFFFFE00;						// sector-aligned size
 		}
-		if ((ptr[used] = malloc(h.size)) == NULL) {						// Allocate dynamic memory
+		if ((v->ptr[used] = malloc(h.size)) == NULL) {						// Allocate dynamic memory
 			fclose(file);												// eeek
 			return OUT_MEMORY;											// ERROR -2: out of memory
 		}
-		if (cli.verbose)		printf(", Header");
-		memcpy(ptr[used], buffer, HD_BYTES);							// copy preloaded header
-//		for (i=0; i<HD_BYTES; i++)		ptr[used][i] = buffer[i];		// * * * B A D * * * EEEEK
-		if (cli.verbose)
+		if (p->verbose)		printf(", Header");
+		memcpy(v->ptr[used], buffer, HD_BYTES);							// copy preloaded header
+//		for (i=0; i<HD_BYTES; i++)		v->ptr[used][i] = buffer[i];	// * * * B A D * * * EEEEK
+		if (p->verbose)
 			if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf(", Code");
 			else																printf(", Data");
-		if (fread(ptr[used]+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {			// read remaining bytes 
+		if (fread(v->ptr[used]+HD_BYTES, h.size-HD_BYTES, 1, file) != 1) {			// read remaining bytes 
 			printf("\n [ READ ERROR! ]\n");
-			free(ptr[used]);
-			ptr[used] = NULL;			// eeeeek
+			free(v->ptr[used]);
+			v->ptr[used] = NULL;			// eeeeek
 		} else {
-			if (cli.verbose)	printf(" OK");
+			if (p->verbose)		printf(" OK");
 			used++;						// another file into volume
 		}
 	}
 	fclose(file);
-	if (cli.verbose)			printf("\n\nDone!\n");
+	if (p->verbose)			printf("\n\nDone!\n");
 
 	return	0;
 }
