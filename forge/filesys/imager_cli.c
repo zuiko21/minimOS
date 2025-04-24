@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250424-0931
+ * last modified 20250424-1610
  * */
 
 /* Libraries */
@@ -142,7 +142,7 @@ int main (int argc, char** argv) {
 	struct cont	status;			// global status
 
 	init(&status, &cli);		// ** Init things **
-// First of all, pre-fetch parameters
+// * First of all, pre-fetch parameters *
 	while ((c = getopt(argc, argv, "i:o:vylmx:d:f:")) != -1) {
 		switch (c) {
 			case 'i':			// set input volume
@@ -208,11 +208,11 @@ int main (int argc, char** argv) {
 		}
 	}
 
-// now execute code according to enabled options
-	if (cli.verbose) {			// ** both verbose mode and version display **
-		printf("\nDurango-X volume creator, v1.2b2 by @zuiko21\n");
+// * now execute code according to enabled options *
+	if (cli.verbose) {				// ** both verbose mode and version display **
+		printf("\nDurango-X volume creator, v1.2b3 by @zuiko21\n");
 	}
-	if (cli.invol[0] != '\0') {	// ** open volume by name, otherwise was new volume **
+	if (cli.invol[0] != '\0') {		// ** open volume by name, otherwise was new volume **
 		err = open(cli.invol, &status, cli.verbose);
 		display(err);
 		if (err == NO_VOLUME)		return err;		// if specified, input volume MUST exist; other errors may continue
@@ -243,12 +243,13 @@ int main (int argc, char** argv) {
 			if (cli.verbose && err)	display(err);	// tell if file deletion fails
 		}
 // no need to return, as the volume file will be saved anyways
-	}
+	} else {						// EEEEEEEEEEEEEK
 // for each loose file, fetch name and add that file EEEEEK
-	i = 0;
-	while (cli.dir[i][0] != '\0') {
-		add(cli.dir[i], &status, cli.verbose);
-		if (++i >= MAXFILES)		break;
+		i = 0;
+		while (cli.dir[i][0] != '\0') {
+			add(cli.dir[i], &status, cli.verbose);
+			if (++i >= MAXFILES)		break;
+		}
 	}
 // **** generate the volume file with new/modified contents ****
 	if (status.used || cli.space)	generate(cli.outvol, &status, cli.space, cli.verbose);	// MUST have something!
@@ -295,7 +296,7 @@ int		open(char* volume, struct cont* v, bool verbose) {			// Open volume
 	struct header	h;												// metadata storage
 
 	if (verbose)						printf("Opening %s...", volume);
-	if ((file = fopen(volume, "rb")) == NULL) 	return NO_VOLUME;	// ERROR -1: source volume not found
+	if ((file = fopen(volume, "rb")) == NULL)	return NO_VOLUME;	// ERROR -1: source volume not found
 	if (verbose)			printf(" OK\nReading headers...");
 	while (!feof(file)) {
 		if (fread(buffer, HD_BYTES, 1, file) != 1)	break;			// get header into buffer
@@ -412,12 +413,12 @@ int		add(char* name, struct cont* v, bool verbose) {	// Add file to volume
 		makeheader(buffer, &h);							// transfer header struct back into buffer
 //		h.size -= HD_BYTES;								// eeeek
 	}
-	if (verbose)				printf("\nAdding %s (%-5.2f KiB): Allocating[%d]", h.name, h.size/1024.0, v->used);
+	if (verbose)		printf("\nAdding %s (%-5.2f KiB): Allocating[%d]", h.name, h.size/1024.0, v->used);
 	if ((v->ptr[v->used] = malloc(h.size)) == NULL) {	// Allocate dynamic memory
 		fclose(file);
 		return OUT_MEMORY;								// out of memory error
 	}
-	if (verbose)				printf(", Header");
+	if (verbose)		printf(", Header");
 	memcpy(v->ptr[v->used], buffer, HD_BYTES);			// copy preloaded header
 	if ((signature(&h) == SIG_ROM) && (h.size & 511)) {	// check for misaligned ROM images
 		free(v->ptr[v->used]);
@@ -433,7 +434,7 @@ int		add(char* name, struct cont* v, bool verbose) {	// Add file to volume
 		free(v->ptr[v->used]);
 		v->ptr[v->used] = NULL;							// eeeeek
 	} else {
-		if (verbose)			printf(" OK\n");
+		if (verbose)	printf(" OK\n");
 		v->used++;										// another file into volume
 	}
 	fclose(file);
@@ -456,8 +457,8 @@ int		extract(char* name, struct cont* v, bool verbose) {		// Extract file from v
 		info(&h, string);
 		printf("%s", string);
 	}
-	if (signature(&h) == SIG_FILE)		skip = HD_BYTES;		// generic files trim headers
-	else								skip = 0;
+	if (signature(&h) == SIG_FILE)	skip = HD_BYTES;			// generic files trim headers
+	else							skip = 0;
 	if (verbose)		printf("\nWriting to file %s... ", h.name);
 	if ((file = fopen(h.name, "wb")) == NULL) {
 		return NO_CREATE;										// ERROR -9: can't create file
@@ -488,11 +489,9 @@ int		rmfile(char* name, struct cont* v, bool force, bool verbose) {	// Delete fi
 	}
 	if (confirm("Will REMOVE this file from volume", force))	return ABORTED;		// make sure or ERROR -10: aborted operation
 	// If arrived here, proceed to removal
-printf("[del=%d,used=%d]",del,v->used);
 	free(v->ptr[del]);											// actual removal
 	v->used--;													// one less file!
 	for (i=del; i < v->used; i++)	v->ptr[i] = v->ptr[i+1];	// shift down all remainin entries after deleted one
-printf("[i=%d, now used=%d] ",i,v->used);
 	v->ptr[i] = NULL;											// extra safety!
 
 	return	0;
@@ -578,7 +577,7 @@ int		generate(char* volume, struct cont* v, dword space, bool verbose) {		// Gen
 		if (verbose)		printf("Appending... ");
 		err = 0;
 		for (i=HD_BYTES; i < (space<<8); i++)
-			if (fwrite(&pad, 1, 1, file) != 1)	err++;	// hopefully with no errors!
+			if (fwrite(&pad, 1, 1, file) != 1)	err++;		// hopefully with no errors!
 		if (!err)	if (verbose)	printf("OK");
 		else 		printf(" [ FAIL *** Do NOT use free space!! ]");
 	}
@@ -600,14 +599,14 @@ int		getheader(byte* p, struct header* h) {	// Extract header specs, return BAD_
 	h->signature[1] =	p[H_SIGNATURE+1];
 	h->ld_addr		=	p[H_LOAD] | p[H_LOAD+1]<<8;
 	h->ex_addr		=	p[H_EXECUTE] | p[H_EXECUTE+1]<<8;
-	src = H_NAME;										// filename offset
+	src = H_NAME;												// filename offset
 	dest = 0;
-	while (p[src])		h->name[dest++] = p[src++];		// copy filename
-	h->name[dest]	=	p[src];							// and terminator EEEEEK
-	src++;												// skip terminator
+	while (p[src])		h->name[dest++] = p[src++];				// copy filename
+	h->name[dest]	=	p[src];									// and terminator EEEEEK
+	src++;														// skip terminator
 	dest = 0;
-	while (p[src])		h->comment[dest++] = p[src++];	// copy comment
-	h->comment[dest]=	p[src];							// and terminator EEEEEK
+	while (p[src])		h->comment[dest++] = p[src++];			// copy comment
+	h->comment[dest]=	p[src];									// and terminator EEEEEK
 	src = H_LIB;												// library commit offset
 	for (dest=0;dest<8;dest++)		h->lib[dest] = p[src++];	// copy library commit
 //	src = H_COMMIT;												// main commit offset (already there)
@@ -708,7 +707,7 @@ int		signature(struct header* h) {		// Returns file type from coded signature
 	} else return	SIG_UNKN;				// Totally unknown signature
 }
 
-void	info(struct header* h, char* result) {					// Display info about header
+void	info(struct header* h, char* result) {		// Display info about header
 	int		i;
 	char*	pos;
 
@@ -717,7 +716,7 @@ void	info(struct header* h, char* result) {					// Display info about header
 	pos	= result+strlen(result);
 	switch(signature(h)) {
 		case SIG_FREE:		// dL
-			sprintf(pos, "* Free space *");						// should never be loaded!
+			sprintf(pos, "* Free space *");			// should never be loaded!
 			break;
 		case SIG_ROM:		// dX
 			sprintf(pos, "ROM image");
