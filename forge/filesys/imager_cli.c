@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250424-1610
+ * last modified 20250424-1717
  * */
 
 /* Libraries */
@@ -130,7 +130,8 @@ int		signature(struct header* h);										// Return file type from coded signat
 void	info(struct header* h, char* result);								// Display info about header
 int		choose(char* name, struct cont* v);									// Choose file from list
 int		confirm(char* name, bool force);									// Request confirmation for dangerous actions, returns ABORTED if rejected
-void	display(int err);													// Display error text
+void	display(int err, char* text);										// Display error text
+void	usage(char* cmd);													// Usage guide
 
 /* ** main code ** */
 int main (int argc, char** argv) {
@@ -143,7 +144,7 @@ int main (int argc, char** argv) {
 
 	init(&status, &cli);		// ** Init things **
 // * First of all, pre-fetch parameters *
-	while ((c = getopt(argc, argv, "i:o:vylmx:d:f:")) != -1) {
+	while ((c = getopt(argc, argv, "i:o:hvylmx:d:f:")) != -1) {
 		switch (c) {
 			case 'i':			// set input volume
 				strcpy(cli.invol, optarg);
@@ -184,12 +185,14 @@ int main (int argc, char** argv) {
 			case 'f':			// set free space in KiB
 				err = setfree((int)strtol(optarg, NULL, 0), &(cli.space));
 				if (err) {
-					display(err);
+					display(err, "\0");
 					return ABORTED;
 				}
 				break;
 			case '?':
 				printf("\n*** *** Bad parameter *** ***\n");
+			case 'h':
+				usage(argv[0]);
 				return ABORTED;
 		}
 	}
@@ -214,24 +217,27 @@ int main (int argc, char** argv) {
 	}
 	if (cli.invol[0] != '\0') {		// ** open volume by name, otherwise was new volume **
 		err = open(cli.invol, &status, cli.verbose);
-		display(err);
+		display(err, cli.invol);
 		if (err == NO_VOLUME)		return err;		// if specified, input volume MUST exist; other errors may continue
 	}
 	if (cli.list) {					// ** list existing files into volume (and finish) **
 		err = list(string, SIMPLE_LIST, &status);
 		if (!err)					printf("\n%s\n", string);
+		else						display(err, "\0");
 		return	err;				// list and exit
 	}
 	if (cli.detailed) {				// ** DETAIL existing files into volume (and finish) **
 		err = list(string, DETAIL_LIST, &status);
 		if (!err)					printf("\n%s\n", string);
+		else						display(err, "\0");
 		return	err;				// list and exit
 	}
 	if (cli.extract) {				// ** fetch name and extract that file if exists **
 		i = 0;						// reset file list cursor
 		while (cli.dir[i][0] != '\0') {
 			err = extract(cli.dir[i++], &status, cli.verbose);
-			if (cli.verbose && err)		display(err);	// tell if file extraction fails
+//			if (cli.verbose && err)		display(err);	// tell if file extraction fails
+			display(err, cli.dir[i-1]);					// tell if file extraction fails
 		}
 		return	0;
 	}
@@ -240,14 +246,16 @@ int main (int argc, char** argv) {
 		i = 0;						// reset file list cursor
 		while (cli.dir[i][0] != '\0') {
 			err = rmfile(cli.dir[i++], &status, cli.force, cli.verbose);
-			if (cli.verbose && err)	display(err);	// tell if file deletion fails
+//			if (cli.verbose && err)	display(err);	// tell if file deletion fails
+			display(err, cli.dir[i-1]);				// tell if file deletion fails
 		}
 // no need to return, as the volume file will be saved anyways
 	} else {						// EEEEEEEEEEEEEK
 // for each loose file, fetch name and add that file EEEEEK
 		i = 0;
 		while (cli.dir[i][0] != '\0') {
-			add(cli.dir[i], &status, cli.verbose);
+			err = add(cli.dir[i], &status, cli.verbose);
+			display(err, cli.dir[i]);
 			if (++i >= MAXFILES)		break;
 		}
 	}
@@ -502,28 +510,28 @@ int		setfree(int kb, dword* pages) {		// Select free space to be appended
 
 	if (kb > 16384)		return FREE_ERR;	// ERROR -11: invalid free size
 	req = kb << 2;							// times four
-	req--;									// minus header page
+	if (kb == 16384)	req--;				// minus header page, not to exceed 16 MiB
 	*pages = (dword)req;
 
 	return	0;
 }
 
 int		generate(char* volume, struct cont* v, dword space, bool verbose) {		// Generate volume
-	const byte		pad = 0xFF;					// padding byte
+	const byte		pad = 0xFF;				// padding byte
 	FILE*			file;
-	byte			buffer[HD_BYTES];			// temporary header storage
+	byte			buffer[HD_BYTES];		// temporary header storage
 	struct header	h;
 	int				i, err;
 
-//	if (!(v->used))		return EMPTY_VOL;		// empty volume error
-	if (volume[0] != '\0')	printf("Writing to volume %s...", volume);
+//	if (!(v->used))		return EMPTY_VOL;	// empty volume error
+	if (volume[0] != '\0' && verbose)		printf("Writing to volume %s...", volume);
 	if ((file = fopen(volume, "wb")) == NULL) {
-		return NO_CREATE;						// error creating file
+		return NO_CREATE;					// error creating file
 	}
 	if (verbose)			printf(" OK\nLinking files...\n");
 	for (i=0; i < v->used; i++) {
 		err = 0;
-		getheader(v->ptr[i], &h);				// info about file to be added
+		getheader(v->ptr[i], &h);			// info about file to be added
 		if (verbose) {
 			printf("%s: ", h.name);
 			if ((signature(&h) == SIG_ROM) || (signature(&h) == SIG_POCKET))	printf("Code");
@@ -543,8 +551,9 @@ int		generate(char* volume, struct cont* v, dword space, bool verbose) {		// Gen
 				}
 			}
 		}
-		if (!err)			if (verbose)	printf(" OK");
-		else {
+		if (!err) {
+			if (verbose)	printf(" OK");
+		} else {
 			fclose(file);
 			return 0;	// CHECK CHECK CHECK
 		}
@@ -553,38 +562,39 @@ int		generate(char* volume, struct cont* v, dword space, bool verbose) {		// Gen
 	if (space) {
 		if (verbose)		printf("Free space: ");
 		h.name[0]		= '\0';
-		h.comment[0]	= '\0';					// empty name and comment
+		h.comment[0]	= '\0';				// empty name and comment
 		h.signature[0]	= 'd';
-		h.signature[1]	= 'L';					// free space signature
+		h.signature[1]	= 'L';				// free space signature
 		h.ld_addr		= 0x2A2A;
-		h.ex_addr		= 0x2A2A;				// unused Pocket fields have '****'
+		h.ex_addr		= 0x2A2A;			// unused Pocket fields have '****'
 		memcpy(h.lib,	"$$$$$$$$", 8);
-		memcpy(h.commit,"$$$$$$$$", 8);			// unused commits
+		memcpy(h.commit,"$$$$$$$$", 8);		// unused commits
 		h.version		= 0;
 		h.revision		= 0;
 		h.phase			= 'a';
-		h.build			= 0;					// generic 0.0a0 version
+		h.build			= 0;				// generic 0.0a0 version
 		h.year			= 2022-1980;
 		h.month			= 12;
 		h.day			= 23;
 		h.hour			= 19;
-		h.minute		= 44;					// default timestamp is Durango-X unit #1 build date ;-)
+		h.minute		= 44;				// default timestamp is Durango-X unit #1 build date ;-)
 		h.second		= 0;
 		h.size			= space << 8;
-		makeheader(buffer, &h);					// create free space header
+		makeheader(buffer, &h);				// create free space header
 		if (fwrite(buffer, HD_BYTES, 1, file) != 1)	
-			if (verbose)	printf("Error! ");	// hopefully with no errors!
+			if (verbose)	printf("Error! ");			// hopefully with no errors!
 		if (verbose)		printf("Appending... ");
 		err = 0;
 		for (i=HD_BYTES; i < (space<<8); i++)
-			if (fwrite(&pad, 1, 1, file) != 1)	err++;		// hopefully with no errors!
-		if (!err)	if (verbose)	printf("OK");
-		else 		printf(" [ FAIL *** Do NOT use free space!! ]");
+			if (fwrite(&pad, 1, 1, file) != 1)	err++;	// hopefully with no errors!
+		if (!err) {
+			if (verbose)	printf("OK");
+		} else 				printf(" [ FAIL *** Do NOT use free space!! ]");
 	}
 //	for (i=0; i<HD_BYTES; i++)
 //		fwrite(&pad, 1, 1, file);				// make best effort to add an invalid 'header' at the end
 	fclose(file);
-	printf("\nDone!\n");
+	if (verbose)			printf("\nDone!\n");
 
 	return 0;
 }
@@ -780,9 +790,9 @@ int		confirm(char* msg, bool force) {		// Request confirmation for dangerous act
 	return	0;									// if not aborted, proceed
 }
 
-void	display(int err) {						// display error message
+void	display(int err, char* text) {			// display error message
 	if (!err)	return;
-	printf("\n*** ");
+	printf("\n%s *** ", text);
 	switch(err) {
 		case NO_VOLUME:
 			printf("VOLUME FILE NOT FOUND");
@@ -824,4 +834,19 @@ void	display(int err) {						// display error message
 			printf("- - -UNKNOWN ERROR- - -");
 	}
 	printf(" ***\n\n");
+}
+
+void	usage(char* cmd) {
+	printf("\nUSAGE: %s [options] file_to_add [...]\n", cmd);
+	printf("OPTIONS:\n\t-i volume\tOpen existing volume file\n");
+	printf("\t-o volume\tSet volume output filename (default: durango.av)\n");
+	printf("\t-h\tDisplay this text\n");
+	printf("\t-v\tSet verbose mode\n");
+	printf("\t-y\tForce deletions (do NOT ask for confirmation!)\n");
+	printf("\t-l\tList files in volume (needs -i)\n");
+	printf("\t-m\tDetailed listing of files in volume (needs -i)\n");
+	printf("\t-x file [-x file ...]\tExtract files from volume (needs -i, incompatible with -d)\n");
+	printf("\t-d file [-d file ...]\tREMOVE files from volume (needs -i, incompatible with -x)\n");
+	printf("\t-f size\tSet free space to 'size' KiB\n");
+	printf("Sparse filenames will be added to volume (incompatible with -d or -x)\n\n");
 }
