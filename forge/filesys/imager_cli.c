@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250424-0856
+ * last modified 20250424-0905
  * */
 
 /* Libraries */
@@ -115,22 +115,22 @@ struct	header {
 };
 
 /* Function prototypes */
-void	init(struct cont* v, struct param* p);					// Init stuff
-void	bye(struct cont* v);									// Clean up
-int		open(char* volume, struct cont* v, bool verbose);		// Open volume
-int		list(char* result, int mode, struct cont* v);			// List volume contents
-int		add(char* name, struct cont* v, bool verbose);			// Add file to volume
-int		extract(char* name, struct cont* v, bool verbose);		// Extract file from volume
+void	init(struct cont* v, struct param* p);								// Init stuff
+void	bye(struct cont* v);												// Clean up
+int		open(char* volume, struct cont* v, bool verbose);					// Open volume
+int		list(char* result, int mode, struct cont* v);						// List volume contents
+int		add(char* name, struct cont* v, bool verbose);						// Add file to volume
+int		extract(char* name, struct cont* v, bool verbose);					// Extract file from volume
 int		rmfile(char* name, struct cont* v, bool force, bool verbose);		// Delete file from volume
-int		setfree(int kb, dword* pages);			// Select free space to be appended
-int		generate(char* volume, struct cont* v, int space, bool verbose);	// Generate volume
-int		getheader(byte* p, struct header* h);	// Extract header specs, returns BAD_HEAD if not valid
-void	makeheader(byte* p, struct header* h);	// Generate header from struct
-int		signature(struct header* h);			// Return file type from coded signature
-void	info(struct header* h, char* result);	// Display info about header
-int		choose(char* name, struct cont* v);		// Choose file from list
-int		confirm(char* name, bool force);		// Request confirmation for dangerous actions, returns ABORTED if rejected
-void	display(int err);						// Display error text
+int		setfree(int kb, dword* pages);										// Select free space to be appended
+int		generate(char* volume, struct cont* v, dword space, bool verbose);	// Generate volume
+int		getheader(byte* p, struct header* h);								// Extract header specs, returns BAD_HEAD if not valid
+void	makeheader(byte* p, struct header* h);								// Generate header from struct
+int		signature(struct header* h);										// Return file type from coded signature
+void	info(struct header* h, char* result);								// Display info about header
+int		choose(char* name, struct cont* v);									// Choose file from list
+int		confirm(char* name, bool force);									// Request confirmation for dangerous actions, returns ABORTED if rejected
+void	display(int err);													// Display error text
 
 /* ** main code ** */
 int main (int argc, char** argv) {
@@ -139,9 +139,9 @@ int main (int argc, char** argv) {
 //	char	volume[VOL_NLEN];	// volume name storage, must be kept CHECK SIZE!
 	char	string[2000];
 	struct param	cli;		// pre-fetched parameter block
-	struct cont		status;		// global status
+	struct cont	status;			// global status
 
-	init(&status, &param);		// ** Init things **
+	init(&status, &cli);		// ** Init things **
 // First of all, pre-fetch parameters
 	while ((c = getopt(argc, argv, "i:o:vylmx:d:f:")) != -1) {
 		switch (c) {
@@ -210,12 +210,12 @@ int main (int argc, char** argv) {
 
 // now execute code according to enabled options
 	if (cli.verbose) {			// ** both verbose mode and version display **
-		printf("\nDurango-X volume creator, v1.1b2 by @zuiko21\n");
+		printf("\nDurango-X volume creator, v1.2b1 by @zuiko21\n");
 	}
 	if (cli.invol[0] != '\0') {	// ** open volume by name, otherwise was new volume **
 		err = open(cli.invol, &status, cli.verbose);
 		display(err);
-		if (err == NO_VOLUME)	return err;	// if specified, input volume MUST exist; other errors may continue
+		if (err == NO_VOLUME)	return err;		// if specified, input volume MUST exist; other errors may continue
 	}
 	if (cli.list) {				// ** list existing files into volume (and finish) **
 		err = list(string, SIMPLE_LIST, &status);
@@ -309,7 +309,7 @@ int		open(char* volume, struct cont* v, bool verbose) {					// Open volume
 		}
 		if (verbose) {
 			printf("\nFound %s (%-5.2f KiB): Allocating", h.name, h.size/1024.0);
-			printf("[%x]",used);										// entry to be allocated
+			printf("[%x]",v->used);										// entry to be allocated
 		}
 		if (h.size & 511) {	// uneven size in header, must be rounded up as was padded in volume BEFORE ALLOCATING EEEEEEEEEEEEEEEEKKKKKKKK
 			h.size = (h.size + 512) & 0xFFFFFE00;						// sector-aligned size
@@ -485,7 +485,7 @@ int		rmfile(char* name, struct cont* v, bool force, bool verbose) {			// Delete 
 		info(&h, string);				// display extended info
 		printf("%s\n", string);
 	}
-	if (confirm("Will REMOVE this file from volume"), force)	return ABORTED;	// make sure or ERROR -10: aborted operation
+	if (confirm("Will REMOVE this file from volume", force))	return ABORTED;		// make sure or ERROR -10: aborted operation
 	// If arrived here, proceed to removal
 	free(v->ptr[del]);						// actual removal
 	v->used--;								// one less file!
@@ -506,7 +506,7 @@ int		setfree(int kb, dword* pages) {				// Select free space to be appended
 	return	0;
 }
 
-int		generate(char* volume, struct cont* v, int space, bool verbose) {		// Generate volume
+int		generate(char* volume, struct cont* v, dword space, bool verbose) {		// Generate volume
 	const byte		pad = 0xFF;			// padding byte
 	FILE*			file;
 	byte			buffer[HD_BYTES];	// temporary header storage
@@ -568,7 +568,7 @@ int		generate(char* volume, struct cont* v, int space, bool verbose) {		// Gener
 		h.hour			= 19;
 		h.minute		= 44;					// default timestamp is Durango-X unit #1 build date ;-)
 		h.second		= 0;
-		h.size			= p->space << 8;
+		h.size			= space << 8;
 		makeheader(buffer, &h);					// create free space header
 		if (fwrite(buffer, HD_BYTES, 1, file) != 1)	
 			if (verbose)	printf("Error! ");	// hopefully with no errors!
