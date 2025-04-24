@@ -488,9 +488,11 @@ int		rmfile(char* name, struct cont* v, bool force, bool verbose) {	// Delete fi
 	}
 	if (confirm("Will REMOVE this file from volume", force))	return ABORTED;		// make sure or ERROR -10: aborted operation
 	// If arrived here, proceed to removal
+printf("[del=%d,used=%d]",del,v->used);
 	free(v->ptr[del]);											// actual removal
 	v->used--;													// one less file!
 	for (i=del; i < v->used; i++)	v->ptr[i] = v->ptr[i+1];	// shift down all remainin entries after deleted one
+printf("[i=%d] ",i);
 	v->ptr[i] = NULL;											// extra safety!
 
 	return	0;
