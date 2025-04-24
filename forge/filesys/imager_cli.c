@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250423-1329
+ * last modified 20250424-0856
  * */
 
 /* Libraries */
@@ -115,22 +115,21 @@ struct	header {
 };
 
 /* Function prototypes */
-void	init(struct cont* v, struct param* cli);				// Init stuff
+void	init(struct cont* v, struct param* p);					// Init stuff
 void	bye(struct cont* v);									// Clean up
-int		open(char* volume, struct cont* v, struct param* cli);	// Open volume
-int		list(char* result, int mode, struct cont* v, struct param* cli);			// List volume contents
-int		add(char* name, struct cont* v, struct param* cli);		// Add file to volume
-int		extract(char* name, struct cont* v, struct param* cli);	// Extract file from volume
-int		rmfile(char* name, struct cont* v, struct param* cli);	// Delete file from volume
-int		setfree(int kb, struct cont* v, struct param* cli);		// Select free space to be appended
-int		generate(char* volume, struct cont* v, struct param* cli);					// Generate volume
+int		open(char* volume, struct cont* v, bool verbose);		// Open volume
+int		list(char* result, int mode, struct cont* v);			// List volume contents
+int		add(char* name, struct cont* v, bool verbose);			// Add file to volume
+int		extract(char* name, struct cont* v, bool verbose);		// Extract file from volume
+int		rmfile(char* name, struct cont* v, bool force, bool verbose);		// Delete file from volume
+int		setfree(int kb, dword* pages);			// Select free space to be appended
+int		generate(char* volume, struct cont* v, int space, bool verbose);	// Generate volume
 int		getheader(byte* p, struct header* h);	// Extract header specs, returns BAD_HEAD if not valid
 void	makeheader(byte* p, struct header* h);	// Generate header from struct
 int		signature(struct header* h);			// Return file type from coded signature
 void	info(struct header* h, char* result);	// Display info about header
-int		choose(char* name);						// Choose file from list
-int		confirm(char* name);					// Request confirmation for dangerous actions, returns ABORTED if rejected
-int		empty(struct cont* v);					// Returns 0 unless it's empty **** REMOVE
+int		choose(char* name, struct cont* v);		// Choose file from list
+int		confirm(char* name, bool force);		// Request confirmation for dangerous actions, returns ABORTED if rejected
 void	display(int err);						// Display error text
 
 /* ** main code ** */
@@ -142,7 +141,7 @@ int main (int argc, char** argv) {
 	struct param	cli;		// pre-fetched parameter block
 	struct cont		status;		// global status
 
-	init();						// ** Init things **
+	init(&status, &param);		// ** Init things **
 // First of all, pre-fetch parameters
 	while ((c = getopt(argc, argv, "i:o:vylmx:d:f:")) != -1) {
 		switch (c) {
@@ -183,10 +182,14 @@ int main (int argc, char** argv) {
 				strcpy(cli.dir[line++], optarg);
 				break;
 			case 'f':
-				cli.space	= (dword)strtol(optarg, NULL, 0);
+				err = setfree((int)strtol(optarg, NULL, 0), &(cli.space));
+				if (err) {
+					display(err);
+					return ABORTED;
+				}
 				break;
 			case '?':
-				printf("\n*** Bad param ***\n");
+				printf("\n*** *** Bad parameter *** ***\n");
 				return ABORTED;
 		}
 	}
@@ -210,24 +213,24 @@ int main (int argc, char** argv) {
 		printf("\nDurango-X volume creator, v1.1b2 by @zuiko21\n");
 	}
 	if (cli.invol[0] != '\0') {	// ** open volume by name, otherwise was new volume **
-		err = open(cli.invol);
+		err = open(cli.invol, &status, cli.verbose);
 		display(err);
 		if (err == NO_VOLUME)	return err;	// if specified, input volume MUST exist; other errors may continue
 	}
 	if (cli.list) {				// ** list existing files into volume (and finish) **
-		err = list(string, SIMPLE_LIST);
+		err = list(string, SIMPLE_LIST, &status);
 		if (!err)				printf("\n%s\n", string);
 		return	err;			// list and exit
 	}
 	if (cli.detailed) {			// ** DETAIL existing files into volume (and finish) **
-		err = list(string, DETAIL_LIST);
+		err = list(string, DETAIL_LIST, &status);
 		if (!err)				printf("\n%s\n", string);
 		return	err;			// list and exit
 	}
 	if (cli.extract) {			// ** fetch name and extract that file if exists **
 		i = 0;					// reset file list cursor
 		while (cli.dir[i][0] != '\0') {
-			err = extract(cli.dir[i++]);
+			err = extract(cli.dir[i++], &status, cli.verbose);
 			if (cli.verbose && err)		display(err);	// tell if file extraction fails
 		}
 		return	0;
@@ -236,7 +239,7 @@ int main (int argc, char** argv) {
 	if (cli.remove) {			// fetch name and remove it from volume (could add something afterwards)
 		i = 0;					// reset file list cursor
 		while (cli.dir[i][0] != '\0') {
-			err = rmfile(cli.dir[i++]);
+			err = rmfile(cli.dir[i++], &status, cli.force, cli.verbose);
 			if (cli.verbose && err)		display(err);	// tell if file deletion fails
 		}
 // no need to return, as the volume file will be saved anyways
@@ -244,12 +247,12 @@ int main (int argc, char** argv) {
 // for each loose file, fetch name and add that file EEEEEK
 	i = 0;
 	while (cli.dir[i][0] != '\0') {
-		add(cli.dir[i]);
+		add(cli.dir[i], &status, cli.verbose);
 		if (++i >= MAXFILES)	break;
 	}
 // **** generate the volume file with new/modified contents ****
-	generate(cli.outvol);		// maybe if NOT empty? eeeek
-	bye();						// Clean up
+	generate(cli.outvol, &status, cli.space, cli.verbose);		// maybe if NOT empty? eeeek
+	bye(&status);				// Clean up
 	if (cli.verbose)			printf("Bye!\n");
 
 	return	0;
@@ -408,7 +411,7 @@ int		add(char* name, struct cont* v, bool verbose) {				// Add file to volume
 		makeheader(buffer, &h);							// transfer header struct back into buffer
 //		h.size -= HD_BYTES;								// eeeek
 	}
-	if (verbose)				printf("\nAdding %s (%-5.2f KiB): Allocating[%d]", h.name, h.size/1024.0, used);
+	if (verbose)				printf("\nAdding %s (%-5.2f KiB): Allocating[%d]", h.name, h.size/1024.0, v->used);
 	if ((v->ptr[v->used] = malloc(h.size)) == NULL) {			// Allocate dynamic memory
 		fclose(file);
 		return OUT_MEMORY;								// out of memory error
@@ -445,7 +448,7 @@ int		extract(char* name, struct cont* v, bool verbose) {			// Extract file from 
 
 	string[0] = '\0';
 	if (!(v->used))		return EMPTY_VOL;						// empty volume error
-	ext = choose(name);
+	ext = choose(name, v);
 	if (ext < 0)		return BAD_SELECT;						// ERROR -8: invalid selection
 	getheader(v->ptr[ext], &h);									// get info for candidate
 	if (verbose) {
@@ -468,37 +471,37 @@ int		extract(char* name, struct cont* v, bool verbose) {			// Extract file from 
 	return	0;
 }
 
-int		rmfile(char* name, struct cont* v, bool verbose) {			// Delete file from volume
+int		rmfile(char* name, struct cont* v, bool force, bool verbose) {			// Delete file from volume
 	int				i, del;
 	struct header	h;
 	char			string[2000];		// local storage in case of verbose mode
 
 	string[0] = '\0';
 	if (!(v->used))	return EMPTY_VOL;	// empty volume error
-	del = choose(name);
+	del = choose(name, v);
 	if (del < 0)	return BAD_SELECT;	// invalid selection error
 	if (verbose) {
 		getheader(v->ptr[del], &h);		// get info for candidate
 		info(&h, string);				// display extended info
 		printf("%s\n", string);
 	}
-	if (confirm("Will REMOVE this file from volume"))	return ABORTED;	// make sure or ERROR -10: aborted operation
+	if (confirm("Will REMOVE this file from volume"), force)	return ABORTED;	// make sure or ERROR -10: aborted operation
 	// If arrived here, proceed to removal
 	free(v->ptr[del]);						// actual removal
 	v->used--;								// one less file!
-	for (i=del; i < v->used; i++)			ptr[i] = ptr[i+1];				// shift down all remainin entries after deleted one
+	for (i=del; i < v->used; i++)			v->ptr[i] = v->ptr[i+1];				// shift down all remainin entries after deleted one
 	v->ptr[i] = NULL;						// extra safety!
 
 	return	0;
 }
 
-int		setfree(int kb, struct param* p) {				// Select free space to be appended
+int		setfree(int kb, dword* pages) {				// Select free space to be appended
 	int		req;
 
 	if (kb > 16384)		return FREE_ERR;		// ERROR -11: invalid free size
 	req = kb << 2;						// times four
 	req--;								// minus header page
-	p->space = req;
+	*pages = (dword)req;
 
 	return	0;
 }
