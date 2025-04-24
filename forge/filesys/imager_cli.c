@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250424-0905
+ * last modified 20250424-0917
  * */
 
 /* Libraries */
@@ -159,11 +159,11 @@ int main (int argc, char** argv) {
 				break;
 			case 'l':
 				cli.list	= TRUE;
-				cli.detailed = FALSE;
+				cli.detailed= FALSE;
 				break;
 			case 'm':
 				cli.list	= FALSE;
-				cli.detailed = TRUE;
+				cli.detailed= TRUE;
 				break;
 			case 'x':
 				if (cli.remove) {
@@ -210,25 +210,25 @@ int main (int argc, char** argv) {
 
 // now execute code according to enabled options
 	if (cli.verbose) {			// ** both verbose mode and version display **
-		printf("\nDurango-X volume creator, v1.2b1 by @zuiko21\n");
+		printf("\nDurango-X volume creator, v1.2b2 by @zuiko21\n");
 	}
 	if (cli.invol[0] != '\0') {	// ** open volume by name, otherwise was new volume **
 		err = open(cli.invol, &status, cli.verbose);
 		display(err);
-		if (err == NO_VOLUME)	return err;		// if specified, input volume MUST exist; other errors may continue
+		if (err == NO_VOLUME)		return err;		// if specified, input volume MUST exist; other errors may continue
 	}
-	if (cli.list) {				// ** list existing files into volume (and finish) **
+	if (cli.list) {					// ** list existing files into volume (and finish) **
 		err = list(string, SIMPLE_LIST, &status);
-		if (!err)				printf("\n%s\n", string);
-		return	err;			// list and exit
+		if (!err)					printf("\n%s\n", string);
+		return	err;				// list and exit
 	}
-	if (cli.detailed) {			// ** DETAIL existing files into volume (and finish) **
+	if (cli.detailed) {				// ** DETAIL existing files into volume (and finish) **
 		err = list(string, DETAIL_LIST, &status);
-		if (!err)				printf("\n%s\n", string);
-		return	err;			// list and exit
+		if (!err)					printf("\n%s\n", string);
+		return	err;				// list and exit
 	}
-	if (cli.extract) {			// ** fetch name and extract that file if exists **
-		i = 0;					// reset file list cursor
+	if (cli.extract) {				// ** fetch name and extract that file if exists **
+		i = 0;						// reset file list cursor
 		while (cli.dir[i][0] != '\0') {
 			err = extract(cli.dir[i++], &status, cli.verbose);
 			if (cli.verbose && err)		display(err);	// tell if file extraction fails
@@ -236,11 +236,11 @@ int main (int argc, char** argv) {
 		return	0;
 	}
 // **** The following options do modify a volume ****
-	if (cli.remove) {			// fetch name and remove it from volume (could add something afterwards)
-		i = 0;					// reset file list cursor
+	if (cli.remove) {				// fetch name and remove it from volume (could add something afterwards)
+		i = 0;						// reset file list cursor
 		while (cli.dir[i][0] != '\0') {
 			err = rmfile(cli.dir[i++], &status, cli.force, cli.verbose);
-			if (cli.verbose && err)		display(err);	// tell if file deletion fails
+			if (cli.verbose && err)	display(err);	// tell if file deletion fails
 		}
 // no need to return, as the volume file will be saved anyways
 	}
@@ -248,58 +248,59 @@ int main (int argc, char** argv) {
 	i = 0;
 	while (cli.dir[i][0] != '\0') {
 		add(cli.dir[i], &status, cli.verbose);
-		if (++i >= MAXFILES)	break;
+		if (++i >= MAXFILES)		break;
 	}
 // **** generate the volume file with new/modified contents ****
-	generate(cli.outvol, &status, cli.space, cli.verbose);		// maybe if NOT empty? eeeek
-	bye(&status);				// Clean up
-	if (cli.verbose)			printf("Bye!\n");
+	if (status.used || cli.space)	generate(cli.outvol, &status, cli.space, cli.verbose);	// MUST have something!
+	else							if (verbose)	printf("\n...Nothing to be created!\n");
+	bye(&status);					// Clean up
+	if (cli.verbose)				printf("Bye!\n");
 
 	return	0;
 }
 
 /* ** Function definitions ** */
-void	init(struct cont* v, struct param* p) {			// Init stuff
+void	init(struct cont* v, struct param* p) {		// Init both contents and parameter structures
 	int		i;
 
-	v->used			= 0;		// empty array, nothing stored in heap
+	v->used			= 0;				// empty array, nothing stored in heap
 	for (i=0; i<MAXFILES; i++) {
-		v->ptr[i]	= NULL;		// reset all empty pointers
-		p->dir[i][0]='\0';		// reset fetched file list
+		v->ptr[i]	= NULL;				// reset all empty pointers
+		p->dir[i][0]='\0';				// reset fetched file list
 	}
-	p->invol[0]		= '\0';		// create new volume by default
+	p->invol[0]		= '\0';				// create new volume by default
 	strcpy(p->outvol, "durango.av\0");	// default output file!
-	p->verbose		= FALSE;	// quiet mode by default
-	p->force		= FALSE;	// ask for deletion confirmation!
-	p->list			= FALSE;	// do not list until asked
-	p->detailed		= FALSE;	// ditto for details
-	p->extract		= FALSE;	// default is add, not extract
-	p->remove		= FALSE;	// much less file deletion!
-	p->space		= 0;		// no extra space unless specified
+	p->verbose		= FALSE;			// quiet mode by default
+	p->force		= FALSE;			// ask for deletion confirmation!
+	p->list			= FALSE;			// do not list until asked
+	p->detailed		= FALSE;			// ditto for details
+	p->extract		= FALSE;			// default is add, not extract
+	p->remove		= FALSE;			// much less file deletion!
+	p->space		= 0;				// no extra space unless specified
 }
 
-void	bye(struct cont* v) {		// Release heap memory * * * VERY IMPORTANT * * *
+void	bye(struct cont* v) {			// Release heap memory * * * VERY IMPORTANT * * *
 	int		i;
 
 	for (i=0; i<MAXFILES; i++) {
-		if (v->ptr[i] != NULL)		free(v->ptr[i]);	// release this block
-//		v->ptr[i] =	NULL;			// no need as this function will shut down
+		if (v->ptr[i] != NULL)			free(v->ptr[i]);	// release this block
+//		v->ptr[i] =	NULL;				// no need as this function will shut down
 	}
-	v->used = 0;					// all clear
+	v->used = 0;						// all clear
 }
 
-int		open(char* volume, struct cont* v, bool verbose) {					// Open volume
+int		open(char* volume, struct cont* v, bool verbose) {			// Open volume
 	FILE*			file;
-	byte			buffer[HD_BYTES];			// temporary header fits into a full page
-	struct header	h;							// metadata storage
+	byte			buffer[HD_BYTES];	// temporary header fits into a full page
+	struct header	h;					// metadata storage
 
-	if (verbose)			printf("Opening %s...", volume);
-	if ((file = fopen(volume, "rb")) == NULL) 		return NO_VOLUME;	// ERROR -1: source volume not found
+	if (verbose)						printf("Opening %s...", volume);
+	if ((file = fopen(volume, "rb")) == NULL) 	return NO_VOLUME;	// ERROR -1: source volume not found
 	if (verbose)			printf(" OK\nReading headers...");
 	while (!feof(file)) {
-		if (fread(buffer, HD_BYTES, 1, file) != 1)	break;				// get header into buffer
-		if (getheader(buffer, &h)) {									// check header and get metadata
-			fclose(file);												// bad header will abort volume read
+		if (fread(buffer, HD_BYTES, 1, file) != 1)	break;			// get header into buffer
+		if (getheader(buffer, &h)) {								// check header and get metadata
+			fclose(file);											// bad header will abort volume read
 			return	BAD_HEAD;
 		}
 		if (signature(&h) == SIG_FREE) {
