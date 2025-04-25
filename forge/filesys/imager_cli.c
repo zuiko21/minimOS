@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250424-1717
+ * last modified 20250425-0927
  * */
 
 /* Libraries */
@@ -90,6 +90,7 @@ struct param {
 	bool	extract;			// -x fetch list of files to be extracted
 	bool	remove;				// -d fetch list of files to be removed
 	dword	space;				// -f add free space at the end of the volume
+	char	path[VOL_NLEN];		// -p set extracted files prefix
 	char	dir[MAXFILES][VOL_NLEN];	// list of filenames to be extracted/removed/added (-x/d/a)
 };
 
@@ -120,14 +121,14 @@ void	bye(struct cont* v);												// Clean up
 int		open(char* volume, struct cont* v, bool verbose);					// Open volume
 int		list(char* result, int mode, struct cont* v);						// List volume contents
 int		add(char* name, struct cont* v, bool verbose);						// Add file to volume
-int		extract(char* name, struct cont* v, bool verbose);					// Extract file from volume
+int		extract(char* name, struct cont* v, char* path, bool verbose);		// Extract file from volume
 int		rmfile(char* name, struct cont* v, bool force, bool verbose);		// Delete file from volume
 int		setfree(int kb, dword* pages);										// Select free space to be appended
 int		generate(char* volume, struct cont* v, dword space, bool verbose);	// Generate volume
 int		getheader(byte* p, struct header* h);								// Extract header specs, returns BAD_HEAD if not valid
 void	makeheader(byte* p, struct header* h);								// Generate header from struct
 int		signature(struct header* h);										// Return file type from coded signature
-void	info(struct header* h, char* result);								// Display info about header
+void	info(char* result, struct header* h);								// Display info about header
 int		choose(char* name, struct cont* v);									// Choose file from list
 int		confirm(char* name, bool force);									// Request confirmation for dangerous actions, returns ABORTED if rejected
 void	display(int err, char* text);										// Display error text
@@ -144,13 +145,16 @@ int main (int argc, char** argv) {
 
 	init(&status, &cli);		// ** Init things **
 // * First of all, pre-fetch parameters *
-	while ((c = getopt(argc, argv, "i:o:hvylmx:d:f:")) != -1) {
+	while ((c = getopt(argc, argv, "i:o:p:hvylmx:d:f:")) != -1) {
 		switch (c) {
 			case 'i':			// set input volume
 				strcpy(cli.invol, optarg);
 				break;
 			case 'o':			// set output filename (default: durango.av)
 				strcpy(cli.outvol, optarg);
+				break;
+			case 'p':			// set extracted files prefix
+				strcpy(cli.path, optarg);
 				break;
 			case 'v':			// verbose mode
 				cli.verbose	= TRUE;
@@ -235,7 +239,7 @@ int main (int argc, char** argv) {
 	if (cli.extract) {				// ** fetch name and extract that file if exists **
 		i = 0;						// reset file list cursor
 		while (cli.dir[i][0] != '\0') {
-			err = extract(cli.dir[i++], &status, cli.verbose);
+			err = extract(cli.dir[i++], &status, cli.path, cli.verbose);
 //			if (cli.verbose && err)		display(err);	// tell if file extraction fails
 			display(err, cli.dir[i-1]);					// tell if file extraction fails
 		}
@@ -279,6 +283,7 @@ void	init(struct cont* v, struct param* p) {		// Init both contents and paramete
 	}
 	p->invol[0]		= '\0';				// create new volume by default
 	strcpy(p->outvol, "durango.av\0");	// default output file!
+	p->path[0]		= '\0';				// current directory as default extraction path
 	p->verbose		= FALSE;			// quiet mode by default
 	p->force		= FALSE;			// ask for deletion confirmation!
 	p->list			= FALSE;			// do not list until asked
@@ -359,7 +364,7 @@ int		list(char* result, int mode, struct cont* v) {		// List volume contents
 		if (mode == DETAIL_LIST) {							// maybe use an specific flag?
 			getheader(v->ptr[i], &h);						// get surely loaded header into local storage 
 			sprintf(result+strlen(result), "%d: ", i+1);	// entry number (1-based)
-			info(&h, result);								// display all info about the file
+			info(result, &h);								// display all info about the file
 			sprintf(result+strlen(result), "\n--------\n");	// append extra
 		} else {
 			sprintf(result+strlen(result), "%d) %s\n", i+1, v->ptr[i]+H_NAME);		// display SIMPLIFIED list of contents
@@ -450,11 +455,12 @@ int		add(char* name, struct cont* v, bool verbose) {	// Add file to volume
 	return	0;
 }
 
-int		extract(char* name, struct cont* v, bool verbose) {		// Extract file from volume
+int		extract(char* name, struct cont* v, char* path, bool verbose) {		// Extract file from volume
 	int				i, ext, skip;
 	struct header	h;
 	FILE*			file;
 	char			string[2000];								// local storage in case of verbose mode
+	char			fname[2*VOL_NLEN];							// temporary filename for extraction (with prefix)
 
 	string[0] = '\0';
 	if (!(v->used))		return EMPTY_VOL;						// empty volume error
@@ -462,13 +468,17 @@ int		extract(char* name, struct cont* v, bool verbose) {		// Extract file from v
 	if (ext < 0)		return BAD_SELECT;						// ERROR -8: invalid selection
 	getheader(v->ptr[ext], &h);									// get info for candidate
 	if (verbose) {
-		info(&h, string);
+		info(string, &h);
 		printf("%s", string);
 	}
 	if (signature(&h) == SIG_FILE)	skip = HD_BYTES;			// generic files trim headers
 	else							skip = 0;
-	if (verbose)		printf("\nWriting to file %s... ", h.name);
-	if ((file = fopen(h.name, "wb")) == NULL) {
+	if (verbose)		printf("\nWriting to file %s%s... ", path, h.name);
+// create temporary filename with prefix!
+	strcpy(fname, path);										// prefix goes first
+	strcat(fname, h.name);										// then selected filename
+// extract file as usual
+	if ((file = fopen(fname, "wb")) == NULL) {
 		return NO_CREATE;										// ERROR -9: can't create file
 	}
 	if (fwrite(v->ptr[ext]+skip, h.size-skip, 1, file) != 1) {	// note header removal option
@@ -492,7 +502,7 @@ int		rmfile(char* name, struct cont* v, bool force, bool verbose) {	// Delete fi
 	if (del < 0)	return BAD_SELECT;							// invalid selection error
 	if (verbose) {
 		getheader(v->ptr[del], &h);								// get info for candidate
-		info(&h, string);										// display extended info
+		info(string, &h);										// display extended info
 		printf("%s\n", string);
 	}
 	if (confirm("Will REMOVE this file from volume", force))	return ABORTED;		// make sure or ERROR -10: aborted operation
@@ -717,7 +727,7 @@ int		signature(struct header* h) {		// Returns file type from coded signature
 	} else return	SIG_UNKN;				// Totally unknown signature
 }
 
-void	info(struct header* h, char* result) {		// Display info about header
+void	info(char* result, struct header* h) {		// Display info about header
 	int		i;
 	char*	pos;
 
@@ -840,6 +850,7 @@ void	usage(char* cmd) {
 	printf("\nUSAGE: %s [options] file_to_add [...]\n", cmd);
 	printf("OPTIONS:\n\t-i volume\tOpen existing volume file\n");
 	printf("\t-o volume\tSet volume output filename (default: durango.av)\n");
+	printf("\t-p path\tSet prefix for extracted filenames (path must include trailing slash)\n");
 	printf("\t-h\tDisplay this text\n");
 	printf("\t-v\tSet verbose mode\n");
 	printf("\t-y\tForce deletions (do NOT ask for confirmation!)\n");
