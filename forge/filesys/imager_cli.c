@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250425-1326
+ * last modified 20250425-1338
  * */
 
 /* Libraries */
@@ -148,7 +148,7 @@ int main (int argc, char** argv) {
 
 	init(&status, &cli);		// ** Init things **
 // * First of all, pre-fetch parameters *
-	while ((c = getopt(argc, argv, "i:o:p:hvylmx:d:f:")) != -1) {
+	while ((c = getopt(argc, argv, "i:o:p:hvylmx:d:X:D:f:")) != -1) {
 		switch (c) {
 			case 'i':			// set input volume
 				strcpy(cli.invol, optarg);
@@ -173,20 +173,22 @@ int main (int argc, char** argv) {
 				cli.list	= FALSE;
 				cli.detailed= TRUE;
 				break;
-			case 'x':			// extract file from volume
+			case 'x', 'X':			// extract file from volume
 				if (cli.remove) {
 					printf("\n*** Cannot extract while removing ***\n");
 					return ABORTED;
 				}
 				cli.extract	= TRUE;
+				if (c == 'X')	cli.IDbased = TRUE;
 				strcpy(cli.dir[line++], optarg);
 				break;
-			case 'd':			// remove file from volume
+			case 'd', 'D':			// remove file from volume
 				if (cli.extract) {
 					printf("\n*** Cannot remove while extracting ***\n");
 					return ABORTED;
 				}
 				cli.remove	= TRUE;
+				if (c == 'D')	cli.IDbased = TRUE;
 				strcpy(cli.dir[line++], optarg);
 				break;
 			case 'f':			// set free space in KiB
@@ -242,7 +244,8 @@ int main (int argc, char** argv) {
 	if (cli.extract) {				// ** fetch name and extract that file if exists **
 		i = 0;						// reset file list cursor
 		while (cli.dir[i][0] != '\0') {
-			err = extract(cli.dir[i++], &status, cli.path, cli.verbose);
+			if (cli.IDbased) 	err = extract_id((int)strtol(cli.dir[i++], NULL, 0)-1, &status, cli.path, cli.verbose);	// 1-based extract by ID
+			else			 	err = extract(cli.dir[i++], &status, cli.path, cli.verbose);
 //			if (cli.verbose && err)		display(err);	// tell if file extraction fails
 			display(err, cli.dir[i-1]);					// tell if file extraction fails
 		}
@@ -252,7 +255,8 @@ int main (int argc, char** argv) {
 	if (cli.remove) {				// fetch name and remove it from volume (could add something afterwards)
 		i = 0;						// reset file list cursor
 		while (cli.dir[i][0] != '\0') {
-			err = rmfile(cli.dir[i++], &status, cli.force, cli.verbose);
+			if (cli.IDbased)	err = rmfile_id((int)strtol(cli.dir[i++], NULL, 0)-1, &status, cli.force, cli.verbose);	// 1-based delete by ID
+			else				err = rmfile(cli.dir[i++], &status, cli.force, cli.verbose);
 //			if (cli.verbose && err)	display(err);	// tell if file deletion fails
 			display(err, cli.dir[i-1]);				// tell if file deletion fails
 		}
