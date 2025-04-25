@@ -173,7 +173,7 @@ int main (int argc, char** argv) {
 				cli.list	= FALSE;
 				cli.detailed= TRUE;
 				break;
-			case 'x':			// extract file from volumeç
+			case 'x':			// extract file from volume
 			case 'X':			// ID-based
 				if (cli.remove) {
 					printf("\n*** Cannot extract while removing ***\n");
