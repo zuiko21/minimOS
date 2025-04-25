@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250425-0927
+ * last modified 20250425-0956
  * */
 
 /* Libraries */
@@ -847,10 +847,10 @@ void	display(int err, char* text) {			// display error message
 }
 
 void	usage(char* cmd) {
-	printf("\nUSAGE: %s [options] file_to_add [...]\n", cmd);
+	printf("\nUSAGE: %s [options] [file_to_add ...]\n", cmd);
 	printf("OPTIONS:\n\t-i volume\tOpen existing volume file\n");
 	printf("\t-o volume\tSet volume output filename (default: durango.av)\n");
-	printf("\t-p path\tSet prefix for extracted filenames (path must include trailing slash)\n");
+	printf("\t-p path\tSet prefix for extracted filenames (if path, must include trailing slash)\n");
 	printf("\t-h\tDisplay this text\n");
 	printf("\t-v\tSet verbose mode\n");
 	printf("\t-y\tForce deletions (do NOT ask for confirmation!)\n");
@@ -859,5 +859,5 @@ void	usage(char* cmd) {
 	printf("\t-x file [-x file ...]\tExtract files from volume (needs -i, incompatible with -d)\n");
 	printf("\t-d file [-d file ...]\tREMOVE files from volume (needs -i, incompatible with -x)\n");
 	printf("\t-f size\tSet free space to 'size' KiB\n");
-	printf("Sparse filenames will be added to volume (incompatible with -d or -x)\n\n");
+	printf("\nSparse filenames will be added to volume (incompatible with -d or -x)\n\n");
 }
