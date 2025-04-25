@@ -217,7 +217,7 @@ int main (int argc, char** argv) {
 
 // * now execute code according to enabled options *
 	if (cli.verbose) {				// ** both verbose mode and version display **
-		printf("\nDurango-X volume creator, v1.2b3 by @zuiko21\n");
+		printf("\nDurango-X volume creator, v1.3b1 by @zuiko21\n");
 	}
 	if (cli.invol[0] != '\0') {		// ** open volume by name, otherwise was new volume **
 		err = open(cli.invol, &status, cli.verbose);
