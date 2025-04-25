@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250425-1338
+ * last modified 20250425-1340
  * */
 
 /* Libraries */
@@ -173,7 +173,8 @@ int main (int argc, char** argv) {
 				cli.list	= FALSE;
 				cli.detailed= TRUE;
 				break;
-			case 'x', 'X':			// extract file from volume
+			case 'x':			// extract file from volumeç
+			case 'X':			// ID-based
 				if (cli.remove) {
 					printf("\n*** Cannot extract while removing ***\n");
 					return ABORTED;
@@ -182,7 +183,8 @@ int main (int argc, char** argv) {
 				if (c == 'X')	cli.IDbased = TRUE;
 				strcpy(cli.dir[line++], optarg);
 				break;
-			case 'd', 'D':			// remove file from volume
+			case 'd':			// remove file from volume
+			case 'D':			// ID-based
 				if (cli.extract) {
 					printf("\n*** Cannot remove while extracting ***\n");
 					return ABORTED;
