@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250425-0956
+ * last modified 20250425-1306
  * */
 
 /* Libraries */
@@ -121,8 +121,10 @@ void	bye(struct cont* v);												// Clean up
 int		open(char* volume, struct cont* v, bool verbose);					// Open volume
 int		list(char* result, int mode, struct cont* v);						// List volume contents
 int		add(char* name, struct cont* v, bool verbose);						// Add file to volume
-int		extract(char* name, struct cont* v, char* path, bool verbose);		// Extract file from volume
-int		rmfile(char* name, struct cont* v, bool force, bool verbose);		// Delete file from volume
+int		extract(char* name, struct cont* v, char* path, bool verbose);		// Extract file from volume BY NAME
+int		extract_id(int ext, struct cont* v, char* path, bool verbose);		// Extract file from volume BY ID
+int		rmfile(char* name, struct cont* v, bool force, bool verbose);		// Delete file from volume BY NAME
+int		rmfile_id(int del, struct cont* v, bool force, bool verbose);		// Delete file from volume BY ID
 int		setfree(int kb, dword* pages);										// Select free space to be appended
 int		generate(char* volume, struct cont* v, dword space, bool verbose);	// Generate volume
 int		getheader(byte* p, struct header* h);								// Extract header specs, returns BAD_HEAD if not valid
@@ -455,8 +457,16 @@ int		add(char* name, struct cont* v, bool verbose) {	// Add file to volume
 	return	0;
 }
 
-int		extract(char* name, struct cont* v, char* path, bool verbose) {		// Extract file from volume
-	int				i, ext, skip;
+int		extract(char* name, struct cont* v, char* path, bool verbose) {		// Extract file from volume BY NAME
+	int		ext;
+
+	ext = choose(name, v);													// look for the first file on volume with matching name!
+	
+	return	extract_id(ext, v, path, verbose);								// continue with ID-based extraction
+}
+
+int		extract_id(int ext, struct cont* v, char* path, bool verbose) {		// Extract file from volume BY ID (0-based)
+	int				i, skip;
 	struct header	h;
 	FILE*			file;
 	char			string[2000];								// local storage in case of verbose mode
@@ -464,7 +474,6 @@ int		extract(char* name, struct cont* v, char* path, bool verbose) {		// Extract
 
 	string[0] = '\0';
 	if (!(v->used))		return EMPTY_VOL;						// empty volume error
-	ext = choose(name, v);
 	if (ext < 0)		return BAD_SELECT;						// ERROR -8: invalid selection
 	getheader(v->ptr[ext], &h);									// get info for candidate
 	if (verbose) {
@@ -491,14 +500,21 @@ int		extract(char* name, struct cont* v, char* path, bool verbose) {		// Extract
 	return	0;
 }
 
-int		rmfile(char* name, struct cont* v, bool force, bool verbose) {	// Delete file from volume
-	int				i, del;
+int		rmfile(char* name, struct cont* v, bool force, bool verbose) {	// Delete file from volume BY NAME
+	int		del;
+
+	del = choose(name, v);												// look for the first file on volume with matching name!
+
+	return	rmfile_id(del, v, force, verbose);							// continue with ID-based deletion
+}
+
+int		rmfile_id(int del, struct cont* v, bool force, bool verbose) {	// Delete file from volume BY ID (0-based)
+	int				i;
 	struct header	h;
 	char			string[2000];								// local storage in case of verbose mode
 
 	string[0] = '\0';
 	if (!(v->used))	return EMPTY_VOL;							// empty volume error
-	del = choose(name, v);
 	if (del < 0)	return BAD_SELECT;							// invalid selection error
 	if (verbose) {
 		getheader(v->ptr[del], &h);								// get info for candidate
