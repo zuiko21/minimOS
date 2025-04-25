@@ -1,6 +1,6 @@
 /* Durango Imager - CLI, non-interactive version
  * (C) 2023-2025 Carlos J. Santisteban
- * last modified 20250425-1306
+ * last modified 20250425-1326
  * */
 
 /* Libraries */
@@ -89,6 +89,7 @@ struct param {
 	bool	detailed;			// -m request detailed volume directory (overrides -l)
 	bool	extract;			// -x fetch list of files to be extracted
 	bool	remove;				// -d fetch list of files to be removed
+	bool	IDbased;			// -D/-X ID-based extraction/deletion
 	dword	space;				// -f add free space at the end of the volume
 	char	path[VOL_NLEN];		// -p set extracted files prefix
 	char	dir[MAXFILES][VOL_NLEN];	// list of filenames to be extracted/removed/added (-x/d/a)
@@ -292,6 +293,7 @@ void	init(struct cont* v, struct param* p) {		// Init both contents and paramete
 	p->detailed		= FALSE;			// ditto for details
 	p->extract		= FALSE;			// default is add, not extract
 	p->remove		= FALSE;			// much less file deletion!
+	p->IDbased		= FALSE;			// name-based extraction/deletion
 	p->space		= 0;				// no extra space unless specified
 }
 
@@ -874,6 +876,8 @@ void	usage(char* cmd) {
 	printf("\t-m\tDetailed listing of files in volume (needs -i)\n");
 	printf("\t-x file [-x file ...]\tExtract files from volume (needs -i, incompatible with -d)\n");
 	printf("\t-d file [-d file ...]\tREMOVE files from volume (needs -i, incompatible with -x)\n");
+	printf("\t-X id [-X id ...]\tExtract files (ID-based, 1...n) from volume (needs -i, incompatible with -d)\n");
+	printf("\t-D id [-D id ...]\tREMOVE files (ID-based, 1...n) from volume (needs -i, incompatible with -x)\n");
 	printf("\t-f size\tSet free space to 'size' KiB\n");
 	printf("\nSparse filenames will be added to volume (incompatible with -d or -x)\n\n");
 }
