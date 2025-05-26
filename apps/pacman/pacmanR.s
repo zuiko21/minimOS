@@ -1,6 +1,6 @@
 ; PacMan stub for Durango-R
 ; (c) 2021-2025 Carlos J. Santisteban
-; last modified 20250526-0952
+; last modified 20250526-1207
 
 ; variables, esp. zeropage
 #include "pacman.h"
@@ -103,7 +103,7 @@ m_loop:
 		LDA m_len, Y		; get length from duration array
 			BEQ m_end		; length=0 means END of score
 		TAX
-		LDA m_note, Y		; get note period (10A+20 t) from its array
+		LDA m_note, Y		; get note period (36A+20 t) from its array
 		BEQ mc_rest			; if zero, no sound!
 			JSR m_beep		; play this note (exits with Z)
 			BEQ m_next		; go for next note
@@ -252,10 +252,12 @@ sel_ok:
 	RTS
 
 ; * 20ms generic delay *
-; delay ~20A ms
+; delay ~20A ms, complete revamp
 ms20:
-	LDX turbo				; 0=non-turbo (~1.75 MHz), 1=turbo (~3.5 MHz)
-	LDY ms20tab, X			; computed iterations for a 20ms delay (90=1.536 MHz, 103=1.75 MHz, 206=3.5 MHz)
+	LDY #103				; iterations for 1.75 MHz
+	BIT turbo				; 0=non-turbo (~1.75 MHz), 128=turbo (~3.5 MHz)
+	BPL m20d
+		LDY #206			; iterations for 3.5 MHz
 m20d:
 			JSR delay		; (12)
 			DEY				; inner loop (2y)a
@@ -579,7 +581,7 @@ sc_loop:
 		AND #LWIDTH-1		; filter column (assuming LWIDTH is power of 2)
 		TAY					; will be used for the mask array AND map index
 		LDA cur_y			; now for the lowest Y-bits
-		AND #%00110000		; we only need the lowest 2 bits, assuming LWIDTH = 16
+		AND #%00110000		; we only need the lowest 2 bits, assuming LWIDTH = 16 *** *** TBD *** check
 ; will place dots at every +2, instead of +3, makes pill placement MUCH easier as no page/tile crossing is done!
 ; thus, Y MOD 4 TIMES 16 could be 0 (no dots), 16 or 48 (pills only, same mask), or 32 (dots and/or pills)
 		BEQ sc_ndot			; no dots on raster 0
@@ -681,7 +683,7 @@ draw_ok:
 	STX draw_x
 	LDA sprite_y, Y			; A holds actual Y coordinate, will shift in register
 	STA draw_y				; ***maybe worth unifying
-; compute base addresses, specific code will change as appropriate anyway
+; compute base addresses, specific code will change as appropriate anyway *** *** TBD *** rewrite
 ; new inlined version based on animation, 2b more but somewhat faster
 ; X=x, A=y, returns address in org_pt AND dest_pt
 	STA org_pt+1			; store base MSB
@@ -1041,7 +1043,7 @@ dl_tnw:
 
 ; * banner routine *
 ; 40x5 patch to be placed is pointed by A.Y (will use org_pt)
-; will be placed at (40,70), which starts at $7C65 up to $7CA9 (no page crossing)
+; will be placed at (40,70), which starts at $7C65 up to $7CA9 (no page crossing) *** check
 l_text:
 	STY org_pt
 	STA org_pt+1
@@ -1229,16 +1231,20 @@ dth_sw:
 ; *** ** beeping routine ** ***
 ; *** X = length, A = freq. ***
 ; *** X = 2*cycles          ***
-; *** tcyc = 16 A + 20      ***
-; ***     @1.536 MHz        ***
+; *** tcyc = 36 A + 20      ***
+; ***     @3.5  MHz         ***
 ; modifies Y, returns X=0
 m_beep:
+	BIT turbo				; check actual speed
+ 	BMI t_beep
+  		LSR					; half period for non-turbo mode
+t_beep:
 	SEI						; eeeeeek
 beep_l:
 		TAY					; determines frequency (2)
 		STX IOBeep			; send X's LSB to beeper (4)
 rb_zi:
-			STY bp_dly		; small delay for 1.536 MHz! (3)
+			JSR delay31		; delay for 3.5 MHz (y*31)
 			DEY				; count pulse length (y*2)
 			BNE rb_zi		; stay this way for a while (y*3-1)
 		DEX					; toggles even/odd number (2)
@@ -1249,7 +1255,7 @@ rb_zi:
 
 ; *** ** rest routine ** ***
 ; ***     X = length     ***
-; *** X 1.33 ms @ 1.536M ***
+; *** X 1.33 ms @ 3.5MHz *** *** TBD *** add suitable delay and check speed!
 ; modifies Y, returns X=0
 m_rest:
 		LDY #0				; this resets the counter
@@ -1310,6 +1316,14 @@ sw_down:
 		CMP sqk_par+1
 		BCC sw_down
 	RTS
+
+; *** 31t extra delay for 3.5 MHz playback ***
+delay31:
+	STY bp_dly
+	STY !bp_dly			; will this work?
+	JSR delay12
+ delay12:
+ 	RTS
 
 ; *********************************
 ; *********************************
